@@ -70,7 +70,8 @@ enlarge the live Codex permission boundary.
 
 The schema 2 capsule contains at least:
 
-- `assignment_id`, `handoff_id`, parent session/turn/tool-use identity;
+- `assignment_id`, `handoff_id`, shared runtime session, direct parent thread,
+  turn, and tool-use identity;
 - worker profile, role, requested task name, and proven canonical AgentPath;
 - resolved Git root, branch, base commit, and descendant-HEAD policy;
 - owned and excluded paths;
@@ -110,8 +111,10 @@ return `updatedInput`.
 The claimant must read the first `SessionMeta` from the materialized child
 transcript and jointly prove:
 
-- Hook `session_id == agent_id == SessionMeta.id`;
-- parent thread id, role, and canonical path match the pending capsule;
+- Hook `session_id == SessionMeta.session_id` for the root/descendant shared
+  runtime session;
+- Hook `agent_id == SessionMeta.id` for the child ThreadId;
+- direct parent thread id, role, and canonical path match the pending capsule;
 - the requested task name has one unique logical relation to the actual path;
 - any precomputed expected path exactly matches.
 
@@ -179,6 +182,7 @@ Local CLI: `codex-cli 0.147.0`. The official `rust-v0.147.0` tag peels to
 - [requested name to AgentPath](https://github.com/openai/codex/blob/be6e8eac029b183056b7e4402879f15d2c85f61b/codex-rs/core/src/tools/handlers/multi_agents_common.rs)
 - [V2 canonical-path return](https://github.com/openai/codex/blob/be6e8eac029b183056b7e4402879f15d2c85f61b/codex-rs/core/src/tools/handlers/multi_agents_v2/spawn.rs)
 - [SessionMeta identity](https://github.com/openai/codex/blob/be6e8eac029b183056b7e4402879f15d2c85f61b/codex-rs/protocol/src/protocol.rs)
+- [Hook session id is shared by root and descendants](https://github.com/openai/codex/blob/be6e8eac029b183056b7e4402879f15d2c85f61b/codex-rs/core/src/session/session.rs)
 - [transcript materialization test](https://github.com/openai/codex/blob/be6e8eac029b183056b7e4402879f15d2c85f61b/codex-rs/core/src/session/tests.rs)
 
 No official documentation was found that promotes all of these source behaviors

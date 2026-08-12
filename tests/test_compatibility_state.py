@@ -29,7 +29,8 @@ def capsule(assignment, **overrides):
         "schema": 2,
         "assignment_id": str(uuid.uuid4()),
         "handoff_id": str(uuid.uuid4()),
-        "parent_session_id": "parent-session",
+        "runtime_session_id": "runtime-session",
+        "parent_thread_id": "parent-thread",
         "parent_turn_id": "parent-turn",
         "spawn_tool_use_id": "spawn-tool-use",
         "worker_profile": "fixture-worker",
@@ -66,9 +67,10 @@ def capsule(assignment, **overrides):
 
 def identity(**overrides):
     value = {
-        "session_id": "child-session",
-        "agent_id": "child-session",
-        "parent_session_id": "parent-session",
+        "runtime_session_id": "runtime-session",
+        "child_thread_id": "child-thread",
+        "agent_id": "child-thread",
+        "parent_thread_id": "parent-thread",
         "agent_type": "fixture_worker",
         "canonical_agent_path": "/root/bounded_task",
     }
@@ -120,7 +122,7 @@ class CompatibilityStateTests(unittest.TestCase):
         with self.assertRaises(IdentityMismatch):
             self.store.claim(
                 value["handoff_id"],
-                identity(parent_session_id="different-parent"),
+                identity(parent_thread_id="different-parent"),
             )
 
         self.assertTrue(pending.exists())
@@ -157,7 +159,7 @@ class CompatibilityStateTests(unittest.TestCase):
             identity(),
             root="/workspace/repository",
             branch="main",
-            base_commit="a" * 64,
+            head="a" * 64,
             changed_paths=["owned/result.txt"],
         )
         with self.assertRaises(AuthorityViolation):
@@ -166,7 +168,7 @@ class CompatibilityStateTests(unittest.TestCase):
                 identity(),
                 root="/workspace/repository",
                 branch="main",
-                base_commit="a" * 64,
+                head="a" * 64,
                 changed_paths=["outside/result.txt"],
             )
         with self.assertRaises(AuthorityViolation):
@@ -175,7 +177,7 @@ class CompatibilityStateTests(unittest.TestCase):
                 identity(),
                 root="/workspace/repository",
                 branch="main",
-                base_commit="a" * 64,
+                head="a" * 64,
                 git_operation="commit",
             )
 
@@ -185,10 +187,10 @@ class CompatibilityStateTests(unittest.TestCase):
         with self.assertRaises(IdentityMismatch):
             self.store.attest_tool_use(
                 value["assignment_id"],
-                identity(session_id="other", agent_id="other"),
+                identity(child_thread_id="other", agent_id="other"),
                 root="/workspace/repository",
                 branch="main",
-                base_commit="a" * 64,
+                head="a" * 64,
             )
 
     def test_expired_active_state_becomes_unresolved_evidence(self):

@@ -45,3 +45,45 @@ currently prove:
 SessionMeta parsing, Hook event adapters, compact/resume fixtures, and
 SubagentStop disk adjudication remain open and must not be inferred from these
 state-core tests.
+
+## Isolated runtime-guard fixture
+
+`hooks/runtime_guard.py` now exercises the version-locked Hook shapes without
+installing them. The fixture reads only the first rollout `SessionMeta` and
+requires exact Hook session/agent id, parent id, role, and canonical AgentPath.
+Every synthetic PreToolUse re-reads that metadata and re-resolves exactly one
+active capsule. PreCompact increments a durable recovery epoch; a changed
+parent or AgentPath after that point is denied.
+
+Each synthetic PreToolUse also derives the actual Git top level, branch, HEAD,
+status, changed paths, and content hashes from the Hook cwd. Tests mutate HEAD
+and an out-of-scope path after recovery and prove the next otherwise read-only
+tool call is denied; the guard does not accept capsule values as self-evidence.
+
+The probe corrected an earlier identity assumption: Hook `session_id` is the
+runtime session shared by root and descendants, not the child ThreadId. Exact
+binding therefore keeps `runtime_session_id`, direct `parent_thread_id`, and
+child `agent_id == SessionMeta.id` as separate fields.
+
+The current guard intentionally allows only a small read-only tool set. All
+mutation tools, including `apply_patch`, remain blocked because the complete
+mutation surface is not qualified.
+
+The synthetic SubagentStop gate accepts only an exact, standalone JSON
+attestation envelope. It computes the actual Git top level, branch, HEAD,
+short status, changed-path set, file kind, and SHA-256 hashes. Extra completion
+claims, unauthorized commits, stale hashes, out-of-scope paths, and identity
+mismatch block the final return and retain active evidence. Verification command
+identity must exactly match the capsule, and a complete claim requires zero exit
+codes.
+
+A truthful incomplete, context-lost, or authority-violation attestation is not
+promoted to completion: it returns to the parent with the actual disk snapshot
+and moves the capsule to unresolved evidence. Only an exact, complete,
+non-violating attestation reaches consumed state.
+
+This is still not a live guarantee. In particular, SessionMeta and capsule
+state are trustworthy only if the child permission boundary cannot modify the
+rollout or state directory. POSIX mode bits do not isolate two processes using
+the same OS account. Until a live sandbox probe proves that boundary, direct
+write remains unqualified/read-only.
