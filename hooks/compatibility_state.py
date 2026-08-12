@@ -126,7 +126,8 @@ def validate_capsule(capsule: object, assignment: str) -> dict:
     _uuid(capsule.get("assignment_id"), "assignment_id")
     _uuid(capsule.get("handoff_id"), "handoff_id")
     for field in (
-        "parent_session_id",
+        "runtime_session_id",
+        "parent_thread_id",
         "parent_turn_id",
         "spawn_tool_use_id",
         "worker_profile",
@@ -340,7 +341,7 @@ class StateStore:
         *,
         root: str,
         branch: str | None,
-        base_commit: str | None,
+        head: str | None,
         changed_paths: Sequence[str] = (),
         git_operation: str | None = None,
     ) -> dict:
@@ -359,8 +360,8 @@ class StateStore:
                 raise AuthorityViolation("root expansion is not authorized")
             if branch != expected_root["branch"]:
                 raise AuthorityViolation("branch change is not authorized")
-            if base_commit != expected_root["base_commit"]:
-                raise AuthorityViolation("base commit change is not authorized")
+            if not expected_root["allow_descendant_head"] and head != expected_root["base_commit"]:
+                raise AuthorityViolation("HEAD change is not authorized")
             if git_operation is not None:
                 if git_operation not in capsule["git_authority"]:
                     raise AuthorityViolation("unknown Git operation")
@@ -386,17 +387,64 @@ class StateStore:
             active.unlink()
             return unresolved
 
+    def find_active(self, identity: Mapping[str, str]) -> tuple[str, dict]:
+        matches: list[tuple[str, dict]] = []
+        with self.locked():
+            active_directory = self.root / "active"
+            if not active_directory.exists():
+                raise StateError("no active authority capsule matches the child")
+            for path in sorted(active_directory.glob("*.json")):
+                try:
+                    envelope = self._validated_envelope(path)
+                except CorruptState:
+                    self._quarantine(path)
+                    continue
+                try:
+                    self._assert_identity(
+                        envelope["capsule"], identity, envelope.get("binding")
+                    )
+                except IdentityMismatch:
+                    continue
+                matches.append((envelope["capsule"]["assignment_id"], envelope))
+            if len(matches) != 1:
+                raise StateError(
+                    f"expected exactly one active authority capsule, found {len(matches)}"
+                )
+            return matches[0]
+
+    def finalize(
+        self,
+        assignment_id: str,
+        attestation: Mapping[str, object],
+        *,
+        complete: bool,
+    ) -> pathlib.Path:
+        active = self.path("active", assignment_id)
+        with self.locked():
+            envelope = self._validated_envelope(active)
+            envelope["final_attestation"] = dict(attestation)
+            disposition = "consumed" if complete else "unresolved"
+            final = self.path(disposition, assignment_id)
+            self._publish(final, envelope)
+            active.unlink()
+            return final
+
     @staticmethod
     def _assert_identity(
         capsule: Mapping[str, object],
         identity: Mapping[str, str],
         binding: object | None = None,
     ) -> None:
-        session_id = identity.get("session_id")
-        if not session_id or session_id != identity.get("agent_id"):
-            raise IdentityMismatch("child session_id and agent_id do not match")
-        if identity.get("parent_session_id") != capsule["parent_session_id"]:
-            raise IdentityMismatch("parent session does not match")
+        runtime_session_id = identity.get("runtime_session_id")
+        child_thread_id = identity.get("child_thread_id")
+        if not runtime_session_id:
+            raise IdentityMismatch("runtime session id is missing")
+        if not child_thread_id or child_thread_id != identity.get("agent_id"):
+            raise IdentityMismatch("child thread id and agent_id do not match")
+        if runtime_session_id != capsule["runtime_session_id"]:
+            raise IdentityMismatch("runtime session does not match")
+        if identity.get("parent_thread_id") != capsule["parent_thread_id"]:
+            raise IdentityMismatch("direct parent thread does not match")
         if identity.get("agent_type") != capsule["agent_type"]:
             raise IdentityMismatch("agent type does not match")
         canonical = identity.get("canonical_agent_path")

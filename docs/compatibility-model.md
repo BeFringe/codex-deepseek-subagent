@@ -83,7 +83,8 @@ worker 独立选择 `native`、`responses-direct` 或 `responses-bridge`，再�
   "schema": 2,
   "assignment_id": "uuid",
   "handoff_id": "uuid",
-  "parent_session_id": "thread/session id",
+  "runtime_session_id": "root and descendants shared session id",
+  "parent_thread_id": "direct parent thread id",
   "parent_turn_id": "turn id",
   "spawn_tool_use_id": "tool-use id",
   "worker_profile": "v4_flash_worker",
@@ -166,8 +167,9 @@ stage 失败必须 block spawn。非 plaintext worker 原样 pass。Hook 不返�
 `SubagentStart` 自身不暴露 parent id、task name 或 AgentPath，因此 claim 必须读取它
 提供的 child `transcript_path` 中的首条 `SessionMeta`，并联合验证：
 
-- Hook `session_id == agent_id == SessionMeta.id`；
-- `SessionMeta.parent_thread_id == capsule.parent_session_id`；
+- Hook `session_id == SessionMeta.session_id`（root 与 descendants 共享）；
+- Hook `agent_id == SessionMeta.id`（child ThreadId）；
+- `SessionMeta.parent_thread_id == capsule.parent_thread_id`；
 - `SessionMeta.agent_role == capsule.agent_type`；
 - `SessionMeta.agent_path` 与 requested task name/parent AgentPath 的关系唯一；
 - 预先算出的 expected path（如有）与实际 path 完全一致。
@@ -300,6 +302,7 @@ child 无权把 `assigned_slice_complete` 提升为 parent task/feature complete
 - [requested task name → canonical AgentPath](https://github.com/openai/codex/blob/be6e8eac029b183056b7e4402879f15d2c85f61b/codex-rs/core/src/tools/handlers/multi_agents_common.rs)
 - [V2 spawn 返回 canonical path](https://github.com/openai/codex/blob/be6e8eac029b183056b7e4402879f15d2c85f61b/codex-rs/core/src/tools/handlers/multi_agents_v2/spawn.rs)
 - [SessionMeta identity fields](https://github.com/openai/codex/blob/be6e8eac029b183056b7e4402879f15d2c85f61b/codex-rs/protocol/src/protocol.rs)
+- [Hook session id 是 root/descendants 共享 identity](https://github.com/openai/codex/blob/be6e8eac029b183056b7e4402879f15d2c85f61b/codex-rs/core/src/session/session.rs)
 - [Hook transcript materialization test](https://github.com/openai/codex/blob/be6e8eac029b183056b7e4402879f15d2c85f61b/codex-rs/core/src/session/tests.rs)
 
 未找到能够把上述源码行为提升为长期稳定 API guarantee 的官方文档。因此每个最低支持
