@@ -315,3 +315,27 @@ integration authority.
 Review continuation now also freezes the old review base and tip plus an exact
 narrowed objective. A same-prefix but unequal corrected full OID is rejected at
 capture; neither the child nor thread continuity may guess the intended tip.
+
+## Parent-owned capsule feasibility
+
+`hooks/feasibility_guard.py` builds the pre-dispatch feasibility slot by
+invoking an owner-supplied counterexample probe and bounded-completion assessor;
+its public API has no precomputed outcome parameter. The receipt freezes the
+exact claimed invariant, probe input/evidence hashes, completion condition,
+work-budget unit/limit, proposed mechanism, assessor evidence, unresolved
+assumptions, and parent-owner decision.
+
+A negative fixture models a mechanism that is safe but needs 17 steps under a
+frozen budget of 10. The counterexample probe runs, but the bounded assessor
+returns false and the decision is `block`. A second independently strengthened
+mechanism closes in 9 steps and becomes dispatchable. Counterexample-found and
+blocking-assumption cases also contradict `dispatch` and fail capsule
+validation. Direct-write capture rejects a block decision before pending state
+is created.
+
+The feasibility owner must be one of the capsule's authoritative input owners,
+and the completion condition must also appear in the immutable stop condition.
+The whole slot survives in the compact invariant. “No counterexample found” is
+recorded only as bounded contribution evidence, never a universal proof or
+integration authority. This fixture does not run arbitrary commands from the
+live Hook and therefore does not add a mutation or credential surface.

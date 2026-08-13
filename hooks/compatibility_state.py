@@ -45,6 +45,7 @@ EXECUTION_CONTRACT_FIELDS = {
     "review_continuation",
     "closed_registries",
     "relation_contracts",
+    "capsule_feasibility_attestation",
 }
 DIAGNOSTIC_CONTRACT_FIELDS = {
     "stable_failure_codes",
@@ -117,6 +118,30 @@ RELATION_CONTRACT_FIELDS = {
     "absence_semantics",
     "allowed_terminal_absence",
 }
+FEASIBILITY_ATTESTATION_FIELDS = {
+    "parent_owner_id",
+    "exact_claimed_invariant",
+    "counterexample_probe",
+    "bounded_completion",
+    "unresolved_assumptions",
+    "owner_decision",
+}
+COUNTEREXAMPLE_PROBE_FIELDS = {
+    "probe_id",
+    "probe_input_sha256",
+    "executed",
+    "counterexample_found",
+    "evidence_sha256",
+}
+BOUNDED_COMPLETION_FIELDS = {
+    "completion_condition",
+    "work_budget",
+    "proposed_mechanism",
+    "mechanism_satisfies",
+    "evidence_sha256",
+}
+WORK_BUDGET_FIELDS = {"unit", "limit"}
+UNRESOLVED_ASSUMPTION_FIELDS = {"assumption", "blocking"}
 PARENT_ADJUDICATION_FIELDS = {
     "location_integrity",
     "mutation_scope_integrity",
@@ -759,6 +784,65 @@ def validate_capsule(capsule: object, assignment: str) -> dict:
         if relation["allowed_terminal_absence"] != "tombstone_or_clear_only":
             raise CorruptState("relation terminal absence exception is invalid")
 
+    feasibility = execution["capsule_feasibility_attestation"]
+    if feasibility is not None:
+        if not isinstance(feasibility, dict) or set(feasibility) != FEASIBILITY_ATTESTATION_FIELDS:
+            raise CorruptState("capsule feasibility attestation fields are not exact")
+        if feasibility["parent_owner_id"] not in provenance["authoritative_input_owners"]:
+            raise CorruptState("feasibility attestation is not authored by an authoritative parent owner")
+        _nonempty_string(
+            feasibility["exact_claimed_invariant"],
+            "feasibility exact_claimed_invariant",
+        )
+        probe = feasibility["counterexample_probe"]
+        if not isinstance(probe, dict) or set(probe) != COUNTEREXAMPLE_PROBE_FIELDS:
+            raise CorruptState("counterexample probe fields are not exact")
+        _nonempty_string(probe["probe_id"], "counterexample probe_id")
+        for field in ("probe_input_sha256", "evidence_sha256"):
+            if not isinstance(probe[field], str) or not SHA256_RE.fullmatch(probe[field]):
+                raise CorruptState(f"counterexample probe {field} is invalid")
+        if probe["executed"] is not True:
+            raise CorruptState("counterexample probe must be executed before dispatch")
+        if type(probe["counterexample_found"]) is not bool:
+            raise CorruptState("counterexample_found must be boolean")
+        bounded = feasibility["bounded_completion"]
+        if not isinstance(bounded, dict) or set(bounded) != BOUNDED_COMPLETION_FIELDS:
+            raise CorruptState("bounded completion fields are not exact")
+        for field in ("completion_condition", "proposed_mechanism"):
+            _nonempty_string(bounded[field], f"bounded completion {field}")
+        if bounded["completion_condition"] not in capsule["stop_condition"]:
+            raise CorruptState("bounded completion condition is not bound by stop_condition")
+        work_budget = bounded["work_budget"]
+        if not isinstance(work_budget, dict) or set(work_budget) != WORK_BUDGET_FIELDS:
+            raise CorruptState("work budget fields are not exact")
+        _nonempty_string(work_budget["unit"], "work budget unit")
+        if type(work_budget["limit"]) not in {int, float} or work_budget["limit"] <= 0:
+            raise CorruptState("work budget limit must be positive")
+        if type(bounded["mechanism_satisfies"]) is not bool:
+            raise CorruptState("mechanism_satisfies must be boolean")
+        if not isinstance(bounded["evidence_sha256"], str) or not SHA256_RE.fullmatch(
+            bounded["evidence_sha256"]
+        ):
+            raise CorruptState("bounded completion evidence_sha256 is invalid")
+        assumptions = feasibility["unresolved_assumptions"]
+        if not isinstance(assumptions, list):
+            raise CorruptState("unresolved assumptions must be a list")
+        for assumption in assumptions:
+            if not isinstance(assumption, dict) or set(assumption) != UNRESOLVED_ASSUMPTION_FIELDS:
+                raise CorruptState("unresolved assumption fields are not exact")
+            _nonempty_string(assumption["assumption"], "unresolved assumption")
+            if type(assumption["blocking"]) is not bool:
+                raise CorruptState("unresolved assumption blocking flag is invalid")
+        dispatchable = (
+            not probe["counterexample_found"]
+            and bounded["mechanism_satisfies"]
+            and not any(item["blocking"] for item in assumptions)
+        )
+        if feasibility["owner_decision"] not in {"dispatch", "block"}:
+            raise CorruptState("feasibility owner_decision is invalid")
+        if (feasibility["owner_decision"] == "dispatch") != dispatchable:
+            raise CorruptState("feasibility owner decision contradicts executable evidence")
+
     if posture == "strict_read_only":
         if review_range is None:
             raise CorruptState("strict read-only execution requires an exact review range")
@@ -787,6 +871,11 @@ def validate_capsule(capsule: object, assignment: str) -> dict:
         raise CorruptState("direct-write execution cannot reuse the read-only review range field")
     elif continuation is not None:
         raise CorruptState("review continuation is valid only for strict read-only execution")
+    if posture == "direct_write_unqualified":
+        if feasibility is None:
+            raise CorruptState("direct-write execution requires parent feasibility attestation")
+        if feasibility["owner_decision"] != "dispatch":
+            raise CorruptState("direct-write execution is not feasible for dispatch")
 
     dirty = capsule.get("preexisting_dirty")
     if not isinstance(dirty, list):

@@ -168,6 +168,27 @@ nonterminal one-to-one cardinality, missing/orphan-as-error absence semantics,
 and the sole tombstone/clear terminal-absence exception. The parent/owner still
 freshly recomputes relation closure.
 
+Before a direct implementation reaches pending state, a parent-owned
+`capsule_feasibility_attestation` freezes the exact claimed invariant, a cheap
+executable counterexample probe, the bounded completion condition and work
+budget, the proposed mechanism, and unresolved assumptions. Its owner id must
+be an authoritative input owner; a child or provider cannot author or repair
+these derived decisions.
+
+An executed falsification probe is an active attempt, not proof. Dispatch is
+self-consistent only when the current probe finds no counterexample, an
+owner-internal assessor shows that the proposed mechanism satisfies its own
+completion condition inside the frozen budget, and no unresolved assumption is
+blocking. A mathematically safe but empirically too-loose mechanism therefore
+blocks dispatch until independently strengthened. Freezing a narrative cannot
+turn it into a feasible proof boundary.
+
+The provider-free builder invokes owner callbacks and has no parameter for
+precomputed probe or budget outcomes. Isolated capture validates the structure,
+owner provenance, and dispatch decision. A future live Hook integration of an
+arbitrary executable probe would need separate proof that the probe is cheap,
+read-only, credential-safe, and not a new mutation surface.
+
 ## State lifecycle
 
 ```text

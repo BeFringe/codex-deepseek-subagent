@@ -83,6 +83,26 @@ def capsule(assignment, **overrides):
             "review_continuation": None,
             "closed_registries": [],
             "relation_contracts": [],
+            "capsule_feasibility_attestation": {
+                "parent_owner_id": "fixture.owner",
+                "exact_claimed_invariant": "the assigned slice closes within budget",
+                "counterexample_probe": {
+                    "probe_id": "fixture-negative-probe",
+                    "probe_input_sha256": "1" * 64,
+                    "executed": True,
+                    "counterexample_found": False,
+                    "evidence_sha256": "2" * 64,
+                },
+                "bounded_completion": {
+                    "completion_condition": "assigned slice",
+                    "work_budget": {"unit": "fixture-step", "limit": 10},
+                    "proposed_mechanism": "bounded fixture mechanism",
+                    "mechanism_satisfies": True,
+                    "evidence_sha256": "3" * 64,
+                },
+                "unresolved_assumptions": [],
+                "owner_decision": "dispatch",
+            },
         },
         "preexisting_dirty": [
             {
@@ -172,6 +192,7 @@ class CompatibilityStateTests(unittest.TestCase):
             "review_continuation": None,
             "closed_registries": [],
             "relation_contracts": [],
+            "capsule_feasibility_attestation": None,
         }
         value = capsule(
             assignment,
@@ -214,6 +235,7 @@ class CompatibilityStateTests(unittest.TestCase):
             "review_continuation": None,
             "closed_registries": [],
             "relation_contracts": [],
+            "capsule_feasibility_attestation": None,
         }
         value["capsule_sha256"] = capsule_sha256(value)
 
@@ -250,6 +272,7 @@ class CompatibilityStateTests(unittest.TestCase):
         execution.update(
             {
                 "posture": "strict_read_only",
+                "capsule_feasibility_attestation": None,
                 "review_range": {"base_oid": "9" * 64, "head_oid": "a" * 64},
                 "required_invariants": ["prior P1 findings receive a fresh adjudication"],
                 "review_continuation": {
@@ -330,6 +353,24 @@ class CompatibilityStateTests(unittest.TestCase):
         ] = "missing_is_ok"
         value["capsule_sha256"] = capsule_sha256(value)
         with self.assertRaisesRegex(CorruptState, "absence semantics"):
+            validate_capsule(value, assignment)
+
+    def test_direct_write_feasibility_decision_must_match_probe_budget_and_assumptions(self):
+        assignment = "implement the bounded assigned slice"
+        value = capsule(assignment)
+        feasibility = value["execution_contract"]["capsule_feasibility_attestation"]
+        feasibility["counterexample_probe"]["counterexample_found"] = True
+        value["capsule_sha256"] = capsule_sha256(value)
+
+        with self.assertRaisesRegex(CorruptState, "contradicts executable evidence"):
+            validate_capsule(value, assignment)
+
+        feasibility["counterexample_probe"]["counterexample_found"] = False
+        feasibility["unresolved_assumptions"] = [
+            {"assumption": "finite registry is complete", "blocking": True}
+        ]
+        value["capsule_sha256"] = capsule_sha256(value)
+        with self.assertRaisesRegex(CorruptState, "contradicts executable evidence"):
             validate_capsule(value, assignment)
 
     def test_keyed_pending_assignments_can_be_staged_concurrently(self):
