@@ -27,12 +27,28 @@ else:  # pragma: no cover - exercised by the Windows parity harness later
 SCHEMA = 2
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 GIT_OID_RE = re.compile(r"^(?:[0-9a-f]{40}|[0-9a-f]{64})$")
+PROVENANCE_FIELDS = {
+    "authoritative_input_owners",
+    "authoritative_input_roots",
+    "forbidden_caller_supplied_derived_facts",
+    "test_only_injection_seams",
+    "required_derivation_boundary",
+}
+PARENT_ADJUDICATION_FIELDS = {
+    "location_integrity",
+    "mutation_scope_integrity",
+    "verification_freshness",
+    "derivation_provenance_integrity",
+    "evidence_sha256",
+}
 STATE_KINDS = (
     "pending",
     "claimed",
     "active",
+    "reported",
     "consumed",
     "expired",
+    "lost",
     "quarantine",
     "unresolved",
 )
@@ -54,6 +70,14 @@ class AuthorityViolation(StateError):
     """A child requested authority outside its immutable capsule."""
 
 
+class MissingState(StateError):
+    """No state record matched an otherwise valid identity."""
+
+
+class AmbiguousState(StateError):
+    """More than one state record matched an identity."""
+
+
 def canonical_json(value: object) -> bytes:
     return json.dumps(
         value,
@@ -71,6 +95,33 @@ def capsule_sha256(capsule: Mapping[str, object]) -> str:
     unsigned = dict(capsule)
     unsigned.pop("capsule_sha256", None)
     return sha256_bytes(canonical_json(unsigned))
+
+
+def compact_invariant(capsule: Mapping[str, object]) -> dict:
+    """Derive the small authority subset that must survive context recovery."""
+    return {
+        "assignment_id": capsule["assignment_id"],
+        "handoff_id": capsule["handoff_id"],
+        "runtime_session_id": capsule["runtime_session_id"],
+        "parent_thread_id": capsule["parent_thread_id"],
+        "agent_type": capsule["agent_type"],
+        "requested_task_name": capsule["requested_task_name"],
+        "canonical_agent_path": capsule["canonical_agent_path"],
+        "root": capsule["root"],
+        "owned_paths": capsule["owned_paths"],
+        "excluded_paths": capsule["excluded_paths"],
+        "git_authority": capsule["git_authority"],
+        "stop_condition": capsule["stop_condition"],
+        "authority_provenance": capsule["authority_provenance"],
+    }
+
+
+def compact_invariant_sha256(capsule: Mapping[str, object]) -> str:
+    return sha256_bytes(canonical_json(compact_invariant(capsule)))
+
+
+def provenance_policy_sha256(capsule: Mapping[str, object]) -> str:
+    return sha256_bytes(canonical_json(capsule["authority_provenance"]))
 
 
 def _timestamp(value: object, field: str) -> dt.datetime:
@@ -173,6 +224,39 @@ def validate_capsule(capsule: object, assignment: str) -> dict:
     ):
         raise CorruptState("verification must contain only non-empty strings")
 
+    provenance = capsule.get("authority_provenance")
+    if not isinstance(provenance, dict) or set(provenance) != PROVENANCE_FIELDS:
+        raise CorruptState("authority_provenance fields are not exact")
+    for field in (
+        "authoritative_input_owners",
+        "forbidden_caller_supplied_derived_facts",
+    ):
+        values = provenance[field]
+        if (
+            not isinstance(values, list)
+            or not values
+            or any(not isinstance(item, str) or not item.strip() for item in values)
+            or len(values) != len(set(values))
+        ):
+            raise CorruptState(f"authority_provenance.{field} is invalid")
+    _relative_paths(
+        provenance["authoritative_input_roots"],
+        "authority_provenance.authoritative_input_roots",
+    )
+    if not provenance["authoritative_input_roots"]:
+        raise CorruptState("authority_provenance.authoritative_input_roots is empty")
+    seams = provenance["test_only_injection_seams"]
+    if (
+        not isinstance(seams, list)
+        or any(not isinstance(item, str) or not item.strip() for item in seams)
+        or len(seams) != len(set(seams))
+    ):
+        raise CorruptState("authority_provenance.test_only_injection_seams is invalid")
+    _nonempty_string(
+        provenance["required_derivation_boundary"],
+        "authority_provenance.required_derivation_boundary",
+    )
+
     dirty = capsule.get("preexisting_dirty")
     if not isinstance(dirty, list):
         raise CorruptState("preexisting_dirty must be a list")
@@ -181,7 +265,13 @@ def validate_capsule(capsule: object, assignment: str) -> dict:
             raise CorruptState("preexisting_dirty entries must be objects")
         _relative_paths([item.get("path")], "preexisting_dirty.path")
         _nonempty_string(item.get("status"), "preexisting_dirty.status")
-        if not isinstance(item.get("sha256"), str) or not SHA256_RE.fullmatch(item["sha256"]):
+        if item.get("kind") not in {"file", "symlink", "deleted"}:
+            raise CorruptState("preexisting_dirty.kind is invalid")
+        digest = item.get("sha256")
+        if item["kind"] == "deleted":
+            if digest is not None:
+                raise CorruptState("deleted preexisting_dirty.sha256 must be null")
+        elif not isinstance(digest, str) or not SHA256_RE.fullmatch(digest):
             raise CorruptState("preexisting_dirty.sha256 must be lowercase SHA-256")
 
     created_at = _timestamp(capsule.get("created_at"), "created_at")
@@ -305,6 +395,43 @@ class StateStore:
             pending.unlink()
             return claimed
 
+    def claim_unique(self, identity: Mapping[str, str]) -> tuple[str, pathlib.Path]:
+        matches: list[tuple[str, pathlib.Path, dict]] = []
+        now = dt.datetime.now(dt.timezone.utc)
+        with self.locked():
+            pending_directory = self.root / "pending"
+            if not pending_directory.exists():
+                raise MissingState("expected one pending authority capsule, found 0")
+            for pending in sorted(pending_directory.glob("*.json")):
+                try:
+                    envelope = self._validated_envelope(pending)
+                except CorruptState:
+                    self._quarantine(pending)
+                    continue
+                capsule = envelope["capsule"]
+                if _timestamp(capsule["expires_at"], "expires_at") <= now:
+                    expired = self.path("expired", capsule["handoff_id"])
+                    self._publish(expired, envelope)
+                    pending.unlink()
+                    continue
+                try:
+                    self._assert_identity(capsule, identity)
+                except IdentityMismatch:
+                    continue
+                matches.append((capsule["handoff_id"], pending, envelope))
+            if not matches:
+                raise MissingState("expected one pending authority capsule, found 0")
+            if len(matches) > 1:
+                raise AmbiguousState(
+                    f"expected one pending authority capsule, found {len(matches)}"
+                )
+            handoff_id, pending, envelope = matches[0]
+            envelope["binding"] = dict(identity)
+            claimed = self.path("claimed", handoff_id)
+            self._publish(claimed, envelope)
+            pending.unlink()
+            return handoff_id, claimed
+
     def activate(self, handoff_id: str) -> pathlib.Path:
         claimed = self.path("claimed", handoff_id)
         with self.locked():
@@ -392,7 +519,7 @@ class StateStore:
         with self.locked():
             active_directory = self.root / "active"
             if not active_directory.exists():
-                raise StateError("no active authority capsule matches the child")
+                raise MissingState("expected one active authority capsule, found 0")
             for path in sorted(active_directory.glob("*.json")):
                 try:
                     envelope = self._validated_envelope(path)
@@ -406,9 +533,11 @@ class StateStore:
                 except IdentityMismatch:
                     continue
                 matches.append((envelope["capsule"]["assignment_id"], envelope))
-            if len(matches) != 1:
-                raise StateError(
-                    f"expected exactly one active authority capsule, found {len(matches)}"
+            if not matches:
+                raise MissingState("expected one active authority capsule, found 0")
+            if len(matches) > 1:
+                raise AmbiguousState(
+                    f"expected one active authority capsule, found {len(matches)}"
                 )
             return matches[0]
 
@@ -423,11 +552,72 @@ class StateStore:
         with self.locked():
             envelope = self._validated_envelope(active)
             envelope["final_attestation"] = dict(attestation)
-            disposition = "consumed" if complete else "unresolved"
+            disposition = "reported" if complete else "unresolved"
             final = self.path(disposition, assignment_id)
             self._publish(final, envelope)
             active.unlink()
             return final
+
+    def adjudicate_parent(
+        self,
+        assignment_id: str,
+        adjudication: Mapping[str, object],
+    ) -> pathlib.Path:
+        """Promote a report only from the trusted parent integration boundary."""
+        if not isinstance(adjudication, Mapping) or set(adjudication) != PARENT_ADJUDICATION_FIELDS:
+            raise StateError("parent adjudication fields are not exact")
+        integrity_fields = PARENT_ADJUDICATION_FIELDS - {"evidence_sha256"}
+        for field in integrity_fields:
+            if adjudication[field] not in {"pass", "fail", "unverified"}:
+                raise StateError(f"parent adjudication {field} is invalid")
+        evidence_sha256 = adjudication["evidence_sha256"]
+        if not isinstance(evidence_sha256, str) or not SHA256_RE.fullmatch(evidence_sha256):
+            raise StateError("parent adjudication evidence_sha256 is invalid")
+        reported = self.path("reported", assignment_id)
+        with self.locked():
+            envelope = self._validated_envelope(reported)
+            envelope["parent_adjudication"] = dict(adjudication)
+            complete = all(adjudication[field] == "pass" for field in integrity_fields)
+            final = self.path("consumed" if complete else "unresolved", assignment_id)
+            self._publish(final, envelope)
+            reported.unlink()
+            return final
+
+    def record_context_lost(
+        self,
+        identity: Mapping[str, str],
+        reason: str,
+    ) -> pathlib.Path:
+        if not reason.strip():
+            raise StateError("context-lost reason must not be blank")
+        marker_id = sha256_bytes(canonical_json(dict(identity)))
+        target = self.path("lost", marker_id)
+        marker = {
+            "schema": 1,
+            "identity": dict(identity),
+            "reason": reason,
+            "created_at": dt.datetime.now(dt.timezone.utc).isoformat(),
+        }
+        with self.locked():
+            self._publish(target, marker, replace=True)
+        return target
+
+    def context_lost_for(self, identity: Mapping[str, str]) -> dict | None:
+        marker_id = sha256_bytes(canonical_json(dict(identity)))
+        target = self.path("lost", marker_id)
+        with self.locked():
+            if not target.exists():
+                return None
+            marker = self._read(target)
+            if (
+                marker.get("schema") != 1
+                or marker.get("identity") != dict(identity)
+                or not isinstance(marker.get("reason"), str)
+                or not marker["reason"].strip()
+            ):
+                self._quarantine(target)
+                raise CorruptState("context-lost marker is invalid")
+            return marker
 
     @staticmethod
     def _assert_identity(

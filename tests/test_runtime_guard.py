@@ -128,6 +128,13 @@ class RuntimeGuardTests(unittest.TestCase):
             "git_authority": {"stage": False, "commit": False, "branch": False, "push": False},
             "stop_condition": "assigned slice completion only",
             "verification": ["fixture verification"],
+            "authority_provenance": {
+                "authoritative_input_owners": ["fixture.owner"],
+                "authoritative_input_roots": ["inputs"],
+                "forbidden_caller_supplied_derived_facts": ["oracle_obligations"],
+                "test_only_injection_seams": ["fixture.inject_oracle"],
+                "required_derivation_boundary": "fixture.owner.derive",
+            },
             "preexisting_dirty": [],
             "assignment_sha256": sha256_bytes(self.assignment.encode("utf-8")),
             "created_at": now.isoformat(),
@@ -165,6 +172,17 @@ class RuntimeGuardTests(unittest.TestCase):
             "assignment_id": self.capsule["assignment_id"],
             "handoff_id": self.capsule["handoff_id"],
             "capsule_sha256": self.capsule["capsule_sha256"],
+            "compact_invariant_sha256": compatibility_state.compact_invariant_sha256(
+                self.capsule
+            ),
+            "authority_provenance": {
+                "policy_sha256": compatibility_state.provenance_policy_sha256(
+                    self.capsule
+                ),
+                "worker_claimed_origin": "owner_internal",
+                "test_only_injection_used": False,
+                "derivation_receipt_sha256": "d" * 64,
+            },
             "canonical_agent_path": "/root/bounded_task",
             "recovery_count": 0,
             "context_lost": False,
@@ -264,7 +282,7 @@ class RuntimeGuardTests(unittest.TestCase):
         self.assertEqual(result["hookSpecificOutput"]["permissionDecision"], "deny")
         self.assertIn("found 2", result["hookSpecificOutput"]["permissionDecisionReason"])
 
-    def test_subagent_stop_accepts_exact_disk_attestation_and_consumes_state(self):
+    def test_subagent_stop_accepts_exact_disk_attestation_as_untrusted_report(self):
         (self.repository / "owned").mkdir()
         (self.repository / "owned" / "result.txt").write_text("result\n", encoding="utf-8")
         message = self.attestation()
@@ -273,7 +291,7 @@ class RuntimeGuardTests(unittest.TestCase):
 
         self.assertEqual(result, {})
         self.assertFalse(self.store.path("active", self.capsule["assignment_id"]).exists())
-        self.assertTrue(self.store.path("consumed", self.capsule["assignment_id"]).exists())
+        self.assertTrue(self.store.path("reported", self.capsule["assignment_id"]).exists())
 
     def test_subagent_stop_blocks_slice_overclaim_shape(self):
         message = self.attestation()
@@ -286,6 +304,21 @@ class RuntimeGuardTests(unittest.TestCase):
         self.assertEqual(result["decision"], "block")
         self.assertIn("fields are not exact", result["reason"])
 
+    def test_subagent_stop_blocks_complete_claim_using_test_only_provenance(self):
+        message = self.attestation()
+        parsed = json.loads(message.split("\n", 1)[1].rsplit("\n", 1)[0])
+        parsed["authority_provenance"]["test_only_injection_used"] = True
+        claim = (
+            "BEGIN CODEX WORKER ATTESTATION\n"
+            + json.dumps(parsed)
+            + "\nEND CODEX WORKER ATTESTATION"
+        )
+
+        result = runtime_guard.subagent_stop(self.store, self.stop_hook(claim))
+
+        self.assertEqual(result["decision"], "block")
+        self.assertIn("inadmissible provenance claim", result["reason"])
+
     def test_subagent_stop_blocks_no_assignment_narrative_and_retains_active_state(self):
         result = runtime_guard.subagent_stop(
             self.store,
@@ -294,6 +327,24 @@ class RuntimeGuardTests(unittest.TestCase):
 
         self.assertEqual(result["decision"], "block")
         self.assertTrue(self.store.path("active", self.capsule["assignment_id"]).exists())
+
+    def test_disk_mutation_without_durable_capsule_cannot_be_completed_by_narrative(self):
+        self.store.finalize(self.capsule["assignment_id"], {}, complete=True)
+        (self.repository / "owned").mkdir()
+        (self.repository / "owned" / "long-run-result.txt").write_text(
+            "real bytes after one-shot authority was lost\n",
+            encoding="utf-8",
+        )
+
+        result = runtime_guard.subagent_stop(
+            self.store,
+            self.stop_hook("Implementation complete; hashes and tests passed."),
+        )
+
+        self.assertEqual(result["decision"], "block")
+        self.assertIn("expected one active authority capsule", result["reason"])
+        self.assertTrue((self.repository / "owned" / "long-run-result.txt").exists())
+        self.assertFalse(self.store.path("consumed", self.capsule["assignment_id"]).exists())
 
     def test_context_lost_attestation_returns_unresolved_evidence(self):
         message = self.attestation(
@@ -323,6 +374,18 @@ class RuntimeGuardTests(unittest.TestCase):
             "authority_violation" in result["reason"]
             or "attestation mismatch" in result["reason"]
         )
+
+    def test_subagent_stop_blocks_unauthorized_staging(self):
+        (self.repository / "owned").mkdir()
+        (self.repository / "owned" / "result.txt").write_text("result\n", encoding="utf-8")
+        self.git("add", "owned/result.txt")
+
+        result = runtime_guard.subagent_stop(
+            self.store, self.stop_hook(self.attestation(authority_violation=False))
+        )
+
+        self.assertEqual(result["decision"], "block")
+        self.assertIn("authority_violation", result["reason"])
 
     def test_truthful_authority_violation_returns_unresolved_evidence(self):
         (self.repository / "outside.txt").write_text("unauthorized\n", encoding="utf-8")

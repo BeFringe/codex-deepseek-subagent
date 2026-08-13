@@ -18,6 +18,11 @@ continuity for an external worker, and worker-specific provider wire
 compatibility. Assignment transport, wire transport, and request normalization
 are orthogonal and must remain independently replaceable.
 
+Authority continuity and artifact causal provenance are also orthogonal.
+SessionMeta, Git state, paths, and content hashes prove where and when bytes
+changed; they do not prove that a PASS was derived from the authoritative input
+owner instead of caller-injected, internally self-consistent derived facts.
+
 ## Four compatibility layers
 
 ### A. Agent/runtime identity
@@ -66,6 +71,12 @@ GLM-family normalization profile; ZHIPU is the provider, not the model family.
 Credentials never enter a handoff, capsule, log, or commit. A profile cannot
 enlarge the live Codex permission boundary.
 
+A Phase 2 profile may only declare whether a worker/provider supports this
+provenance contract and the required runtime posture. Authoritative owners,
+derived facts, and the real/test boundary remain assignment-capsule authority;
+the provider profile must not default, infer, or normalize them. Wire conversion
+cannot promote a provider-returned digest or PASS into provenance proof.
+
 ## Immutable boundary capsule
 
 The schema 2 capsule contains at least:
@@ -77,13 +88,25 @@ The schema 2 capsule contains at least:
 - owned and excluded paths;
 - explicit stage/commit/branch/push authority;
 - stop condition and exact verification contract;
-- pre-existing dirty statuses and content hashes;
+- an authority-provenance policy naming authoritative input owners/roots,
+  forbidden caller-supplied derived facts, explicit test-only seams, and the
+  required owner-internal recomputation boundary;
+- pre-existing dirty statuses, file kinds, and content hashes (null only for a
+  deleted path);
 - assignment hash, timestamps, and a canonical capsule hash.
 
 `assignment_id` is immutable authority; `handoff_id` is one delivery attempt.
 The canonical path is bound only after runtime metadata proves it. Recovery may
 create a new, explicitly linked assignment over a frozen dirty baseline; it may
 not replay a consumed handoff or mutate the old capsule to expand authority.
+A digest over attacker-selected derived inputs is necessary consistency
+evidence, never sufficient provenance evidence.
+
+Recovery context starts with a deterministic compact invariant containing exact
+runtime/child/parent identity, root/base, owned and excluded paths, Git
+authority, authoritative input roots, stop condition, and completion predicate.
+The full capsule and assignment remain in durable state; the compact copy cannot
+replace or expand them.
 
 ## State lifecycle
 
@@ -91,6 +114,7 @@ not replay a consumed handoff or mutate the old capsule to expand authority.
 pending/<handoff_id>.json
   -> claimed/<handoff_id>.json
   -> active/<assignment_id>.json
+  -> reported/<assignment_id>.json
   -> consumed/<assignment_id>.json
 ```
 
@@ -99,6 +123,8 @@ without consuming or quarantining valid state. Only corrupt/untrusted state is
 quarantined. The active authority copy remains until an accepted final
 attestation or safe expiry; an expired capsule with writes becomes unresolved
 evidence rather than being silently deleted.
+`reported` means only that the callback and contribution were recorded. Only a
+trusted parent adjudication can move it to `consumed`.
 
 ## Exact runtime binding
 
@@ -121,6 +147,18 @@ transcript and jointly prove:
 Zero or multiple matches fail closed. A bounded retry is allowed only if a live
 probe demonstrates a transient flush race followed by a unique identity.
 
+### Why an assignment cannot repair outer-runtime invisibility
+
+An assignment or capsule is model input, not outer runtime mediation. It cannot
+make `write_stdin` emit a missing second PreToolUse, decompose opaque Bash into
+complete path/Git effects, add a trustworthy side-effect schema to arbitrary
+MCP/dynamic/custom/freeform tools, wrap the code-mode outer executor, or protect
+same-UID writable rollout/state files. Repeating “do not write or commit” states
+intent but cannot prove or block a mutation the control plane cannot see, and
+the narrative can be lost after compaction. Any uncovered negative space keeps
+direct write unqualified/read-only until a runtime or sandbox boundary proves a
+block.
+
 ## Compact/resume and final gates
 
 Prompt-level `TASK.CONTEXT_LOST` is not the runtime guarantee. PreCompact records
@@ -131,14 +169,30 @@ blocks new writes and scope expansion.
 
 SubagentStop requires a machine-checkable attestation containing assignment and
 handoff ids, capsule hash, canonical path, recovery count, resolved Git state,
+compact-invariant hash,
 exact changed-path hashes, verification commands/exit codes, violation status,
-and `assigned_slice_complete`. The child cannot promote that last field into a
+Git index-change status, and `assigned_slice_complete`. The child cannot promote that last field into a
 parent-task or feature-completion claim.
+It also returns a small provenance claim: the policy hash, claimed derived-fact
+origin, whether a test-only seam was used, and an optional receipt digest.
 
 If a final narrative says no assignment or no writes while consumed transport
 state and disk hashes prove owned-path changes, classify it as return-context
 loss. Freeze and freshly verify the contribution. Parent/disk/capsule evidence
 outranks narrative, but missing attestation is never a completion proof.
+
+Successful SubagentStop adjudication advances only to `reported`. The parent
+separately decides location integrity, mutation-scope integrity, verification
+freshness, and derivation/provenance integrity. A self-consistent digest over
+caller-chosen derived facts can still self-authorize a false PASS. Only fresh
+verification plus source-level causal review of an owner-internal real-mode
+derivation can advance to `consumed`. Expensive authoritative derivation may be
+computed once and shared across outputs only inside that owner boundary;
+test-only injection seams remain explicitly non-final. Worker tests and hashes
+are contribution evidence, not integration authority.
+The provenance output is still a worker claim. The Hook can match its policy
+hash and reject an explicit caller/test-only completion, but cannot prove the
+child is truthful; the parent must revalidate any receipt at the owner boundary.
 
 ## Phase 1 probes and gates
 
@@ -146,10 +200,11 @@ outranks narrative, but missing attestation is never a completion proof.
 |---|---|---|
 | P1 spawn capture | exact message, pass/block, non-target pass, no input rewrite | block Phase 1 |
 | P2 identity/flush | root/nested, serial/concurrent, POSIX and Windows-equivalent evidence | no weak next-role fallback |
-| P3 lifecycle | pending→claimed→active→consumed, expiry and crash recovery | no deletion after initial delivery |
+| P3 lifecycle | pending→claimed→active→reported→consumed, expiry and crash recovery | no deletion after initial delivery |
 | P4 write guard | shell, patch, code-mode nested tools, MCP/write apps, Git | read-only posture if any bypass exists |
 | P5 recovery | compact after a correct initial write; path/Git expansion attempts | any unauthorized write fails the gate |
 | P6 final gate | context-loss narrative, slice overclaim, disk-hash mismatch | wrong final must be blocked |
+| P6a causal provenance | digest-valid forged facts, real-mode test seam, owner-internal shared derivation | caller self-authorization must fail |
 | P7 parity/regression | POSIX/Windows and existing DeepSeek route | all green before Phase 2 |
 
 Phase 2 cannot start until P1–P7 and live evidence close the Phase 1 gate. Phase
