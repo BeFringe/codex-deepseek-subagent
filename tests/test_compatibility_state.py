@@ -53,8 +53,20 @@ def capsule(assignment, **overrides):
         },
         "stop_condition": "assigned slice completion only",
         "verification": ["run the provider-free fixture"],
+        "authority_provenance": {
+            "authoritative_input_owners": ["fixture.owner"],
+            "authoritative_input_roots": ["inputs"],
+            "forbidden_caller_supplied_derived_facts": ["oracle_obligations"],
+            "test_only_injection_seams": ["fixture.inject_oracle"],
+            "required_derivation_boundary": "fixture.owner.derive",
+        },
         "preexisting_dirty": [
-            {"path": "owned/user.txt", "status": " M", "sha256": "b" * 64}
+            {
+                "path": "owned/user.txt",
+                "status": " M",
+                "kind": "file",
+                "sha256": "b" * 64,
+            }
         ],
         "assignment_sha256": sha256_bytes(assignment.encode("utf-8")),
         "created_at": now.isoformat(),
@@ -228,6 +240,42 @@ class CompatibilityStateTests(unittest.TestCase):
             self.store.stage(value, assignment)
 
         self.assertFalse(self.store.path("pending", value["handoff_id"]).exists())
+
+    def test_parent_adjudication_requires_all_four_integrity_dimensions(self):
+        value, _ = self.activate()
+        reported = self.store.finalize(value["assignment_id"], {}, complete=True)
+        self.assertEqual(reported.parent.name, "reported")
+
+        unresolved = self.store.adjudicate_parent(
+            value["assignment_id"],
+            {
+                "location_integrity": "pass",
+                "mutation_scope_integrity": "pass",
+                "verification_freshness": "pass",
+                "derivation_provenance_integrity": "fail",
+                "evidence_sha256": "c" * 64,
+            },
+        )
+
+        self.assertEqual(unresolved.parent.name, "unresolved")
+        self.assertFalse(self.store.path("consumed", value["assignment_id"]).exists())
+
+    def test_parent_adjudication_promotes_only_all_pass_report(self):
+        value, _ = self.activate("integrate only after fresh parent evidence")
+        self.store.finalize(value["assignment_id"], {}, complete=True)
+
+        consumed = self.store.adjudicate_parent(
+            value["assignment_id"],
+            {
+                "location_integrity": "pass",
+                "mutation_scope_integrity": "pass",
+                "verification_freshness": "pass",
+                "derivation_provenance_integrity": "pass",
+                "evidence_sha256": "d" * 64,
+            },
+        )
+
+        self.assertEqual(consumed.parent.name, "consumed")
 
 
 if __name__ == "__main__":

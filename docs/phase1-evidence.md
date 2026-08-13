@@ -59,6 +59,9 @@ Each synthetic PreToolUse also derives the actual Git top level, branch, HEAD,
 status, changed paths, and content hashes from the Hook cwd. Tests mutate HEAD
 and an out-of-scope path after recovery and prove the next otherwise read-only
 tool call is denied; the guard does not accept capsule values as self-evidence.
+The successful PreToolUse context is rebuilt from active state and includes the
+complete immutable capsule plus the exact original assignment, not only an id
+or narrative reminder.
 
 The probe corrected an earlier identity assumption: Hook `session_id` is the
 runtime session shared by root and descendants, not the child ThreadId. Exact
@@ -71,7 +74,7 @@ mutation surface is not qualified.
 
 The synthetic SubagentStop gate accepts only an exact, standalone JSON
 attestation envelope. It computes the actual Git top level, branch, HEAD,
-short status, changed-path set, file kind, and SHA-256 hashes. Extra completion
+short status, index-change state, changed-path set, file kind, and SHA-256 hashes. Extra completion
 claims, unauthorized commits, stale hashes, out-of-scope paths, and identity
 mismatch block the final return and retain active evidence. Verification command
 identity must exactly match the capsule, and a complete claim requires zero exit
@@ -79,11 +82,89 @@ codes.
 
 A truthful incomplete, context-lost, or authority-violation attestation is not
 promoted to completion: it returns to the parent with the actual disk snapshot
-and moves the capsule to unresolved evidence. Only an exact, complete,
-non-violating attestation reaches consumed state.
+and moves the capsule to unresolved evidence. An exact, complete,
+non-violating attestation reaches reported state, not integration authority.
 
 This is still not a live guarantee. In particular, SessionMeta and capsule
 state are trustworthy only if the child permission boundary cannot modify the
 rollout or state directory. POSIX mode bits do not isolate two processes using
 the same OS account. Until a live sandbox probe proves that boundary, direct
 write remains unqualified/read-only.
+
+`probes/check_state_trust.py` makes that negative result executable without
+touching the live install. It creates mode-0700/0600 disposable state and
+rollout fixtures, then launches a separate same-UID process. On the current
+POSIX host both files were overwritten successfully:
+
+```json
+{"direct_write_qualified":false,"same_uid_rollout_protected":false,"same_uid_state_protected":false}
+```
+
+This does not claim that a live child will attack those files; it proves that
+mode bits alone are not the required trust boundary. `--require-protected`
+therefore exits 2.
+
+## Isolated plaintext-v2 capture fixture
+
+`hooks/assignment_transport.py` removes manual staging from the candidate
+protocol. A targeted parent PreToolUse captures the actual V2 `spawn_agent`
+message, requested task name, agent type, fork mode, shared runtime session,
+parent ThreadId/AgentPath, tool-use id, Git root/branch/HEAD, and pre-existing
+dirty path kinds/hashes. It never returns `updatedInput`, so the native message
+remains the assignment source.
+
+The self-contained spawn message must terminate with one strict, provider-free
+`BEGIN/END CODEX WORKER AUTHORITY` JSON declaration. The declaration supplies
+only owned/excluded paths, Git authority, stop condition, verification contract,
+authority-provenance policy, and TTL. Runtime ids, repository facts, assignment/hash ids, and expected child
+AgentPath are added by the trusted parent Hook. Unknown fields—including any
+credential field—block spawn.
+
+SubagentStart reconstructs child identity from SessionMeta, finds exactly one
+keyed pending capsule, and moves it through claimed to active before delivering
+the compatibility copy. Wrong child identity preserves pending state. Root,
+nested, serial, and concurrent behavior are covered by isolated fixtures; live
+flush timing and sandbox trust are still open gates.
+
+Because Codex 0.147.0 treats SubagentStart as context-injection-only, that Hook
+cannot cancel a child after a binding failure. The isolated adapter records an
+exact child-identity `lost` marker, denies every subsequent tool for lack of an
+active capsule, and permits only the literal `TASK.CONTEXT_LOST` final return.
+The intended assignment remains pending for its correct child.
+
+`hooks/compatibility_hook.py` is an executable isolated entry point spanning
+parent PreToolUse capture, SubagentStart claim, child PreToolUse re-attestation,
+PreCompact recovery epoch, and SubagentStop adjudication. It requires an
+explicit state directory and target agent-type list and is not referenced by
+the installer or live configuration. Its end-to-end fixture confirms the state
+path reaches reported only after an exact post-recovery final attestation.
+
+The lifecycle now distinguishes a worker report from parent integration. A
+trusted parent adjudication must separately pass location integrity,
+mutation-scope integrity, verification freshness, and derivation/provenance
+integrity before reported state can become consumed. Any fail or unverified
+dimension moves the report to unresolved evidence.
+
+## Causal-provenance negative fixtures
+
+`hooks/provenance_guard.py` models a separate owner boundary. Its negative
+fixture builds an artifact whose payload, caller-supplied oracle facts, and
+digest are all internally self-consistent, then proves real-mode adjudication
+still rejects it because the derived-fact origin is the caller. A second
+fixture rejects an explicitly test-only injection seam in real mode. The
+positive reference computes an expensive authoritative derivation exactly once
+and shares it across two outputs only inside one owner-internal operation.
+
+The real-mode API accepts only raw authoritative input; it has no parameter for
+precomputed derived facts or a caller-claimed origin. Its owner-internal
+operation recomputes derived facts and compares the entire candidate output.
+The separate test-only API marks injected artifacts `non_final`. Parsing origin
+from a worker narrative would recreate the same self-authorization flaw. The
+compatibility capsule freezes owners, input roots, forbidden derived facts,
+test-only seams, and the recomputation boundary; parent source-level review and
+fresh evidence remain the integration authority.
+
+The long-run context-loss fixture removes the only active capsule, leaves a real
+owned-path disk mutation, and presents a completion narrative. SubagentStop
+blocks it: real bytes are contribution evidence, but neither the narrative nor
+their hashes restore the missing authority chain.

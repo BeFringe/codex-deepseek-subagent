@@ -12,7 +12,16 @@ import re
 import subprocess
 from typing import Mapping
 
-from compatibility_state import AuthorityViolation, IdentityMismatch, StateError, StateStore
+from compatibility_state import (
+    AuthorityViolation,
+    compact_invariant,
+    compact_invariant_sha256,
+    IdentityMismatch,
+    MissingState,
+    provenance_policy_sha256,
+    StateError,
+    StateStore,
+)
 
 
 MAX_SESSION_META_LINE = 1024 * 1024
@@ -156,7 +165,16 @@ def pre_tool_use(store: StateStore, hook_input: Mapping[str, object]) -> dict:
             "AUTHORITY.REATTESTED "
             f"assignment_id={assignment_id} "
             f"capsule_sha256={capsule['capsule_sha256']} "
-            f"recovery_count={recovery_count}"
+            f"recovery_count={recovery_count}\n"
+            "BEGIN CODEX WORKER COMPACT INVARIANT\n"
+            f"{json.dumps(compact_invariant(capsule), ensure_ascii=False, separators=(',', ':'), sort_keys=True)}\n"
+            "END CODEX WORKER COMPACT INVARIANT\n"
+            "BEGIN CODEX WORKER CAPSULE\n"
+            f"{json.dumps(capsule, ensure_ascii=False, separators=(',', ':'), sort_keys=True)}\n"
+            "END CODEX WORKER CAPSULE\n"
+            "BEGIN PARENT ASSIGNMENT\n"
+            f"{envelope['assignment']}\n"
+            "END PARENT ASSIGNMENT"
         )
         return {
             "hookSpecificOutput": {
@@ -197,12 +215,15 @@ def parse_attestation(message: object) -> dict:
         "assignment_id",
         "handoff_id",
         "capsule_sha256",
+        "compact_invariant_sha256",
+        "authority_provenance",
         "canonical_agent_path",
         "recovery_count",
         "context_lost",
         "root",
         "branch",
         "head",
+        "index_changed",
         "git_status_short",
         "changed_paths",
         "verification",
@@ -213,11 +234,33 @@ def parse_attestation(message: object) -> dict:
         raise GuardError("final attestation fields are not exact")
     if type(value["recovery_count"]) is not int or value["recovery_count"] < 0:
         raise GuardError("recovery_count must be a non-negative integer")
-    for field in ("context_lost", "authority_violation", "assigned_slice_complete"):
+    for field in (
+        "context_lost",
+        "index_changed",
+        "authority_violation",
+        "assigned_slice_complete",
+    ):
         if type(value[field]) is not bool:
             raise GuardError(f"{field} must be boolean")
     if not isinstance(value["changed_paths"], list) or not isinstance(value["verification"], list):
         raise GuardError("changed_paths and verification must be lists")
+    provenance = value["authority_provenance"]
+    if not isinstance(provenance, dict) or set(provenance) != {
+        "policy_sha256",
+        "worker_claimed_origin",
+        "test_only_injection_used",
+        "derivation_receipt_sha256",
+    }:
+        raise GuardError("final authority_provenance fields are not exact")
+    if provenance["worker_claimed_origin"] not in {"owner_internal", "caller", "unknown"}:
+        raise GuardError("worker_claimed_origin is invalid")
+    if type(provenance["test_only_injection_used"]) is not bool:
+        raise GuardError("test_only_injection_used must be boolean")
+    receipt_sha256 = provenance["derivation_receipt_sha256"]
+    if receipt_sha256 is not None and (
+        not isinstance(receipt_sha256, str) or not re.fullmatch(r"[0-9a-f]{64}", receipt_sha256)
+    ):
+        raise GuardError("derivation_receipt_sha256 is invalid")
     return value
 
 
@@ -240,6 +283,14 @@ def collect_git_snapshot(root_value: str) -> dict:
     branch_bytes = _git(root, "symbolic-ref", "--short", "-q", "HEAD", allow_code_one=True)
     branch = branch_bytes.decode("utf-8").strip() or None
     status = _git(root, "status", "--short", "--untracked-files=all").decode("utf-8").rstrip("\n")
+    index_result = subprocess.run(
+        ["git", "-C", str(root), "diff", "--cached", "--quiet", "--exit-code", "--"],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.PIPE,
+        check=False,
+    )
+    if index_result.returncode not in {0, 1}:
+        raise GuardError("Git index snapshot failed")
     tracked = _git(root, "diff", "--name-only", "-z", "HEAD", "--")
     untracked = _git(root, "ls-files", "--others", "--exclude-standard", "-z")
     try:
@@ -270,6 +321,7 @@ def collect_git_snapshot(root_value: str) -> dict:
         "root": str(root),
         "branch": branch,
         "head": head,
+        "index_changed": index_result.returncode == 1,
         "git_status_short": status,
         "changed_paths": changed_paths,
     }
@@ -286,14 +338,19 @@ def _snapshot_authority_violations(
         violations.append("final branch does not match the capsule")
     if not expected_root["allow_descendant_head"] and snapshot["head"] != expected_root["base_commit"]:
         violations.append("final HEAD changed without authority")
+    if snapshot["index_changed"] and not capsule["git_authority"]["stage"]:
+        violations.append("final Git index changed without stage authority")
     owned = capsule["owned_paths"]
     excluded = capsule["excluded_paths"]
-    preexisting = {item["path"]: item["sha256"] for item in capsule["preexisting_dirty"]}
+    preexisting = {
+        item["path"]: (item["kind"], item["sha256"])
+        for item in capsule["preexisting_dirty"]
+    }
     for item in snapshot["changed_paths"]:
         path = item["path"]
         in_owned = any(path == owner or path.startswith(owner + "/") for owner in owned)
         in_excluded = any(path == excluded_path or path.startswith(excluded_path + "/") for excluded_path in excluded)
-        unchanged_preexisting = preexisting.get(path) == item["sha256"]
+        unchanged_preexisting = preexisting.get(path) == (item["kind"], item["sha256"])
         if (not in_owned or in_excluded) and not unchanged_preexisting:
             violations.append(f"final disk contains unauthorized change: {path}")
     return violations
@@ -302,7 +359,14 @@ def _snapshot_authority_violations(
 def subagent_stop(store: StateStore, hook_input: Mapping[str, object]) -> dict:
     try:
         identity = child_identity_from_stop(hook_input)
-        assignment_id, envelope = store.find_active(identity)
+        try:
+            assignment_id, envelope = store.find_active(identity)
+        except MissingState:
+            lost = store.context_lost_for(identity)
+            message = hook_input.get("last_assistant_message")
+            if lost is not None and isinstance(message, str) and message.strip() == "TASK.CONTEXT_LOST":
+                return {}
+            raise
         capsule = envelope["capsule"]
         attestation = parse_attestation(hook_input.get("last_assistant_message"))
         snapshot = collect_git_snapshot(capsule["root"]["path"])
@@ -311,6 +375,7 @@ def subagent_stop(store: StateStore, hook_input: Mapping[str, object]) -> dict:
             "assignment_id": assignment_id,
             "handoff_id": capsule["handoff_id"],
             "capsule_sha256": capsule["capsule_sha256"],
+            "compact_invariant_sha256": compact_invariant_sha256(capsule),
             "canonical_agent_path": identity["canonical_agent_path"],
             "recovery_count": envelope["runtime"]["recovery_count"],
             **snapshot,
@@ -323,6 +388,14 @@ def subagent_stop(store: StateStore, hook_input: Mapping[str, object]) -> dict:
             raise GuardError("context-lost return cannot claim the assigned slice complete")
         if violations and attestation["assigned_slice_complete"]:
             raise GuardError("authority-violating return cannot claim the assigned slice complete")
+        provenance = attestation["authority_provenance"]
+        if provenance["policy_sha256"] != provenance_policy_sha256(capsule):
+            raise GuardError("final authority provenance policy hash does not match")
+        if attestation["assigned_slice_complete"] and (
+            provenance["worker_claimed_origin"] != "owner_internal"
+            or provenance["test_only_injection_used"]
+        ):
+            raise GuardError("complete return has an inadmissible provenance claim")
         if any(
             not isinstance(item, dict)
             or set(item) != {"command", "exit_code"}

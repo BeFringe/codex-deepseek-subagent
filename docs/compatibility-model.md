@@ -27,6 +27,10 @@ permissions、lifecycle、wait/callback、cancel 和 Multi-Agent V2 graph。本�
 assignment transport、wire transport、request profile 是三个正交维度。任一维度的
 上游修复都必须能单独替换或删除，不得迫使 OpenAI parent 或其他 worker 经过 bridge。
 
+authority continuity 与 artifact causal provenance 也是正交维度。SessionMeta、Git
+状态、路径和内容 hash 能证明 bytes 在哪里、何时发生变化，不能证明一个 PASS 是从
+authoritative input owner 派生，还是从 caller 注入但内部自洽的 derived facts 生成。
+
 ## 四层兼容模型
 
 ### A. Agent/runtime identity
@@ -73,6 +77,11 @@ worker 独立选择 `native`、`responses-direct` 或 `responses-bridge`，再�
 为 `glm-thinking`。credentials 不进入 handoff、capsule、日志或 Git，profile 也不能
 扩大 Codex 实际 permission boundary。
 
+Phase 2 profile 只能声明某 worker/provider 是否支持该 provenance contract 以及所需的
+runtime posture；authoritative input owner、derived facts 和 real/test boundary 仍属于每个
+assignment 的 capsule，不能被 provider profile 默认、推断或归一化。wire conversion 也
+不得把 provider 返回的 digest/PASS 提升为 provenance proof。
+
 ## 不可变 boundary capsule
 
 下列逻辑对象在 `PreToolUse(spawn_agent)` 时创建。序列化字段顺序固定，
@@ -107,8 +116,15 @@ worker 独立选择 `native`、`responses-direct` 或 `responses-bridge`，再�
   },
   "stop_condition": "assigned slice completion only",
   "verification": ["exact command or evidence contract"],
+  "authority_provenance": {
+    "authoritative_input_owners": ["owner boundary identifier"],
+    "authoritative_input_roots": ["repo-relative/input-root"],
+    "forbidden_caller_supplied_derived_facts": ["derived authority fact"],
+    "test_only_injection_seams": ["explicit non-final seam"],
+    "required_derivation_boundary": "owner-internal operation"
+  },
   "preexisting_dirty": [
-    {"path": "repo-relative/path", "status": " M", "sha256": "hex"}
+    {"path": "repo-relative/path", "status": " M", "kind": "file", "sha256": "hex-or-null"}
   ],
   "assignment_sha256": "hex",
   "created_at": "UTC timestamp",
@@ -125,7 +141,15 @@ worker 独立选择 `native`、`responses-direct` 或 `responses-bridge`，再�
   dirty baseline；不得 replay 已消费的 handoff。
 - owned/excluded paths、Git authority、stop condition 和 verification 都是 authority，
   不是提示性文字。
+- authority provenance 冻结 authoritative input owner/root、禁止 caller 注入的派生事实、
+  仅测试 seam 与必须重算的 owner boundary。artifact digest 覆盖这些字段仍只是必要条件，
+  不能把攻击者选择的 derived inputs 提升为可信来源。
 - pre-existing dirty hashes 防止 child 把用户修改误报为自己的贡献。
+
+恢复上下文优先重注入一个从完整 capsule 确定性派生的 compact invariant：精确 runtime/
+child/parent identity、owned/excluded paths、root/base、Git authority、authoritative input
+roots、stop condition 和 completion predicate。完整 capsule/assignment 仍保留在 durable
+state；compact copy 不能扩大或替代它。
 
 ## handoff 与 authority 生命周期
 
@@ -138,7 +162,10 @@ claimed/<handoff_id>.json
        ↓ stdout 成功且状态原子更新
 active/<assignment_id>.json
   └─ compact/resume 后仍可读；PreToolUse/SubagentStop 共同引用
-       ↓ final attestation 与 disk evidence 一致
+       ↓ worker final attestation 与 disk evidence 一致
+reported/<assignment_id>.json
+  └─ 仅表示 callback/contribution 已被记录，不表示 parent integration 通过
+       ↓ parent fresh verification + causal source review 四维全 PASS
 consumed/<assignment_id>.json
 ```
 
@@ -148,6 +175,16 @@ consumed/<assignment_id>.json
 - initial delivery 后不得删除唯一 authority copy。active 至少保留到 accepted final
   attestation 或安全过期；过期的有写入 capsule 进入 unresolved evidence，不静默删除。
 - 旧 child 只能使用已绑定的 child session/agent id；错误 child 或旧 session 不得重领。
+
+### 为什么 assignment 不能补足外层不可见性
+
+assignment/capsule 是 child 的模型输入，不是外层 runtime mediation。它不能让
+`write_stdin` 产生缺失的第二次 PreToolUse，不能把 opaque Bash 完整分解为路径/Git
+副作用，不能为任意 MCP/dynamic/custom/freeform tool 补出可信 side-effect schema，
+也不能包住 code-mode outer executor 或保护同 UID 可写的 rollout/state。用户在
+assignment 中重复“禁止写入/提交”只能描述意图；它既不能证明 child 遵守，也不能阻断
+runtime 看不见的 mutation，且 narrative 还可能在 compaction 后丢失。因此任一负空间
+未被外层 runtime/sandbox 实证阻断时，direct-write 必须维持 unqualified/read-only。
 
 ## runtime binding
 
@@ -201,12 +238,20 @@ child final return 必须包含一个可机读对象：
   "assignment_id": "uuid",
   "handoff_id": "uuid",
   "capsule_sha256": "hex",
+  "compact_invariant_sha256": "hex",
+  "authority_provenance": {
+    "policy_sha256": "hex",
+    "worker_claimed_origin": "owner_internal|caller|unknown",
+    "test_only_injection_used": false,
+    "derivation_receipt_sha256": "hex-or-null"
+  },
   "canonical_agent_path": "/root/task",
   "recovery_count": 0,
   "context_lost": false,
   "root": "/absolute/resolved/git/root",
   "branch": "branch or null",
   "head": "full commit or null",
+  "index_changed": false,
   "git_status_short": "exact text",
   "changed_paths": [{"path": "relative/path", "sha256": "hex"}],
   "verification": [{"command": "exact command", "exit_code": 0}],
@@ -219,6 +264,17 @@ child 无权把 `assigned_slice_complete` 提升为 parent task/feature complete
 称无 assignment/无写入，但 consumed handoff 与 owned-path hashes 证明发生写入，事件
 分类为 return-context loss；冻结贡献并由 parent fresh verify，不能信 narrative，也不能
 仅因 narrative 丢失而丢弃磁盘证据。
+
+SubagentStop 的成功只把状态推进到 `reported`。parent 以四个独立维度裁决：location
+integrity、mutation-scope integrity、verification freshness、derivation/provenance
+integrity。前三者全绿也不能替代第四项：对 attacker-selected derived inputs 计算出的
+self-consistent digest 仍可伪造 PASS。只有 owner-internal real-mode derivation（必要时一次
+昂贵 derivation 在同一 owner boundary 内复用于多个输出）、fresh verification 与源码级
+causal review 都通过，parent 才能推进到 `consumed`。worker tests/hashes 只是 contribution
+evidence，不是 integration authority；test-only injection seam 必须显式 non-final。
+该 provenance output 只是 worker claim：Hook 可以核对 policy hash 并拒绝显式 caller/
+test-only completion，但不能据此证明 child 没有撒谎；receipt digest 同样必须由 parent
+回到 owner boundary 复核。
 
 ## 已重建事实、假设与 probes
 
@@ -251,10 +307,11 @@ child 无权把 `assigned_slice_complete` 提升为 parent task/feature complete
 |---|---|---|---|
 | P1 | 捕获真实 spawn input | pass/block、非目标 worker、无 input rewrite | stage 失败仍 spawn 即失败 |
 | P2 | SessionMeta flush | root/nested、serial/concurrent、POSIX；Windows 等价 fixture/live | identity 不唯一即停止 |
-| P3 | keyed lifecycle | pending→claimed→active→consumed、expiry、crash recovery | initial delivery 后无 active copy 即失败 |
+| P3 | keyed lifecycle | pending→claimed→active→reported→consumed、expiry、crash recovery | initial delivery 后无 active copy 即失败 |
 | P4 | mutation guard coverage | shell、apply-patch、code-mode nested tools、MCP/write apps、Git | 任一写路径绕过即只读降级 |
 | P5 | compact/resume continuity | 正确初始写入后 compaction、scope/Git expansion attempt | 扩权产生写入即失败 |
 | P6 | final attestation | no-assignment narrative、slice→parent claim、disk hash mismatch | 不 block 错误 final 即失败 |
+| P6a | causal provenance | hash-valid forged derived facts、test-only seam in real mode、owner-internal shared derivation | caller 可自授权 PASS 即失败 |
 | P7 | parity/regression | POSIX/Windows protocol、DeepSeek existing path | 全绿后才能进入 Phase 2 |
 
 ## Decision gates
