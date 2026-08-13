@@ -120,6 +120,18 @@ class AssignmentTransportTests(unittest.TestCase):
                 "test_only_injection_seams": ["fixture.inject_oracle"],
                 "required_derivation_boundary": "fixture.owner.derive",
             },
+            "execution_contract": {
+                "posture": "direct_write_unqualified",
+                "review_range": None,
+                "required_invariants": [],
+                "diagnostics": {
+                    "stable_failure_codes": [],
+                    "known_true_failure_codes": [],
+                    "generic_unclassified_failure_code": "TASK.FAILURE_UNCLASSIFIED",
+                    "allow_literal_expensive_rerun": False,
+                },
+                "proven_input_baselines": [],
+            },
             "location_preflight": None,
             "pre_write_attestation_timeout_seconds": 30,
             "ttl_seconds": 300,
@@ -349,6 +361,106 @@ class AssignmentTransportTests(unittest.TestCase):
         self.assertEqual(result["hookSpecificOutput"]["permissionDecision"], "deny")
         self.assertIn("full Git object id", result["hookSpecificOutput"]["permissionDecisionReason"])
         self.assertFalse((self.store.root / "pending").exists())
+
+    def test_strict_read_only_capture_binds_clean_exact_range_and_replay_baseline(self):
+        head = self.git("rev-parse", "HEAD").stdout.strip()
+        authority = json.loads(
+            self.message().split("BEGIN CODEX WORKER AUTHORITY\n", 1)[1].split(
+                "\nEND CODEX WORKER AUTHORITY", 1
+            )[0]
+        )
+        authority["owned_paths"] = []
+        authority["excluded_paths"] = []
+        authority["authority_provenance"]["authoritative_input_roots"] = ["baseline.txt"]
+        authority["execution_contract"] = {
+            "posture": "strict_read_only",
+            "review_range": {"base_oid": head, "head_oid": head},
+            "required_invariants": ["known failure remains reproducible without literal rerun"],
+            "diagnostics": {
+                "stable_failure_codes": ["OWNER.QUERY_FAILED"],
+                "known_true_failure_codes": ["OWNER.QUERY_FAILED"],
+                "generic_unclassified_failure_code": "TASK.FAILURE_UNCLASSIFIED",
+                "allow_literal_expensive_rerun": False,
+            },
+            "proven_input_baselines": [
+                {
+                    "baseline_id": "replay-v1",
+                    "owner": "fixture.owner",
+                    "manifest_path": "baseline.txt",
+                    "sha256": hashlib.sha256(
+                        (self.repository / "baseline.txt").read_bytes()
+                    ).hexdigest(),
+                    "proven_failure_code": "OWNER.QUERY_FAILED",
+                    "non_authorizing": True,
+                    "replay_policy": "reuse_without_authority_expansion",
+                }
+            ],
+        }
+
+        result = self.capture(
+            self.spawn_hook(tool_input={"message": self.message(authority=authority)})
+        )
+
+        self.assertNotIn("permissionDecision", result["hookSpecificOutput"])
+        capsule = json.loads(
+            next((self.store.root / "pending").glob("*.json")).read_text(encoding="utf-8")
+        )["capsule"]
+        self.assertEqual(capsule["execution_contract"], authority["execution_contract"])
+        self.assertEqual(capsule["ownership_handover"], [])
+
+    def test_strict_read_only_capture_blocks_dirty_state_and_bad_replay_hash(self):
+        head = self.git("rev-parse", "HEAD").stdout.strip()
+        authority = json.loads(
+            self.message().split("BEGIN CODEX WORKER AUTHORITY\n", 1)[1].split(
+                "\nEND CODEX WORKER AUTHORITY", 1
+            )[0]
+        )
+        authority["owned_paths"] = []
+        authority["excluded_paths"] = []
+        authority["authority_provenance"]["authoritative_input_roots"] = ["baseline.txt"]
+        authority["execution_contract"] = {
+            "posture": "strict_read_only",
+            "review_range": {"base_oid": head, "head_oid": head},
+            "required_invariants": [],
+            "diagnostics": {
+                "stable_failure_codes": ["OWNER.QUERY_FAILED"],
+                "known_true_failure_codes": ["OWNER.QUERY_FAILED"],
+                "generic_unclassified_failure_code": "TASK.FAILURE_UNCLASSIFIED",
+                "allow_literal_expensive_rerun": False,
+            },
+            "proven_input_baselines": [
+                {
+                    "baseline_id": "replay-v1",
+                    "owner": "fixture.owner",
+                    "manifest_path": "baseline.txt",
+                    "sha256": "0" * 64,
+                    "proven_failure_code": "OWNER.QUERY_FAILED",
+                    "non_authorizing": True,
+                    "replay_policy": "reuse_without_authority_expansion",
+                }
+            ],
+        }
+        authority["execution_contract"]["review_range"]["head_oid"] = head[:12]
+        abbreviated = self.capture(
+            self.spawn_hook(tool_input={"message": self.message(authority=authority)})
+        )
+        self.assertEqual(abbreviated["hookSpecificOutput"]["permissionDecision"], "deny")
+        self.assertIn("full Git object id", abbreviated["hookSpecificOutput"]["permissionDecisionReason"])
+
+        authority["execution_contract"]["review_range"]["head_oid"] = head
+        bad_hash = self.capture(
+            self.spawn_hook(tool_input={"message": self.message(authority=authority)})
+        )
+        self.assertEqual(bad_hash["hookSpecificOutput"]["permissionDecision"], "deny")
+        self.assertIn("manifest hash", bad_hash["hookSpecificOutput"]["permissionDecisionReason"])
+
+        authority["execution_contract"]["proven_input_baselines"] = []
+        (self.repository / "baseline.txt").write_text("dirty\n", encoding="utf-8")
+        dirty = self.capture(
+            self.spawn_hook(tool_input={"message": self.message(authority=authority)})
+        )
+        self.assertEqual(dirty["hookSpecificOutput"]["permissionDecision"], "deny")
+        self.assertIn("clean captured worktree", dirty["hookSpecificOutput"]["permissionDecisionReason"])
 
     def test_subagent_start_claims_exact_capsule_and_retains_active_authority(self):
         hook = self.spawn_hook()

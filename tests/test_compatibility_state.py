@@ -66,6 +66,18 @@ def capsule(assignment, **overrides):
             "test_only_injection_seams": ["fixture.inject_oracle"],
             "required_derivation_boundary": "fixture.owner.derive",
         },
+        "execution_contract": {
+            "posture": "direct_write_unqualified",
+            "review_range": None,
+            "required_invariants": [],
+            "diagnostics": {
+                "stable_failure_codes": [],
+                "known_true_failure_codes": [],
+                "generic_unclassified_failure_code": "TASK.FAILURE_UNCLASSIFIED",
+                "allow_literal_expensive_rerun": False,
+            },
+            "proven_input_baselines": [],
+        },
         "preexisting_dirty": [
             {
                 "path": "owned/user.txt",
@@ -122,6 +134,86 @@ class CompatibilityStateTests(unittest.TestCase):
         reordered["git_authority"] = dict(reordered["git_authority"], commit=True)
         with self.assertRaisesRegex(CorruptState, "capsule_sha256"):
             validate_capsule(reordered, assignment)
+
+    def test_compact_invariant_preserves_diagnostics_and_non_authorizing_baselines(self):
+        assignment = "strict read-only review"
+        execution = {
+            "posture": "strict_read_only",
+            "review_range": {"base_oid": "a" * 64, "head_oid": "a" * 64},
+            "required_invariants": ["failure code remains stable"],
+            "diagnostics": {
+                "stable_failure_codes": ["OWNER.QUERY_FAILED"],
+                "known_true_failure_codes": ["OWNER.QUERY_FAILED"],
+                "generic_unclassified_failure_code": "TASK.FAILURE_UNCLASSIFIED",
+                "allow_literal_expensive_rerun": False,
+            },
+            "proven_input_baselines": [
+                {
+                    "baseline_id": "replay-v1",
+                    "owner": "fixture.owner",
+                    "manifest_path": "inputs/replay.json",
+                    "sha256": "c" * 64,
+                    "proven_failure_code": "OWNER.QUERY_FAILED",
+                    "non_authorizing": True,
+                    "replay_policy": "reuse_without_authority_expansion",
+                }
+            ],
+        }
+        value = capsule(
+            assignment,
+            owned_paths=[],
+            excluded_paths=[],
+            preexisting_dirty=[],
+            execution_contract=execution,
+        )
+        value["capsule_sha256"] = capsule_sha256(value)
+
+        validate_capsule(value, assignment)
+        invariant = compatibility_state.compact_invariant(value)
+
+        self.assertEqual(invariant["execution_contract"], execution)
+        self.assertTrue(
+            invariant["execution_contract"]["proven_input_baselines"][0][
+                "non_authorizing"
+            ]
+        )
+
+    def test_strict_read_only_contract_rejects_owned_paths_or_authorizing_baseline(self):
+        assignment = "reject authority smuggling"
+        value = capsule(assignment)
+        value["execution_contract"] = {
+            "posture": "strict_read_only",
+            "review_range": {"base_oid": "a" * 64, "head_oid": "a" * 64},
+            "required_invariants": [],
+            "diagnostics": {
+                "stable_failure_codes": ["OWNER.FAILURE"],
+                "known_true_failure_codes": ["OWNER.FAILURE"],
+                "generic_unclassified_failure_code": "TASK.FAILURE_UNCLASSIFIED",
+                "allow_literal_expensive_rerun": False,
+            },
+            "proven_input_baselines": [],
+        }
+        value["capsule_sha256"] = capsule_sha256(value)
+
+        with self.assertRaisesRegex(CorruptState, "cannot claim path ownership"):
+            validate_capsule(value, assignment)
+
+        value["owned_paths"] = []
+        value["excluded_paths"] = []
+        value["execution_contract"]["proven_input_baselines"] = [
+            {
+                "baseline_id": "replay-v1",
+                "owner": "fixture.owner",
+                "manifest_path": "inputs/replay.json",
+                "sha256": "c" * 64,
+                "proven_failure_code": "OWNER.FAILURE",
+                "non_authorizing": False,
+                "replay_policy": "reuse_without_authority_expansion",
+            }
+        ]
+        value["capsule_sha256"] = capsule_sha256(value)
+        with self.assertRaisesRegex(CorruptState, "explicitly non-authorizing"):
+            validate_capsule(value, assignment)
 
     def test_keyed_pending_assignments_can_be_staged_concurrently(self):
         assignments = [f"assignment {index}" for index in range(8)]
