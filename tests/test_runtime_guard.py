@@ -141,6 +141,18 @@ class RuntimeGuardTests(unittest.TestCase):
                 "test_only_injection_seams": ["fixture.inject_oracle"],
                 "required_derivation_boundary": "fixture.owner.derive",
             },
+            "execution_contract": {
+                "posture": "direct_write_unqualified",
+                "review_range": None,
+                "required_invariants": [],
+                "diagnostics": {
+                    "stable_failure_codes": [],
+                    "known_true_failure_codes": [],
+                    "generic_unclassified_failure_code": "TASK.FAILURE_UNCLASSIFIED",
+                    "allow_literal_expensive_rerun": False,
+                },
+                "proven_input_baselines": [],
+            },
             "preexisting_dirty": [],
             "assignment_sha256": sha256_bytes(self.assignment.encode("utf-8")),
             "created_at": now.isoformat(),

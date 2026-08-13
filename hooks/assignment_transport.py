@@ -5,9 +5,11 @@
 from __future__ import annotations
 
 import datetime as dt
+import hashlib
 import json
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 import re
+import subprocess
 from typing import Collection, Mapping
 import uuid
 
@@ -35,6 +37,7 @@ AUTHORITY_FIELDS = {
     "stop_condition",
     "verification",
     "authority_provenance",
+    "execution_contract",
     "location_preflight",
     "pre_write_attestation_timeout_seconds",
     "ttl_seconds",
@@ -134,6 +137,88 @@ def _check_location_preflight(snapshot: Mapping[str, object], preflight: object)
         raise GuardError("location preflight base HEAD does not exactly match current HEAD")
 
 
+def _git_commit(root: Path, oid: object, field: str) -> str:
+    if not isinstance(oid, str) or not GIT_OID_RE.fullmatch(oid):
+        raise GuardError(f"{field} must be a full Git object id")
+    resolved = (
+        _git(root, "rev-parse", "--verify", f"{oid}^{{commit}}")
+        .decode("ascii")
+        .strip()
+    )
+    if resolved != oid:
+        raise GuardError(f"{field} must resolve to its exact full Git object id")
+    return resolved
+
+
+def _path_is_within(path: str, roots: Collection[str]) -> bool:
+    if not path or "\\" in path:
+        return False
+    candidate = PurePosixPath(path)
+    if candidate.is_absolute() or path != candidate.as_posix() or ".." in candidate.parts:
+        return False
+    normalized_roots = [PurePosixPath(root) for root in roots if isinstance(root, str)]
+    return any(candidate == root or root in candidate.parents for root in normalized_roots)
+
+
+def _check_execution_contract(
+    root: Path,
+    snapshot: Mapping[str, object],
+    declaration: Mapping[str, object],
+) -> None:
+    execution = declaration.get("execution_contract")
+    if not isinstance(execution, dict):
+        raise GuardError("execution_contract must be an object")
+    posture = execution.get("posture")
+    review_range = execution.get("review_range")
+    if posture == "strict_read_only":
+        if snapshot["index_changed"] or snapshot["git_status_short"] or snapshot["changed_paths"]:
+            raise GuardError("strict read-only review requires a clean captured worktree")
+        if declaration["owned_paths"] or declaration["excluded_paths"]:
+            raise GuardError("strict read-only review cannot claim path ownership")
+        if any(declaration["git_authority"].values()):
+            raise GuardError("strict read-only review cannot claim Git authority")
+        if not isinstance(review_range, dict) or set(review_range) != {"base_oid", "head_oid"}:
+            raise GuardError("strict read-only review requires an exact review range")
+        base_oid = _git_commit(root, review_range["base_oid"], "review_range.base_oid")
+        head_oid = _git_commit(root, review_range["head_oid"], "review_range.head_oid")
+        if head_oid != snapshot["head"]:
+            raise GuardError("review_range.head_oid does not exactly match captured HEAD")
+        if base_oid != head_oid:
+            ancestor = subprocess.run(
+                ["git", "-C", str(root), "merge-base", "--is-ancestor", base_oid, head_oid],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            if ancestor.returncode != 0:
+                raise GuardError("review_range.base_oid is not an ancestor of review_range.head_oid")
+    elif posture != "direct_write_unqualified":
+        raise GuardError("execution_contract.posture is invalid")
+
+    provenance = declaration["authority_provenance"]
+    input_roots = provenance.get("authoritative_input_roots", [])
+    baselines = execution.get("proven_input_baselines")
+    if not isinstance(baselines, list):
+        raise GuardError("proven_input_baselines must be a list")
+    for baseline in baselines:
+        if not isinstance(baseline, dict):
+            raise GuardError("proven input baseline must be an object")
+        manifest_path = baseline.get("manifest_path")
+        if not isinstance(manifest_path, str) or not _path_is_within(manifest_path, input_roots):
+            raise GuardError("proven input baseline is outside authoritative input roots")
+        manifest = root / manifest_path
+        resolved_manifest = manifest.resolve()
+        if (
+            manifest.is_symlink()
+            or (resolved_manifest != root and root not in resolved_manifest.parents)
+            or not resolved_manifest.is_file()
+        ):
+            raise GuardError("proven input baseline manifest must be a regular file")
+        actual = hashlib.sha256(resolved_manifest.read_bytes()).hexdigest()
+        if actual != baseline.get("sha256"):
+            raise GuardError("proven input baseline manifest hash does not match")
+
+
 def _preexisting_dirty(root: Path, snapshot: Mapping[str, object]) -> list[dict]:
     entries = []
     for item in snapshot["changed_paths"]:
@@ -211,6 +296,7 @@ def capture_spawn(
             raise GuardError("spawn Hook has no cwd")
         snapshot = collect_git_snapshot(cwd)
         _check_location_preflight(snapshot, declaration["location_preflight"])
+        _check_execution_contract(Path(snapshot["root"]), snapshot, declaration)
         created_at = now or dt.datetime.now(dt.timezone.utc)
         if created_at.tzinfo is None or created_at.utcoffset() is None:
             raise GuardError("capture time must include a UTC offset")
@@ -251,6 +337,7 @@ def capture_spawn(
             "stop_condition": declaration["stop_condition"],
             "verification": declaration["verification"],
             "authority_provenance": declaration["authority_provenance"],
+            "execution_contract": declaration["execution_contract"],
             "preexisting_dirty": _preexisting_dirty(Path(snapshot["root"]), snapshot),
             "assignment_sha256": sha256_bytes(str(message).encode("utf-8")),
             "created_at": created_at.isoformat(),

@@ -34,6 +34,29 @@ PROVENANCE_FIELDS = {
     "test_only_injection_seams",
     "required_derivation_boundary",
 }
+EXECUTION_CONTRACT_FIELDS = {
+    "posture",
+    "review_range",
+    "required_invariants",
+    "diagnostics",
+    "proven_input_baselines",
+}
+DIAGNOSTIC_CONTRACT_FIELDS = {
+    "stable_failure_codes",
+    "known_true_failure_codes",
+    "generic_unclassified_failure_code",
+    "allow_literal_expensive_rerun",
+}
+PROVEN_INPUT_BASELINE_FIELDS = {
+    "baseline_id",
+    "owner",
+    "manifest_path",
+    "sha256",
+    "proven_failure_code",
+    "non_authorizing",
+    "replay_policy",
+}
+FAILURE_CODE_RE = re.compile(r"^[A-Z][A-Z0-9_.-]*$")
 PARENT_ADJUDICATION_FIELDS = {
     "location_integrity",
     "mutation_scope_integrity",
@@ -117,6 +140,7 @@ def compact_invariant(capsule: Mapping[str, object]) -> dict:
         "pre_write_attestation_deadline": capsule["pre_write_attestation_deadline"],
         "ownership_handover": capsule["ownership_handover"],
         "authority_provenance": capsule["authority_provenance"],
+        "execution_contract": capsule["execution_contract"],
     }
 
 
@@ -420,6 +444,105 @@ def validate_capsule(capsule: object, assignment: str) -> dict:
         provenance["required_derivation_boundary"],
         "authority_provenance.required_derivation_boundary",
     )
+
+    execution = capsule.get("execution_contract")
+    if not isinstance(execution, dict) or set(execution) != EXECUTION_CONTRACT_FIELDS:
+        raise CorruptState("execution_contract fields are not exact")
+    posture = execution["posture"]
+    if posture not in {"strict_read_only", "direct_write_unqualified"}:
+        raise CorruptState("execution_contract.posture is invalid")
+    review_range = execution["review_range"]
+    if review_range is not None:
+        if not isinstance(review_range, dict) or set(review_range) != {"base_oid", "head_oid"}:
+            raise CorruptState("execution_contract.review_range fields are not exact")
+        for field in ("base_oid", "head_oid"):
+            if not isinstance(review_range[field], str) or not GIT_OID_RE.fullmatch(
+                review_range[field]
+            ):
+                raise CorruptState(f"execution_contract.review_range.{field} is invalid")
+    invariants = execution["required_invariants"]
+    if (
+        not isinstance(invariants, list)
+        or any(not isinstance(item, str) or not item.strip() for item in invariants)
+        or len(invariants) != len(set(invariants))
+    ):
+        raise CorruptState("execution_contract.required_invariants is invalid")
+    diagnostics = execution["diagnostics"]
+    if not isinstance(diagnostics, dict) or set(diagnostics) != DIAGNOSTIC_CONTRACT_FIELDS:
+        raise CorruptState("execution_contract.diagnostics fields are not exact")
+    for field in ("stable_failure_codes", "known_true_failure_codes"):
+        codes = diagnostics[field]
+        if (
+            not isinstance(codes, list)
+            or any(not isinstance(code, str) or not FAILURE_CODE_RE.fullmatch(code) for code in codes)
+            or len(codes) != len(set(codes))
+        ):
+            raise CorruptState(f"execution_contract.diagnostics.{field} is invalid")
+    stable_codes = diagnostics["stable_failure_codes"]
+    known_codes = diagnostics["known_true_failure_codes"]
+    if not set(known_codes).issubset(stable_codes):
+        raise CorruptState("known-true failure codes must be stable owner codes")
+    generic_code = diagnostics["generic_unclassified_failure_code"]
+    if not isinstance(generic_code, str) or not FAILURE_CODE_RE.fullmatch(generic_code):
+        raise CorruptState("generic unclassified failure code is invalid")
+    if generic_code in stable_codes:
+        raise CorruptState("generic unclassified code must not shadow a stable owner code")
+    if type(diagnostics["allow_literal_expensive_rerun"]) is not bool:
+        raise CorruptState("allow_literal_expensive_rerun must be boolean")
+    baselines = execution["proven_input_baselines"]
+    if not isinstance(baselines, list):
+        raise CorruptState("execution_contract.proven_input_baselines must be a list")
+    seen_baseline_ids = set()
+    input_roots = tuple(provenance["authoritative_input_roots"])
+    for baseline in baselines:
+        if not isinstance(baseline, dict) or set(baseline) != PROVEN_INPUT_BASELINE_FIELDS:
+            raise CorruptState("proven input baseline fields are not exact")
+        baseline_id = _nonempty_string(baseline["baseline_id"], "baseline_id")
+        if baseline_id in seen_baseline_ids:
+            raise CorruptState("proven input baseline id is duplicated")
+        seen_baseline_ids.add(baseline_id)
+        if baseline["owner"] not in provenance["authoritative_input_owners"]:
+            raise CorruptState("proven input baseline owner is not authoritative")
+        manifest_path = _relative_paths(
+            [baseline["manifest_path"]], "proven_input_baseline.manifest_path"
+        )[0]
+        manifest = pathlib.PurePosixPath(manifest_path)
+        if not any(
+            manifest == pathlib.PurePosixPath(root)
+            or pathlib.PurePosixPath(root) in manifest.parents
+            for root in input_roots
+        ):
+            raise CorruptState("proven input baseline is outside authoritative input roots")
+        if not isinstance(baseline["sha256"], str) or not SHA256_RE.fullmatch(
+            baseline["sha256"]
+        ):
+            raise CorruptState("proven input baseline sha256 is invalid")
+        if baseline["proven_failure_code"] not in known_codes:
+            raise CorruptState("proven input baseline failure code is not known-true")
+        if baseline["non_authorizing"] is not True:
+            raise CorruptState("proven input baseline must be explicitly non-authorizing")
+        if baseline["replay_policy"] != "reuse_without_authority_expansion":
+            raise CorruptState("proven input baseline replay policy is invalid")
+
+    if posture == "strict_read_only":
+        if review_range is None:
+            raise CorruptState("strict read-only execution requires an exact review range")
+        if review_range["head_oid"] != root["base_commit"]:
+            raise CorruptState("strict read-only review head must match the captured base commit")
+        if root["base_index_changed"] or root["base_git_status_short"]:
+            raise CorruptState("strict read-only execution requires a clean captured root")
+        if capsule["owned_paths"] or capsule["excluded_paths"]:
+            raise CorruptState("strict read-only execution cannot claim path ownership")
+        if any(capsule["git_authority"].values()):
+            raise CorruptState("strict read-only execution cannot claim Git authority")
+        if capsule["ownership_handover"]:
+            raise CorruptState("strict read-only execution cannot consume an ownership handover")
+        if diagnostics["allow_literal_expensive_rerun"]:
+            raise CorruptState("strict read-only execution cannot authorize a literal expensive rerun")
+        if capsule.get("preexisting_dirty") != []:
+            raise CorruptState("strict read-only execution cannot capture pre-existing dirty paths")
+    elif review_range is not None:
+        raise CorruptState("direct-write execution cannot reuse the read-only review range field")
 
     dirty = capsule.get("preexisting_dirty")
     if not isinstance(dirty, list):

@@ -116,7 +116,7 @@ remains the assignment source.
 The self-contained spawn message must terminate with one strict, provider-free
 `BEGIN/END CODEX WORKER AUTHORITY` JSON declaration. The declaration supplies
 only owned/excluded paths, Git authority, stop condition, verification contract,
-authority-provenance policy, and TTL. Runtime ids, repository facts, assignment/hash ids, and expected child
+authority-provenance policy, execution contract, and TTL. Runtime ids, repository facts, assignment/hash ids, and expected child
 AgentPath are added by the trusted parent Hook. Unknown fields—including any
 credential field—block spawn.
 
@@ -235,3 +235,27 @@ The long-run context-loss fixture removes the only active capsule, leaves a real
 owned-path disk mutation, and presents a completion narrative. SubagentStop
 blocks it: real bytes are contribution evidence, but neither the narrative nor
 their hashes restore the missing authority chain.
+
+## Strict read-only and diagnostic-fidelity fixtures
+
+The execution contract now distinguishes strict read-only review from
+unqualified direct write. Capture of a strict read-only task requires a clean
+worktree, exact full-OID base/head range, empty owned/excluded paths, and all Git
+authority disabled. A fixture proves this posture stages without an ownership
+handover; dirty state, a mismatched range, or replay-manifest hash drift blocks
+before pending state is published.
+
+The compact invariant retains required state-machine invariants, stable and
+known-true failure codes, the generic fallback, the literal-rerun prohibition,
+and hash-bound proven input baselines. Each baseline must name an authoritative
+owner, live under an authoritative input root, match the actual regular-file
+SHA-256, and remain explicitly non-authorizing. It can prevent reconstructing
+an expensive input but cannot grant mutation, Git, derivation, or completion
+authority.
+
+`hooks/diagnostic_guard.py` proves stable owner codes are returned unchanged and
+only missing or unknown codes use `TASK.FAILURE_UNCLASSIFIED`. A separate
+negative fixture rejects literal expensive rerun without explicit authority and
+shows that a replay-baseline reference contains no owned-path, Git, or completion
+fields. These are provider-free isolated fixtures; they do not qualify live
+direct write or alter the mutation/quiescence gates.

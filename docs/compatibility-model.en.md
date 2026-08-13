@@ -95,6 +95,10 @@ The schema 2 capsule contains at least:
 - an authority-provenance policy naming authoritative input owners/roots,
   forbidden caller-supplied derived facts, explicit test-only seams, and the
   required owner-internal recomputation boundary;
+- an execution contract declaring `strict_read_only` or
+  `direct_write_unqualified`, an exact full-OID review range, required
+  invariants, diagnostic-code fidelity, expensive-rerun authority, and any
+  hash-bound non-authorizing replay baselines;
 - pre-existing dirty statuses, file kinds, and content hashes (null only for a
   deleted path);
 - assignment hash, timestamps, and a canonical capsule hash.
@@ -119,6 +123,16 @@ task, or accept a matching HEAD prefix in place of the full object id.
 Ownership handover is not a child- or assignment-supplied permission. It only
 references a host-owned barrier created after old authority is frozen and does
 not erase mixed provenance.
+
+`strict_read_only` requires a clean captured worktree, an exact committed
+base/head range, no owned or excluded paths, and no Git authority. It therefore
+does not consume a mutation handover. A proven input baseline binds an
+authoritative owner, repository-relative manifest, actual file hash, and
+known-true stable failure code, while requiring `non_authorizing=true` and
+`reuse_without_authority_expansion`. It cannot create path, Git, derivation, or
+completion authority. Stable owner failure codes pass through unchanged; only
+missing or unclassified codes may map to the generic fallback. A prohibition on
+literal expensive reruns remains authority even when a review is long-running.
 
 ## State lifecycle
 
@@ -170,6 +184,11 @@ A state lock is not a filesystem transaction. The replacement child's exact
 first attestation covers the remaining window after the fresh pre-stage
 snapshot; neither check becomes strong proof without a host quiescence
 guarantee.
+
+A committed-range strict read-only review claims no mutation ownership and does
+not use this handover lifecycle. It still re-attests its compact invariant,
+clean snapshot, and exact review range at every tool event and final return;
+disk drift stops the task rather than upgrading the read-only capsule.
 
 ## Exact runtime binding
 

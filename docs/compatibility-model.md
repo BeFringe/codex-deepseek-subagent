@@ -138,6 +138,28 @@ assignment 的 capsule，不能被 provider profile 默认、推断或归一化�
     "test_only_injection_seams": ["explicit non-final seam"],
     "required_derivation_boundary": "owner-internal operation"
   },
+  "execution_contract": {
+    "posture": "strict_read_only|direct_write_unqualified",
+    "review_range": {"base_oid": "full oid", "head_oid": "full oid"},
+    "required_invariants": ["state-machine invariant"],
+    "diagnostics": {
+      "stable_failure_codes": ["OWNER.FAILURE_CODE"],
+      "known_true_failure_codes": ["OWNER.FAILURE_CODE"],
+      "generic_unclassified_failure_code": "TASK.FAILURE_UNCLASSIFIED",
+      "allow_literal_expensive_rerun": false
+    },
+    "proven_input_baselines": [
+      {
+        "baseline_id": "stable id",
+        "owner": "authoritative owner",
+        "manifest_path": "repo-relative/input-manifest",
+        "sha256": "hex",
+        "proven_failure_code": "OWNER.FAILURE_CODE",
+        "non_authorizing": true,
+        "replay_policy": "reuse_without_authority_expansion"
+      }
+    ]
+  },
   "preexisting_dirty": [
     {"path": "repo-relative/path", "status": " M", "kind": "file", "sha256": "hex-or-null"}
   ],
@@ -160,6 +182,13 @@ assignment 的 capsule，不能被 provider profile 默认、推断或归一化�
 - authority provenance 冻结 authoritative input owner/root、禁止 caller 注入的派生事实、
   仅测试 seam 与必须重算的 owner boundary。artifact digest 覆盖这些字段仍只是必要条件，
   不能把攻击者选择的 derived inputs 提升为可信来源。
+- `strict_read_only` posture 只允许 clean worktree 上的 exact full-OID review range，owned/
+  excluded paths 必须为空且所有 Git authority 为 false；它不需要 mutation handover。
+- `proven_input_baselines` 是 owner、manifest path、实际文件 hash 与 known-true failure code
+  的可复核 replay 证据，必须 `non_authorizing=true`。它不能产生路径/Git/完成权限，也不能
+  绕过 owner-internal derivation boundary。
+- stable owner failure code 必须原样透传；只有缺失或未分类 code 才能映射到 generic。
+  禁止 literal expensive rerun 是 capsule authority，不得因 worker 运行时间长而自行放宽。
 - pre-existing dirty hashes 防止 child 把用户修改误报为自己的贡献。
 - `capture_preflight` 是 parent 可选的只收窄断言：Hook 只比较 expected root/branch/full
   HEAD 与当前实际 Git snapshot，任何不相等都在 spawn 前 block。它不能授权 branch/commit、
@@ -217,6 +246,10 @@ barrier 后、重派前，capture 记录 `late_mutation_after_interrupt` 与
 attestation 的 exact baseline check 冻结新 authority，并记录相同混合 provenance。若 host
 不能证明 termination+quiescence，新 assignment 不得认领相同 owned paths，等待时间或普通
 interrupt ack 都不能替代证明。
+
+严格只读的 committed-range review 不认领 mutation ownership，因此不走上述 handover。
+它仍须在每次工具调用和 final return 重新核对 compact invariant、clean snapshot 与 exact
+review range；若磁盘漂移则停止，而不是把 read-only capsule 升格为 mutation authority。
 
 混合贡献必须整体冻结，由 parent 以 barrier 前后 hashes、source review 和 fresh tests 裁决；
 不能依据后一 child 的 attestation 把所有 bytes 单独归因给后一 assignment。
