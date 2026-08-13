@@ -194,6 +194,12 @@ def _check_execution_contract(
                 raise GuardError("review_range.base_oid is not an ancestor of review_range.head_oid")
     elif posture != "direct_write_unqualified":
         raise GuardError("execution_contract.posture is invalid")
+    if posture == "direct_write_unqualified":
+        feasibility = execution.get("capsule_feasibility_attestation")
+        if not isinstance(feasibility, dict):
+            raise GuardError("direct-write spawn requires parent feasibility attestation")
+        if feasibility.get("owner_decision") != "dispatch":
+            raise GuardError("parent feasibility attestation blocks direct-write dispatch")
 
     continuation = execution.get("review_continuation")
     if continuation is not None:

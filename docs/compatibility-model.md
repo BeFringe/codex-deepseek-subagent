@@ -214,7 +214,29 @@ assignment 的 capsule，不能被 provider profile 默认、推断或归一化�
         "absence_semantics": "missing_or_orphan_relation_is_error",
         "allowed_terminal_absence": "tombstone_or_clear_only"
       }
-    ]
+    ],
+    "capsule_feasibility_attestation": {
+      "parent_owner_id": "authoritative parent owner",
+      "exact_claimed_invariant": "exact invariant proposed for dispatch",
+      "counterexample_probe": {
+        "probe_id": "stable executable probe id",
+        "probe_input_sha256": "hex",
+        "executed": true,
+        "counterexample_found": false,
+        "evidence_sha256": "hex"
+      },
+      "bounded_completion": {
+        "completion_condition": "condition also frozen in stop_condition",
+        "work_budget": {"unit": "bounded unit", "limit": 10},
+        "proposed_mechanism": "mechanism tested by the parent owner",
+        "mechanism_satisfies": true,
+        "evidence_sha256": "hex"
+      },
+      "unresolved_assumptions": [
+        {"assumption": "explicit assumption", "blocking": false}
+      ],
+      "owner_decision": "dispatch"
+    }
   },
   "preexisting_dirty": [
     {"path": "repo-relative/path", "status": " M", "kind": "file", "sha256": "hex-or-null"}
@@ -265,6 +287,15 @@ assignment 的 capsule，不能被 provider profile 默认、推断或归一化�
 - strict object codec 只证明单行可解析，不证明 closed-world relation 完整。relation contract
   同时冻结两侧 object schema、非终态 1:1 cardinality、missing/orphan 是 error 的 absence
   semantics，以及唯一 `tombstone|clear` terminal absence 例外；parent/owner 必须 fresh recompute。
+- direct implementation 在 pending 发布前必须有 parent-owned
+  `capsule_feasibility_attestation`。它冻结 exact claimed invariant、廉价 executable
+  counterexample probe、bounded completion condition/work budget、proposed mechanism 与未解决
+  assumptions。`parent_owner_id` 必须属于 authoritative input owners，child/provider 不得生成
+  或补写这些派生结论。
+- 反例探针 executed 只是“主动尝试证伪”，不是证明。只有当前 probe 未发现 counterexample、
+  owner assessor 证明 proposed mechanism 能在冻结预算内满足 completion condition、且没有
+  blocking assumption 时，`owner_decision=dispatch` 才自洽；否则 direct-write spawn fail closed。
+  capsule freeze 不能把一个经验上过松、预算内不可闭合的机制变成可执行证明边界。
 - pre-existing dirty hashes 防止 child 把用户修改误报为自己的贡献。
 - `capture_preflight` 是 parent 可选的只收窄断言：Hook 只比较 expected root/branch/full
   HEAD 与当前实际 Git snapshot，任何不相等都在 spawn 前 block。它不能授权 branch/commit、
@@ -332,6 +363,11 @@ follow-up/send-input 的等价可信事件与 immutable receipt。因此 `review
 schema 与 capture fixture，不能声称同一 live child 的 follow-up authority 已 durable 绑定。
 在该 Hook surface 被证明前，应使用新的可信 spawn，或把 native follow-up 保持在 parent 自行
 fresh review 的 read-only contribution 范围。
+
+`capsule_feasibility_attestation` 同样不是 provider eval：owner-internal builder 主动调用 probe
+与 bounded-completion assessor，公开 API 不接收预计算 outcome。isolated capture 目前核对结构、
+owner provenance 与 dispatch decision；若未来把任意 executable probe 接入 live Hook，还必须先
+证明该 probe 自身只读、廉价且不成为新的 mutation/credential surface。
 
 混合贡献必须整体冻结，由 parent 以 barrier 前后 hashes、source review 和 fresh tests 裁决；
 不能依据后一 child 的 attestation 把所有 bytes 单独归因给后一 assignment。

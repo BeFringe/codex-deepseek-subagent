@@ -52,6 +52,7 @@ class DiagnosticGuardTests(unittest.TestCase):
             "review_continuation": None,
             "closed_registries": [],
             "relation_contracts": [],
+            "capsule_feasibility_attestation": None,
         }
 
     def test_stable_owner_failure_code_is_preserved(self):

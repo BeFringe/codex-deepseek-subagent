@@ -138,6 +138,26 @@ class AssignmentTransportTests(unittest.TestCase):
                 "review_continuation": None,
                 "closed_registries": [],
                 "relation_contracts": [],
+                "capsule_feasibility_attestation": {
+                    "parent_owner_id": "fixture.owner",
+                    "exact_claimed_invariant": "the assigned slice closes within budget",
+                    "counterexample_probe": {
+                        "probe_id": "fixture-negative-probe",
+                        "probe_input_sha256": "1" * 64,
+                        "executed": True,
+                        "counterexample_found": False,
+                        "evidence_sha256": "2" * 64,
+                    },
+                    "bounded_completion": {
+                        "completion_condition": "assigned slice",
+                        "work_budget": {"unit": "fixture-step", "limit": 10},
+                        "proposed_mechanism": "bounded fixture mechanism",
+                        "mechanism_satisfies": True,
+                        "evidence_sha256": "3" * 64,
+                    },
+                    "unresolved_assumptions": [],
+                    "owner_decision": "dispatch",
+                },
             },
             "location_preflight": None,
             "pre_write_attestation_timeout_seconds": 30,
@@ -283,6 +303,24 @@ class AssignmentTransportTests(unittest.TestCase):
                 self.assertEqual(result["hookSpecificOutput"]["permissionDecision"], "deny")
         self.assertFalse((self.store.root / "pending").exists())
 
+    def test_parent_feasibility_gate_blocks_unbounded_direct_write_before_staging(self):
+        authority = json.loads(
+            self.message().split("BEGIN CODEX WORKER AUTHORITY\n", 1)[1].split(
+                "\nEND CODEX WORKER AUTHORITY", 1
+            )[0]
+        )
+        feasibility = authority["execution_contract"]["capsule_feasibility_attestation"]
+        feasibility["bounded_completion"]["mechanism_satisfies"] = False
+        feasibility["owner_decision"] = "block"
+
+        result = self.capture(
+            self.spawn_hook(tool_input={"message": self.message(authority=authority)})
+        )
+
+        self.assertEqual(result["hookSpecificOutput"]["permissionDecision"], "deny")
+        self.assertIn("feasibility", result["hookSpecificOutput"]["permissionDecisionReason"])
+        self.assertFalse((self.store.root / "pending").exists())
+
     def test_capture_records_modified_and_deleted_dirty_baselines(self):
         (self.repository / "baseline.txt").write_text("user change\n", encoding="utf-8")
         (self.repository / "deleted.txt").unlink()
@@ -410,6 +448,7 @@ class AssignmentTransportTests(unittest.TestCase):
             "review_continuation": None,
             "closed_registries": [],
             "relation_contracts": [],
+            "capsule_feasibility_attestation": None,
         }
 
         result = self.capture(
@@ -462,6 +501,7 @@ class AssignmentTransportTests(unittest.TestCase):
             "review_continuation": None,
             "closed_registries": [],
             "relation_contracts": [],
+            "capsule_feasibility_attestation": None,
         }
         authority["execution_contract"]["review_range"]["head_oid"] = head[:12]
         abbreviated = self.capture(
@@ -501,6 +541,7 @@ class AssignmentTransportTests(unittest.TestCase):
         authority["execution_contract"].update(
             {
                 "posture": "strict_read_only",
+                "capsule_feasibility_attestation": None,
                 "review_range": {"base_oid": base, "head_oid": tip},
                 "required_invariants": ["freshly adjudicate every unresolved finding"],
                 "review_continuation": {
