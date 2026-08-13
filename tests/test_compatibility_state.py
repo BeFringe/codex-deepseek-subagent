@@ -81,6 +81,8 @@ def capsule(assignment, **overrides):
             "termination_contract": {"catalog_closed": True, "boundary_catalog": []},
             "evidence_binding": None,
             "review_continuation": None,
+            "closed_registries": [],
+            "relation_contracts": [],
         },
         "preexisting_dirty": [
             {
@@ -168,6 +170,8 @@ class CompatibilityStateTests(unittest.TestCase):
             "termination_contract": {"catalog_closed": True, "boundary_catalog": []},
             "evidence_binding": None,
             "review_continuation": None,
+            "closed_registries": [],
+            "relation_contracts": [],
         }
         value = capsule(
             assignment,
@@ -208,6 +212,8 @@ class CompatibilityStateTests(unittest.TestCase):
             "termination_contract": {"catalog_closed": True, "boundary_catalog": []},
             "evidence_binding": None,
             "review_continuation": None,
+            "closed_registries": [],
+            "relation_contracts": [],
         }
         value["capsule_sha256"] = capsule_sha256(value)
 
@@ -249,9 +255,12 @@ class CompatibilityStateTests(unittest.TestCase):
                 "review_continuation": {
                     "prior_assignment_id": prior_assignment_id,
                     "frozen_cumulative_base_oid": "9" * 64,
+                    "prior_review_base_oid": "9" * 64,
+                    "prior_review_tip_oid": "7" * 64,
                     "corrected_tip_oid": "a" * 64,
                     "prior_findings_sha256": "d" * 64,
                     "unresolved_finding_ids": ["P1-1", "P1-2"],
+                    "exact_narrowed_objective": "recheck only P1-1 and P1-2",
                     "require_clean_worktree": True,
                 },
                 "evidence_binding": {
@@ -265,6 +274,7 @@ class CompatibilityStateTests(unittest.TestCase):
                 },
             }
         )
+        value["stop_condition"] = "recheck only P1-1 and P1-2; no broader completion claim"
         value["capsule_sha256"] = capsule_sha256(value)
 
         validate_capsule(value, assignment)
@@ -292,6 +302,34 @@ class CompatibilityStateTests(unittest.TestCase):
         value["capsule_sha256"] = capsule_sha256(value)
 
         with self.assertRaisesRegex(CorruptState, "os._exit"):
+            validate_capsule(value, assignment)
+
+    def test_relation_contract_freezes_schema_cardinality_absence_and_terminal_exception(self):
+        assignment = "validate closed owner relation"
+        value = capsule(assignment)
+        value["execution_contract"]["relation_contracts"] = [
+            {
+                "relation_id": "owner-handoff",
+                "owner_schema_fields": ["owner_id", "terminal_state"],
+                "handoff_schema_fields": ["handoff_id", "owner_id", "terminal_state"],
+                "owner_id_field": "owner_id",
+                "handoff_id_field": "handoff_id",
+                "handoff_owner_id_field": "owner_id",
+                "terminal_state_field": "terminal_state",
+                "referential_cardinality": "exactly_one_to_one_nonterminal",
+                "absence_semantics": "missing_or_orphan_relation_is_error",
+                "allowed_terminal_absence": "tombstone_or_clear_only",
+            }
+        ]
+        value["capsule_sha256"] = capsule_sha256(value)
+
+        validate_capsule(value, assignment)
+
+        value["execution_contract"]["relation_contracts"][0][
+            "absence_semantics"
+        ] = "missing_is_ok"
+        value["capsule_sha256"] = capsule_sha256(value)
+        with self.assertRaisesRegex(CorruptState, "absence semantics"):
             validate_capsule(value, assignment)
 
     def test_keyed_pending_assignments_can_be_staged_concurrently(self):

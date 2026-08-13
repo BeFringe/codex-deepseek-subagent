@@ -136,6 +136,8 @@ class AssignmentTransportTests(unittest.TestCase):
                 "termination_contract": {"catalog_closed": True, "boundary_catalog": []},
                 "evidence_binding": None,
                 "review_continuation": None,
+                "closed_registries": [],
+                "relation_contracts": [],
             },
             "location_preflight": None,
             "pre_write_attestation_timeout_seconds": 30,
@@ -406,6 +408,8 @@ class AssignmentTransportTests(unittest.TestCase):
             "termination_contract": {"catalog_closed": True, "boundary_catalog": []},
             "evidence_binding": None,
             "review_continuation": None,
+            "closed_registries": [],
+            "relation_contracts": [],
         }
 
         result = self.capture(
@@ -456,6 +460,8 @@ class AssignmentTransportTests(unittest.TestCase):
             "termination_contract": {"catalog_closed": True, "boundary_catalog": []},
             "evidence_binding": None,
             "review_continuation": None,
+            "closed_registries": [],
+            "relation_contracts": [],
         }
         authority["execution_contract"]["review_range"]["head_oid"] = head[:12]
         abbreviated = self.capture(
@@ -500,9 +506,12 @@ class AssignmentTransportTests(unittest.TestCase):
                 "review_continuation": {
                     "prior_assignment_id": str(uuid.uuid4()),
                     "frozen_cumulative_base_oid": base,
+                    "prior_review_base_oid": base,
+                    "prior_review_tip_oid": base,
                     "corrected_tip_oid": tip,
                     "prior_findings_sha256": "f" * 64,
                     "unresolved_finding_ids": ["P1-1", "P1-2"],
+                    "exact_narrowed_objective": "recheck only P1-1 and P1-2",
                     "require_clean_worktree": True,
                 },
                 "evidence_binding": {
@@ -516,11 +525,30 @@ class AssignmentTransportTests(unittest.TestCase):
                 },
             }
         )
+        authority["stop_condition"] = (
+            "recheck only P1-1 and P1-2; do not claim broader completion"
+        )
 
         accepted = self.capture(
             self.spawn_hook(tool_input={"message": self.message(authority=authority)})
         )
         self.assertNotIn("permissionDecision", accepted["hookSpecificOutput"])
+
+        wrong_tip = tip[:12] + ("0" if tip[12] != "0" else "1") + tip[13:]
+        authority["execution_contract"]["review_continuation"][
+            "corrected_tip_oid"
+        ] = wrong_tip
+        typo = self.capture(
+            self.spawn_hook(
+                task_name="typo_review",
+                tool_input={"message": self.message(authority=authority)},
+            )
+        )
+        self.assertEqual(typo["hookSpecificOutput"]["permissionDecision"], "deny")
+        self.assertIn("does not exactly match", typo["hookSpecificOutput"]["permissionDecisionReason"])
+        authority["execution_contract"]["review_continuation"][
+            "corrected_tip_oid"
+        ] = tip
 
         other_root = self.root / "other"
         other_root.mkdir()
@@ -820,6 +848,7 @@ class AssignmentTransportTests(unittest.TestCase):
             "verification": [{"command": "fixture verification", "exit_code": 0}],
             "authority_violation": False,
             "assigned_slice_complete": True,
+            "inventory_summaries": [],
         }
         message = (
             "BEGIN CODEX WORKER ATTESTATION\n"

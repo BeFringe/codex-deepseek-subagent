@@ -292,3 +292,26 @@ unresolved finding ids, and mandatory clean worktree. Capture proves an
 ancestor base/current tip and evidence source identity. This does not qualify
 same-thread follow-up: Codex 0.147.0 has no proven trusted follow-up capture in
 this adapter, so thread continuity alone remains insufficient authority.
+
+## Closed-registry counts and relation closure
+
+The execution contract now freezes closed registries with exact item ids and
+`mechanical_cardinality_only` count authority. Final attestations carry one
+inventory summary per registry. SubagentStop rejects missing/duplicate
+registries, item-order or digest drift, and any declared count unequal to the
+item cardinality. A negative fixture returns 18 valid ids with a declared count
+of 15 and is blocked; correcting only the mechanically derived count is
+accepted as an untrusted report.
+
+`hooks/closed_world_guard.py` separates row-codec validity from cross-object
+closure. Fixtures first prove every owner and handoff row matches its exact
+schema, then detect a missing owner, an orphan owner, and a many-to-one relation.
+The only absent relation accepted is a terminal object explicitly marked
+`tombstone` or `clear`; any other absence state fails. The capsule freezes the
+schemas, nonterminal one-to-one cardinality, absence semantics, and terminal
+exception in the compact invariant. Parent fresh recomputation remains the
+integration authority.
+
+Review continuation now also freezes the old review base and tip plus an exact
+narrowed objective. A same-prefix but unequal corrected full OID is rejected at
+capture; neither the child nor thread continuity may guess the intended tip.

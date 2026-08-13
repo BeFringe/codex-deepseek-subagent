@@ -186,11 +186,35 @@ assignment 的 capsule，不能被 provider profile 默认、推断或归一化�
     "review_continuation": {
       "prior_assignment_id": "uuid",
       "frozen_cumulative_base_oid": "full oid",
+      "prior_review_base_oid": "full oid",
+      "prior_review_tip_oid": "full oid",
       "corrected_tip_oid": "full oid",
       "prior_findings_sha256": "hex",
       "unresolved_finding_ids": ["stable finding id"],
+      "exact_narrowed_objective": "review only these findings at this tip",
       "require_clean_worktree": true
-    }
+    },
+    "closed_registries": [
+      {
+        "registry_id": "stable registry id",
+        "closed_item_ids": ["exact item id"],
+        "count_authority": "mechanical_cardinality_only"
+      }
+    ],
+    "relation_contracts": [
+      {
+        "relation_id": "stable relation id",
+        "owner_schema_fields": ["owner_id", "terminal_state"],
+        "handoff_schema_fields": ["handoff_id", "owner_id", "terminal_state"],
+        "owner_id_field": "owner_id",
+        "handoff_id_field": "handoff_id",
+        "handoff_owner_id_field": "owner_id",
+        "terminal_state_field": "terminal_state",
+        "referential_cardinality": "exactly_one_to_one_nonterminal",
+        "absence_semantics": "missing_or_orphan_relation_is_error",
+        "allowed_terminal_absence": "tombstone_or_clear_only"
+      }
+    ]
   },
   "preexisting_dirty": [
     {"path": "repo-relative/path", "status": " M", "kind": "file", "sha256": "hex-or-null"}
@@ -232,8 +256,15 @@ assignment 的 capsule，不能被 provider profile 默认、推断或归一化�
   canonical output 属于同一 authority。output 从 root 开始用 no-follow dirfd walk 打开，并在
   结束时重新证明 terminal 仍是同一 regular file identity。
 - review follow-up 是新 assignment，不是旧线程 authority 的自然延长。它冻结 prior assignment、
-  原 cumulative base、fresh corrected tip、prior-findings hash、未解决 finding 集合与 clean
-  worktree requirement；任何一项缺失都不能凭 thread continuity 补足。
+  原 cumulative base、旧 review base/tip、fresh corrected tip、prior-findings hash、未解决
+  finding 集合、exact narrowed objective 与 clean worktree requirement；任何一项缺失都不能
+  凭 thread continuity 补足。
+- worker 列举的 item/test IDs 可以是高容量 contribution，但 narrative aggregate count 没有
+  authority。closed registry 冻结 exact IDs；SubagentStop 从 item cardinality 机械重算 count，
+  并同时核对顺序、重复与 registry digest。
+- strict object codec 只证明单行可解析，不证明 closed-world relation 完整。relation contract
+  同时冻结两侧 object schema、非终态 1:1 cardinality、missing/orphan 是 error 的 absence
+  semantics，以及唯一 `tombstone|clear` terminal absence 例外；parent/owner 必须 fresh recompute。
 - pre-existing dirty hashes 防止 child 把用户修改误报为自己的贡献。
 - `capture_preflight` 是 parent 可选的只收窄断言：Hook 只比较 expected root/branch/full
   HEAD 与当前实际 Git snapshot，任何不相等都在 spawn 前 block。它不能授权 branch/commit、
@@ -401,6 +432,14 @@ child final return 必须包含一个可机读对象：
   "git_status_short": "exact text",
   "changed_paths": [{"path": "relative/path", "sha256": "hex"}],
   "verification": [{"command": "exact command", "exit_code": 0}],
+  "inventory_summaries": [
+    {
+      "registry_id": "stable registry id",
+      "declared_count": 18,
+      "item_ids": ["exact item id"],
+      "items_sha256": "hex"
+    }
+  ],
   "authority_violation": false,
   "assigned_slice_complete": true
 }
@@ -410,6 +449,9 @@ child 无权把 `assigned_slice_complete` 提升为 parent task/feature complete
 称无 assignment/无写入，但 consumed handoff 与 owned-path hashes 证明发生写入，事件
 分类为 return-context loss；冻结贡献并由 parent fresh verify，不能信 narrative，也不能
 仅因 narrative 丢失而丢弃磁盘证据。
+同样，`declared_count` 不能由 child narrative 自证。SubagentStop 必须要求 summary 精确覆盖
+capsule 的 closed registries，并验证 `declared_count == len(item_ids)`、exact item IDs 与 canonical
+digest；任何聚合漂移都 block final return，即使每个 item ID 单独有效。
 
 无 final return 的 watchdog evidence 必须另外分类：baseline root/branch/HEAD/index/status/
 path hashes 全部未变为 `unresponsive_no_disk_change`；有磁盘 delta 但未完成首次 attestation
