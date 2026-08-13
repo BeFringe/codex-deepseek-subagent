@@ -75,8 +75,12 @@ def capsule(assignment, **overrides):
                 "known_true_failure_codes": [],
                 "generic_unclassified_failure_code": "TASK.FAILURE_UNCLASSIFIED",
                 "allow_literal_expensive_rerun": False,
+                "allowed_failure_code_localities": {},
             },
             "proven_input_baselines": [],
+            "termination_contract": {"catalog_closed": True, "boundary_catalog": []},
+            "evidence_binding": None,
+            "review_continuation": None,
         },
         "preexisting_dirty": [
             {
@@ -146,6 +150,9 @@ class CompatibilityStateTests(unittest.TestCase):
                 "known_true_failure_codes": ["OWNER.QUERY_FAILED"],
                 "generic_unclassified_failure_code": "TASK.FAILURE_UNCLASSIFIED",
                 "allow_literal_expensive_rerun": False,
+                "allowed_failure_code_localities": {
+                    "OWNER.QUERY_FAILED": ["overall", "per_item"]
+                },
             },
             "proven_input_baselines": [
                 {
@@ -158,6 +165,9 @@ class CompatibilityStateTests(unittest.TestCase):
                     "replay_policy": "reuse_without_authority_expansion",
                 }
             ],
+            "termination_contract": {"catalog_closed": True, "boundary_catalog": []},
+            "evidence_binding": None,
+            "review_continuation": None,
         }
         value = capsule(
             assignment,
@@ -190,8 +200,14 @@ class CompatibilityStateTests(unittest.TestCase):
                 "known_true_failure_codes": ["OWNER.FAILURE"],
                 "generic_unclassified_failure_code": "TASK.FAILURE_UNCLASSIFIED",
                 "allow_literal_expensive_rerun": False,
+                "allowed_failure_code_localities": {
+                    "OWNER.FAILURE": ["overall"]
+                },
             },
             "proven_input_baselines": [],
+            "termination_contract": {"catalog_closed": True, "boundary_catalog": []},
+            "evidence_binding": None,
+            "review_continuation": None,
         }
         value["capsule_sha256"] = capsule_sha256(value)
 
@@ -213,6 +229,69 @@ class CompatibilityStateTests(unittest.TestCase):
         ]
         value["capsule_sha256"] = capsule_sha256(value)
         with self.assertRaisesRegex(CorruptState, "explicitly non-authorizing"):
+            validate_capsule(value, assignment)
+
+    def test_review_continuation_freezes_base_tip_findings_and_evidence_identity(self):
+        assignment = "review only the corrected immutable tip"
+        prior_assignment_id = str(uuid.uuid4())
+        value = capsule(
+            assignment,
+            owned_paths=[],
+            excluded_paths=[],
+            preexisting_dirty=[],
+        )
+        execution = value["execution_contract"]
+        execution.update(
+            {
+                "posture": "strict_read_only",
+                "review_range": {"base_oid": "9" * 64, "head_oid": "a" * 64},
+                "required_invariants": ["prior P1 findings receive a fresh adjudication"],
+                "review_continuation": {
+                    "prior_assignment_id": prior_assignment_id,
+                    "frozen_cumulative_base_oid": "9" * 64,
+                    "corrected_tip_oid": "a" * 64,
+                    "prior_findings_sha256": "d" * 64,
+                    "unresolved_finding_ids": ["P1-1", "P1-2"],
+                    "require_clean_worktree": True,
+                },
+                "evidence_binding": {
+                    "executed_root": "/workspace/repository",
+                    "hashed_root": "/workspace/repository",
+                    "source_identity": {"kind": "git_commit", "value": "a" * 64},
+                    "canonical_output": "evidence/review.json",
+                    "no_follow_dirfd_walk": True,
+                    "terminal_regular_file_reproof": True,
+                    "preflight_before_expensive_execution": True,
+                },
+            }
+        )
+        value["capsule_sha256"] = capsule_sha256(value)
+
+        validate_capsule(value, assignment)
+
+        execution["review_continuation"]["corrected_tip_oid"] = "8" * 64
+        value["capsule_sha256"] = capsule_sha256(value)
+        with self.assertRaisesRegex(CorruptState, "tip does not match"):
+            validate_capsule(value, assignment)
+
+    def test_crash_catalog_rejects_exception_as_process_death_primitive(self):
+        assignment = "reject finally-unwinding crash claim"
+        value = capsule(assignment)
+        value["execution_contract"]["termination_contract"] = {
+            "catalog_closed": True,
+            "boundary_catalog": [
+                {
+                    "boundary_id": "before-journal",
+                    "seam": "owner.transition",
+                    "ordinal": 0,
+                    "termination_primitive": "KeyboardInterrupt",
+                    "expected_durable_resolution": "UNJOURNALED",
+                }
+            ],
+        }
+        value["capsule_sha256"] = capsule_sha256(value)
+
+        with self.assertRaisesRegex(CorruptState, "os._exit"):
             validate_capsule(value, assignment)
 
     def test_keyed_pending_assignments_can_be_staged_concurrently(self):

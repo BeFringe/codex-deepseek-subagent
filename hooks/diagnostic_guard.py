@@ -11,22 +11,36 @@ class DiagnosticViolation(RuntimeError):
     pass
 
 
-def classify_owner_failure(execution_contract: Mapping[str, object], owner_code: object) -> dict:
+def classify_owner_failure(
+    execution_contract: Mapping[str, object],
+    owner_code: object,
+    *,
+    locality: str,
+) -> dict:
     """Preserve declared owner codes and use generic only for unclassified failures."""
     diagnostics = execution_contract["diagnostics"]
     if not isinstance(diagnostics, Mapping):
         raise DiagnosticViolation("diagnostic contract is missing")
+    if locality not in {"overall", "per_item"}:
+        raise DiagnosticViolation("diagnostic locality is invalid")
     stable = diagnostics["stable_failure_codes"]
     generic = diagnostics["generic_unclassified_failure_code"]
     if isinstance(owner_code, str) and owner_code in stable:
+        allowed = diagnostics["allowed_failure_code_localities"][owner_code]
+        if locality not in allowed:
+            raise DiagnosticViolation(
+                f"stable owner failure code {owner_code} is not allowed at {locality} locality"
+            )
         return {
             "owner_failure_code": owner_code,
             "returned_failure_code": owner_code,
+            "diagnostic_locality": locality,
             "used_generic_fallback": False,
         }
     return {
         "owner_failure_code": owner_code if isinstance(owner_code, str) else None,
         "returned_failure_code": generic,
+        "diagnostic_locality": locality,
         "used_generic_fallback": True,
     }
 

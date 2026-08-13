@@ -133,6 +133,31 @@ known-true stable failure code, while requiring `non_authorizing=true` and
 completion authority. Stable owner failure codes pass through unchanged; only
 missing or unclassified codes may map to the generic fallback. A prohibition on
 literal expensive reruns remains authority even when a review is long-running.
+Each stable failure code must explicitly allow `overall`, `per_item`, or both
+diagnostic localities. Moving a code between declared localities is not missing
+behavior; an undeclared locality is not silently relabelled generic. The parent
+still freshly adjudicates behavior instead of inferring it from nesting.
+
+A crash claim binds a closed boundary id/seam/ordinal catalog, the literal
+`os._exit` primitive, and an expected durable resolution from `UNJOURNALED`,
+`BLOCKED`, `CANCELLED`, `COMPLETED`, or `TERMINAL_NOOP`. KeyboardInterrupt,
+exceptions, and finally unwinding are not process-death evidence. Every result
+must be observed by an owner-internal fresh process. The public fixture accepts
+an owner observer callback, not caller-precomputed crash reports that could
+recreate shallow self-attestation.
+
+An evidence runner preflights that executed checkout, hashed checkout, Git
+source identity, and canonical output share one authority before expensive
+execution. It walks root to output with no-follow dirfds and re-proves that the
+terminal is the same regular-file identity afterwards.
+
+A review follow-up is a new assignment, not authority inherited from thread
+continuity. It freezes the prior assignment, cumulative base, fresh corrected
+tip, prior-finding digest, unresolved finding ids, and clean-worktree
+requirement. The isolated adapter currently captures only trusted
+`PreToolUse(spawn_agent)`; no equivalent trusted native follow-up/send-input
+capture is proven. The continuation fields are therefore schema/capture
+fixtures, not a claim that live same-child follow-up authority is qualified.
 
 ## State lifecycle
 

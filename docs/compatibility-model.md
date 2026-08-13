@@ -146,7 +146,10 @@ assignment 的 capsule，不能被 provider profile 默认、推断或归一化�
       "stable_failure_codes": ["OWNER.FAILURE_CODE"],
       "known_true_failure_codes": ["OWNER.FAILURE_CODE"],
       "generic_unclassified_failure_code": "TASK.FAILURE_UNCLASSIFIED",
-      "allow_literal_expensive_rerun": false
+      "allow_literal_expensive_rerun": false,
+      "allowed_failure_code_localities": {
+        "OWNER.FAILURE_CODE": ["overall", "per_item"]
+      }
     },
     "proven_input_baselines": [
       {
@@ -158,7 +161,36 @@ assignment 的 capsule，不能被 provider profile 默认、推断或归一化�
         "non_authorizing": true,
         "replay_policy": "reuse_without_authority_expansion"
       }
-    ]
+    ],
+    "termination_contract": {
+      "catalog_closed": true,
+      "boundary_catalog": [
+        {
+          "boundary_id": "stable id",
+          "seam": "owner boundary",
+          "ordinal": 0,
+          "termination_primitive": "os._exit",
+          "expected_durable_resolution": "UNJOURNALED|BLOCKED|CANCELLED|COMPLETED|TERMINAL_NOOP"
+        }
+      ]
+    },
+    "evidence_binding": {
+      "executed_root": "/absolute/resolved/git/root",
+      "hashed_root": "/absolute/resolved/git/root",
+      "source_identity": {"kind": "git_commit", "value": "full oid"},
+      "canonical_output": "repo-relative/evidence.json",
+      "no_follow_dirfd_walk": true,
+      "terminal_regular_file_reproof": true,
+      "preflight_before_expensive_execution": true
+    },
+    "review_continuation": {
+      "prior_assignment_id": "uuid",
+      "frozen_cumulative_base_oid": "full oid",
+      "corrected_tip_oid": "full oid",
+      "prior_findings_sha256": "hex",
+      "unresolved_finding_ids": ["stable finding id"],
+      "require_clean_worktree": true
+    }
   },
   "preexisting_dirty": [
     {"path": "repo-relative/path", "status": " M", "kind": "file", "sha256": "hex-or-null"}
@@ -189,6 +221,19 @@ assignment 的 capsule，不能被 provider profile 默认、推断或归一化�
   绕过 owner-internal derivation boundary。
 - stable owner failure code 必须原样透传；只有缺失或未分类 code 才能映射到 generic。
   禁止 literal expensive rerun 是 capsule authority，不得因 worker 运行时间长而自行放宽。
+- 每个 stable failure code 必须明示允许出现在 `overall`、`per_item` 或两者。合法 locality
+  变化不是行为缺失；未声明 locality 也不能被 adapter 静默改写为 generic。最终行为是否满足
+  要求仍由 parent fresh adjudicate，不能从 diagnostic 层级自行推断。
+- crash claim 必须覆盖闭合的 boundary id/seam/ordinal catalog；`KeyboardInterrupt`、exception
+  或 finally unwind 不是 process-death evidence。每个 boundary 必须真实使用 `os._exit`，再由
+  owner-internal fresh-process observer 核对一个明示的 durable resolution；公开 API 不接受
+  caller 预制的 crash reports，避免再次产生浅层自证。
+- evidence runner 在昂贵执行前必须证明 executed root、hashed root、Git source identity 与
+  canonical output 属于同一 authority。output 从 root 开始用 no-follow dirfd walk 打开，并在
+  结束时重新证明 terminal 仍是同一 regular file identity。
+- review follow-up 是新 assignment，不是旧线程 authority 的自然延长。它冻结 prior assignment、
+  原 cumulative base、fresh corrected tip、prior-findings hash、未解决 finding 集合与 clean
+  worktree requirement；任何一项缺失都不能凭 thread continuity 补足。
 - pre-existing dirty hashes 防止 child 把用户修改误报为自己的贡献。
 - `capture_preflight` 是 parent 可选的只收窄断言：Hook 只比较 expected root/branch/full
   HEAD 与当前实际 Git snapshot，任何不相等都在 spawn 前 block。它不能授权 branch/commit、
@@ -250,6 +295,12 @@ interrupt ack 都不能替代证明。
 严格只读的 committed-range review 不认领 mutation ownership，因此不走上述 handover。
 它仍须在每次工具调用和 final return 重新核对 compact invariant、clean snapshot 与 exact
 review range；若磁盘漂移则停止，而不是把 read-only capsule 升格为 mutation authority。
+
+当前 isolated adapter 只从可信 `PreToolUse(spawn_agent)` 捕获新 assignment；尚未证明 native
+follow-up/send-input 的等价可信事件与 immutable receipt。因此 `review_continuation` 目前只是
+schema 与 capture fixture，不能声称同一 live child 的 follow-up authority 已 durable 绑定。
+在该 Hook surface 被证明前，应使用新的可信 spawn，或把 native follow-up 保持在 parent 自行
+fresh review 的 read-only contribution 范围。
 
 混合贡献必须整体冻结，由 parent 以 barrier 前后 hashes、source review 和 fresh tests 裁决；
 不能依据后一 child 的 attestation 把所有 bytes 单独归因给后一 assignment。

@@ -40,12 +40,16 @@ EXECUTION_CONTRACT_FIELDS = {
     "required_invariants",
     "diagnostics",
     "proven_input_baselines",
+    "termination_contract",
+    "evidence_binding",
+    "review_continuation",
 }
 DIAGNOSTIC_CONTRACT_FIELDS = {
     "stable_failure_codes",
     "known_true_failure_codes",
     "generic_unclassified_failure_code",
     "allow_literal_expensive_rerun",
+    "allowed_failure_code_localities",
 }
 PROVEN_INPUT_BASELINE_FIELDS = {
     "baseline_id",
@@ -57,6 +61,40 @@ PROVEN_INPUT_BASELINE_FIELDS = {
     "replay_policy",
 }
 FAILURE_CODE_RE = re.compile(r"^[A-Z][A-Z0-9_.-]*$")
+FINDING_ID_RE = re.compile(r"^[A-Za-z0-9_.:-]+$")
+DIAGNOSTIC_LOCALITIES = {"overall", "per_item"}
+TERMINATION_CONTRACT_FIELDS = {"catalog_closed", "boundary_catalog"}
+TERMINATION_BOUNDARY_FIELDS = {
+    "boundary_id",
+    "seam",
+    "ordinal",
+    "termination_primitive",
+    "expected_durable_resolution",
+}
+DURABLE_RESOLUTIONS = {
+    "UNJOURNALED",
+    "BLOCKED",
+    "CANCELLED",
+    "COMPLETED",
+    "TERMINAL_NOOP",
+}
+EVIDENCE_BINDING_FIELDS = {
+    "executed_root",
+    "hashed_root",
+    "source_identity",
+    "canonical_output",
+    "no_follow_dirfd_walk",
+    "terminal_regular_file_reproof",
+    "preflight_before_expensive_execution",
+}
+REVIEW_CONTINUATION_FIELDS = {
+    "prior_assignment_id",
+    "frozen_cumulative_base_oid",
+    "corrected_tip_oid",
+    "prior_findings_sha256",
+    "unresolved_finding_ids",
+    "require_clean_worktree",
+}
 PARENT_ADJUDICATION_FIELDS = {
     "location_integrity",
     "mutation_scope_integrity",
@@ -489,6 +527,17 @@ def validate_capsule(capsule: object, assignment: str) -> dict:
         raise CorruptState("generic unclassified code must not shadow a stable owner code")
     if type(diagnostics["allow_literal_expensive_rerun"]) is not bool:
         raise CorruptState("allow_literal_expensive_rerun must be boolean")
+    localities = diagnostics["allowed_failure_code_localities"]
+    if not isinstance(localities, dict) or set(localities) != set(stable_codes):
+        raise CorruptState("every stable failure code must declare exact allowed localities")
+    for code, allowed in localities.items():
+        if (
+            not isinstance(allowed, list)
+            or not allowed
+            or any(item not in DIAGNOSTIC_LOCALITIES for item in allowed)
+            or len(allowed) != len(set(allowed))
+        ):
+            raise CorruptState(f"allowed failure-code localities are invalid for {code}")
     baselines = execution["proven_input_baselines"]
     if not isinstance(baselines, list):
         raise CorruptState("execution_contract.proven_input_baselines must be a list")
@@ -524,6 +573,89 @@ def validate_capsule(capsule: object, assignment: str) -> dict:
         if baseline["replay_policy"] != "reuse_without_authority_expansion":
             raise CorruptState("proven input baseline replay policy is invalid")
 
+    termination = execution["termination_contract"]
+    if not isinstance(termination, dict) or set(termination) != TERMINATION_CONTRACT_FIELDS:
+        raise CorruptState("termination_contract fields are not exact")
+    if termination["catalog_closed"] is not True:
+        raise CorruptState("termination boundary catalog must be explicitly closed")
+    boundary_catalog = termination["boundary_catalog"]
+    if not isinstance(boundary_catalog, list):
+        raise CorruptState("termination boundary catalog must be a list")
+    boundary_ids = set()
+    seam_ordinals = set()
+    for boundary in boundary_catalog:
+        if not isinstance(boundary, dict) or set(boundary) != TERMINATION_BOUNDARY_FIELDS:
+            raise CorruptState("termination boundary fields are not exact")
+        boundary_id = _nonempty_string(boundary["boundary_id"], "boundary_id")
+        seam = _nonempty_string(boundary["seam"], "termination seam")
+        ordinal = boundary["ordinal"]
+        if type(ordinal) is not int or ordinal < 0:
+            raise CorruptState("termination boundary ordinal must be non-negative")
+        if boundary_id in boundary_ids or (seam, ordinal) in seam_ordinals:
+            raise CorruptState("termination boundary catalog contains a duplicate")
+        boundary_ids.add(boundary_id)
+        seam_ordinals.add((seam, ordinal))
+        if boundary["termination_primitive"] != "os._exit":
+            raise CorruptState("crash evidence requires the os._exit termination primitive")
+        if boundary["expected_durable_resolution"] not in DURABLE_RESOLUTIONS:
+            raise CorruptState("termination boundary durable resolution is invalid")
+
+    evidence_binding = execution["evidence_binding"]
+    if evidence_binding is not None:
+        if not isinstance(evidence_binding, dict) or set(evidence_binding) != EVIDENCE_BINDING_FIELDS:
+            raise CorruptState("evidence_binding fields are not exact")
+        executed_root = pathlib.Path(
+            _nonempty_string(evidence_binding["executed_root"], "evidence executed_root")
+        )
+        hashed_root = pathlib.Path(
+            _nonempty_string(evidence_binding["hashed_root"], "evidence hashed_root")
+        )
+        if not executed_root.is_absolute() or not hashed_root.is_absolute():
+            raise CorruptState("evidence roots must be absolute")
+        if executed_root.resolve() != root_path.resolve() or hashed_root.resolve() != root_path.resolve():
+            raise CorruptState("executed, hashed, and capsule roots must be identical")
+        source_identity = evidence_binding["source_identity"]
+        if not isinstance(source_identity, dict) or set(source_identity) != {"kind", "value"}:
+            raise CorruptState("evidence source_identity fields are not exact")
+        if source_identity["kind"] != "git_commit" or not GIT_OID_RE.fullmatch(
+            str(source_identity["value"])
+        ):
+            raise CorruptState("evidence source identity must be a full Git commit id")
+        if source_identity["value"] != root["base_commit"]:
+            raise CorruptState("evidence source identity must match the captured base commit")
+        _relative_paths([evidence_binding["canonical_output"]], "evidence canonical_output")
+        for field in (
+            "no_follow_dirfd_walk",
+            "terminal_regular_file_reproof",
+            "preflight_before_expensive_execution",
+        ):
+            if evidence_binding[field] is not True:
+                raise CorruptState(f"evidence_binding.{field} must be true")
+
+    continuation = execution["review_continuation"]
+    if continuation is not None:
+        if not isinstance(continuation, dict) or set(continuation) != REVIEW_CONTINUATION_FIELDS:
+            raise CorruptState("review_continuation fields are not exact")
+        _uuid(continuation["prior_assignment_id"], "prior_assignment_id")
+        for field in ("frozen_cumulative_base_oid", "corrected_tip_oid"):
+            if not isinstance(continuation[field], str) or not GIT_OID_RE.fullmatch(
+                continuation[field]
+            ):
+                raise CorruptState(f"review_continuation.{field} is invalid")
+        if not isinstance(continuation["prior_findings_sha256"], str) or not SHA256_RE.fullmatch(
+            continuation["prior_findings_sha256"]
+        ):
+            raise CorruptState("review_continuation.prior_findings_sha256 is invalid")
+        finding_ids = continuation["unresolved_finding_ids"]
+        if (
+            not isinstance(finding_ids, list)
+            or any(not isinstance(item, str) or not FINDING_ID_RE.fullmatch(item) for item in finding_ids)
+            or len(finding_ids) != len(set(finding_ids))
+        ):
+            raise CorruptState("review_continuation.unresolved_finding_ids is invalid")
+        if continuation["require_clean_worktree"] is not True:
+            raise CorruptState("review continuation must require a clean worktree")
+
     if posture == "strict_read_only":
         if review_range is None:
             raise CorruptState("strict read-only execution requires an exact review range")
@@ -541,8 +673,15 @@ def validate_capsule(capsule: object, assignment: str) -> dict:
             raise CorruptState("strict read-only execution cannot authorize a literal expensive rerun")
         if capsule.get("preexisting_dirty") != []:
             raise CorruptState("strict read-only execution cannot capture pre-existing dirty paths")
+        if continuation is not None:
+            if continuation["frozen_cumulative_base_oid"] != review_range["base_oid"]:
+                raise CorruptState("review continuation changed the frozen cumulative base")
+            if continuation["corrected_tip_oid"] != review_range["head_oid"]:
+                raise CorruptState("review continuation tip does not match the review range")
     elif review_range is not None:
         raise CorruptState("direct-write execution cannot reuse the read-only review range field")
+    elif continuation is not None:
+        raise CorruptState("review continuation is valid only for strict read-only execution")
 
     dirty = capsule.get("preexisting_dirty")
     if not isinstance(dirty, list):
