@@ -127,9 +127,11 @@ class RuntimeGuardTests(unittest.TestCase):
                 "base_git_status_short": "",
             },
             "capture_preflight": None,
+            "capture_snapshot_sha256": "e" * 64,
             "owned_paths": ["owned"],
             "excluded_paths": ["owned/excluded"],
             "git_authority": {"stage": False, "commit": False, "branch": False, "push": False},
+            "ownership_handover": [],
             "stop_condition": "assigned slice completion only",
             "verification": ["fixture verification"],
             "authority_provenance": {
@@ -297,6 +299,9 @@ class RuntimeGuardTests(unittest.TestCase):
         self.assertEqual(runtime_guard.collect_git_snapshot(str(self.repository))["changed_paths"], [])
 
     def test_pre_tool_use_reads_actual_paths_and_blocks_scope_expansion(self):
+        runtime_guard.pre_tool_use(
+            self.store, self.child_hook("PreToolUse", tool_name="view_image")
+        )
         runtime_guard.pre_compact(self.store, self.child_hook("PreCompact"))
         (self.repository / "outside.txt").write_text("unauthorized\n", encoding="utf-8")
 

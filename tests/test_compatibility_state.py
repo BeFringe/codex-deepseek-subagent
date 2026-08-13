@@ -20,6 +20,7 @@ IdentityMismatch = compatibility_state.IdentityMismatch
 StateStore = compatibility_state.StateStore
 capsule_sha256 = compatibility_state.capsule_sha256
 sha256_bytes = compatibility_state.sha256_bytes
+git_snapshot_sha256 = compatibility_state.git_snapshot_sha256
 validate_capsule = compatibility_state.validate_capsule
 
 
@@ -46,6 +47,7 @@ def capsule(assignment, **overrides):
             "base_git_status_short": "",
         },
         "capture_preflight": None,
+        "capture_snapshot_sha256": "e" * 64,
         "owned_paths": ["owned"],
         "excluded_paths": ["owned/excluded"],
         "git_authority": {
@@ -54,6 +56,7 @@ def capsule(assignment, **overrides):
             "branch": False,
             "push": False,
         },
+        "ownership_handover": [],
         "stop_condition": "assigned slice completion only",
         "verification": ["run the provider-free fixture"],
         "authority_provenance": {
@@ -283,6 +286,36 @@ class CompatibilityStateTests(unittest.TestCase):
         )
 
         self.assertEqual(consumed.parent.name, "consumed")
+
+    def test_atomic_stage_recheck_rejects_capture_snapshot_drift(self):
+        assignment = "stage only if the capture snapshot remains exact"
+        baseline = {
+            "root": "/workspace/repository",
+            "branch": "main",
+            "head": "a" * 64,
+            "index_changed": False,
+            "git_status_short": "",
+            "changed_paths": [],
+        }
+        value = capsule(
+            assignment,
+            capture_snapshot_sha256=git_snapshot_sha256(baseline),
+        )
+        value["capsule_sha256"] = capsule_sha256(value)
+        drifted = dict(baseline, git_status_short="?? owned/late.txt")
+
+        with self.assertRaisesRegex(
+            AuthorityViolation,
+            "capture snapshot changed",
+        ):
+            self.store.stage_with_ownership_recheck(
+                value,
+                assignment,
+                drifted,
+                observed_at=dt.datetime.now(dt.timezone.utc),
+            )
+
+        self.assertFalse(self.store.path("pending", value["handoff_id"]).exists())
 
 
 if __name__ == "__main__":

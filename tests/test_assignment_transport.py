@@ -1,5 +1,6 @@
 import datetime as dt
 from concurrent.futures import ThreadPoolExecutor
+import hashlib
 import importlib.util
 import json
 from pathlib import Path
@@ -195,6 +196,38 @@ class AssignmentTransportTests(unittest.TestCase):
             check=False,
         )
 
+    def freeze_active_and_record_barrier(self, task_name="bounded_task"):
+        active_path = next((self.store.root / "active").glob("*.json"))
+        envelope = json.loads(active_path.read_text(encoding="utf-8"))
+        assignment_id = envelope["capsule"]["assignment_id"]
+        snapshot = runtime_guard.collect_git_snapshot(str(self.repository))
+        self.store.terminate_active(
+            assignment_id,
+            {
+                "schema": 1,
+                "reason": "parent_interrupt_requested",
+                "classification": (
+                    "unresponsive_with_contribution"
+                    if snapshot["changed_paths"]
+                    else "unresponsive_no_disk_change"
+                ),
+            },
+        )
+        observed_at = dt.datetime.now(dt.timezone.utc)
+        barrier = self.store.record_quiescence_barrier(
+            assignment_id,
+            {
+                "receipt_id": f"terminated-{task_name}",
+                "runtime_session_id": "runtime-session",
+                "child_thread_id": f"child-{task_name}",
+                "guarantee": "child_terminated_and_mutations_quiesced",
+                "terminated_at": observed_at.isoformat(),
+            },
+            snapshot,
+            observed_at=observed_at,
+        )
+        return assignment_id, barrier
+
     def test_non_target_worker_passes_without_state_or_input_rewrite(self):
         hook = self.spawn_hook(tool_input={"agent_type": "default"})
 
@@ -360,10 +393,153 @@ class AssignmentTransportTests(unittest.TestCase):
         )
         self.assertEqual(stopped, {})
 
+    def test_interrupt_ack_without_quiescence_cannot_reassign_overlapping_paths(self):
+        self.capture(self.spawn_hook())
+        child = self.child_hook()
+        assignment_transport.subagent_start(self.store, child)
+        active_path = next((self.store.root / "active").glob("*.json"))
+        assignment_id = json.loads(active_path.read_text(encoding="utf-8"))["capsule"][
+            "assignment_id"
+        ]
+        self.store.terminate_active(
+            assignment_id,
+            {"schema": 1, "reason": "interrupt_ack", "classification": "unresponsive_no_disk_change"},
+        )
+
+        with self.assertRaisesRegex(
+            compatibility_state.AuthorityViolation,
+            "not mutation quiescence",
+        ):
+            self.store.record_quiescence_barrier(
+                assignment_id,
+                {
+                    "receipt_id": "interrupt-only",
+                    "runtime_session_id": "runtime-session",
+                    "child_thread_id": "child-bounded_task",
+                    "guarantee": "interrupt_acknowledged",
+                    "terminated_at": dt.datetime.now(dt.timezone.utc).isoformat(),
+                },
+                runtime_guard.collect_git_snapshot(str(self.repository)),
+            )
+
+        replacement = self.capture(self.spawn_hook("replacement_task"))
+        self.assertEqual(replacement["hookSpecificOutput"]["permissionDecision"], "deny")
+        self.assertIn("no host termination", replacement["hookSpecificOutput"]["permissionDecisionReason"])
+
+    def test_frozen_old_child_is_blocked_and_barrier_allows_linked_reassignment(self):
+        self.capture(self.spawn_hook())
+        old_child = self.child_hook()
+        assignment_transport.subagent_start(self.store, old_child)
+        prior_assignment_id, _ = self.freeze_active_and_record_barrier()
+
+        denied = runtime_guard.pre_tool_use(
+            self.store,
+            dict(old_child, hook_event_name="PreToolUse", tool_name="view_image"),
+        )
+        self.assertEqual(denied["hookSpecificOutput"]["permissionDecision"], "deny")
+
+        replacement = self.capture(self.spawn_hook("replacement_task"))
+        self.assertNotIn("permissionDecision", replacement["hookSpecificOutput"])
+        pending = next((self.store.root / "pending").glob("*.json"))
+        capsule = json.loads(pending.read_text(encoding="utf-8"))["capsule"]
+        self.assertEqual(
+            capsule["ownership_handover"][0]["prior_assignment_id"],
+            prior_assignment_id,
+        )
+
+    def test_quiesced_prior_dirty_bytes_are_linked_not_attributed_to_replacement(self):
+        self.capture(self.spawn_hook())
+        assignment_transport.subagent_start(self.store, self.child_hook())
+        (self.repository / "owned").mkdir()
+        prior_path = self.repository / "owned" / "prior.txt"
+        prior_path.write_text("prior child contribution\n", encoding="utf-8")
+        prior_assignment_id, _ = self.freeze_active_and_record_barrier()
+
+        replacement = self.capture(self.spawn_hook("replacement_task"))
+
+        self.assertNotIn("permissionDecision", replacement["hookSpecificOutput"])
+        pending = next((self.store.root / "pending").glob("*.json"))
+        capsule = json.loads(pending.read_text(encoding="utf-8"))["capsule"]
+        self.assertEqual(
+            capsule["ownership_handover"][0]["prior_assignment_id"],
+            prior_assignment_id,
+        )
+        dirty = {item["path"]: item for item in capsule["preexisting_dirty"]}
+        self.assertIn("owned/prior.txt", dirty)
+        self.assertEqual(
+            dirty["owned/prior.txt"]["sha256"],
+            hashlib.sha256(prior_path.read_bytes()).hexdigest(),
+        )
+
+    def test_late_mutation_after_barrier_blocks_new_child_and_marks_mixed_provenance(self):
+        self.capture(self.spawn_hook())
+        assignment_transport.subagent_start(self.store, self.child_hook())
+        self.freeze_active_and_record_barrier()
+        self.capture(self.spawn_hook("replacement_task"))
+        (self.repository / "owned").mkdir()
+        (self.repository / "owned" / "late.txt").write_text("late old-child write\n", encoding="utf-8")
+        replacement_child = self.child_hook("replacement_task")
+        assignment_transport.subagent_start(self.store, replacement_child)
+
+        denied = runtime_guard.pre_tool_use(
+            self.store,
+            dict(replacement_child, hook_event_name="PreToolUse", tool_name="view_image"),
+        )
+
+        self.assertEqual(denied["hookSpecificOutput"]["permissionDecision"], "deny")
+        unresolved = [
+            json.loads(path.read_text(encoding="utf-8"))
+            for path in (self.store.root / "unresolved").glob("*.json")
+            if "termination_evidence" in json.loads(path.read_text(encoding="utf-8"))
+        ]
+        latest = next(
+            item
+            for item in unresolved
+            if item["capsule"]["requested_task_name"] == "replacement_task"
+        )
+        self.assertEqual(
+            latest["termination_evidence"]["classification"],
+            "late_mutation_after_interrupt",
+        )
+        self.assertEqual(
+            latest["termination_evidence"]["provenance_status"],
+            "overlapping_assignment_provenance",
+        )
+
+    def test_late_mutation_before_reassignment_is_recorded_and_spawn_is_blocked(self):
+        self.capture(self.spawn_hook())
+        assignment_transport.subagent_start(self.store, self.child_hook())
+        self.freeze_active_and_record_barrier()
+        (self.repository / "owned").mkdir()
+        (self.repository / "owned" / "late.txt").write_text("late old-child write\n", encoding="utf-8")
+
+        replacement = self.capture(self.spawn_hook("replacement_task"))
+
+        self.assertEqual(replacement["hookSpecificOutput"]["permissionDecision"], "deny")
+        self.assertIn("late mutation", replacement["hookSpecificOutput"]["permissionDecisionReason"])
+        overlap = next((self.store.root / "overlap").glob("*.json"))
+        evidence = json.loads(overlap.read_text(encoding="utf-8"))
+        self.assertEqual(
+            evidence["classifications"],
+            ["late_mutation_after_interrupt", "overlapping_assignment_provenance"],
+        )
+
     def test_concurrent_distinct_spawns_bind_to_their_own_children(self):
         tasks = ["task_one", "task_two", "task_three"]
+        def distinct_spawn(task):
+            authority = json.loads(
+                self.message().split("BEGIN CODEX WORKER AUTHORITY\n", 1)[1].split(
+                    "\nEND CODEX WORKER AUTHORITY", 1
+                )[0]
+            )
+            authority["owned_paths"] = [f"owned/{task}"]
+            authority["excluded_paths"] = []
+            return self.spawn_hook(
+                task,
+                tool_input={"message": self.message(authority=authority)},
+            )
         with ThreadPoolExecutor(max_workers=3) as executor:
-            captured = list(executor.map(lambda task: self.capture(self.spawn_hook(task)), tasks))
+            captured = list(executor.map(lambda task: self.capture(distinct_spawn(task)), tasks))
         self.assertTrue(all("updatedInput" not in json.dumps(item) for item in captured))
 
         with ThreadPoolExecutor(max_workers=3) as executor:
@@ -379,6 +555,21 @@ class AssignmentTransportTests(unittest.TestCase):
         self.assertTrue(all("BEGIN CODEX WORKER CAPSULE" in item["hookSpecificOutput"]["additionalContext"] for item in started))
         self.assertEqual(len(list((self.store.root / "active").glob("*.json"))), 3)
         self.assertEqual(len(list((self.store.root / "pending").glob("*.json"))), 0)
+
+    def test_concurrent_overlapping_spawns_atomically_allow_only_one_owner(self):
+        tasks = ["overlap_one", "overlap_two"]
+
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            results = list(
+                executor.map(lambda task: self.capture(self.spawn_hook(task)), tasks)
+            )
+
+        decisions = [
+            result["hookSpecificOutput"].get("permissionDecision", "pass")
+            for result in results
+        ]
+        self.assertEqual(sorted(decisions), ["deny", "pass"])
+        self.assertEqual(len(list((self.store.root / "pending").glob("*.json"))), 1)
 
     def test_nested_parent_path_derives_exact_child_agent_path(self):
         self.write_meta(

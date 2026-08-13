@@ -89,6 +89,8 @@ The schema 2 capsule contains at least:
   over expected root, branch, and the complete Git object id;
 - owned and excluded paths;
 - explicit stage/commit/branch/push authority;
+- ownership-handover references to trusted host termination/quiescence barriers
+  for every overlapping prior assignment;
 - stop condition and exact verification contract;
 - an authority-provenance policy naming authoritative input owners/roots,
   forbidden caller-supplied derived facts, explicit test-only seams, and the
@@ -114,6 +116,9 @@ The optional capture preflight compares parent-supplied expected location facts
 with the Hook's current actual Git snapshot and blocks spawn on any difference.
 It cannot authorize a commit/branch, change path ownership, infer a replacement
 task, or accept a matching HEAD prefix in place of the full object id.
+Ownership handover is not a child- or assignment-supplied permission. It only
+references a host-owned barrier created after old authority is frozen and does
+not erase mixed provenance.
 
 ## State lifecycle
 
@@ -132,6 +137,39 @@ attestation or safe expiry; an expired capsule with writes becomes unresolved
 evidence rather than being silently deleted.
 `reported` means only that the callback and contribution were recorded. Only a
 trusted parent adjudication can move it to `consumed`.
+
+### Interrupt/cancel and ownership handover
+
+An `interrupt_agent`/cancel return acknowledges a control request; it does not
+prove that the child process, existing PTY, outer executor, MCP call, or every
+other mutation source is quiescent. An interrupt acknowledgement alone cannot
+authorize immediate reassignment of the same owned paths.
+
+Overlapping ownership requires this order: freeze old active authority into
+unresolved state; obtain a host-owned
+`child_terminated_and_mutations_quiesced` receipt; then capture exact
+root/branch/HEAD/index/status/path hashes after termination. The barrier binds
+the prior assignment and child ThreadId. New pending staging rechecks state
+conflicts under the state lock, takes a fresh pre-stage snapshot, matches its
+`capture_snapshot_sha256` and the barrier snapshot, and stores the barrier digest
+in the new capsule. Active/pending/claimed/reported conflicts, a missing barrier, or any
+snapshot drift block reassignment.
+
+Any later PreToolUse from the frozen child is denied for lack of active binding.
+A late mutation before re-spawn records `late_mutation_after_interrupt` and
+`overlapping_assignment_provenance` and blocks capture. A mutation after new
+capture is caught by the replacement child's exact first-attestation baseline
+and freezes the new authority with the same mixed-provenance status. If the host
+cannot prove termination plus quiescence, the new assignment cannot claim the
+same paths; elapsed time and ordinary interrupt acknowledgement are not proof.
+
+Mixed bytes remain frozen for parent review of barrier hashes, source causality,
+and fresh tests. A later child's attestation cannot attribute all bytes solely
+to the later assignment.
+A state lock is not a filesystem transaction. The replacement child's exact
+first attestation covers the remaining window after the fresh pre-stage
+snapshot; neither check becomes strong proof without a host quiescence
+guarantee.
 
 ## Exact runtime binding
 
@@ -186,6 +224,9 @@ isolated watchdog and interrupt/cancel when it returns
 `parent_cancel_required=true`. Without that outer evidence the adapter proves
 only that the next event is denied, not that the provider turn stopped exactly
 at the deadline. An assignment prompt cannot repair this limitation.
+The current isolated API models the trusted receipt shape and transitions only;
+Codex 0.147.0 has not yet been proven to expose a receipt with this strong
+guarantee. Live direct-write handover therefore remains unqualified.
 
 SubagentStop requires a machine-checkable attestation containing assignment and
 handoff ids, capsule hash, canonical path, recovery count, resolved Git state,
@@ -237,6 +278,7 @@ child is truthful; the parent must revalidate any receipt at the owner boundary.
 | P4 write guard | shell, patch, code-mode nested tools, MCP/write apps, Git | read-only posture if any bypass exists |
 | P5 recovery | compact after a correct initial write; path/Git expansion attempts | any unauthorized write fails the gate |
 | P5a pre-write deadline | same-prefix wrong full HEAD, capture preflight, no-event watchdog/cancel signal | mismatch/timeout must not reach expensive mutation |
+| P5b ownership handover | interrupt ack, strong termination receipt, post-termination barrier, late writes before/after re-spawn | overlapping claim without quiescence fails |
 | P6 final gate | context-loss narrative, slice overclaim, disk-hash mismatch | wrong final must be blocked |
 | P6a causal provenance | digest-valid forged facts, real-mode test seam, owner-internal shared derivation | caller self-authorization must fail |
 | P7 parity/regression | POSIX/Windows and existing DeepSeek route | all green before Phase 2 |

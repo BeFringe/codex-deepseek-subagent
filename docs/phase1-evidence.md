@@ -176,6 +176,36 @@ Disk-first classification distinguishes:
 The new fixtures cover all four classes. All remain
 untrusted contribution/termination evidence, never integration authority.
 
+## Ownership-handover and late-mutation fixtures
+
+The state core now treats an interrupt acknowledgement as insufficient. An
+overlapping replacement is blocked until old active authority is unresolved and
+a host-owned `child_terminated_and_mutations_quiesced` receipt is followed by an
+exact disk snapshot. The receipt binds the old runtime session and child
+ThreadId. Handover is rechecked atomically with pending-state publication, so
+concurrent overlapping captures allow only one owner; disjoint concurrent
+captures remain supported.
+The capsule also freezes `capture_snapshot_sha256`; capture takes a fresh second
+snapshot immediately before state publication and rejects drift. The state lock
+does not claim to lock the filesystem. A late write after that snapshot remains
+the replacement child's first-attestation responsibility.
+
+After freeze, a synthetic old-child PreToolUse is denied because no active
+binding remains. A late write before replacement capture causes an overlap
+evidence record with `late_mutation_after_interrupt` and
+`overlapping_assignment_provenance`; spawn is denied. A late write after capture
+but before the replacement child's first tool is detected even though the path
+is owned: exact baseline equality fails, the replacement authority becomes
+unresolved, and mixed provenance is retained.
+
+The replacement capsule links barrier and prior-assignment hashes, so a clean
+handover may preserve old dirty bytes without falsely attributing them to the
+new child. A fixture freezes a prior dirty file, then proves the replacement
+capsule contains both its pre-existing hash and the prior-assignment barrier
+link. Parent fresh source review and tests are still required. These are
+isolated fixtures: no verified Codex 0.147.0 host termination receipt is yet
+available, so the live path must refuse overlapping direct-write reassignment.
+
 The lifecycle now distinguishes a worker report from parent integration. A
 trusted parent adjudication must separately pass location integrity,
 mutation-scope integrity, verification freshness, and derivation/provenance
