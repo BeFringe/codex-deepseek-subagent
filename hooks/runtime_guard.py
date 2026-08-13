@@ -20,6 +20,7 @@ from compatibility_state import (
     IdentityMismatch,
     MissingState,
     provenance_policy_sha256,
+    registry_items_sha256,
     StateError,
     StateStore,
 )
@@ -300,6 +301,7 @@ def parse_attestation(message: object) -> dict:
         "verification",
         "authority_violation",
         "assigned_slice_complete",
+        "inventory_summaries",
     }
     if set(value) != required:
         raise GuardError("final attestation fields are not exact")
@@ -315,6 +317,28 @@ def parse_attestation(message: object) -> dict:
             raise GuardError(f"{field} must be boolean")
     if not isinstance(value["changed_paths"], list) or not isinstance(value["verification"], list):
         raise GuardError("changed_paths and verification must be lists")
+    if not isinstance(value["inventory_summaries"], list):
+        raise GuardError("inventory_summaries must be a list")
+    for summary in value["inventory_summaries"]:
+        if not isinstance(summary, dict) or set(summary) != {
+            "registry_id",
+            "declared_count",
+            "item_ids",
+            "items_sha256",
+        }:
+            raise GuardError("inventory summary fields are not exact")
+        if not isinstance(summary["registry_id"], str) or not summary["registry_id"]:
+            raise GuardError("inventory registry_id is invalid")
+        if type(summary["declared_count"]) is not int or summary["declared_count"] < 0:
+            raise GuardError("inventory declared_count is invalid")
+        if not isinstance(summary["item_ids"], list) or any(
+            not isinstance(item, str) for item in summary["item_ids"]
+        ):
+            raise GuardError("inventory item_ids are invalid")
+        if not isinstance(summary["items_sha256"], str) or not re.fullmatch(
+            r"[0-9a-f]{64}", summary["items_sha256"]
+        ):
+            raise GuardError("inventory items_sha256 is invalid")
     provenance = value["authority_provenance"]
     if not isinstance(provenance, dict) or set(provenance) != {
         "policy_sha256",
@@ -598,6 +622,24 @@ def subagent_stop(store: StateStore, hook_input: Mapping[str, object]) -> dict:
             or provenance["test_only_injection_used"]
         ):
             raise GuardError("complete return has an inadmissible provenance claim")
+        registry_contracts = capsule["execution_contract"]["closed_registries"]
+        summaries = attestation["inventory_summaries"]
+        if len(summaries) != len(registry_contracts):
+            raise GuardError("inventory summaries do not exactly cover closed registries")
+        summaries_by_id = {item["registry_id"]: item for item in summaries}
+        if len(summaries_by_id) != len(summaries):
+            raise GuardError("inventory summaries contain a duplicate registry id")
+        for registry in registry_contracts:
+            summary = summaries_by_id.get(registry["registry_id"])
+            if summary is None:
+                raise GuardError("inventory summary is missing a closed registry")
+            expected_items = registry["closed_item_ids"]
+            if summary["item_ids"] != expected_items:
+                raise GuardError("inventory item ids do not match the closed registry")
+            if summary["declared_count"] != len(expected_items):
+                raise GuardError("inventory declared count does not match item cardinality")
+            if summary["items_sha256"] != registry_items_sha256(expected_items):
+                raise GuardError("inventory item digest does not match the closed registry")
         if any(
             not isinstance(item, dict)
             or set(item) != {"command", "exit_code"}

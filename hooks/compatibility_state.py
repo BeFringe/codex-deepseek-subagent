@@ -43,6 +43,8 @@ EXECUTION_CONTRACT_FIELDS = {
     "termination_contract",
     "evidence_binding",
     "review_continuation",
+    "closed_registries",
+    "relation_contracts",
 }
 DIAGNOSTIC_CONTRACT_FIELDS = {
     "stable_failure_codes",
@@ -90,10 +92,30 @@ EVIDENCE_BINDING_FIELDS = {
 REVIEW_CONTINUATION_FIELDS = {
     "prior_assignment_id",
     "frozen_cumulative_base_oid",
+    "prior_review_base_oid",
+    "prior_review_tip_oid",
     "corrected_tip_oid",
     "prior_findings_sha256",
     "unresolved_finding_ids",
+    "exact_narrowed_objective",
     "require_clean_worktree",
+}
+CLOSED_REGISTRY_FIELDS = {
+    "registry_id",
+    "closed_item_ids",
+    "count_authority",
+}
+RELATION_CONTRACT_FIELDS = {
+    "relation_id",
+    "owner_schema_fields",
+    "handoff_schema_fields",
+    "owner_id_field",
+    "handoff_id_field",
+    "handoff_owner_id_field",
+    "terminal_state_field",
+    "referential_cardinality",
+    "absence_semantics",
+    "allowed_terminal_absence",
 }
 PARENT_ADJUDICATION_FIELDS = {
     "location_integrity",
@@ -152,6 +174,10 @@ def canonical_json(value: object) -> bytes:
 
 def sha256_bytes(value: bytes) -> str:
     return hashlib.sha256(value).hexdigest()
+
+
+def registry_items_sha256(item_ids: Sequence[str]) -> str:
+    return sha256_bytes(canonical_json(list(item_ids)))
 
 
 def capsule_sha256(capsule: Mapping[str, object]) -> str:
@@ -637,7 +663,12 @@ def validate_capsule(capsule: object, assignment: str) -> dict:
         if not isinstance(continuation, dict) or set(continuation) != REVIEW_CONTINUATION_FIELDS:
             raise CorruptState("review_continuation fields are not exact")
         _uuid(continuation["prior_assignment_id"], "prior_assignment_id")
-        for field in ("frozen_cumulative_base_oid", "corrected_tip_oid"):
+        for field in (
+            "frozen_cumulative_base_oid",
+            "prior_review_base_oid",
+            "prior_review_tip_oid",
+            "corrected_tip_oid",
+        ):
             if not isinstance(continuation[field], str) or not GIT_OID_RE.fullmatch(
                 continuation[field]
             ):
@@ -655,6 +686,78 @@ def validate_capsule(capsule: object, assignment: str) -> dict:
             raise CorruptState("review_continuation.unresolved_finding_ids is invalid")
         if continuation["require_clean_worktree"] is not True:
             raise CorruptState("review continuation must require a clean worktree")
+        _nonempty_string(
+            continuation["exact_narrowed_objective"],
+            "review_continuation.exact_narrowed_objective",
+        )
+        if continuation["prior_review_base_oid"] != continuation["frozen_cumulative_base_oid"]:
+            raise CorruptState("prior review base changed from the frozen cumulative base")
+
+    closed_registries = execution["closed_registries"]
+    if not isinstance(closed_registries, list):
+        raise CorruptState("closed_registries must be a list")
+    registry_ids = set()
+    for registry in closed_registries:
+        if not isinstance(registry, dict) or set(registry) != CLOSED_REGISTRY_FIELDS:
+            raise CorruptState("closed registry fields are not exact")
+        registry_id = _nonempty_string(registry["registry_id"], "registry_id")
+        if registry_id in registry_ids:
+            raise CorruptState("closed registry id is duplicated")
+        registry_ids.add(registry_id)
+        item_ids = registry["closed_item_ids"]
+        if (
+            not isinstance(item_ids, list)
+            or any(not isinstance(item, str) or not FINDING_ID_RE.fullmatch(item) for item in item_ids)
+            or len(item_ids) != len(set(item_ids))
+        ):
+            raise CorruptState("closed registry item ids are invalid")
+        if registry["count_authority"] != "mechanical_cardinality_only":
+            raise CorruptState("closed registry count authority is invalid")
+
+    relation_contracts = execution["relation_contracts"]
+    if not isinstance(relation_contracts, list):
+        raise CorruptState("relation_contracts must be a list")
+    relation_ids = set()
+    for relation in relation_contracts:
+        if not isinstance(relation, dict) or set(relation) != RELATION_CONTRACT_FIELDS:
+            raise CorruptState("relation contract fields are not exact")
+        relation_id = _nonempty_string(relation["relation_id"], "relation_id")
+        if relation_id in relation_ids:
+            raise CorruptState("relation contract id is duplicated")
+        relation_ids.add(relation_id)
+        for field in ("owner_schema_fields", "handoff_schema_fields"):
+            fields = relation[field]
+            if (
+                not isinstance(fields, list)
+                or not fields
+                or any(not isinstance(item, str) or not item for item in fields)
+                or len(fields) != len(set(fields))
+            ):
+                raise CorruptState(f"relation {field} is invalid")
+        for field in (
+            "owner_id_field",
+            "handoff_id_field",
+            "handoff_owner_id_field",
+            "terminal_state_field",
+        ):
+            _nonempty_string(relation[field], f"relation {field}")
+        if relation["owner_id_field"] not in relation["owner_schema_fields"]:
+            raise CorruptState("owner id field is absent from owner schema")
+        if relation["handoff_id_field"] not in relation["handoff_schema_fields"]:
+            raise CorruptState("handoff id field is absent from handoff schema")
+        if relation["handoff_owner_id_field"] not in relation["handoff_schema_fields"]:
+            raise CorruptState("handoff owner field is absent from handoff schema")
+        if (
+            relation["terminal_state_field"] not in relation["owner_schema_fields"]
+            or relation["terminal_state_field"] not in relation["handoff_schema_fields"]
+        ):
+            raise CorruptState("terminal state field must exist in both object schemas")
+        if relation["referential_cardinality"] != "exactly_one_to_one_nonterminal":
+            raise CorruptState("relation referential cardinality is invalid")
+        if relation["absence_semantics"] != "missing_or_orphan_relation_is_error":
+            raise CorruptState("relation absence semantics are invalid")
+        if relation["allowed_terminal_absence"] != "tombstone_or_clear_only":
+            raise CorruptState("relation terminal absence exception is invalid")
 
     if posture == "strict_read_only":
         if review_range is None:
@@ -678,6 +781,8 @@ def validate_capsule(capsule: object, assignment: str) -> dict:
                 raise CorruptState("review continuation changed the frozen cumulative base")
             if continuation["corrected_tip_oid"] != review_range["head_oid"]:
                 raise CorruptState("review continuation tip does not match the review range")
+            if continuation["exact_narrowed_objective"] not in capsule["stop_condition"]:
+                raise CorruptState("narrowed objective is not bound by the stop condition")
     elif review_range is not None:
         raise CorruptState("direct-write execution cannot reuse the read-only review range field")
     elif continuation is not None:

@@ -152,12 +152,21 @@ execution. It walks root to output with no-follow dirfds and re-proves that the
 terminal is the same regular-file identity afterwards.
 
 A review follow-up is a new assignment, not authority inherited from thread
-continuity. It freezes the prior assignment, cumulative base, fresh corrected
-tip, prior-finding digest, unresolved finding ids, and clean-worktree
-requirement. The isolated adapter currently captures only trusted
+continuity. It freezes the prior assignment, cumulative base, old review
+base/tip, fresh corrected tip, prior-finding digest, unresolved finding ids,
+exact narrowed objective, and clean-worktree requirement. The isolated adapter currently captures only trusted
 `PreToolUse(spawn_agent)`; no equivalent trusted native follow-up/send-input
 capture is proven. The continuation fields are therefore schema/capture
 fixtures, not a claim that live same-child follow-up authority is qualified.
+
+Worker-enumerated item or test ids may be high-volume contribution evidence,
+but a narrative aggregate count has no authority. A closed registry freezes the
+exact ids; SubagentStop recomputes cardinality and checks exact order, uniqueness,
+and canonical digest. A strict per-row codec is also insufficient for
+closed-world integrity. Relation contracts bind both object schemas,
+nonterminal one-to-one cardinality, missing/orphan-as-error absence semantics,
+and the sole tombstone/clear terminal-absence exception. The parent/owner still
+freshly recomputes relation closure.
 
 ## State lifecycle
 
@@ -276,7 +285,11 @@ SubagentStop requires a machine-checkable attestation containing assignment and
 handoff ids, capsule hash, canonical path, recovery count, resolved Git state,
 compact-invariant hash,
 exact changed-path hashes, verification commands/exit codes, violation status,
-Git index-change status, and `assigned_slice_complete`. The child cannot promote that last field into a
+Git index-change status, closed-registry inventory summaries, and
+`assigned_slice_complete`. SubagentStop requires each summary to exactly cover
+one capsule registry and verifies declared count equals item cardinality plus
+the canonical item digest. The child cannot promote the last field or a summary
+count into a
 parent-task or feature-completion claim.
 It also returns a small provenance claim: the policy hash, claimed derived-fact
 origin, whether a test-only seam was used, and an optional receipt digest.

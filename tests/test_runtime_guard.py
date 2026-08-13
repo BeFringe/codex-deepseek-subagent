@@ -156,6 +156,8 @@ class RuntimeGuardTests(unittest.TestCase):
                 "termination_contract": {"catalog_closed": True, "boundary_catalog": []},
                 "evidence_binding": None,
                 "review_continuation": None,
+                "closed_registries": [],
+                "relation_contracts": [],
             },
             "preexisting_dirty": [],
             "assignment_sha256": sha256_bytes(self.assignment.encode("utf-8")),
@@ -213,9 +215,24 @@ class RuntimeGuardTests(unittest.TestCase):
             "verification": [{"command": "fixture verification", "exit_code": 0}],
             "authority_violation": False,
             "assigned_slice_complete": True,
+            "inventory_summaries": [],
         }
         value.update(overrides)
         return "BEGIN CODEX WORKER ATTESTATION\n" + json.dumps(value) + "\nEND CODEX WORKER ATTESTATION"
+
+    def bind_closed_registry(self, item_ids):
+        active = self.store.path("active", self.capsule["assignment_id"])
+        envelope = json.loads(active.read_text(encoding="utf-8"))
+        envelope["capsule"]["execution_contract"]["closed_registries"] = [
+            {
+                "registry_id": "test-id-inventory",
+                "closed_item_ids": item_ids,
+                "count_authority": "mechanical_cardinality_only",
+            }
+        ]
+        envelope["capsule"]["capsule_sha256"] = capsule_sha256(envelope["capsule"])
+        active.write_text(json.dumps(envelope), encoding="utf-8")
+        self.capsule = envelope["capsule"]
 
     def test_session_meta_exactly_binds_parent_role_and_canonical_path(self):
         identity = runtime_guard.child_identity_from_hook(self.child_hook("PreToolUse"))
@@ -363,6 +380,35 @@ class RuntimeGuardTests(unittest.TestCase):
         self.assertEqual(result, {})
         self.assertFalse(self.store.path("active", self.capsule["assignment_id"]).exists())
         self.assertTrue(self.store.path("reported", self.capsule["assignment_id"]).exists())
+
+    def test_subagent_stop_mechanically_recomputes_inventory_count(self):
+        item_ids = [f"test-{index:02d}" for index in range(18)]
+        self.bind_closed_registry(item_ids)
+        runtime_guard.pre_tool_use(
+            self.store, self.child_hook("PreToolUse", tool_name="view_image")
+        )
+        drifted = {
+            "registry_id": "test-id-inventory",
+            "declared_count": 15,
+            "item_ids": item_ids,
+            "items_sha256": compatibility_state.registry_items_sha256(item_ids),
+        }
+
+        blocked = runtime_guard.subagent_stop(
+            self.store,
+            self.stop_hook(self.attestation(inventory_summaries=[drifted])),
+        )
+
+        self.assertEqual(blocked["decision"], "block")
+        self.assertIn("declared count", blocked["reason"])
+        self.assertTrue(self.store.path("active", self.capsule["assignment_id"]).exists())
+
+        corrected = dict(drifted, declared_count=len(item_ids))
+        accepted = runtime_guard.subagent_stop(
+            self.store,
+            self.stop_hook(self.attestation(inventory_summaries=[corrected])),
+        )
+        self.assertEqual(accepted, {})
 
     def test_subagent_stop_blocks_complete_claim_without_first_git_attestation(self):
         result = runtime_guard.subagent_stop(

@@ -195,6 +195,23 @@ def _check_execution_contract(
     elif posture != "direct_write_unqualified":
         raise GuardError("execution_contract.posture is invalid")
 
+    continuation = execution.get("review_continuation")
+    if continuation is not None:
+        if not isinstance(continuation, dict):
+            raise GuardError("review_continuation must be an object")
+        if continuation.get("corrected_tip_oid") != snapshot["head"]:
+            raise GuardError("review continuation corrected tip does not exactly match captured HEAD")
+        for field in (
+            "frozen_cumulative_base_oid",
+            "prior_review_base_oid",
+            "prior_review_tip_oid",
+            "corrected_tip_oid",
+        ):
+            _git_commit(root, continuation.get(field), f"review_continuation.{field}")
+        objective = continuation.get("exact_narrowed_objective")
+        if not isinstance(objective, str) or objective not in declaration["stop_condition"]:
+            raise GuardError("review continuation objective is not bound by the stop condition")
+
     provenance = declaration["authority_provenance"]
     input_roots = provenance.get("authoritative_input_roots", [])
     baselines = execution.get("proven_input_baselines")

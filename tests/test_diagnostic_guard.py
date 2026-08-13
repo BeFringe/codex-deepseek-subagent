@@ -50,6 +50,8 @@ class DiagnosticGuardTests(unittest.TestCase):
             "termination_contract": {"catalog_closed": True, "boundary_catalog": []},
             "evidence_binding": None,
             "review_continuation": None,
+            "closed_registries": [],
+            "relation_contracts": [],
         }
 
     def test_stable_owner_failure_code_is_preserved(self):
