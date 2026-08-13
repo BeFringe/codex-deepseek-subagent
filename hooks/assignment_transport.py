@@ -11,7 +11,14 @@ import re
 from typing import Collection, Mapping
 import uuid
 
-from compatibility_state import StateError, StateStore, capsule_sha256, canonical_json, sha256_bytes
+from compatibility_state import (
+    StateError,
+    StateStore,
+    capsule_sha256,
+    canonical_json,
+    git_snapshot_sha256,
+    sha256_bytes,
+)
 from compatibility_state import compact_invariant
 from runtime_guard import GuardError, _git, child_identity_from_hook, collect_git_snapshot, read_session_meta
 
@@ -207,6 +214,11 @@ def capture_spawn(
         created_at = now or dt.datetime.now(dt.timezone.utc)
         if created_at.tzinfo is None or created_at.utcoffset() is None:
             raise GuardError("capture time must include a UTC offset")
+        ownership_handover = store.resolve_ownership_handover(
+            declaration["owned_paths"],
+            snapshot,
+            observed_at=created_at,
+        )
         assignment_id = str(uuid.uuid4())
         handoff_id = str(uuid.uuid4())
         git_authority = declaration["git_authority"]
@@ -231,9 +243,11 @@ def capture_spawn(
                 "base_git_status_short": snapshot["git_status_short"],
             },
             "capture_preflight": declaration["location_preflight"],
+            "capture_snapshot_sha256": git_snapshot_sha256(snapshot),
             "owned_paths": declaration["owned_paths"],
             "excluded_paths": declaration["excluded_paths"],
             "git_authority": git_authority,
+            "ownership_handover": ownership_handover,
             "stop_condition": declaration["stop_condition"],
             "verification": declaration["verification"],
             "authority_provenance": declaration["authority_provenance"],
@@ -251,7 +265,13 @@ def capture_spawn(
             ).isoformat(),
         }
         capsule["capsule_sha256"] = capsule_sha256(capsule)
-        store.stage(capsule, str(message))
+        staging_snapshot = collect_git_snapshot(cwd)
+        store.stage_with_ownership_recheck(
+            capsule,
+            str(message),
+            staging_snapshot,
+            observed_at=created_at,
+        )
         return {
             "hookSpecificOutput": {
                 "hookEventName": "PreToolUse",

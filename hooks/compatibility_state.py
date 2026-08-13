@@ -51,6 +51,8 @@ STATE_KINDS = (
     "lost",
     "quarantine",
     "unresolved",
+    "quiescence",
+    "overlap",
 )
 
 
@@ -113,6 +115,7 @@ def compact_invariant(capsule: Mapping[str, object]) -> dict:
         "git_authority": capsule["git_authority"],
         "stop_condition": capsule["stop_condition"],
         "pre_write_attestation_deadline": capsule["pre_write_attestation_deadline"],
+        "ownership_handover": capsule["ownership_handover"],
         "authority_provenance": capsule["authority_provenance"],
     }
 
@@ -123,6 +126,12 @@ def compact_invariant_sha256(capsule: Mapping[str, object]) -> str:
 
 def provenance_policy_sha256(capsule: Mapping[str, object]) -> str:
     return sha256_bytes(canonical_json(capsule["authority_provenance"]))
+
+
+def quiescence_barrier_sha256(barrier: Mapping[str, object]) -> str:
+    unsigned = dict(barrier)
+    unsigned.pop("barrier_sha256", None)
+    return sha256_bytes(canonical_json(unsigned))
 
 
 def _timestamp(value: object, field: str) -> dt.datetime:
@@ -167,6 +176,103 @@ def _relative_paths(value: object, field: str) -> tuple[str, ...]:
     if len(set(normalized)) != len(normalized):
         raise CorruptState(f"{field} contains duplicate paths")
     return tuple(normalized)
+
+
+def _paths_overlap(first: Sequence[str], second: Sequence[str]) -> bool:
+    for left in first:
+        left_path = pathlib.PurePosixPath(left)
+        for right in second:
+            right_path = pathlib.PurePosixPath(right)
+            if left_path == right_path or left_path in right_path.parents or right_path in left_path.parents:
+                return True
+    return False
+
+
+def _snapshot_sha256(snapshot: Mapping[str, object]) -> str:
+    _validate_git_snapshot(snapshot)
+    return sha256_bytes(canonical_json(dict(snapshot)))
+
+
+def git_snapshot_sha256(snapshot: Mapping[str, object]) -> str:
+    return _snapshot_sha256(snapshot)
+
+
+def _validate_git_snapshot(snapshot: object) -> dict:
+    if not isinstance(snapshot, dict) or set(snapshot) != {
+        "root",
+        "branch",
+        "head",
+        "index_changed",
+        "git_status_short",
+        "changed_paths",
+    }:
+        raise CorruptState("Git snapshot fields are not exact")
+    root = pathlib.Path(_nonempty_string(snapshot["root"], "snapshot.root"))
+    if not root.is_absolute():
+        raise CorruptState("snapshot.root must be absolute")
+    if snapshot["branch"] is not None and not isinstance(snapshot["branch"], str):
+        raise CorruptState("snapshot.branch is invalid")
+    if not isinstance(snapshot["head"], str) or not GIT_OID_RE.fullmatch(snapshot["head"]):
+        raise CorruptState("snapshot.head is invalid")
+    if type(snapshot["index_changed"]) is not bool:
+        raise CorruptState("snapshot.index_changed is invalid")
+    if not isinstance(snapshot["git_status_short"], str):
+        raise CorruptState("snapshot.git_status_short is invalid")
+    changed_paths = snapshot["changed_paths"]
+    if not isinstance(changed_paths, list):
+        raise CorruptState("snapshot.changed_paths is invalid")
+    for item in changed_paths:
+        if not isinstance(item, dict) or set(item) != {"path", "kind", "sha256"}:
+            raise CorruptState("snapshot changed-path entry is invalid")
+        _relative_paths([item["path"]], "snapshot.changed_paths.path")
+        if item["kind"] not in {"file", "symlink", "deleted"}:
+            raise CorruptState("snapshot changed-path kind is invalid")
+        digest = item["sha256"]
+        if item["kind"] == "deleted":
+            if digest is not None:
+                raise CorruptState("deleted snapshot path must have null sha256")
+        elif not isinstance(digest, str) or not SHA256_RE.fullmatch(digest):
+            raise CorruptState("snapshot changed-path sha256 is invalid")
+    return snapshot
+
+
+def _validate_quiescence_barrier(barrier: object) -> dict:
+    if not isinstance(barrier, dict) or set(barrier) != {
+        "schema",
+        "prior_assignment_id",
+        "runtime_session_id",
+        "terminated_child_thread_id",
+        "host_termination_receipt_id",
+        "host_guarantee",
+        "terminated_at",
+        "observed_at",
+        "snapshot",
+        "snapshot_sha256",
+        "barrier_sha256",
+    }:
+        raise CorruptState("quiescence barrier fields are not exact")
+    if barrier["schema"] != 1:
+        raise CorruptState("quiescence barrier schema is invalid")
+    _uuid(barrier["prior_assignment_id"], "prior_assignment_id")
+    for field in (
+        "runtime_session_id",
+        "terminated_child_thread_id",
+        "host_termination_receipt_id",
+    ):
+        _nonempty_string(barrier[field], field)
+    if barrier["host_guarantee"] != "child_terminated_and_mutations_quiesced":
+        raise CorruptState("quiescence barrier host guarantee is insufficient")
+    terminated_at = _timestamp(barrier["terminated_at"], "terminated_at")
+    observed_at = _timestamp(barrier["observed_at"], "observed_at")
+    if observed_at < terminated_at:
+        raise CorruptState("quiescence snapshot predates child termination")
+    if not isinstance(barrier["snapshot"], dict):
+        raise CorruptState("quiescence snapshot is invalid")
+    if barrier["snapshot_sha256"] != _snapshot_sha256(barrier["snapshot"]):
+        raise CorruptState("quiescence snapshot hash does not match")
+    if barrier["barrier_sha256"] != quiescence_barrier_sha256(barrier):
+        raise CorruptState("quiescence barrier hash does not match")
+    return barrier
 
 
 def validate_capsule(capsule: object, assignment: str) -> dict:
@@ -241,6 +347,12 @@ def validate_capsule(capsule: object, assignment: str) -> dict:
             raise CorruptState(
                 "capture_preflight.expected_base_head does not match root.base_commit"
             )
+    capture_snapshot_sha256 = capsule.get("capture_snapshot_sha256")
+    if (
+        not isinstance(capture_snapshot_sha256, str)
+        or not SHA256_RE.fullmatch(capture_snapshot_sha256)
+    ):
+        raise CorruptState("capture_snapshot_sha256 is invalid")
 
     _relative_paths(capsule.get("owned_paths"), "owned_paths")
     _relative_paths(capsule.get("excluded_paths"), "excluded_paths")
@@ -250,6 +362,25 @@ def validate_capsule(capsule: object, assignment: str) -> dict:
     for operation in ("stage", "commit", "branch", "push"):
         if type(git_authority.get(operation)) is not bool:
             raise CorruptState(f"git_authority.{operation} must be boolean")
+
+    ownership_handover = capsule.get("ownership_handover")
+    if not isinstance(ownership_handover, list):
+        raise CorruptState("ownership_handover must be a list")
+    seen_prior_assignments = set()
+    for item in ownership_handover:
+        if not isinstance(item, dict) or set(item) != {
+            "prior_assignment_id",
+            "barrier_sha256",
+            "snapshot_sha256",
+        }:
+            raise CorruptState("ownership_handover entries are invalid")
+        prior_assignment_id = _uuid(item["prior_assignment_id"], "prior_assignment_id")
+        if prior_assignment_id in seen_prior_assignments:
+            raise CorruptState("ownership_handover contains a duplicate prior assignment")
+        seen_prior_assignments.add(prior_assignment_id)
+        for field in ("barrier_sha256", "snapshot_sha256"):
+            if not isinstance(item[field], str) or not SHA256_RE.fullmatch(item[field]):
+                raise CorruptState(f"ownership_handover.{field} is invalid")
 
     verification = capsule.get("verification")
     if not isinstance(verification, list) or any(
@@ -591,6 +722,203 @@ class StateStore:
             self._publish(unresolved, envelope)
             active.unlink()
             return unresolved
+
+    def record_quiescence_barrier(
+        self,
+        prior_assignment_id: str,
+        host_termination_receipt: Mapping[str, object],
+        snapshot: Mapping[str, object],
+        *,
+        observed_at: dt.datetime | None = None,
+    ) -> pathlib.Path:
+        _uuid(prior_assignment_id, "prior_assignment_id")
+        if set(host_termination_receipt) != {
+            "receipt_id",
+            "runtime_session_id",
+            "child_thread_id",
+            "guarantee",
+            "terminated_at",
+        }:
+            raise StateError("host termination receipt fields are not exact")
+        if host_termination_receipt["guarantee"] != "child_terminated_and_mutations_quiesced":
+            raise AuthorityViolation("interrupt/cancel acknowledgement is not mutation quiescence")
+        receipt_id = _nonempty_string(
+            host_termination_receipt["receipt_id"],
+            "host_termination_receipt.receipt_id",
+        )
+        runtime_session_id = _nonempty_string(
+            host_termination_receipt["runtime_session_id"],
+            "host_termination_receipt.runtime_session_id",
+        )
+        child_thread_id = _nonempty_string(
+            host_termination_receipt["child_thread_id"],
+            "host_termination_receipt.child_thread_id",
+        )
+        terminated_at = _timestamp(
+            host_termination_receipt["terminated_at"],
+            "host_termination_receipt.terminated_at",
+        )
+        barrier_observed_at = observed_at or dt.datetime.now(dt.timezone.utc)
+        if barrier_observed_at.tzinfo is None or barrier_observed_at.utcoffset() is None:
+            raise StateError("quiescence observation must include a UTC offset")
+        if barrier_observed_at < terminated_at:
+            raise StateError("quiescence observation predates child termination")
+        unresolved = self.path("unresolved", prior_assignment_id)
+        with self.locked():
+            envelope = self._validated_envelope(unresolved)
+            capsule = envelope["capsule"]
+            binding = envelope.get("binding")
+            if not isinstance(binding, dict):
+                raise CorruptState("unresolved assignment has no child binding")
+            if runtime_session_id != capsule["runtime_session_id"]:
+                raise IdentityMismatch("termination receipt runtime session does not match")
+            if child_thread_id != binding.get("child_thread_id"):
+                raise IdentityMismatch("termination receipt child thread does not match")
+            _validate_git_snapshot(snapshot)
+            if pathlib.Path(snapshot["root"]).resolve() != pathlib.Path(
+                capsule["root"]["path"]
+            ).resolve():
+                raise AuthorityViolation("quiescence snapshot root does not match assignment root")
+            barrier = {
+                "schema": 1,
+                "prior_assignment_id": prior_assignment_id,
+                "runtime_session_id": runtime_session_id,
+                "terminated_child_thread_id": child_thread_id,
+                "host_termination_receipt_id": receipt_id,
+                "host_guarantee": host_termination_receipt["guarantee"],
+                "terminated_at": terminated_at.isoformat(),
+                "observed_at": barrier_observed_at.isoformat(),
+                "snapshot": dict(snapshot),
+                "snapshot_sha256": _snapshot_sha256(snapshot),
+            }
+            barrier["barrier_sha256"] = quiescence_barrier_sha256(barrier)
+            _validate_quiescence_barrier(barrier)
+            target = self.path("quiescence", prior_assignment_id)
+            self._publish(target, barrier)
+            return target
+
+    def _resolve_ownership_handover_locked(
+        self,
+        owned_paths: Sequence[str],
+        snapshot: Mapping[str, object],
+        *,
+        observed_at: dt.datetime,
+    ) -> list[dict]:
+        current_snapshot_sha256 = _snapshot_sha256(snapshot)
+        handovers = []
+        for kind in ("pending", "claimed", "active", "reported"):
+            directory = self.root / kind
+            if not directory.exists():
+                continue
+            for path in sorted(directory.glob("*.json")):
+                try:
+                    envelope = self._validated_envelope(path)
+                except CorruptState:
+                    self._quarantine(path)
+                    raise
+                prior = envelope["capsule"]
+                if _paths_overlap(owned_paths, prior["owned_paths"]):
+                    raise AuthorityViolation(
+                        f"owned paths overlap non-quiesced {kind} assignment {prior['assignment_id']}"
+                    )
+
+        unresolved_directory = self.root / "unresolved"
+        if not unresolved_directory.exists():
+            return handovers
+        for path in sorted(unresolved_directory.glob("*.json")):
+            try:
+                envelope = self._validated_envelope(path)
+            except CorruptState:
+                self._quarantine(path)
+                raise
+            prior = envelope["capsule"]
+            if not _paths_overlap(owned_paths, prior["owned_paths"]):
+                continue
+            barrier_path = self.path("quiescence", prior["assignment_id"])
+            if not barrier_path.exists():
+                raise AuthorityViolation(
+                    "overlapping assignment has no host termination and disk quiescence barrier"
+                )
+            try:
+                barrier = _validate_quiescence_barrier(self._read(barrier_path))
+            except CorruptState:
+                self._quarantine(barrier_path)
+                raise
+            if barrier["snapshot_sha256"] != current_snapshot_sha256:
+                overlap = {
+                    "schema": 1,
+                    "classifications": [
+                        "late_mutation_after_interrupt",
+                        "overlapping_assignment_provenance",
+                    ],
+                    "prior_assignment_id": prior["assignment_id"],
+                    "owned_paths": list(owned_paths),
+                    "barrier_sha256": barrier["barrier_sha256"],
+                    "barrier_snapshot_sha256": barrier["snapshot_sha256"],
+                    "current_snapshot_sha256": current_snapshot_sha256,
+                    "observed_at": observed_at.isoformat(),
+                }
+                self._publish(
+                    self.path("overlap", str(uuid.uuid4())),
+                    overlap,
+                )
+                raise AuthorityViolation(
+                    "late mutation after termination barrier creates overlapping assignment provenance"
+                )
+            handovers.append(
+                {
+                    "prior_assignment_id": prior["assignment_id"],
+                    "barrier_sha256": barrier["barrier_sha256"],
+                    "snapshot_sha256": barrier["snapshot_sha256"],
+                }
+            )
+        return handovers
+
+    def resolve_ownership_handover(
+        self,
+        owned_paths: Sequence[str],
+        snapshot: Mapping[str, object],
+        *,
+        observed_at: dt.datetime | None = None,
+    ) -> list[dict]:
+        _relative_paths(list(owned_paths), "owned_paths")
+        now = observed_at or dt.datetime.now(dt.timezone.utc)
+        if now.tzinfo is None or now.utcoffset() is None:
+            raise StateError("ownership handover observation must include a UTC offset")
+        with self.locked():
+            return self._resolve_ownership_handover_locked(
+                owned_paths,
+                snapshot,
+                observed_at=now,
+            )
+
+    def stage_with_ownership_recheck(
+        self,
+        capsule: dict,
+        assignment: str,
+        snapshot: Mapping[str, object],
+        *,
+        observed_at: dt.datetime,
+    ) -> pathlib.Path:
+        validate_capsule(capsule, assignment)
+        if _timestamp(capsule["expires_at"], "expires_at") <= dt.datetime.now(dt.timezone.utc):
+            raise StateError("refusing to stage an expired capsule")
+        with self.locked():
+            handover = self._resolve_ownership_handover_locked(
+                capsule["owned_paths"],
+                snapshot,
+                observed_at=observed_at,
+            )
+            if handover != capsule["ownership_handover"]:
+                raise AuthorityViolation("ownership handover changed before atomic staging")
+            if _snapshot_sha256(snapshot) != capsule["capture_snapshot_sha256"]:
+                raise AuthorityViolation("capture snapshot changed before atomic staging")
+            target = self.path("pending", capsule["handoff_id"])
+            self._publish(
+                target,
+                {"schema": SCHEMA, "capsule": capsule, "assignment": assignment},
+            )
+            return target
 
     def expire_active(self, assignment_id: str, *, now: dt.datetime) -> pathlib.Path | None:
         active = self.path("active", assignment_id)

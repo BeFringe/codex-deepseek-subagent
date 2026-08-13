@@ -196,6 +196,22 @@ def pre_tool_use(
             )
             store.terminate_active(assignment_id, evidence)
             raise AuthorityViolation("first Git attestation deadline elapsed; authority terminated")
+        initial_disk_change = (
+            disk_change_from_baseline(snapshot, capsule)
+            if runtime["first_git_attested_at"] is None
+            else False
+        )
+        if initial_disk_change is True:
+            evidence = _termination_evidence(
+                capsule,
+                snapshot,
+                reason="initial_disk_baseline_mismatch",
+                observed_at=observed_at,
+            )
+            store.terminate_active(assignment_id, evidence)
+            raise AuthorityViolation(
+                "disk changed after capture and before first Git attestation; authority terminated"
+            )
         violations = _snapshot_authority_violations(snapshot, capsule)
         if violations:
             if runtime["first_git_attested_at"] is None:
@@ -466,14 +482,26 @@ def _termination_evidence(
             if disk_changed
             else "unresponsive_no_disk_change"
         )
+    elif reason == "initial_disk_baseline_mismatch":
+        classification = (
+            "late_mutation_after_interrupt"
+            if capsule["ownership_handover"]
+            else "unresponsive_with_disk_change_before_attestation"
+        )
     else:
         classification = "initial_authority_mismatch"
+    provenance_status = (
+        "overlapping_assignment_provenance"
+        if classification == "late_mutation_after_interrupt"
+        else None
+    )
     return {
         "schema": 1,
         "reason": reason,
         "classification": classification,
         "disk_changed": disk_changed,
         "baseline_comparable": disk_changed is not None,
+        "provenance_status": provenance_status,
         "observed_at": observed_at.isoformat(),
         "snapshot": dict(snapshot),
     }

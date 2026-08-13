@@ -113,6 +113,7 @@ assignment 的 capsule，不能被 provider profile 默认、推断或归一化�
     "expected_branch": "branch name or null",
     "expected_base_head": "full exact object id"
   },
+  "capture_snapshot_sha256": "hex",
   "owned_paths": ["repo-relative/path"],
   "excluded_paths": ["repo-relative/path"],
   "git_authority": {
@@ -121,6 +122,13 @@ assignment 的 capsule，不能被 provider profile 默认、推断或归一化�
     "branch": false,
     "push": false
   },
+  "ownership_handover": [
+    {
+      "prior_assignment_id": "uuid",
+      "barrier_sha256": "hex",
+      "snapshot_sha256": "hex"
+    }
+  ],
   "stop_condition": "assigned slice completion only",
   "verification": ["exact command or evidence contract"],
   "authority_provenance": {
@@ -156,6 +164,8 @@ assignment 的 capsule，不能被 provider profile 默认、推断或归一化�
 - `capture_preflight` 是 parent 可选的只收窄断言：Hook 只比较 expected root/branch/full
   HEAD 与当前实际 Git snapshot，任何不相等都在 spawn 前 block。它不能授权 branch/commit、
   改写 owned paths 或自行推断新任务。
+- `ownership_handover` 只引用 trusted host 在旧 assignment 冻结后创建的 termination+
+  quiescence barrier；它不是 child/assignment 可自报的权限字段，也不能清除混合 provenance。
 
 恢复上下文优先重注入一个从完整 capsule 确定性派生的 compact invariant：精确 runtime/
 child/parent identity、owned/excluded paths、root/base、Git authority、authoritative input
@@ -186,6 +196,32 @@ consumed/<assignment_id>.json
 - initial delivery 后不得删除唯一 authority copy。active 至少保留到 accepted final
   attestation 或安全过期；过期的有写入 capsule 进入 unresolved evidence，不静默删除。
 - 旧 child 只能使用已绑定的 child session/agent id；错误 child 或旧 session 不得重领。
+
+### interrupt/cancel 与 ownership handover
+
+`interrupt_agent`/cancel 的返回只表示 control request 已被确认，不等于 child process、已有
+PTY、outer executor、MCP 或其他 mutation source 已静默。interrupt ack 不能单独作为
+mutation quiescence，也不能授权立即把相同 owned paths 交给新 child。
+
+重派相同/父子重叠 ownership 的顺序必须是：先把旧 active authority 冻结为 unresolved，
+再取得 host-owned `child_terminated_and_mutations_quiesced` receipt，最后在 termination 之后
+采集 exact root/branch/HEAD/index/status/path hashes。barrier 与 prior assignment/child ThreadId
+hash 绑定；新 pending stage 在同一 state lock 内重新检查 state conflict，并在发布前用一次
+fresh snapshot 核对 `capture_snapshot_sha256` 与 barrier snapshot，再把 barrier 摘要写入新
+capsule。任何 active/pending/claimed/reported conflict、缺失
+barrier 或 snapshot drift 都 block。
+
+旧 child 冻结后的任何 PreToolUse 因找不到 active binding 而拒绝。若迟到 mutation 发生在
+barrier 后、重派前，capture 记录 `late_mutation_after_interrupt` 与
+`overlapping_assignment_provenance` 并拒绝 spawn；若发生在新 capture 后，新 child 首次
+attestation 的 exact baseline check 冻结新 authority，并记录相同混合 provenance。若 host
+不能证明 termination+quiescence，新 assignment 不得认领相同 owned paths，等待时间或普通
+interrupt ack 都不能替代证明。
+
+混合贡献必须整体冻结，由 parent 以 barrier 前后 hashes、source review 和 fresh tests 裁决；
+不能依据后一 child 的 attestation 把所有 bytes 单独归因给后一 assignment。
+state lock 不是 filesystem transaction；fresh pre-stage snapshot 之后的剩余窗口仍由新 child
+首次 exact attestation 捕获。没有 host quiescence guarantee 时这两个检查都不能升级为强证明。
 
 ### 为什么 assignment 不能补足外层不可见性
 
@@ -252,6 +288,8 @@ PreToolUse 无法自行醒来或 cancel child。因此 bounded fast-stop 还依�
 isolated watchdog，并在 watchdog 返回 `parent_cancel_required=true` 时 interrupt/cancel child。
 没有该外层调度证据就只能证明“下一事件会被拒绝”，不能宣称“deadline 时刻已停止 provider
 turn”。这项限制不能用 assignment prompt 补足。
+当前 isolated API 只建模 trusted host receipt 的格式与状态转换；Codex 0.147.0 是否公开提供
+满足该强语义的 termination receipt 仍未证明。因此 live direct-write handover 继续不合格。
 
 ## final-return attestation
 
@@ -344,6 +382,7 @@ test-only completion，但不能据此证明 child 没有撒谎；receipt digest
 | P4 | mutation guard coverage | shell、apply-patch、code-mode nested tools、MCP/write apps、Git | 任一写路径绕过即只读降级 |
 | P5 | compact/resume continuity | 正确初始写入后 compaction、scope/Git expansion attempt | 扩权产生写入即失败 |
 | P5a | pre-write deadline | same-prefix wrong full HEAD、spawn preflight、no-event watchdog/cancel signal | mismatch/timeout 仍进入昂贵 mutation 即失败 |
+| P5b | ownership handover | interrupt ack、strong termination receipt、post-termination barrier、late write before/after re-spawn | 无 quiescence 仍重叠认领即失败 |
 | P6 | final attestation | no-assignment narrative、slice→parent claim、disk hash mismatch | 不 block 错误 final 即失败 |
 | P6a | causal provenance | hash-valid forged derived facts、test-only seam in real mode、owner-internal shared derivation | caller 可自授权 PASS 即失败 |
 | P7 | parity/regression | POSIX/Windows protocol、DeepSeek existing path | 全绿后才能进入 Phase 2 |
