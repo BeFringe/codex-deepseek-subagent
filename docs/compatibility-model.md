@@ -104,7 +104,14 @@ assignment 的 capsule，不能被 provider profile 默认、推断或归一化�
     "path": "/absolute/resolved/git/root",
     "branch": "branch name or null",
     "base_commit": "full commit or null",
-    "allow_descendant_head": false
+    "allow_descendant_head": false,
+    "base_index_changed": false,
+    "base_git_status_short": "exact initial status"
+  },
+  "capture_preflight": {
+    "expected_root": "/absolute/resolved/git/root",
+    "expected_branch": "branch name or null",
+    "expected_base_head": "full exact object id"
   },
   "owned_paths": ["repo-relative/path"],
   "excluded_paths": ["repo-relative/path"],
@@ -128,6 +135,7 @@ assignment 的 capsule，不能被 provider profile 默认、推断或归一化�
   ],
   "assignment_sha256": "hex",
   "created_at": "UTC timestamp",
+  "pre_write_attestation_deadline": "UTC timestamp",
   "expires_at": "UTC timestamp",
   "capsule_sha256": "hex"
 }
@@ -145,6 +153,9 @@ assignment 的 capsule，不能被 provider profile 默认、推断或归一化�
   仅测试 seam 与必须重算的 owner boundary。artifact digest 覆盖这些字段仍只是必要条件，
   不能把攻击者选择的 derived inputs 提升为可信来源。
 - pre-existing dirty hashes 防止 child 把用户修改误报为自己的贡献。
+- `capture_preflight` 是 parent 可选的只收窄断言：Hook 只比较 expected root/branch/full
+  HEAD 与当前实际 Git snapshot，任何不相等都在 spawn 前 block。它不能授权 branch/commit、
+  改写 owned paths 或自行推断新任务。
 
 恢复上下文优先重注入一个从完整 capsule 确定性派生的 compact invariant：精确 runtime/
 child/parent identity、owned/excluded paths、root/base、Git authority、authoritative input
@@ -229,6 +240,19 @@ Phase 1 不以 prompt 里的 `TASK.CONTEXT_LOST` 代替 runtime gate：
 
 只缩小任务可以降低 compaction 风险，但不是协议修复。
 
+### pre-write attestation deadline 与 fast-stop
+
+capsule 必须包含短且有界的 `pre_write_attestation_deadline`。首次工具执行前，guard 读取
+实际 root/branch/full HEAD/index/status/path hashes，并与 immutable capsule 做完整相等
+比较；full HEAD 不能使用前缀比较。首次 mismatch 立即把 active authority 冻结为 unresolved，
+禁止任何后续 mutation。首次 attestation 超时也执行相同 fail-closed transition。
+
+Hook event 本身不是 wall-clock timer：如果 child 长时间计算且没有产生任何 Hook event，
+PreToolUse 无法自行醒来或 cancel child。因此 bounded fast-stop 还依赖 parent/host 定时调用
+isolated watchdog，并在 watchdog 返回 `parent_cancel_required=true` 时 interrupt/cancel child。
+没有该外层调度证据就只能证明“下一事件会被拒绝”，不能宣称“deadline 时刻已停止 provider
+turn”。这项限制不能用 assignment prompt 补足。
+
 ## final-return attestation
 
 child final return 必须包含一个可机读对象：
@@ -264,6 +288,15 @@ child 无权把 `assigned_slice_complete` 提升为 parent task/feature complete
 称无 assignment/无写入，但 consumed handoff 与 owned-path hashes 证明发生写入，事件
 分类为 return-context loss；冻结贡献并由 parent fresh verify，不能信 narrative，也不能
 仅因 narrative 丢失而丢弃磁盘证据。
+
+无 final return 的 watchdog evidence 必须另外分类：baseline root/branch/HEAD/index/status/
+path hashes 全部未变为 `unresponsive_no_disk_change`；有磁盘 delta 但未完成首次 attestation
+为 `unresponsive_with_disk_change_before_attestation`；已 attested 后有贡献但无返回为
+`unresponsive_with_contribution`。只有 child 已返回错误/遗失 narrative 且磁盘存在贡献时才是
+`return_context_loss_with_contribution`。这些状态都不是 completion proof，也不能相互替换。
+若 capsule 的 location/base 本身不可信，disk delta 不得根据该 baseline 强行计算；结果必须
+标记为 `initial_authority_mismatch`、`baseline_comparable=false`、`disk_changed=null`，再由
+parent 使用独立可信 baseline 裁决，不能把 HEAD mismatch 误报成贡献。
 
 SubagentStop 的成功只把状态推进到 `reported`。parent 以四个独立维度裁决：location
 integrity、mutation-scope integrity、verification freshness、derivation/provenance
@@ -310,6 +343,7 @@ test-only completion，但不能据此证明 child 没有撒谎；receipt digest
 | P3 | keyed lifecycle | pending→claimed→active→reported→consumed、expiry、crash recovery | initial delivery 后无 active copy 即失败 |
 | P4 | mutation guard coverage | shell、apply-patch、code-mode nested tools、MCP/write apps、Git | 任一写路径绕过即只读降级 |
 | P5 | compact/resume continuity | 正确初始写入后 compaction、scope/Git expansion attempt | 扩权产生写入即失败 |
+| P5a | pre-write deadline | same-prefix wrong full HEAD、spawn preflight、no-event watchdog/cancel signal | mismatch/timeout 仍进入昂贵 mutation 即失败 |
 | P6 | final attestation | no-assignment narrative、slice→parent claim、disk hash mismatch | 不 block 错误 final 即失败 |
 | P6a | causal provenance | hash-valid forged derived facts、test-only seam in real mode、owner-internal shared derivation | caller 可自授权 PASS 即失败 |
 | P7 | parity/regression | POSIX/Windows protocol、DeepSeek existing path | 全绿后才能进入 Phase 2 |
