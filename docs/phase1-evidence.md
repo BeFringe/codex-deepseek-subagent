@@ -259,3 +259,36 @@ negative fixture rejects literal expensive rerun without explicit authority and
 shows that a replay-baseline reference contains no owned-path, Git, or completion
 fields. These are provider-free isolated fixtures; they do not qualify live
 direct write or alter the mutation/quiescence gates.
+
+## Diagnostic locality, crash semantics, and evidence identity
+
+The diagnostic contract now maps every stable owner failure code to an exact
+set of allowed `overall` and/or `per_item` localities. Tests prove the same code
+survives both explicitly allowed shapes, while an undeclared shape fails rather
+than becoming a generic error. Unknown or missing owner codes remain the only
+generic-fallback cases. This is structural fidelity, not parent acceptance of
+the claimed behavior.
+
+`hooks/termination_guard.py` accepts only an exact closed boundary catalog and
+one owner-internal fresh-process observation per seam/ordinal. Its API iterates
+the closed catalog itself and does not accept caller-precomputed report lists.
+The schema requires `os._exit` and an
+expected durable resolution from the five enumerated states. A real subprocess
+fixture proves `os._exit` skips `finally`, while `KeyboardInterrupt` unwinds it;
+the latter cannot stand in for process-death evidence. Missing boundaries,
+same-process observation, primitive drift, or durable-resolution drift fail
+closed.
+
+`hooks/evidence_binding.py` preflights executed root, hashed root, Git source
+identity, and canonical output before invoking the expensive callback. It opens
+each output component using directory fds and no-follow flags, requires a
+regular terminal, then rechecks device/inode and file kind. Fixtures prove root
+mismatch prevents the callback, symlinked directories are rejected, and
+terminal replacement after execution is detected.
+
+The capsule also models read-only review continuation with a prior assignment,
+frozen cumulative base, corrected full-OID tip, prior-finding digest,
+unresolved finding ids, and mandatory clean worktree. Capture proves an
+ancestor base/current tip and evidence source identity. This does not qualify
+same-thread follow-up: Codex 0.147.0 has no proven trusted follow-up capture in
+this adapter, so thread continuity alone remains insufficient authority.

@@ -8,6 +8,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+import uuid
 
 
 REPO = Path(__file__).resolve().parents[1]
@@ -129,8 +130,12 @@ class AssignmentTransportTests(unittest.TestCase):
                     "known_true_failure_codes": [],
                     "generic_unclassified_failure_code": "TASK.FAILURE_UNCLASSIFIED",
                     "allow_literal_expensive_rerun": False,
+                    "allowed_failure_code_localities": {},
                 },
                 "proven_input_baselines": [],
+                "termination_contract": {"catalog_closed": True, "boundary_catalog": []},
+                "evidence_binding": None,
+                "review_continuation": None,
             },
             "location_preflight": None,
             "pre_write_attestation_timeout_seconds": 30,
@@ -381,6 +386,9 @@ class AssignmentTransportTests(unittest.TestCase):
                 "known_true_failure_codes": ["OWNER.QUERY_FAILED"],
                 "generic_unclassified_failure_code": "TASK.FAILURE_UNCLASSIFIED",
                 "allow_literal_expensive_rerun": False,
+                "allowed_failure_code_localities": {
+                    "OWNER.QUERY_FAILED": ["overall", "per_item"]
+                },
             },
             "proven_input_baselines": [
                 {
@@ -395,6 +403,9 @@ class AssignmentTransportTests(unittest.TestCase):
                     "replay_policy": "reuse_without_authority_expansion",
                 }
             ],
+            "termination_contract": {"catalog_closed": True, "boundary_catalog": []},
+            "evidence_binding": None,
+            "review_continuation": None,
         }
 
         result = self.capture(
@@ -427,6 +438,9 @@ class AssignmentTransportTests(unittest.TestCase):
                 "known_true_failure_codes": ["OWNER.QUERY_FAILED"],
                 "generic_unclassified_failure_code": "TASK.FAILURE_UNCLASSIFIED",
                 "allow_literal_expensive_rerun": False,
+                "allowed_failure_code_localities": {
+                    "OWNER.QUERY_FAILED": ["overall"]
+                },
             },
             "proven_input_baselines": [
                 {
@@ -439,6 +453,9 @@ class AssignmentTransportTests(unittest.TestCase):
                     "replay_policy": "reuse_without_authority_expansion",
                 }
             ],
+            "termination_contract": {"catalog_closed": True, "boundary_catalog": []},
+            "evidence_binding": None,
+            "review_continuation": None,
         }
         authority["execution_contract"]["review_range"]["head_oid"] = head[:12]
         abbreviated = self.capture(
@@ -461,6 +478,61 @@ class AssignmentTransportTests(unittest.TestCase):
         )
         self.assertEqual(dirty["hookSpecificOutput"]["permissionDecision"], "deny")
         self.assertIn("clean captured worktree", dirty["hookSpecificOutput"]["permissionDecisionReason"])
+
+    def test_review_followup_contract_binds_frozen_base_fresh_tip_and_output_authority(self):
+        base = self.git("rev-parse", "HEAD").stdout.strip()
+        (self.repository / "corrected.txt").write_text("corrected\n", encoding="utf-8")
+        self.git("add", "corrected.txt")
+        self.git("commit", "-m", "corrected tip")
+        tip = self.git("rev-parse", "HEAD").stdout.strip()
+        authority = json.loads(
+            self.message().split("BEGIN CODEX WORKER AUTHORITY\n", 1)[1].split(
+                "\nEND CODEX WORKER AUTHORITY", 1
+            )[0]
+        )
+        authority["owned_paths"] = []
+        authority["excluded_paths"] = []
+        authority["execution_contract"].update(
+            {
+                "posture": "strict_read_only",
+                "review_range": {"base_oid": base, "head_oid": tip},
+                "required_invariants": ["freshly adjudicate every unresolved finding"],
+                "review_continuation": {
+                    "prior_assignment_id": str(uuid.uuid4()),
+                    "frozen_cumulative_base_oid": base,
+                    "corrected_tip_oid": tip,
+                    "prior_findings_sha256": "f" * 64,
+                    "unresolved_finding_ids": ["P1-1", "P1-2"],
+                    "require_clean_worktree": True,
+                },
+                "evidence_binding": {
+                    "executed_root": str(self.repository.resolve()),
+                    "hashed_root": str(self.repository.resolve()),
+                    "source_identity": {"kind": "git_commit", "value": tip},
+                    "canonical_output": "evidence/review.json",
+                    "no_follow_dirfd_walk": True,
+                    "terminal_regular_file_reproof": True,
+                    "preflight_before_expensive_execution": True,
+                },
+            }
+        )
+
+        accepted = self.capture(
+            self.spawn_hook(tool_input={"message": self.message(authority=authority)})
+        )
+        self.assertNotIn("permissionDecision", accepted["hookSpecificOutput"])
+
+        other_root = self.root / "other"
+        other_root.mkdir()
+        authority["execution_contract"]["evidence_binding"]["hashed_root"] = str(other_root)
+        rejected = self.capture(
+            self.spawn_hook(
+                task_name="different_review",
+                tool_input={"message": self.message(authority=authority)},
+            )
+        )
+        self.assertEqual(rejected["hookSpecificOutput"]["permissionDecision"], "deny")
+        self.assertIn("roots must be identical", rejected["hookSpecificOutput"]["permissionDecisionReason"])
 
     def test_subagent_start_claims_exact_capsule_and_retains_active_authority(self):
         hook = self.spawn_hook()

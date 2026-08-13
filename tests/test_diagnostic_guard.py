@@ -32,6 +32,9 @@ class DiagnosticGuardTests(unittest.TestCase):
                 "known_true_failure_codes": ["OWNER.QUERY_FAILED"],
                 "generic_unclassified_failure_code": "TASK.FAILURE_UNCLASSIFIED",
                 "allow_literal_expensive_rerun": False,
+                "allowed_failure_code_localities": {
+                    "OWNER.QUERY_FAILED": ["overall", "per_item"]
+                },
             },
             "proven_input_baselines": [
                 {
@@ -44,23 +47,53 @@ class DiagnosticGuardTests(unittest.TestCase):
                     "replay_policy": "reuse_without_authority_expansion",
                 }
             ],
+            "termination_contract": {"catalog_closed": True, "boundary_catalog": []},
+            "evidence_binding": None,
+            "review_continuation": None,
         }
 
     def test_stable_owner_failure_code_is_preserved(self):
         result = diagnostic_guard.classify_owner_failure(
-            self.contract, "OWNER.QUERY_FAILED"
+            self.contract, "OWNER.QUERY_FAILED", locality="overall"
         )
 
         self.assertEqual(result["returned_failure_code"], "OWNER.QUERY_FAILED")
         self.assertFalse(result["used_generic_fallback"])
 
     def test_only_unclassified_failure_uses_generic_code(self):
-        unknown = diagnostic_guard.classify_owner_failure(self.contract, "WRAPPER.UNKNOWN")
-        missing = diagnostic_guard.classify_owner_failure(self.contract, None)
+        unknown = diagnostic_guard.classify_owner_failure(
+            self.contract, "WRAPPER.UNKNOWN", locality="overall"
+        )
+        missing = diagnostic_guard.classify_owner_failure(
+            self.contract, None, locality="per_item"
+        )
 
         self.assertEqual(unknown["returned_failure_code"], "TASK.FAILURE_UNCLASSIFIED")
         self.assertEqual(missing["returned_failure_code"], "TASK.FAILURE_UNCLASSIFIED")
         self.assertTrue(unknown["used_generic_fallback"])
+
+    def test_same_stable_code_is_valid_at_each_explicitly_allowed_locality(self):
+        overall = diagnostic_guard.classify_owner_failure(
+            self.contract, "OWNER.QUERY_FAILED", locality="overall"
+        )
+        per_item = diagnostic_guard.classify_owner_failure(
+            self.contract, "OWNER.QUERY_FAILED", locality="per_item"
+        )
+
+        self.assertEqual(overall["returned_failure_code"], per_item["returned_failure_code"])
+        self.assertNotEqual(overall["diagnostic_locality"], per_item["diagnostic_locality"])
+
+    def test_stable_code_at_undeclared_locality_is_not_relabelled_generic(self):
+        self.contract["diagnostics"]["allowed_failure_code_localities"] = {
+            "OWNER.QUERY_FAILED": ["overall"]
+        }
+
+        with self.assertRaisesRegex(
+            diagnostic_guard.DiagnosticViolation, "not allowed at per_item"
+        ):
+            diagnostic_guard.classify_owner_failure(
+                self.contract, "OWNER.QUERY_FAILED", locality="per_item"
+            )
 
     def test_literal_expensive_rerun_requires_explicit_authority(self):
         with self.assertRaisesRegex(
