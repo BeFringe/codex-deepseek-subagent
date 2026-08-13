@@ -11,6 +11,7 @@ import uuid
 
 
 REPO = Path(__file__).resolve().parents[1]
+WATCHDOG = REPO / "hooks" / "authority_watchdog.py"
 
 
 def load_module(name, path):
@@ -122,7 +123,10 @@ class RuntimeGuardTests(unittest.TestCase):
                 "branch": "main",
                 "base_commit": self.base,
                 "allow_descendant_head": False,
+                "base_index_changed": False,
+                "base_git_status_short": "",
             },
+            "capture_preflight": None,
             "owned_paths": ["owned"],
             "excluded_paths": ["owned/excluded"],
             "git_authority": {"stage": False, "commit": False, "branch": False, "push": False},
@@ -138,6 +142,7 @@ class RuntimeGuardTests(unittest.TestCase):
             "preexisting_dirty": [],
             "assignment_sha256": sha256_bytes(self.assignment.encode("utf-8")),
             "created_at": now.isoformat(),
+            "pre_write_attestation_deadline": (now + dt.timedelta(seconds=30)).isoformat(),
             "expires_at": (now + dt.timedelta(minutes=5)).isoformat(),
         }
         value["capsule_sha256"] = capsule_sha256(value)
@@ -222,6 +227,19 @@ class RuntimeGuardTests(unittest.TestCase):
         self.assertIn("AUTHORITY.REATTESTED", first["hookSpecificOutput"]["additionalContext"])
         self.assertEqual(second["hookSpecificOutput"]["permissionDecision"], "deny")
 
+    def test_corrupt_active_runtime_metadata_fails_closed(self):
+        active = self.store.path("active", self.capsule["assignment_id"])
+        envelope = json.loads(active.read_text(encoding="utf-8"))
+        del envelope["runtime"]["first_git_attested_at"]
+        active.write_text(json.dumps(envelope), encoding="utf-8")
+
+        result = runtime_guard.pre_tool_use(
+            self.store, self.child_hook("PreToolUse", tool_name="view_image")
+        )
+
+        self.assertEqual(result["hookSpecificOutput"]["permissionDecision"], "deny")
+        self.assertIn("runtime metadata", result["hookSpecificOutput"]["permissionDecisionReason"])
+
     def test_compaction_increments_epoch_and_post_compaction_mismatch_blocks(self):
         runtime_guard.pre_compact(self.store, self.child_hook("PreCompact"))
         allowed = runtime_guard.pre_tool_use(
@@ -248,6 +266,35 @@ class RuntimeGuardTests(unittest.TestCase):
 
         self.assertEqual(result["hookSpecificOutput"]["permissionDecision"], "deny")
         self.assertIn("HEAD", result["hookSpecificOutput"]["permissionDecisionReason"])
+
+    def test_first_git_attestation_exact_base_mismatch_fast_stops(self):
+        self.store.finalize(self.capsule["assignment_id"], {}, complete=False)
+        wrong = self.make_capsule()
+        wrong["root"]["base_commit"] = self.base[:12] + (
+            "0" if self.base[12] != "0" else "1"
+        ) + self.base[13:]
+        wrong["capsule_sha256"] = capsule_sha256(wrong)
+        self.store.stage(wrong, self.assignment)
+        identity = runtime_guard.child_identity_from_hook(self.child_hook("SubagentStart"))
+        self.store.claim(wrong["handoff_id"], identity)
+        self.store.activate(wrong["handoff_id"])
+
+        result = runtime_guard.pre_tool_use(
+            self.store, self.child_hook("PreToolUse", tool_name="view_image")
+        )
+
+        self.assertEqual(result["hookSpecificOutput"]["permissionDecision"], "deny")
+        self.assertIn("HEAD", result["hookSpecificOutput"]["permissionDecisionReason"])
+        unresolved = json.loads(
+            self.store.path("unresolved", wrong["assignment_id"]).read_text(encoding="utf-8")
+        )
+        self.assertEqual(
+            unresolved["termination_evidence"]["classification"],
+            "initial_authority_mismatch",
+        )
+        self.assertIsNone(unresolved["termination_evidence"]["disk_changed"])
+        self.assertFalse(unresolved["termination_evidence"]["baseline_comparable"])
+        self.assertEqual(runtime_guard.collect_git_snapshot(str(self.repository))["changed_paths"], [])
 
     def test_pre_tool_use_reads_actual_paths_and_blocks_scope_expansion(self):
         runtime_guard.pre_compact(self.store, self.child_hook("PreCompact"))
@@ -283,6 +330,9 @@ class RuntimeGuardTests(unittest.TestCase):
         self.assertIn("found 2", result["hookSpecificOutput"]["permissionDecisionReason"])
 
     def test_subagent_stop_accepts_exact_disk_attestation_as_untrusted_report(self):
+        runtime_guard.pre_tool_use(
+            self.store, self.child_hook("PreToolUse", tool_name="view_image")
+        )
         (self.repository / "owned").mkdir()
         (self.repository / "owned" / "result.txt").write_text("result\n", encoding="utf-8")
         message = self.attestation()
@@ -292,6 +342,15 @@ class RuntimeGuardTests(unittest.TestCase):
         self.assertEqual(result, {})
         self.assertFalse(self.store.path("active", self.capsule["assignment_id"]).exists())
         self.assertTrue(self.store.path("reported", self.capsule["assignment_id"]).exists())
+
+    def test_subagent_stop_blocks_complete_claim_without_first_git_attestation(self):
+        result = runtime_guard.subagent_stop(
+            self.store,
+            self.stop_hook(self.attestation()),
+        )
+
+        self.assertEqual(result["decision"], "block")
+        self.assertIn("no durable first Git attestation", result["reason"])
 
     def test_subagent_stop_blocks_slice_overclaim_shape(self):
         message = self.attestation()
@@ -326,6 +385,7 @@ class RuntimeGuardTests(unittest.TestCase):
         )
 
         self.assertEqual(result["decision"], "block")
+        self.assertIn("INVALID_FINAL_WITHOUT_CONTRIBUTION", result["reason"])
         self.assertTrue(self.store.path("active", self.capsule["assignment_id"]).exists())
 
     def test_disk_mutation_without_durable_capsule_cannot_be_completed_by_narrative(self):
@@ -345,6 +405,93 @@ class RuntimeGuardTests(unittest.TestCase):
         self.assertIn("expected one active authority capsule", result["reason"])
         self.assertTrue((self.repository / "owned" / "long-run-result.txt").exists())
         self.assertFalse(self.store.path("consumed", self.capsule["assignment_id"]).exists())
+
+    def test_return_context_loss_with_contribution_is_classified_separately(self):
+        (self.repository / "owned").mkdir()
+        (self.repository / "owned" / "result.txt").write_text("real contribution\n", encoding="utf-8")
+
+        result = runtime_guard.subagent_stop(
+            self.store,
+            self.stop_hook("I no longer have the assignment, but the work is complete."),
+        )
+
+        self.assertEqual(result["decision"], "block")
+        self.assertIn("RETURN_CONTEXT_LOSS_WITH_CONTRIBUTION", result["reason"])
+        self.assertTrue(self.store.path("active", self.capsule["assignment_id"]).exists())
+
+    def test_watchdog_classifies_prewrite_timeout_without_disk_change(self):
+        deadline = dt.datetime.fromisoformat(self.capsule["pre_write_attestation_deadline"])
+
+        terminated = runtime_guard.sweep_deadlines(
+            self.store,
+            now=deadline + dt.timedelta(seconds=1),
+        )
+
+        self.assertEqual(terminated[0]["classification"], "unresponsive_no_disk_change")
+        self.assertFalse(terminated[0]["disk_changed"])
+        self.assertTrue(self.store.path("unresolved", self.capsule["assignment_id"]).exists())
+
+    def test_watchdog_distinguishes_prewrite_timeout_with_disk_change(self):
+        (self.repository / "owned").mkdir()
+        (self.repository / "owned" / "partial.txt").write_text("partial\n", encoding="utf-8")
+        deadline = dt.datetime.fromisoformat(self.capsule["pre_write_attestation_deadline"])
+
+        terminated = runtime_guard.sweep_deadlines(
+            self.store,
+            now=deadline + dt.timedelta(seconds=1),
+        )
+
+        self.assertEqual(
+            terminated[0]["classification"],
+            "unresponsive_with_disk_change_before_attestation",
+        )
+        self.assertTrue(terminated[0]["disk_changed"])
+
+    def test_watchdog_classifies_attested_contribution_without_return(self):
+        runtime_guard.pre_tool_use(
+            self.store, self.child_hook("PreToolUse", tool_name="view_image")
+        )
+        (self.repository / "owned").mkdir()
+        (self.repository / "owned" / "result.txt").write_text("contribution\n", encoding="utf-8")
+        expires = dt.datetime.fromisoformat(self.capsule["expires_at"])
+
+        terminated = runtime_guard.sweep_deadlines(
+            self.store,
+            now=expires + dt.timedelta(seconds=1),
+        )
+
+        self.assertEqual(
+            terminated[0]["classification"],
+            "unresponsive_with_contribution",
+        )
+        self.assertTrue(terminated[0]["disk_changed"])
+
+    def test_executable_watchdog_requests_parent_cancel_on_deadline(self):
+        deadline = dt.datetime.fromisoformat(self.capsule["pre_write_attestation_deadline"])
+
+        completed = subprocess.run(
+            [
+                sys.executable,
+                str(WATCHDOG),
+                "--state-directory",
+                str(self.store.root),
+                "--now",
+                (deadline + dt.timedelta(seconds=1)).isoformat(),
+                "--fail-on-termination",
+            ],
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+        )
+        result = json.loads(completed.stdout)
+
+        self.assertEqual(completed.returncode, 2, completed.stderr)
+        self.assertTrue(result["parent_cancel_required"])
+        self.assertEqual(
+            result["terminated"][0]["classification"],
+            "unresponsive_no_disk_change",
+        )
 
     def test_context_lost_attestation_returns_unresolved_evidence(self):
         message = self.attestation(

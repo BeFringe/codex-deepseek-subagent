@@ -42,7 +42,10 @@ def capsule(assignment, **overrides):
             "branch": "main",
             "base_commit": "a" * 64,
             "allow_descendant_head": False,
+            "base_index_changed": False,
+            "base_git_status_short": "",
         },
+        "capture_preflight": None,
         "owned_paths": ["owned"],
         "excluded_paths": ["owned/excluded"],
         "git_authority": {
@@ -70,6 +73,7 @@ def capsule(assignment, **overrides):
         ],
         "assignment_sha256": sha256_bytes(assignment.encode("utf-8")),
         "created_at": now.isoformat(),
+        "pre_write_attestation_deadline": (now + dt.timedelta(seconds=30)).isoformat(),
         "expires_at": (now + dt.timedelta(minutes=5)).isoformat(),
     }
     value.update(overrides)
@@ -232,6 +236,9 @@ class CompatibilityStateTests(unittest.TestCase):
         value = capsule(
             assignment,
             created_at=(now - dt.timedelta(minutes=2)).isoformat(),
+            pre_write_attestation_deadline=(
+                now - dt.timedelta(seconds=90)
+            ).isoformat(),
             expires_at=(now - dt.timedelta(minutes=1)).isoformat(),
         )
         value["capsule_sha256"] = capsule_sha256(value)

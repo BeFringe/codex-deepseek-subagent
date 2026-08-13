@@ -132,12 +132,49 @@ exact child-identity `lost` marker, denies every subsequent tool for lack of an
 active capsule, and permits only the literal `TASK.CONTEXT_LOST` final return.
 The intended assignment remains pending for its correct child.
 
+Capture now accepts an optional narrowing-only location preflight. The fixture
+uses a wrong full HEAD with the same 12-character prefix as the actual HEAD and
+proves the parent PreToolUse blocks spawn without creating pending state or disk
+changes. The exact current root/branch/full HEAD case stages normally. The Hook
+does not derive replacement authority from a failed assertion.
+
 `hooks/compatibility_hook.py` is an executable isolated entry point spanning
 parent PreToolUse capture, SubagentStart claim, child PreToolUse re-attestation,
 PreCompact recovery epoch, and SubagentStop adjudication. It requires an
 explicit state directory and target agent-type list and is not referenced by
 the installer or live configuration. Its end-to-end fixture confirms the state
 path reaches reported only after an exact post-recovery final attestation.
+
+## Pre-write deadline and unresponsive-run evidence
+
+The capsule freezes a first-Git-attestation deadline plus exact initial
+root/branch/full HEAD/index/status/path hashes. A same-prefix but unequal full
+HEAD fails the first synthetic PreToolUse, moves the active capsule to
+unresolved evidence, and leaves the repository unchanged.
+Because a wrong base is not a trustworthy comparison point, its termination
+evidence records `baseline_comparable=false` and `disk_changed=null`; it does
+not relabel the HEAD mismatch as contribution bytes.
+
+`hooks/authority_watchdog.py` is a one-shot isolated watchdog for the no-event
+negative space. A test invokes it just beyond the deadline; it moves authority
+to unresolved, returns `parent_cancel_required=true`, and exits 2 under
+`--fail-on-termination`. This signal is designed for a parent/host scheduler.
+It is not wired into live configuration and does not claim that Hook callbacks
+provide their own clock or cancellation.
+
+Disk-first classification distinguishes:
+
+- `unresponsive_no_disk_change`: root/branch/HEAD/index/status/path hashes equal
+  the captured baseline;
+- `unresponsive_with_disk_change_before_attestation`: a delta exists before the
+  first durable Git attestation;
+- `unresponsive_with_contribution`: an attested long run has a delta but no
+  final return;
+- `return_context_loss_with_contribution`: the child returned an invalid/lost
+  narrative after real contribution bytes appeared.
+
+The new fixtures cover all four classes. All remain
+untrusted contribution/termination evidence, never integration authority.
 
 The lifecycle now distinguishes a worker report from parent integration. A
 trusted parent adjudication must separately pass location integrity,

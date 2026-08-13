@@ -119,6 +119,8 @@ class AssignmentTransportTests(unittest.TestCase):
                 "test_only_injection_seams": ["fixture.inject_oracle"],
                 "required_derivation_boundary": "fixture.owner.derive",
             },
+            "location_preflight": None,
+            "pre_write_attestation_timeout_seconds": 30,
             "ttl_seconds": 300,
         }
         return (
@@ -251,6 +253,68 @@ class AssignmentTransportTests(unittest.TestCase):
         result = self.capture(self.spawn_hook(session_id="different-session"))
 
         self.assertEqual(result["hookSpecificOutput"]["permissionDecision"], "deny")
+        self.assertFalse((self.store.root / "pending").exists())
+
+    def test_optional_location_preflight_blocks_same_prefix_wrong_full_head(self):
+        actual_head = self.git("rev-parse", "HEAD").stdout.strip()
+        wrong_head = actual_head[:12] + ("0" if actual_head[12] != "0" else "1") + actual_head[13:]
+        authority = json.loads(
+            self.message().split("BEGIN CODEX WORKER AUTHORITY\n", 1)[1].split(
+                "\nEND CODEX WORKER AUTHORITY", 1
+            )[0]
+        )
+        authority["location_preflight"] = {
+            "expected_root": str(self.repository.resolve()),
+            "expected_branch": "main",
+            "expected_base_head": wrong_head,
+        }
+
+        result = self.capture(
+            self.spawn_hook(tool_input={"message": self.message(authority=authority)})
+        )
+
+        self.assertEqual(result["hookSpecificOutput"]["permissionDecision"], "deny")
+        self.assertIn("does not exactly match", result["hookSpecificOutput"]["permissionDecisionReason"])
+        self.assertFalse((self.store.root / "pending").exists())
+        self.assertEqual(runtime_guard.collect_git_snapshot(str(self.repository))["changed_paths"], [])
+
+    def test_optional_location_preflight_accepts_exact_current_location(self):
+        authority = json.loads(
+            self.message().split("BEGIN CODEX WORKER AUTHORITY\n", 1)[1].split(
+                "\nEND CODEX WORKER AUTHORITY", 1
+            )[0]
+        )
+        authority["location_preflight"] = {
+            "expected_root": str(self.repository.resolve()),
+            "expected_branch": "main",
+            "expected_base_head": self.git("rev-parse", "HEAD").stdout.strip(),
+        }
+
+        result = self.capture(
+            self.spawn_hook(tool_input={"message": self.message(authority=authority)})
+        )
+
+        self.assertNotIn("permissionDecision", result["hookSpecificOutput"])
+        self.assertEqual(len(list((self.store.root / "pending").glob("*.json"))), 1)
+
+    def test_location_preflight_rejects_abbreviated_head_format(self):
+        authority = json.loads(
+            self.message().split("BEGIN CODEX WORKER AUTHORITY\n", 1)[1].split(
+                "\nEND CODEX WORKER AUTHORITY", 1
+            )[0]
+        )
+        authority["location_preflight"] = {
+            "expected_root": str(self.repository.resolve()),
+            "expected_branch": "main",
+            "expected_base_head": self.git("rev-parse", "HEAD").stdout.strip()[:12],
+        }
+
+        result = self.capture(
+            self.spawn_hook(tool_input={"message": self.message(authority=authority)})
+        )
+
+        self.assertEqual(result["hookSpecificOutput"]["permissionDecision"], "deny")
+        self.assertIn("full Git object id", result["hookSpecificOutput"]["permissionDecisionReason"])
         self.assertFalse((self.store.root / "pending").exists())
 
     def test_subagent_start_claims_exact_capsule_and_retains_active_authority(self):

@@ -85,6 +85,8 @@ The schema 2 capsule contains at least:
   turn, and tool-use identity;
 - worker profile, role, requested task name, and proven canonical AgentPath;
 - resolved Git root, branch, base commit, and descendant-HEAD policy;
+- initial index/status facts and an optional narrowing-only capture preflight
+  over expected root, branch, and the complete Git object id;
 - owned and excluded paths;
 - explicit stage/commit/branch/push authority;
 - stop condition and exact verification contract;
@@ -94,6 +96,7 @@ The schema 2 capsule contains at least:
 - pre-existing dirty statuses, file kinds, and content hashes (null only for a
   deleted path);
 - assignment hash, timestamps, and a canonical capsule hash.
+- a bounded first-Git-attestation deadline.
 
 `assignment_id` is immutable authority; `handoff_id` is one delivery attempt.
 The canonical path is bound only after runtime metadata proves it. Recovery may
@@ -107,6 +110,10 @@ runtime/child/parent identity, root/base, owned and excluded paths, Git
 authority, authoritative input roots, stop condition, and completion predicate.
 The full capsule and assignment remain in durable state; the compact copy cannot
 replace or expand them.
+The optional capture preflight compares parent-supplied expected location facts
+with the Hook's current actual Git snapshot and blocks spawn on any difference.
+It cannot authorize a commit/branch, change path ownership, infer a replacement
+task, or accept a matching HEAD prefix in place of the full object id.
 
 ## State lifecycle
 
@@ -167,6 +174,19 @@ must re-resolve one active capsule and re-attest root, branch/base, owned paths,
 Git authority, and epoch before execution. Missing, ambiguous, or corrupt state
 blocks new writes and scope expansion.
 
+The capsule carries a short bounded first-attestation deadline. Before the first
+tool execution, the guard compares actual root, branch, full HEAD, index, status,
+and path hashes with immutable state. Any exact mismatch or elapsed deadline
+terminates active authority into unresolved evidence before mutation.
+
+A Hook event is not a wall-clock timer. If a child performs long computation
+without emitting an event, PreToolUse cannot wake itself or cancel the child.
+Bounded fast-stop therefore also requires a parent/host scheduler to invoke the
+isolated watchdog and interrupt/cancel when it returns
+`parent_cancel_required=true`. Without that outer evidence the adapter proves
+only that the next event is denied, not that the provider turn stopped exactly
+at the deadline. An assignment prompt cannot repair this limitation.
+
 SubagentStop requires a machine-checkable attestation containing assignment and
 handoff ids, capsule hash, canonical path, recovery count, resolved Git state,
 compact-invariant hash,
@@ -180,6 +200,19 @@ If a final narrative says no assignment or no writes while consumed transport
 state and disk hashes prove owned-path changes, classify it as return-context
 loss. Freeze and freshly verify the contribution. Parent/disk/capsule evidence
 outranks narrative, but missing attestation is never a completion proof.
+
+Watchdog evidence for no final return has separate classes. An exact unchanged
+baseline is `unresponsive_no_disk_change`; a delta before first attestation is
+`unresponsive_with_disk_change_before_attestation`; an attested contribution
+without return is `unresponsive_with_contribution`. Only a returned lost/invalid
+narrative plus a real contribution is
+`return_context_loss_with_contribution`. None is completion proof, and they are
+not interchangeable.
+If capsule location/base is itself untrusted, the adapter must not force a disk
+delta from that baseline. It reports `initial_authority_mismatch`,
+`baseline_comparable=false`, and `disk_changed=null`; the parent must use an
+independent trusted baseline rather than misclassifying HEAD mismatch as a
+contribution.
 
 Successful SubagentStop adjudication advances only to `reported`. The parent
 separately decides location integrity, mutation-scope integrity, verification
@@ -203,6 +236,7 @@ child is truthful; the parent must revalidate any receipt at the owner boundary.
 | P3 lifecycle | pending→claimed→active→reported→consumed, expiry and crash recovery | no deletion after initial delivery |
 | P4 write guard | shell, patch, code-mode nested tools, MCP/write apps, Git | read-only posture if any bypass exists |
 | P5 recovery | compact after a correct initial write; path/Git expansion attempts | any unauthorized write fails the gate |
+| P5a pre-write deadline | same-prefix wrong full HEAD, capture preflight, no-event watchdog/cancel signal | mismatch/timeout must not reach expensive mutation |
 | P6 final gate | context-loss narrative, slice overclaim, disk-hash mismatch | wrong final must be blocked |
 | P6a causal provenance | digest-valid forged facts, real-mode test seam, owner-internal shared derivation | caller self-authorization must fail |
 | P7 parity/regression | POSIX/Windows and existing DeepSeek route | all green before Phase 2 |

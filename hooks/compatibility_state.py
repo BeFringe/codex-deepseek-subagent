@@ -112,6 +112,7 @@ def compact_invariant(capsule: Mapping[str, object]) -> dict:
         "excluded_paths": capsule["excluded_paths"],
         "git_authority": capsule["git_authority"],
         "stop_condition": capsule["stop_condition"],
+        "pre_write_attestation_deadline": capsule["pre_write_attestation_deadline"],
         "authority_provenance": capsule["authority_provenance"],
     }
 
@@ -208,6 +209,38 @@ def validate_capsule(capsule: object, assignment: str) -> dict:
         raise CorruptState("root.base_commit must be a full lowercase hash or null")
     if type(root.get("allow_descendant_head")) is not bool:
         raise CorruptState("root.allow_descendant_head must be boolean")
+    if type(root.get("base_index_changed")) is not bool:
+        raise CorruptState("root.base_index_changed must be boolean")
+    if not isinstance(root.get("base_git_status_short"), str):
+        raise CorruptState("root.base_git_status_short must be a string")
+
+    capture_preflight = capsule.get("capture_preflight")
+    if capture_preflight is not None:
+        if not isinstance(capture_preflight, dict) or set(capture_preflight) != {
+            "expected_root",
+            "expected_branch",
+            "expected_base_head",
+        }:
+            raise CorruptState("capture_preflight fields are not exact")
+        expected_root = pathlib.Path(
+            _nonempty_string(capture_preflight["expected_root"], "capture_preflight.expected_root")
+        )
+        if not expected_root.is_absolute():
+            raise CorruptState("capture_preflight.expected_root must be absolute")
+        if capture_preflight["expected_branch"] is not None and not isinstance(
+            capture_preflight["expected_branch"], str
+        ):
+            raise CorruptState("capture_preflight.expected_branch is invalid")
+        if not GIT_OID_RE.fullmatch(str(capture_preflight["expected_base_head"])):
+            raise CorruptState("capture_preflight.expected_base_head is invalid")
+        if expected_root.resolve() != root_path.resolve():
+            raise CorruptState("capture_preflight.expected_root does not match root.path")
+        if capture_preflight["expected_branch"] != branch:
+            raise CorruptState("capture_preflight.expected_branch does not match root.branch")
+        if capture_preflight["expected_base_head"] != base_commit:
+            raise CorruptState(
+                "capture_preflight.expected_base_head does not match root.base_commit"
+            )
 
     _relative_paths(capsule.get("owned_paths"), "owned_paths")
     _relative_paths(capsule.get("excluded_paths"), "excluded_paths")
@@ -275,7 +308,13 @@ def validate_capsule(capsule: object, assignment: str) -> dict:
             raise CorruptState("preexisting_dirty.sha256 must be lowercase SHA-256")
 
     created_at = _timestamp(capsule.get("created_at"), "created_at")
+    pre_write_deadline = _timestamp(
+        capsule.get("pre_write_attestation_deadline"),
+        "pre_write_attestation_deadline",
+    )
     expires_at = _timestamp(capsule.get("expires_at"), "expires_at")
+    if pre_write_deadline <= created_at or pre_write_deadline > expires_at:
+        raise CorruptState("pre_write_attestation_deadline is outside capsule lifetime")
     if expires_at <= created_at:
         raise CorruptState("expires_at must be later than created_at")
 
@@ -444,7 +483,11 @@ class StateStore:
                 self._publish(unresolved, envelope)
                 claimed.unlink()
                 raise StateError("claimed capsule expired before activation")
-            envelope["runtime"] = {"recovery_count": 0, "context_lost": False}
+            envelope["runtime"] = {
+                "recovery_count": 0,
+                "context_lost": False,
+                "first_git_attested_at": None,
+            }
             active = self.path("active", capsule["assignment_id"])
             self._publish(active, envelope)
             claimed.unlink()
@@ -471,16 +514,31 @@ class StateStore:
         head: str | None,
         changed_paths: Sequence[str] = (),
         git_operation: str | None = None,
+        now: dt.datetime | None = None,
     ) -> dict:
         active = self.path("active", assignment_id)
         with self.locked():
             envelope = self._validated_envelope(active)
             capsule = envelope["capsule"]
-            if _timestamp(capsule["expires_at"], "expires_at") <= dt.datetime.now(dt.timezone.utc):
+            observed_at = now or dt.datetime.now(dt.timezone.utc)
+            if observed_at.tzinfo is None or observed_at.utcoffset() is None:
+                raise AuthorityViolation("attestation time must include a UTC offset")
+            if _timestamp(capsule["expires_at"], "expires_at") <= observed_at:
                 unresolved = self.path("unresolved", assignment_id)
                 self._publish(unresolved, envelope)
                 active.unlink()
                 raise AuthorityViolation("active authority expired")
+            runtime = envelope.get("runtime")
+            if not isinstance(runtime, dict):
+                raise CorruptState("active runtime metadata is invalid")
+            if (
+                runtime.get("first_git_attested_at") is None
+                and observed_at > _timestamp(
+                    capsule["pre_write_attestation_deadline"],
+                    "pre_write_attestation_deadline",
+                )
+            ):
+                raise AuthorityViolation("first Git attestation deadline elapsed")
             self._assert_identity(capsule, identity, envelope.get("binding"))
             expected_root = capsule["root"]
             if pathlib.Path(root).resolve() != pathlib.Path(expected_root["path"]).resolve():
@@ -500,7 +558,39 @@ class StateStore:
                     raise AuthorityViolation(f"path is outside owned_paths: {path}")
                 if _path_is_owned(path, excluded):
                     raise AuthorityViolation(f"path is excluded: {path}")
+            if runtime.get("first_git_attested_at") is None:
+                runtime["first_git_attested_at"] = observed_at.isoformat()
+                self._publish(active, envelope, replace=True)
             return envelope
+
+    def list_active(self) -> list[tuple[str, dict]]:
+        values: list[tuple[str, dict]] = []
+        with self.locked():
+            directory = self.root / "active"
+            if not directory.exists():
+                return values
+            for path in sorted(directory.glob("*.json")):
+                try:
+                    envelope = self._validated_envelope(path)
+                except CorruptState:
+                    self._quarantine(path)
+                    continue
+                values.append((envelope["capsule"]["assignment_id"], envelope))
+        return values
+
+    def terminate_active(
+        self,
+        assignment_id: str,
+        termination_evidence: Mapping[str, object],
+    ) -> pathlib.Path:
+        active = self.path("active", assignment_id)
+        with self.locked():
+            envelope = self._validated_envelope(active)
+            envelope["termination_evidence"] = dict(termination_evidence)
+            unresolved = self.path("unresolved", assignment_id)
+            self._publish(unresolved, envelope)
+            active.unlink()
+            return unresolved
 
     def expire_active(self, assignment_id: str, *, now: dt.datetime) -> pathlib.Path | None:
         active = self.path("active", assignment_id)

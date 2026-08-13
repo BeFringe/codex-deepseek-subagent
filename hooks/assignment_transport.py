@@ -28,10 +28,18 @@ AUTHORITY_FIELDS = {
     "stop_condition",
     "verification",
     "authority_provenance",
+    "location_preflight",
+    "pre_write_attestation_timeout_seconds",
     "ttl_seconds",
 }
 GIT_AUTHORITY_FIELDS = {"stage", "commit", "branch", "push"}
 TASK_NAME_RE = re.compile(r"^[a-z0-9_]+$")
+GIT_OID_RE = re.compile(r"^(?:[0-9a-f]{40}|[0-9a-f]{64})$")
+LOCATION_PREFLIGHT_FIELDS = {
+    "expected_root",
+    "expected_branch",
+    "expected_base_head",
+}
 
 
 def _deny(reason: str) -> dict:
@@ -63,6 +71,15 @@ def parse_authority_declaration(message: object) -> dict:
     ttl_seconds = value.get("ttl_seconds")
     if type(ttl_seconds) is not int or not 1 <= ttl_seconds <= 3600:
         raise GuardError("authority ttl_seconds must be between 1 and 3600")
+    pre_write_timeout = value.get("pre_write_attestation_timeout_seconds")
+    if (
+        type(pre_write_timeout) is not int
+        or not 1 <= pre_write_timeout <= 60
+        or pre_write_timeout > ttl_seconds
+    ):
+        raise GuardError(
+            "pre_write_attestation_timeout_seconds must be between 1 and 60 and no greater than ttl_seconds"
+        )
     for field in ("owned_paths", "excluded_paths", "verification"):
         items = value.get(field)
         if not isinstance(items, list) or any(not isinstance(item, str) for item in items):
@@ -79,7 +96,35 @@ def parse_authority_declaration(message: object) -> dict:
     provenance = value.get("authority_provenance")
     if not isinstance(provenance, dict):
         raise GuardError("authority authority_provenance must be an object")
+    location_preflight = value.get("location_preflight")
+    if location_preflight is not None:
+        if not isinstance(location_preflight, dict) or set(location_preflight) != LOCATION_PREFLIGHT_FIELDS:
+            raise GuardError("authority location_preflight fields are not exact")
+        expected_root = location_preflight["expected_root"]
+        if not isinstance(expected_root, str) or not Path(expected_root).is_absolute():
+            raise GuardError("location_preflight.expected_root must be absolute")
+        expected_branch = location_preflight["expected_branch"]
+        if expected_branch is not None and (
+            not isinstance(expected_branch, str) or not expected_branch
+        ):
+            raise GuardError("location_preflight.expected_branch is invalid")
+        expected_head = location_preflight["expected_base_head"]
+        if not isinstance(expected_head, str) or not GIT_OID_RE.fullmatch(expected_head):
+            raise GuardError("location_preflight.expected_base_head must be a full Git object id")
     return value
+
+
+def _check_location_preflight(snapshot: Mapping[str, object], preflight: object) -> None:
+    if preflight is None:
+        return
+    assert isinstance(preflight, dict)
+    expected_root = str(Path(preflight["expected_root"]).resolve())
+    if snapshot["root"] != expected_root:
+        raise GuardError("location preflight root does not match current Git root")
+    if snapshot["branch"] != preflight["expected_branch"]:
+        raise GuardError("location preflight branch does not match current Git branch")
+    if snapshot["head"] != preflight["expected_base_head"]:
+        raise GuardError("location preflight base HEAD does not exactly match current HEAD")
 
 
 def _preexisting_dirty(root: Path, snapshot: Mapping[str, object]) -> list[dict]:
@@ -158,6 +203,7 @@ def capture_spawn(
         if not isinstance(cwd, str):
             raise GuardError("spawn Hook has no cwd")
         snapshot = collect_git_snapshot(cwd)
+        _check_location_preflight(snapshot, declaration["location_preflight"])
         created_at = now or dt.datetime.now(dt.timezone.utc)
         if created_at.tzinfo is None or created_at.utcoffset() is None:
             raise GuardError("capture time must include a UTC offset")
@@ -181,7 +227,10 @@ def capture_spawn(
                 "branch": snapshot["branch"],
                 "base_commit": snapshot["head"],
                 "allow_descendant_head": bool(git_authority.get("commit")),
+                "base_index_changed": snapshot["index_changed"],
+                "base_git_status_short": snapshot["git_status_short"],
             },
+            "capture_preflight": declaration["location_preflight"],
             "owned_paths": declaration["owned_paths"],
             "excluded_paths": declaration["excluded_paths"],
             "git_authority": git_authority,
@@ -191,6 +240,12 @@ def capture_spawn(
             "preexisting_dirty": _preexisting_dirty(Path(snapshot["root"]), snapshot),
             "assignment_sha256": sha256_bytes(str(message).encode("utf-8")),
             "created_at": created_at.isoformat(),
+            "pre_write_attestation_deadline": (
+                created_at
+                + dt.timedelta(
+                    seconds=declaration["pre_write_attestation_timeout_seconds"]
+                )
+            ).isoformat(),
             "expires_at": (
                 created_at + dt.timedelta(seconds=declaration["ttl_seconds"])
             ).isoformat(),

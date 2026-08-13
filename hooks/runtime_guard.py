@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import datetime as dt
 import hashlib
 import json
 import os
@@ -43,6 +44,31 @@ READ_ONLY_TOOL_NAMES = {
 
 class GuardError(StateError):
     pass
+
+
+def _active_runtime(envelope: Mapping[str, object]) -> dict:
+    runtime = envelope.get("runtime")
+    if not isinstance(runtime, dict) or set(runtime) != {
+        "recovery_count",
+        "context_lost",
+        "first_git_attested_at",
+    }:
+        raise GuardError("active runtime metadata fields are not exact")
+    if type(runtime["recovery_count"]) is not int or runtime["recovery_count"] < 0:
+        raise GuardError("active recovery_count is invalid")
+    if type(runtime["context_lost"]) is not bool:
+        raise GuardError("active context_lost is invalid")
+    first_attested = runtime["first_git_attested_at"]
+    if first_attested is not None:
+        if not isinstance(first_attested, str):
+            raise GuardError("active first_git_attested_at is invalid")
+        try:
+            parsed = dt.datetime.fromisoformat(first_attested)
+        except ValueError as error:
+            raise GuardError("active first_git_attested_at is invalid") from error
+        if parsed.tzinfo is None or parsed.utcoffset() is None:
+            raise GuardError("active first_git_attested_at lacks a UTC offset")
+    return runtime
 
 
 def read_session_meta(transcript_path: str, *, require_child_fields: bool = True) -> dict:
@@ -134,7 +160,12 @@ def child_identity_from_stop(hook_input: Mapping[str, object]) -> dict[str, str]
     }
 
 
-def pre_tool_use(store: StateStore, hook_input: Mapping[str, object]) -> dict:
+def pre_tool_use(
+    store: StateStore,
+    hook_input: Mapping[str, object],
+    *,
+    now: dt.datetime | None = None,
+) -> dict:
     try:
         if hook_input.get("hook_event_name") != "PreToolUse":
             raise GuardError("expected a PreToolUse event")
@@ -150,8 +181,31 @@ def pre_tool_use(store: StateStore, hook_input: Mapping[str, object]) -> dict:
         if not isinstance(cwd, str):
             raise GuardError("PreToolUse has no cwd")
         snapshot = collect_git_snapshot(cwd)
+        observed_at = now or dt.datetime.now(dt.timezone.utc)
+        runtime = _active_runtime(envelope)
+        if (
+            runtime["first_git_attested_at"] is None
+            and observed_at
+            > dt.datetime.fromisoformat(capsule["pre_write_attestation_deadline"])
+        ):
+            evidence = _termination_evidence(
+                capsule,
+                snapshot,
+                reason="pre_write_attestation_timeout",
+                observed_at=observed_at,
+            )
+            store.terminate_active(assignment_id, evidence)
+            raise AuthorityViolation("first Git attestation deadline elapsed; authority terminated")
         violations = _snapshot_authority_violations(snapshot, capsule)
         if violations:
+            if runtime["first_git_attested_at"] is None:
+                evidence = _termination_evidence(
+                    capsule,
+                    snapshot,
+                    reason="initial_location_or_scope_mismatch",
+                    observed_at=observed_at,
+                )
+                store.terminate_active(assignment_id, evidence)
             raise AuthorityViolation("; ".join(violations))
         store.attest_tool_use(
             assignment_id,
@@ -159,6 +213,7 @@ def pre_tool_use(store: StateStore, hook_input: Mapping[str, object]) -> dict:
             root=snapshot["root"],
             branch=snapshot["branch"],
             head=snapshot["head"],
+            now=observed_at,
         )
         recovery_count = envelope["runtime"]["recovery_count"]
         context = (
@@ -356,6 +411,109 @@ def _snapshot_authority_violations(
     return violations
 
 
+def disk_change_from_baseline(
+    snapshot: Mapping[str, object],
+    capsule: Mapping[str, object],
+) -> bool | None:
+    baseline_paths = sorted(
+        (
+            {
+                "path": item["path"],
+                "kind": item["kind"],
+                "sha256": item["sha256"],
+            }
+            for item in capsule["preexisting_dirty"]
+        ),
+        key=lambda item: item["path"],
+    )
+    expected_root = capsule["root"]
+    if any(
+        (
+            snapshot["root"] != str(Path(expected_root["path"]).resolve()),
+            snapshot["branch"] != expected_root["branch"],
+            snapshot["head"] != expected_root["base_commit"],
+        )
+    ):
+        return None
+    return any(
+        (
+            snapshot["index_changed"] != expected_root["base_index_changed"],
+            snapshot["git_status_short"] != expected_root["base_git_status_short"],
+            snapshot["changed_paths"] != baseline_paths,
+        )
+    )
+
+
+def _termination_evidence(
+    capsule: Mapping[str, object],
+    snapshot: Mapping[str, object],
+    *,
+    reason: str,
+    observed_at: dt.datetime,
+) -> dict:
+    disk_changed = disk_change_from_baseline(snapshot, capsule)
+    if disk_changed is None:
+        classification = "initial_authority_mismatch"
+    elif reason == "pre_write_attestation_timeout":
+        classification = (
+            "unresponsive_with_disk_change_before_attestation"
+            if disk_changed
+            else "unresponsive_no_disk_change"
+        )
+    elif reason == "assignment_timeout":
+        classification = (
+            "unresponsive_with_contribution"
+            if disk_changed
+            else "unresponsive_no_disk_change"
+        )
+    else:
+        classification = "initial_authority_mismatch"
+    return {
+        "schema": 1,
+        "reason": reason,
+        "classification": classification,
+        "disk_changed": disk_changed,
+        "baseline_comparable": disk_changed is not None,
+        "observed_at": observed_at.isoformat(),
+        "snapshot": dict(snapshot),
+    }
+
+
+def sweep_deadlines(
+    store: StateStore,
+    *,
+    now: dt.datetime | None = None,
+) -> list[dict]:
+    observed_at = now or dt.datetime.now(dt.timezone.utc)
+    if observed_at.tzinfo is None or observed_at.utcoffset() is None:
+        raise GuardError("watchdog time must include a UTC offset")
+    results = []
+    for assignment_id, envelope in store.list_active():
+        capsule = envelope["capsule"]
+        runtime = _active_runtime(envelope)
+        reason = None
+        if (
+            runtime["first_git_attested_at"] is None
+            and observed_at
+            > dt.datetime.fromisoformat(capsule["pre_write_attestation_deadline"])
+        ):
+            reason = "pre_write_attestation_timeout"
+        elif observed_at > dt.datetime.fromisoformat(capsule["expires_at"]):
+            reason = "assignment_timeout"
+        if reason is None:
+            continue
+        snapshot = collect_git_snapshot(capsule["root"]["path"])
+        evidence = _termination_evidence(
+            capsule,
+            snapshot,
+            reason=reason,
+            observed_at=observed_at,
+        )
+        store.terminate_active(assignment_id, evidence)
+        results.append({"assignment_id": assignment_id, **evidence})
+    return results
+
+
 def subagent_stop(store: StateStore, hook_input: Mapping[str, object]) -> dict:
     try:
         identity = child_identity_from_stop(hook_input)
@@ -368,8 +526,24 @@ def subagent_stop(store: StateStore, hook_input: Mapping[str, object]) -> dict:
                 return {}
             raise
         capsule = envelope["capsule"]
-        attestation = parse_attestation(hook_input.get("last_assistant_message"))
         snapshot = collect_git_snapshot(capsule["root"]["path"])
+        try:
+            attestation = parse_attestation(hook_input.get("last_assistant_message"))
+        except GuardError as error:
+            disk_changed = disk_change_from_baseline(snapshot, capsule)
+            if disk_changed is None:
+                classification = "invalid_final_with_untrusted_location"
+            elif disk_changed:
+                classification = "return_context_loss_with_contribution"
+            else:
+                classification = "invalid_final_without_contribution"
+            return {
+                "decision": "block",
+                "reason": (
+                    f"TASK.FINAL_{classification.upper()}: {error}. "
+                    "Disk evidence does not restore missing authority; return a corrected attestation."
+                ),
+            }
         violations = _snapshot_authority_violations(snapshot, capsule)
         expected = {
             "assignment_id": assignment_id,
@@ -413,6 +587,8 @@ def subagent_stop(store: StateStore, hook_input: Mapping[str, object]) -> dict:
         )
         if complete and any(item["exit_code"] != 0 for item in attestation["verification"]):
             raise GuardError("complete return includes failed verification")
+        if complete and _active_runtime(envelope)["first_git_attested_at"] is None:
+            raise GuardError("complete return has no durable first Git attestation")
         store.finalize(assignment_id, attestation, complete=complete)
         return {}
     except StateError as error:
