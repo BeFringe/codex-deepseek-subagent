@@ -55,7 +55,7 @@ Windows Desktop 路径已有 OpenAI parent → DeepSeek child → native callbac
 [Issue #6](https://github.com/Utopia-V/codex-deepseek-subagent/issues/6) 的受控对照进一步
 确认：Windows Desktop 继承 `env_key` 后 child/callback 成功，而同一 Agent 的
 User/HKCU command auth 在 sandbox identity 下不可用。
-macOS 的 Python/POSIX 路径已在 Codex `0.146.0` 上通过同一 callback 流程和 27 项
+macOS 的 Python/POSIX 路径已在 Codex `0.146.0` 上通过同一 callback 流程和 31 项
 协议测试；Linux 使用同一 POSIX 实现。
 
 Codex `0.145.0` 将可配置 subagent 模型与 reasoning effort 的 Multi-agent V2

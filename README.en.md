@@ -139,7 +139,7 @@ the provider request, and the callback, and it also helps later users.
 The Windows Desktop route has a live-smoke baseline; the hardened PowerShell
 implementation passes its local protocol, concurrency, and recovery suite and
 still needs a post-hardening live smoke. On macOS, the Python/POSIX route has
-passed a native callback smoke on Codex `0.146.0` and 27 protocol tests; Linux
+passed a native callback smoke on Codex `0.146.0` and 31 protocol tests; Linux
 uses the same POSIX implementation.
 
 ## Cost and affiliation
