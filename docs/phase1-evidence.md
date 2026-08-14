@@ -208,9 +208,10 @@ available, so the live path must refuse overlapping direct-write reassignment.
 
 The lifecycle now distinguishes a worker report from parent integration. A
 trusted parent adjudication must separately pass location integrity,
-mutation-scope integrity, verification freshness, and derivation/provenance
-integrity before reported state can become consumed. Any fail or unverified
-dimension moves the report to unresolved evidence.
+mutation-scope integrity, verification freshness, derivation/provenance
+integrity, and feasibility-contract integrity before reported state can become
+consumed. Any fail or unverified dimension moves the report to unresolved
+evidence.
 
 ## Causal-provenance negative fixtures
 
@@ -322,8 +323,9 @@ capture; neither the child nor thread continuity may guess the intended tip.
 invoking an owner-supplied counterexample probe and bounded-completion assessor;
 its public API has no precomputed outcome parameter. The receipt freezes the
 exact claimed invariant, probe input/evidence hashes, completion condition,
-work-budget unit/limit, proposed mechanism, assessor evidence, unresolved
-assumptions, and parent-owner decision.
+work-budget unit/cardinality-domain/limit, proposed mechanism, measured
+invocation lower bound, scale evidence, optional equivalence-compression
+conservation evidence, unresolved assumptions, and parent-owner decision.
 
 A negative fixture models a mechanism that is safe but needs 17 steps under a
 frozen budget of 10. The counterexample probe runs, but the bounded assessor
@@ -339,3 +341,18 @@ The whole slot survives in the compact invariant. “No counterexample found” 
 recorded only as bounded contribution evidence, never a universal proof or
 integration authority. This fixture does not run arbitrary commands from the
 live Hook and therefore does not add a mutation or credential surface.
+
+The scale fixtures additionally model 3,000 qualifying identities compressed
+into 300 owner-derived semantic classes under a 2,048 expensive-invocation
+budget. The exact class-domain measurement dispatches only when fan-out returns
+to all 3,000 identities. A persisted mechanism that counts object identities,
+caller-supplied grouping, a fan-out total of 2,999, or a small cohort without
+monotonicity/adversarial scale evidence blocks. A recovery fixture records an
+unchanged generated artifact outside ownership, then proves that changing the
+same artifact remains an unauthorized mutation; preserved identity does not
+expand the assignment.
+
+Equivalence grouping is not accepted as a precomputed builder argument. The
+builder invokes the owner derivation callback over the frozen input and stamps
+the authoritative owner/origin fields itself. A callback result that attempts
+to self-report `grouping_origin` is structurally rejected rather than trusted.

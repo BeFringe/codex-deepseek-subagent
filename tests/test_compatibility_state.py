@@ -95,8 +95,23 @@ def capsule(assignment, **overrides):
                 },
                 "bounded_completion": {
                     "completion_condition": "assigned slice",
-                    "work_budget": {"unit": "fixture-step", "limit": 10},
+                    "work_budget": {
+                        "unit": "fixture-step",
+                        "cardinality_domain": "fixture-object",
+                        "limit": 10,
+                    },
                     "proposed_mechanism": "bounded fixture mechanism",
+                    "mechanism_measurement": {
+                        "unit": "fixture-step",
+                        "cardinality_domain": "fixture-object",
+                        "required_lower_bound": 9,
+                    },
+                    "scale_evidence": {
+                        "basis": "proven_monotonicity",
+                        "witness_input_sha256": None,
+                        "evidence_sha256": "4" * 64,
+                    },
+                    "equivalence_compression": None,
                     "mechanism_satisfies": True,
                     "evidence_sha256": "3" * 64,
                 },
@@ -373,6 +388,40 @@ class CompatibilityStateTests(unittest.TestCase):
         with self.assertRaisesRegex(CorruptState, "contradicts executable evidence"):
             validate_capsule(value, assignment)
 
+    def test_capsule_rejects_budget_and_mechanism_cardinality_domain_drift(self):
+        assignment = "implement only under the frozen invocation budget"
+        value = capsule(assignment)
+        bounded = value["execution_contract"]["capsule_feasibility_attestation"][
+            "bounded_completion"
+        ]
+        bounded["mechanism_measurement"]["cardinality_domain"] = "object-identity"
+        value["capsule_sha256"] = capsule_sha256(value)
+
+        with self.assertRaisesRegex(CorruptState, "budget-domain evidence"):
+            validate_capsule(value, assignment)
+
+    def test_capsule_rejects_forged_equivalence_fanout_as_satisfying(self):
+        assignment = "implement only with owner-derived equivalence"
+        value = capsule(assignment)
+        bounded = value["execution_contract"]["capsule_feasibility_attestation"][
+            "bounded_completion"
+        ]
+        bounded["equivalence_compression"] = {
+            "authoritative_owner_id": "fixture.owner",
+            "equivalence_rule": "owner semantic equality",
+            "grouping_origin": "caller_supplied",
+            "class_cardinality_domain": "fixture-object",
+            "identity_cardinality_domain": "object-identity",
+            "evaluated_class_count": 3,
+            "proven_identity_count": 30,
+            "fanout_identity_count": 30,
+            "evidence_sha256": "5" * 64,
+        }
+        value["capsule_sha256"] = capsule_sha256(value)
+
+        with self.assertRaisesRegex(CorruptState, "budget-domain evidence"):
+            validate_capsule(value, assignment)
+
     def test_keyed_pending_assignments_can_be_staged_concurrently(self):
         assignments = [f"assignment {index}" for index in range(8)]
         capsules = [capsule(assignment) for assignment in assignments]
@@ -501,7 +550,25 @@ class CompatibilityStateTests(unittest.TestCase):
 
         self.assertFalse(self.store.path("pending", value["handoff_id"]).exists())
 
-    def test_parent_adjudication_requires_all_four_integrity_dimensions(self):
+    def test_parent_adjudication_requires_feasibility_contract_dimension(self):
+        value, _ = self.activate()
+        self.store.finalize(value["assignment_id"], {}, complete=True)
+
+        with self.assertRaisesRegex(
+            compatibility_state.StateError, "fields are not exact"
+        ):
+            self.store.adjudicate_parent(
+                value["assignment_id"],
+                {
+                    "location_integrity": "pass",
+                    "mutation_scope_integrity": "pass",
+                    "verification_freshness": "pass",
+                    "derivation_provenance_integrity": "pass",
+                    "evidence_sha256": "c" * 64,
+                },
+            )
+
+    def test_parent_adjudication_blocks_any_failed_integrity_dimension(self):
         value, _ = self.activate()
         reported = self.store.finalize(value["assignment_id"], {}, complete=True)
         self.assertEqual(reported.parent.name, "reported")
@@ -513,6 +580,7 @@ class CompatibilityStateTests(unittest.TestCase):
                 "mutation_scope_integrity": "pass",
                 "verification_freshness": "pass",
                 "derivation_provenance_integrity": "fail",
+                "feasibility_contract_integrity": "pass",
                 "evidence_sha256": "c" * 64,
             },
         )
@@ -531,6 +599,7 @@ class CompatibilityStateTests(unittest.TestCase):
                 "mutation_scope_integrity": "pass",
                 "verification_freshness": "pass",
                 "derivation_provenance_integrity": "pass",
+                "feasibility_contract_integrity": "pass",
                 "evidence_sha256": "d" * 64,
             },
         )

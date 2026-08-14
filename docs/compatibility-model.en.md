@@ -171,7 +171,8 @@ freshly recomputes relation closure.
 Before a direct implementation reaches pending state, a parent-owned
 `capsule_feasibility_attestation` freezes the exact claimed invariant, a cheap
 executable counterexample probe, the bounded completion condition and work
-budget, the proposed mechanism, and unresolved assumptions. Its owner id must
+budget, the exact budget unit and cardinality domain, the proposed mechanism,
+and unresolved assumptions. Its owner id must
 be an authoritative input owner; a child or provider cannot author or repair
 these derived decisions.
 
@@ -182,6 +183,23 @@ completion condition inside the frozen budget, and no unresolved assumption is
 blocking. A mathematically safe but empirically too-loose mechanism therefore
 blocks dispatch until independently strengthened. Freezing a narrative cannot
 turn it into a feasible proof boundary.
+
+The owner assessor also freezes the mechanism's measured unit/cardinality
+domain and a lower bound on required expensive invocations. Any mismatch with
+the budget domain blocks dispatch even when both counts are individually below
+the numeric limit. A small green cohort supports a scale claim only through a
+frozen monotonicity proof or an adversarial multiplicity/scale witness. Proposed
+equivalence compression must use owner-derived grouping, keep evaluated-class
+and proven-identity counts separate, and conserve the full fan-out; a
+caller-supplied or non-conserving grouping is non-dispatchable even when its
+digest is self-consistent. The builder invokes an owner derivation callback and
+stamps owner/origin itself; it exposes no precomputed-grouping seam and does not
+trust a caller-reported `grouping_origin` label.
+
+Recovery may freeze the exact identity of reusable generated artifacts together
+with dirty tracked hashes. Such an identity is a baseline, not ownership: it
+does not add to `owned_paths`, and any out-of-scope artifact mutation remains
+blocked.
 
 The provider-free builder invokes owner callbacks and has no parameter for
 precomputed probe or budget outcomes. Isolated capture validates the structure,
@@ -335,8 +353,10 @@ contribution.
 
 Successful SubagentStop adjudication advances only to `reported`. The parent
 separately decides location integrity, mutation-scope integrity, verification
-freshness, and derivation/provenance integrity. A self-consistent digest over
-caller-chosen derived facts can still self-authorize a false PASS. Only fresh
+freshness, derivation/provenance integrity, and feasibility-contract integrity.
+A self-consistent digest over caller-chosen derived facts can still self-authorize
+a false PASS, and a green cohort cannot repair a budget unit/cardinality-domain
+mismatch or missing scale evidence. Only fresh
 verification plus source-level causal review of an owner-internal real-mode
 derivation can advance to `consumed`. Expensive authoritative derivation may be
 computed once and shared across outputs only inside that owner boundary;
@@ -359,6 +379,7 @@ child is truthful; the parent must revalidate any receipt at the owner boundary.
 | P5b ownership handover | interrupt ack, strong termination receipt, post-termination barrier, late writes before/after re-spawn | overlapping claim without quiescence fails |
 | P6 final gate | context-loss narrative, slice overclaim, disk-hash mismatch | wrong final must be blocked |
 | P6a causal provenance | digest-valid forged facts, real-mode test seam, owner-internal shared derivation | caller self-authorization must fail |
+| P6b feasibility contract | budget/measurement domain drift, scale witness, owner-derived equivalence fan-out, recovery artifact baseline | mismatch, forged grouping, and artifact authority expansion must fail |
 | P7 parity/regression | POSIX/Windows and existing DeepSeek route | all green before Phase 2 |
 
 Phase 2 cannot start until P1–P7 and live evidence close the Phase 1 gate. Phase

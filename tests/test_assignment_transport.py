@@ -150,8 +150,23 @@ class AssignmentTransportTests(unittest.TestCase):
                     },
                     "bounded_completion": {
                         "completion_condition": "assigned slice",
-                        "work_budget": {"unit": "fixture-step", "limit": 10},
+                        "work_budget": {
+                            "unit": "fixture-step",
+                            "cardinality_domain": "fixture-object",
+                            "limit": 10,
+                        },
                         "proposed_mechanism": "bounded fixture mechanism",
+                        "mechanism_measurement": {
+                            "unit": "fixture-step",
+                            "cardinality_domain": "fixture-object",
+                            "required_lower_bound": 9,
+                        },
+                        "scale_evidence": {
+                            "basis": "proven_monotonicity",
+                            "witness_input_sha256": None,
+                            "evidence_sha256": "4" * 64,
+                        },
+                        "equivalence_compression": None,
                         "mechanism_satisfies": True,
                         "evidence_sha256": "3" * 64,
                     },
