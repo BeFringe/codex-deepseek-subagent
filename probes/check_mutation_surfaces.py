@@ -6,7 +6,7 @@ from pathlib import Path
 import sys
 
 
-REQUIRED_SURFACES = {
+SCHEMA_1_REQUIRED_SURFACES = {
     "shell",
     "write_stdin",
     "apply_patch",
@@ -16,17 +16,31 @@ REQUIRED_SURFACES = {
     "dynamic_function",
     "agent_control",
 }
+SCHEMA_2_REQUIRED_SURFACES = SCHEMA_1_REQUIRED_SURFACES | {
+    "extension_function",
+    "codex_config_mutation",
+    "authority_escalation",
+    "tool_search",
+    "hosted_model_tool",
+}
+REQUIRED_SURFACES_BY_SCHEMA = {
+    1: SCHEMA_1_REQUIRED_SURFACES,
+    2: SCHEMA_2_REQUIRED_SURFACES,
+}
 QUALIFIED_DECISIONS = {"candidate-covered"}
 
 
 def load_matrix(path):
     value = json.loads(path.read_text(encoding="utf-8"))
-    if value.get("schema") != 1 or not isinstance(value.get("surfaces"), list):
+    required_surfaces = REQUIRED_SURFACES_BY_SCHEMA.get(value.get("schema"))
+    if required_surfaces is None or not isinstance(value.get("surfaces"), list):
         raise ValueError("mutation matrix has an invalid schema")
     by_id = {surface.get("id"): surface for surface in value["surfaces"]}
-    if set(by_id) != REQUIRED_SURFACES:
-        missing = sorted(REQUIRED_SURFACES - set(by_id))
-        extra = sorted(set(by_id) - REQUIRED_SURFACES)
+    if len(by_id) != len(value["surfaces"]):
+        raise ValueError("mutation matrix contains duplicate surface ids")
+    if set(by_id) != required_surfaces:
+        missing = sorted(required_surfaces - set(by_id))
+        extra = sorted(set(by_id) - required_surfaces)
         raise ValueError(f"mutation matrix surface mismatch: missing={missing}, extra={extra}")
     return value
 
@@ -65,7 +79,9 @@ def qualification(matrix):
 
 
 def main():
-    default_matrix = Path(__file__).with_name("codex-0.147.0-mutation-surfaces.json")
+    default_matrix = Path(__file__).with_name(
+        "codex-0.148.0-alpha.9-mutation-surfaces.json"
+    )
     parser = argparse.ArgumentParser()
     parser.add_argument("--matrix", type=Path, default=default_matrix)
     parser.add_argument("--codex-source", type=Path)

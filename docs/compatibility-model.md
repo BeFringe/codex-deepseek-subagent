@@ -54,7 +54,7 @@ capsule 必须在 child compact/resume 后仍可由 runtime guard 读取。任�
 identity mismatch、owned-path 扩张、Git authority 扩张或 stop-condition 扩张都必须
 fail closed。
 
-当前 Codex 0.147.0 的源码合同表明：
+当前 Codex 0.148.0-alpha.9 的源码合同表明：
 
 - `SubagentStart` 只在 thread-spawn child 的 startup 运行；child compact/resume 不会
   再次运行该 Hook；
@@ -491,7 +491,7 @@ PreToolUse 无法自行醒来或 cancel child。因此 bounded fast-stop 还依�
 isolated watchdog，并在 watchdog 返回 `parent_cancel_required=true` 时 interrupt/cancel child。
 没有该外层调度证据就只能证明“下一事件会被拒绝”，不能宣称“deadline 时刻已停止 provider
 turn”。这项限制不能用 assignment prompt 补足。
-当前 isolated API 只建模 trusted host receipt 的格式与状态转换；Codex 0.147.0 是否公开提供
+当前 isolated API 只建模 trusted host receipt 的格式与状态转换；Codex 0.148.0-alpha.9 是否公开提供
 满足该强语义的 termination receipt 仍未证明。因此 live direct-write handover 继续不合格。
 
 ## final-return attestation
@@ -567,14 +567,17 @@ test-only completion，但不能据此证明 child 没有撒谎；receipt digest
 
 ### 已重建事实
 
-- workflow checkout 为 `main@1377b76`，live install 未修改。
+- workflow checkout 为 `main@076ee0df9aca11fbc0c19a6ccd7cd8befc0051f7`，与
+  2026-08-15 fresh fetch 的 `origin/main` 相等。用户明确要求恢复的 legacy v4 agent/skill/
+  schema-1 plaintext Hook 已从迁移归档安装，但 G4 candidate/schema 2 未安装，Hook trust 仍需
+  在新 Codex 进程中由用户审查。
 - 现有 repo/live Hook 是 schema 1、按 role 单槽、manual stage、initial delivery 后立即
   删除 claimed state。
 - 多次真实事件显示 initial assignment transport 正确且 owned-path changes 落盘；长
   turn compact/recovery 后 final narrative 丢失 assignment，或扩大 Git/scope/completion
   authority。它们是 continuity/final-attestation failure，不是 initial transport miss。
-- 本机 `codex-cli 0.147.0`；官方 `rust-v0.147.0` tag 的 peeled commit 为
-  `be6e8eac029b183056b7e4402879f15d2c85f61b`。
+- 本机 `codex-cli 0.148.0-alpha.9`；官方 `rust-v0.148.0-alpha.9` tag 的 peeled commit 为
+  `9392c3fa5bcda342b5b96a1a04d67b2f781617c2`。
 - 该源码从 parent AgentPath `join(requested task name)` 构造 child path，spawn 返回值的
   `task_name` 实际序列化 canonical path。
 - child rollout materialization 会在 Hook 取得 `transcript_path` 时落下 SessionMeta；
@@ -642,19 +645,19 @@ test-only completion，但不能据此证明 child 没有撒谎；receipt digest
 | `docs/advanced.en.md` | 1+/1- | `6bdfbee6a3fe056004bb16eda09271c4117ad29ced40cf873964a790648bfce4` |
 | `tests/test_plaintext_handoff.py` | 144+ | `a1061c3276c604b9bb608061b17198a52f50432b203da8a39a3f19e6b00e2689` |
 
-## Codex 0.147.0 源码证据
+## Codex 0.148.0-alpha.9 源码证据
 
 以下是版本锁定的源码观察，不冒充跨版本公开保证：
 
-- [`PreToolUse` input/output schema](https://github.com/openai/codex/blob/be6e8eac029b183056b7e4402879f15d2c85f61b/codex-rs/hooks/src/schema.rs)
-- [SubagentStart 仅在 child startup 分发](https://github.com/openai/codex/blob/be6e8eac029b183056b7e4402879f15d2c85f61b/codex-rs/core/src/hook_runtime.rs)
-- [compact Hook 是无 context 输出的 gate](https://github.com/openai/codex/blob/be6e8eac029b183056b7e4402879f15d2c85f61b/codex-rs/hooks/src/events/compact.rs)
-- [SubagentStop 可 block 并生成 continuation](https://github.com/openai/codex/blob/be6e8eac029b183056b7e4402879f15d2c85f61b/codex-rs/hooks/src/events/stop.rs)
-- [requested task name → canonical AgentPath](https://github.com/openai/codex/blob/be6e8eac029b183056b7e4402879f15d2c85f61b/codex-rs/core/src/tools/handlers/multi_agents_common.rs)
-- [V2 spawn 返回 canonical path](https://github.com/openai/codex/blob/be6e8eac029b183056b7e4402879f15d2c85f61b/codex-rs/core/src/tools/handlers/multi_agents_v2/spawn.rs)
-- [SessionMeta identity fields](https://github.com/openai/codex/blob/be6e8eac029b183056b7e4402879f15d2c85f61b/codex-rs/protocol/src/protocol.rs)
-- [Hook session id 是 root/descendants 共享 identity](https://github.com/openai/codex/blob/be6e8eac029b183056b7e4402879f15d2c85f61b/codex-rs/core/src/session/session.rs)
-- [Hook transcript materialization test](https://github.com/openai/codex/blob/be6e8eac029b183056b7e4402879f15d2c85f61b/codex-rs/core/src/session/tests.rs)
+- [`PreToolUse`/`PreCompact`/subagent input/output schema](https://github.com/openai/codex/blob/9392c3fa5bcda342b5b96a1a04d67b2f781617c2/codex-rs/hooks/src/schema.rs)
+- [SubagentStart、PreToolUse、PreCompact 与 SubagentStop runtime binding](https://github.com/openai/codex/blob/9392c3fa5bcda342b5b96a1a04d67b2f781617c2/codex-rs/core/src/hook_runtime.rs)
+- [compact Hook 是无 context 输出的 gate](https://github.com/openai/codex/blob/9392c3fa5bcda342b5b96a1a04d67b2f781617c2/codex-rs/hooks/src/events/compact.rs)
+- [SubagentStop 可 block 并生成 continuation](https://github.com/openai/codex/blob/9392c3fa5bcda342b5b96a1a04d67b2f781617c2/codex-rs/hooks/src/events/stop.rs)
+- [requested task name → canonical AgentPath](https://github.com/openai/codex/blob/9392c3fa5bcda342b5b96a1a04d67b2f781617c2/codex-rs/core/src/tools/handlers/multi_agents_common.rs)
+- [V2 spawn 返回 canonical path](https://github.com/openai/codex/blob/9392c3fa5bcda342b5b96a1a04d67b2f781617c2/codex-rs/core/src/tools/handlers/multi_agents_v2/spawn.rs)
+- [SessionMeta identity fields](https://github.com/openai/codex/blob/9392c3fa5bcda342b5b96a1a04d67b2f781617c2/codex-rs/protocol/src/protocol.rs)
+- [Hook session id 是 root/descendants 共享 identity](https://github.com/openai/codex/blob/9392c3fa5bcda342b5b96a1a04d67b2f781617c2/codex-rs/core/src/session/session.rs)
+- [Hook transcript materialization 与 persist/flush durability 区分](https://github.com/openai/codex/blob/9392c3fa5bcda342b5b96a1a04d67b2f781617c2/codex-rs/rollout/src/recorder.rs)
 
 未找到能够把上述源码行为提升为长期稳定 API guarantee 的官方文档。因此每个最低支持
 Codex baseline 都必须重新运行 probes；若 contract 改变，adapter fail closed，而不是

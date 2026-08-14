@@ -47,7 +47,7 @@ the whole turn. An active immutable capsule must survive compact/resume. Any
 ambiguous recovery, identity mismatch, owned-path expansion, Git-authority
 expansion, or stop-condition expansion fails closed.
 
-Codex 0.147.0 source establishes a version-specific enforcement opportunity:
+Codex 0.148.0-alpha.9 source establishes a version-specific enforcement opportunity:
 
 - `SubagentStart` runs only for a thread-spawn child at startup; child compact
   and resume do not rerun it.
@@ -346,7 +346,7 @@ isolated watchdog and interrupt/cancel when it returns
 only that the next event is denied, not that the provider turn stopped exactly
 at the deadline. An assignment prompt cannot repair this limitation.
 The current isolated API models the trusted receipt shape and transitions only;
-Codex 0.147.0 has not yet been proven to expose a receipt with this strong
+Codex 0.148.0-alpha.9 has not yet been proven to expose a receipt with this strong
 guarantee. Live direct-write handover therefore remains unqualified.
 
 SubagentStop requires a machine-checkable attestation containing assignment and
@@ -417,10 +417,12 @@ Phase 2 cannot start until P1–P7 and live evidence close the Phase 1 gate. Pha
 
 ## Baseline and rollback
 
-The workflow checkout began at `main@1377b76`. The repository and live Hook are
-schema 1, role-single-slot, manually staged, and delete the claimed state after
-initial delivery. Live Hook/skill/state remain untouched during Phase 0/1
-development. Schema 2 uses an isolated state directory and configuration until
+The workflow checkout is now
+`main@076ee0df9aca11fbc0c19a6ccd7cd8befc0051f7`, equal to `origin/main` after
+the 2026-08-15 fresh fetch. At the user's explicit request, the migrated legacy
+v4 agent/skill/schema-1 plaintext Hook has been restored; the G4 candidate/schema
+2 has not been installed, and a new Codex process still requires user Hook trust
+review. Schema 2 continues to use only isolated state and configuration until
 qualified. Rollback selects the recorded schema 1 adapter baseline without
 claiming durable continuity; it never changes the OpenAI parent provider or
 deletes quarantine/unresolved evidence.
@@ -432,18 +434,19 @@ hashes are recorded in the Chinese document.
 
 ## Version-locked Codex evidence
 
-Local CLI: `codex-cli 0.147.0`. The official `rust-v0.147.0` tag peels to
-`be6e8eac029b183056b7e4402879f15d2c85f61b`.
+Local CLI: `codex-cli 0.148.0-alpha.9`. The official
+`rust-v0.148.0-alpha.9` tag peels to
+`9392c3fa5bcda342b5b96a1a04d67b2f781617c2`.
 
-- [Hook schemas](https://github.com/openai/codex/blob/be6e8eac029b183056b7e4402879f15d2c85f61b/codex-rs/hooks/src/schema.rs)
-- [startup-only SubagentStart dispatch](https://github.com/openai/codex/blob/be6e8eac029b183056b7e4402879f15d2c85f61b/codex-rs/core/src/hook_runtime.rs)
-- [compact Hook behavior](https://github.com/openai/codex/blob/be6e8eac029b183056b7e4402879f15d2c85f61b/codex-rs/hooks/src/events/compact.rs)
-- [SubagentStop continuation gate](https://github.com/openai/codex/blob/be6e8eac029b183056b7e4402879f15d2c85f61b/codex-rs/hooks/src/events/stop.rs)
-- [requested name to AgentPath](https://github.com/openai/codex/blob/be6e8eac029b183056b7e4402879f15d2c85f61b/codex-rs/core/src/tools/handlers/multi_agents_common.rs)
-- [V2 canonical-path return](https://github.com/openai/codex/blob/be6e8eac029b183056b7e4402879f15d2c85f61b/codex-rs/core/src/tools/handlers/multi_agents_v2/spawn.rs)
-- [SessionMeta identity](https://github.com/openai/codex/blob/be6e8eac029b183056b7e4402879f15d2c85f61b/codex-rs/protocol/src/protocol.rs)
-- [Hook session id is shared by root and descendants](https://github.com/openai/codex/blob/be6e8eac029b183056b7e4402879f15d2c85f61b/codex-rs/core/src/session/session.rs)
-- [transcript materialization test](https://github.com/openai/codex/blob/be6e8eac029b183056b7e4402879f15d2c85f61b/codex-rs/core/src/session/tests.rs)
+- [Hook schemas](https://github.com/openai/codex/blob/9392c3fa5bcda342b5b96a1a04d67b2f781617c2/codex-rs/hooks/src/schema.rs)
+- [subagent and compact runtime binding](https://github.com/openai/codex/blob/9392c3fa5bcda342b5b96a1a04d67b2f781617c2/codex-rs/core/src/hook_runtime.rs)
+- [compact Hook behavior](https://github.com/openai/codex/blob/9392c3fa5bcda342b5b96a1a04d67b2f781617c2/codex-rs/hooks/src/events/compact.rs)
+- [SubagentStop continuation gate](https://github.com/openai/codex/blob/9392c3fa5bcda342b5b96a1a04d67b2f781617c2/codex-rs/hooks/src/events/stop.rs)
+- [requested name to AgentPath](https://github.com/openai/codex/blob/9392c3fa5bcda342b5b96a1a04d67b2f781617c2/codex-rs/core/src/tools/handlers/multi_agents_common.rs)
+- [V2 canonical-path return](https://github.com/openai/codex/blob/9392c3fa5bcda342b5b96a1a04d67b2f781617c2/codex-rs/core/src/tools/handlers/multi_agents_v2/spawn.rs)
+- [SessionMeta identity](https://github.com/openai/codex/blob/9392c3fa5bcda342b5b96a1a04d67b2f781617c2/codex-rs/protocol/src/protocol.rs)
+- [Hook session id is shared by root and descendants](https://github.com/openai/codex/blob/9392c3fa5bcda342b5b96a1a04d67b2f781617c2/codex-rs/core/src/session/session.rs)
+- [transcript materialization and persist/flush distinction](https://github.com/openai/codex/blob/9392c3fa5bcda342b5b96a1a04d67b2f781617c2/codex-rs/rollout/src/recorder.rs)
 
 No official documentation was found that promotes all of these source behaviors
 to a long-term API guarantee. Re-run the probes for every minimum supported

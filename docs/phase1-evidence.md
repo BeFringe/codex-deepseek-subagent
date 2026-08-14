@@ -1,9 +1,115 @@
 # Phase 1 Evidence Log
 
-Status: in progress. This file records provider-free evidence only. It does not
-qualify direct write and does not describe a live installation.
+Status: in progress. This file primarily records provider-free candidate
+evidence. A separately labelled legacy-configuration restoration below does not
+qualify direct write or describe a G4 candidate installation.
 
-## Codex 0.147.0 mutation-surface matrix
+## 2026-08-15 takeover baseline and fresh results
+
+The migrated checkout was compared to a newly fetched authoritative remote
+before any content edit. The SSH config used a GitHub alias different from the
+repository remote, so fetch used the migrated GitHub identity as a one-command
+override. No key or credential content was read, copied, or recorded.
+
+```text
+branch=main
+HEAD=076ee0df9aca11fbc0c19a6ccd7cd8befc0051f7
+origin/main=076ee0df9aca11fbc0c19a6ccd7cd8befc0051f7
+remote=git@github.com:BeFringe/codex-deepseek-subagent.git
+```
+
+The initial diff consisted of 62 `100644 -> 100755` changes with zero changed
+blob bytes. After the remote equality check, only those migrated mode bits were
+normalized; the resulting worktree was clean. No commit was reset or checked
+out. The handoff checkpoint `9bc00342857e430e4d5533ef3e3fa1d60d637ad1`
+remains an ancestor, while the two later snapshot/cost commits remain intact.
+
+Host/tool drift from the handoff snapshot:
+
+```text
+host=macOS 26.2 (25C56), Darwin arm64, Asia/Shanghai
+Codex app=26.810.41047 (6570)
+Codex CLI=0.148.0-alpha.9 (snapshot: 0.147.0)
+Python user default=3.14.7 arm64
+Apple /usr/bin/python3=3.9.6 (unchanged)
+Git=2.50.1
+```
+
+The first fresh provider-free run under Apple Python executed the suite but had
+one loader error because 3.9 lacks `tomllib`; it was environment drift, not an
+assertion failure. A clean bundled-Python run before new work then reproduced
+the handoff result exactly:
+
+```text
+Ran 143 tests in 24.551s
+OK
+agent template checks passed
+```
+
+The same 143 tests also passed under the new user-default Python 3.14.7. After
+the P6c and current mutation-matrix fixtures in this continuation, the fresh
+result is recorded below in the P6c section.
+
+The original standalone negative probes were rerun without touching live state:
+
+```json
+{"direct_write_qualified":false,"platform":"posix","same_uid_child_exit_code":0,"same_uid_rollout_protected":false,"same_uid_state_protected":false,"schema":1}
+```
+
+`check_state_trust.py --require-protected` exited 2 as designed. The current
+mutation matrix verified every pinned source anchor and reported
+`direct_write_qualified=false`; `--require-qualified` also exited 2. These are
+expected fail-closed results, not test failures.
+
+## Explicitly authorized legacy v4 configuration restoration
+
+After the baseline probes, the user explicitly requested restoration of
+`codex-deepseek-subagent-config-20260814` so a new LocalCAT task can use the
+pre-existing v4 worker. Every archive file first passed `MANIFEST.sha256`.
+All six target groups were absent, so no existing Codex Hook, skill, agent, or
+global `AGENTS.md` content was overwritten.
+
+The restored skill, UI metadata, plaintext Hook script, and marked global
+`AGENTS.md` have the exact archive hashes. The agent TOML changes only the
+Fedora writable root to `/Users/pearly/文档/CAT/localcat-feature5`; `hooks.json`
+changes the Fedora command to the absolute local Python 3.14.7 and Codex-home
+paths. Network remains disabled. The nonportable old Hook trust state and two
+skill drafts were not installed, and the archive contains no auth/API material.
+
+An isolated state-directory smoke test successfully executed stage,
+`SubagentStart` context delivery, and one-shot consumption without starting a
+worker or calling an external provider. Codex doctor loaded the configuration.
+The current app forbids automated control of its own trust UI, so a restarted
+Codex process still requires the user to run `/hooks` and approve only the
+reviewed `^v4_flash_worker$` command. This restores the legacy schema-1 route;
+it does not install schema 2, provide G4 install/rollback evidence, open the
+ZHIPU/GLM bridge, or change `direct_write_qualified`.
+
+## Codex 0.148.0-alpha.9 mutation-surface matrix
+
+The current executable matrix is
+[`probes/codex-0.148.0-alpha.9-mutation-surfaces.json`](../probes/codex-0.148.0-alpha.9-mutation-surfaces.json),
+validated by [`probes/check_mutation_surfaces.py`](../probes/check_mutation_surfaces.py).
+It is pinned to the official tag's peeled source commit
+`9392c3fa5bcda342b5b96a1a04d67b2f781617c2`. The schema-1 0.147 matrix remains
+replayable as historical evidence.
+
+Current result: **direct write is unqualified**. In addition to the original
+negative spaces, schema 2 closes over function-shaped extensions, Codex
+configuration persistence, permission expansion, deferred tool search, and
+provider-hosted model tools. The mutation-capable blockers are:
+
+```text
+shell, write_stdin, mcp, code_mode, extension_freeform,
+extension_function, dynamic_function, codex_config_mutation,
+authority_escalation, agent_control
+```
+
+Tool search and the currently enumerated hosted web-search tool are recorded as
+non-mutating/non-authorizing surfaces. A newly mutating hosted capability is an
+unknown surface and invalidates qualification until it is pinned.
+
+## Historical Codex 0.147.0 mutation-surface matrix
 
 The executable matrix is
 [`probes/codex-0.147.0-mutation-surfaces.json`](../probes/codex-0.147.0-mutation-surfaces.json),
@@ -11,7 +117,8 @@ validated by [`probes/check_mutation_surfaces.py`](../probes/check_mutation_surf
 It is pinned to official source commit
 `be6e8eac029b183056b7e4402879f15d2c85f61b`.
 
-Current result: **direct write is unqualified**. The important negative space is:
+Its historical result was also **direct write is unqualified**. The important
+negative space remains relevant because the current source anchors still match:
 
 - `write_stdin` deliberately emits no second PreToolUse event, so a child can
   drive an already-running mutable process after recovery;
@@ -126,7 +233,7 @@ the compatibility copy. Wrong child identity preserves pending state. Root,
 nested, serial, and concurrent behavior are covered by isolated fixtures; live
 flush timing and sandbox trust are still open gates.
 
-Because Codex 0.147.0 treats SubagentStart as context-injection-only, that Hook
+Because current Codex still treats SubagentStart as context-injection-only, that Hook
 cannot cancel a child after a binding failure. The isolated adapter records an
 exact child-identity `lost` marker, denies every subsequent tool for lack of an
 active capsule, and permits only the literal `TASK.CONTEXT_LOST` final return.
@@ -203,7 +310,7 @@ handover may preserve old dirty bytes without falsely attributing them to the
 new child. A fixture freezes a prior dirty file, then proves the replacement
 capsule contains both its pre-existing hash and the prior-assignment barrier
 link. Parent fresh source review and tests are still required. These are
-isolated fixtures: no verified Codex 0.147.0 host termination receipt is yet
+isolated fixtures: no verified Codex 0.148.0-alpha.9 host termination receipt is yet
 available, so the live path must refuse overlapping direct-write reassignment.
 
 The lifecycle now distinguishes a worker report from parent integration. A
@@ -291,7 +398,7 @@ The capsule also models read-only review continuation with a prior assignment,
 frozen cumulative base, corrected full-OID tip, prior-finding digest,
 unresolved finding ids, and mandatory clean worktree. Capture proves an
 ancestor base/current tip and evidence source identity. This does not qualify
-same-thread follow-up: Codex 0.147.0 has no proven trusted follow-up capture in
+same-thread follow-up: Codex 0.148.0-alpha.9 has no proven trusted follow-up capture in
 this adapter, so thread continuity alone remains insufficient authority.
 
 ## Closed-registry counts and relation closure
@@ -357,37 +464,54 @@ builder invokes the owner derivation callback over the frozen input and stamps
 the authoritative owner/origin fields itself. A callback result that attempts
 to self-report `grouping_origin` is structurally rejected rather than trusted.
 
-## Pending end-to-end cost and staged-authority qualification
+## P6c isolated end-to-end cost and staged-authority fixtures
 
-Status: **pending; not covered by the current 143-test result.** A later
-product-independent large-scale incident showed that semantic correctness,
-fail-closed behavior, invocation-domain feasibility, and small-cohort tests can
-all pass while the end-to-end mechanism still violates its frozen latency gate.
-The current fixture freezes one work-budget unit/domain and scale evidence, but
-does not yet model an independent latency statistic, representative dense
-distribution, phase timing, or staged authority derivation.
+Status: **provider-free mechanics implemented; live/representative qualification
+pending.** A product-independent large-scale incident showed that semantic
+correctness, fail-closed behavior, invocation-domain feasibility, and
+small-cohort tests can all pass while the end-to-end mechanism still violates
+its frozen latency gate.
 
-P6c must add provider-free owner-internal fixtures for all of the following:
+`hooks/cost_phase_guard.py` keeps invocation and latency as separate owner
+authorities. It accepts no caller-supplied pass flag. The invocation receipt
+freezes unit, cardinality domain, and limit. The latency receipt independently
+freezes unit, nearest-rank p95 statistic, limit, sample count, full sample/window
+definitions, representative-dense scope, and separate multiplicity and
+equivalence-class distribution identities. The guard computes p95 from raw
+samples; a passing invocation count cannot mask a failing dense p95, and a
+three-item cohort or SQL-only spike cannot authorize the end-to-end claim.
 
-- invocation feasibility passes while a representative dense end-to-end p95
-  exceeds its independently frozen latency limit;
-- a small cohort or storage-query-only spike cannot authorize dispatch without
-  a representative dense witness or proven monotonicity;
-- the capsule freezes sample count, p95 window/calculation, multiplicity and
-  equivalence-class distribution identities, per-phase timing, and the original
-  stop condition;
-- owner-derived two-level refinement mechanically proves
-  `true <= refined_upper_bound <= coarse_upper_bound`;
-- exact phase input/output identity, source/root binding, and authority epoch
-  are re-proved across the frozen phase catalog;
-- closed-set conservation equations reject missing, duplicate, orphaned, or
-  cross-phase substituted identities;
-- final mixed-frontier output rejects exact-cardinality or canonical-order
-  drift even when aggregate counts and digests are self-consistent;
-- mutation at a phase-before, phase-internal, or phase-after seam fails closed.
+The frozen catalog contains exact coarse, refine, and materialize phases. Every
+phase re-proves ordered input/output registries, their canonical identities,
+source/root binding, authority epoch, conservation edges, timing unit/
+definition/limit, and evidence digest. The owner must expose an internal
+mutation callback exactly once; the guard also observes before and after every
+phase and after final materialization. An opaque phase without that internal
+seam is rejected rather than treated as mediated.
 
-If an intermediate seam is invisible because the mechanism runs inside one
-opaque tool event, the fixture must record that negative space rather than
-pretend prompt continuity provides mediation. Until these fixtures and required
-live evidence close, `feasibility_contract_integrity` remains unverified for
-multi-phase scale delivery and direct write remains unqualified.
+The refinement fixture freezes an owner-derived refinement-set identity and
+mechanically checks its reduction equation plus
+`true <= refined_upper_bound <= coarse_upper_bound`. Missing, duplicate,
+orphaned, or cross-phase-substituted identities fail closed. The final mixed
+frontier is compared to a separately computed authoritative frontier by exact
+cardinality, canonical identity order, payload, and final phase output; a
+self-consistent digest around substituted content remains a failure.
+
+Sixteen focused tests cover the positive reference and independent negative
+seams: dense p95 overrun, small cohort, SQL-only sample, phase timing overrun,
+bound drift, root/epoch drift, registry substitution, conservation failure,
+cardinality/order/payload drift, before/mid/after mutation races, missing
+internal visibility, and precomputed-pass API injection. The fresh complete
+suite after these additions is:
+
+```text
+Ran 160 tests in 24.286s
+OK
+agent template checks passed
+```
+
+This does not supply a representative product distribution, real per-phase
+timing, or a live mediated phase boundary. If the real mechanism runs inside one
+opaque tool event, it must be split into observable invocations or P6c remains
+pending. `feasibility_contract_integrity` is therefore still unverified for
+live multi-phase delivery and direct write remains unqualified.

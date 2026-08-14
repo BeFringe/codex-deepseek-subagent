@@ -8,7 +8,8 @@ import unittest
 
 REPO = Path(__file__).resolve().parents[1]
 SCRIPT = REPO / "probes" / "check_mutation_surfaces.py"
-MATRIX = REPO / "probes" / "codex-0.147.0-mutation-surfaces.json"
+MATRIX = REPO / "probes" / "codex-0.148.0-alpha.9-mutation-surfaces.json"
+HISTORICAL_MATRIX = REPO / "probes" / "codex-0.147.0-mutation-surfaces.json"
 
 
 SPEC = importlib.util.spec_from_file_location("check_mutation_surfaces", SCRIPT)
@@ -28,6 +29,17 @@ class MutationSurfaceMatrixTests(unittest.TestCase):
         self.assertIn("shell", blocker_ids)
         self.assertIn("mcp", blocker_ids)
         self.assertIn("extension_freeform", blocker_ids)
+        self.assertIn("extension_function", blocker_ids)
+        self.assertIn("codex_config_mutation", blocker_ids)
+        self.assertIn("authority_escalation", blocker_ids)
+
+    def test_historical_schema_one_matrix_remains_replayable(self):
+        matrix = check_mutation_surfaces.load_matrix(HISTORICAL_MATRIX)
+
+        self.assertEqual(matrix["codex_version"], "0.147.0")
+        self.assertFalse(
+            check_mutation_surfaces.qualification(matrix)["direct_write_qualified"]
+        )
 
     def test_require_qualified_fails_closed(self):
         result = subprocess.run(
