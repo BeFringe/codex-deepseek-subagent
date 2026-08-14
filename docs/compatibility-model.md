@@ -327,6 +327,25 @@ assignment 的 capsule，不能被 provider profile 默认、推断或归一化�
   claim。若机制使用 equivalence compression，分组必须由 authoritative owner 派生，class/identity
   count 分离，且 fan-out 必须守恒。builder 只调用 owner derivation callback 并自行写入 owner/origin，
   不接受 precomputed grouping 或 caller 自报的 `grouping_origin`；digest 自洽不能补足来源。
+- invocation budget 与 end-to-end latency gate 是两个独立 authority，不能用一个数字或同一
+  `mechanism_satisfies` 代替。cost contract 必须分别冻结实际 cost unit、limit/statistic、
+  multiplicity/等价类分布 digest、代表性 worst dense witness、样本数、p95 的窗口/计算定义、
+  phase timing 与完整 completion stop condition。小 cohort、单层存储查询 spike 或局部 phase
+  benchmark 只能作为 contribution evidence；没有 end-to-end representative witness 或已证明的
+  monotonicity 时，不能授权 scale/deliverability claim。
+- 多阶段 conservative refinement 必须由 authoritative owner 在 capsule 冻结的 phase catalog 内
+  派生：先得到 coarse upper bound `U1`，从 owner-derived refinement set `R` 得到 `U2`，并机械
+  验证 `true <= U2 <= U1`。每个 phase 都要重新证明 input/output identity、root/source binding 与
+  authority epoch；closed set registries 和 owner-declared set equations 必须机械验证跨 phase
+  conservation。最终 mixed-frontier response 必须与 authoritative result 在 exact cardinality、
+  canonical order 与 item identity 上等价，不能只比较 aggregate count 或 self-consistent digest。
+- phase 开始前、refinement/owner call 执行中、final materialization 后的 mutation race 都是独立
+  failure seam。若多个 phase 位于一个 opaque tool call 内而 Hook 看不到中间 boundary，assignment
+  prompt 不能补足 visibility；必须由 owner-internal operation 或更强 host mediation 在每个 seam
+  re-attest/fail closed，否则 P6c 保持未通过。
+- 运行中发现的便利假设、局部优化或新分组不能由 child 改写冻结的 cost unit、distribution、
+  completion condition、phase authority 或 stop condition。任何机制变更都需要 parent 重新生成
+  feasibility capsule；旧 child 只能停止或返回 unresolved contribution。
 - pre-existing dirty hashes 防止 child 把用户修改误报为自己的贡献。blocked long run 的 recovery
   capsule 可以同时冻结 reusable generated artifact 的 path/status/hash identity，但该记录不增加
   `owned_paths`；artifact 未改变时可复用，任何越出既有 ownership 的修改仍被拒绝。
@@ -583,6 +602,7 @@ test-only completion，但不能据此证明 child 没有撒谎；receipt digest
 | P6 | final attestation | no-assignment narrative、slice→parent claim、disk hash mismatch | 不 block 错误 final 即失败 |
 | P6a | causal provenance | hash-valid forged derived facts、test-only seam in real mode、owner-internal shared derivation | caller 可自授权 PASS 即失败 |
 | P6b | feasibility contract | budget/measurement domain drift、scale witness、owner-derived equivalence fan-out、recovery artifact baseline | mismatch、forged grouping 与 artifact authority expansion 即失败 |
+| P6c | end-to-end cost/phase continuity | dense-case p95、U1→R→U2、phase binding/conservation、mixed-frontier exactness、before/mid/after race | 小样本外推、跨 phase 漂移或 race 未 fail closed 即失败 |
 | P7 | parity/regression | POSIX/Windows protocol、DeepSeek existing path | 全绿后才能进入 Phase 2 |
 
 ## Decision gates
@@ -596,7 +616,8 @@ test-only completion，但不能据此证明 child 没有撒谎；receipt digest
 - **G4 — Phase 1 complete**：schema/hash、mismatch preserve、corrupt quarantine、
   nested/concurrent、expiry/recovery、Windows/POSIX 与 DeepSeek regression 全绿，并记录
   live evidence；parent-owned feasibility 必须证明 budget unit/cardinality domain 一致、scale
-  claim 有 monotonicity 或 adversarial witness、equivalence fan-out 守恒且 recovery artifact 不扩权。
+  claim 有 monotonicity 或 adversarial witness、equivalence fan-out 守恒、end-to-end latency/dense
+  witness 与 staged authority continuity 闭合，且 recovery artifact 不扩权。
   G4 前禁止 Phase 2；Phase 2 前禁止 Phase 3。
 
 ## Rollback

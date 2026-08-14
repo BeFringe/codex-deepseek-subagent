@@ -201,6 +201,35 @@ with dirty tracked hashes. Such an identity is a baseline, not ownership: it
 does not add to `owned_paths`, and any out-of-scope artifact mutation remains
 blocked.
 
+An invocation budget and an end-to-end latency gate are independent authorities;
+one number or one `mechanism_satisfies` flag cannot stand for both. The cost
+contract must separately freeze the actual cost unit, limit/statistic,
+multiplicity/equivalence-class distribution digest, representative worst dense
+witness, sample count, the p95 window/calculation definition, phase timings,
+and the full completion stop condition. A small cohort, storage-query-only
+spike, or local phase benchmark is contribution evidence, not authority for an
+end-to-end scale or deliverability claim, unless monotonicity is proven.
+
+A multi-phase conservative refinement is derived by the authoritative owner
+inside a frozen phase catalog. It obtains a coarse upper bound `U1`, derives a
+refinement set `R`, obtains `U2`, and mechanically proves
+`true <= U2 <= U1`. Every phase re-proves input/output identity, root/source
+binding, and authority epoch. Closed registries and owner-declared set
+equations mechanically prove cross-phase conservation. The final mixed-frontier
+response must match the authoritative result in exact cardinality, canonical
+order, and item identity; aggregate counts or self-consistent digests are not
+enough.
+
+Mutation races before a phase, during refinement/owner calls, and after final
+materialization are separate failure seams. If several phases run inside one
+opaque tool call, a Hook cannot infer the invisible intermediate boundaries
+from an assignment prompt. An owner-internal operation or stronger host
+mediation must re-attest and fail closed at every seam; otherwise P6c remains
+open. Runtime convenience assumptions or local optimizations cannot let the
+child rewrite the frozen cost unit, distribution, completion condition, phase
+authority, or stop condition. A changed mechanism requires a new parent-owned
+feasibility capsule.
+
 The provider-free builder invokes owner callbacks and has no parameter for
 precomputed probe or budget outcomes. Isolated capture validates the structure,
 owner provenance, and dispatch decision. A future live Hook integration of an
@@ -380,6 +409,7 @@ child is truthful; the parent must revalidate any receipt at the owner boundary.
 | P6 final gate | context-loss narrative, slice overclaim, disk-hash mismatch | wrong final must be blocked |
 | P6a causal provenance | digest-valid forged facts, real-mode test seam, owner-internal shared derivation | caller self-authorization must fail |
 | P6b feasibility contract | budget/measurement domain drift, scale witness, owner-derived equivalence fan-out, recovery artifact baseline | mismatch, forged grouping, and artifact authority expansion must fail |
+| P6c end-to-end cost/phase continuity | dense-case p95, U1→R→U2, phase binding/conservation, mixed-frontier exactness, before/mid/after races | small-cohort extrapolation, phase drift, or an unblocked race fails |
 | P7 parity/regression | POSIX/Windows and existing DeepSeek route | all green before Phase 2 |
 
 Phase 2 cannot start until P1–P7 and live evidence close the Phase 1 gate. Phase

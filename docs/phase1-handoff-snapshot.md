@@ -1,7 +1,8 @@
 # Phase 1 临时换机交接任务快照
 
-> 临时性：本文件只用于跨电脑恢复任务上下文。新环境完成接管后，应单独 revert
-> 本次 `docs(handoff)` 提交或删除本文件；不得回退其前面的 Phase 1 实现提交。
+> 临时性：本文件只用于跨电脑恢复任务上下文。它在原始 handoff 提交后仍可能追加新反馈；
+> 新环境完成接管后，应以单独提交删除本文件，不要逐个 revert handoff 更新，也不得回退其
+> 前面的 Phase 1 实现提交。
 
 ## 结论
 
@@ -141,6 +142,22 @@ agent template checks passed
 - POSIX/Windows 协议、安装器、agent/skill/template/smoke 必须与同一 profile contract 同步。
 - 在 isolated path 全绿且 live evidence 闭合后，才讨论 live install 切换；切换前需独立 rollback 记录。
 
+### P6b/P6c：端到端成本与 staged authority continuity
+
+现有 feasibility fixtures 只证明 invocation budget/domain、scale witness 与 equivalence fan-out，
+不证明真实规模的端到端 latency 或分阶段 derivation。新的 G4 prerequisite 必须冻结并验证：
+
+- invocation budget 与 latency gate 的独立 cost unit/statistic；
+- multiplicity/等价类分布、representative worst dense witness、sample count、p95 定义与 phase timing；
+- owner-derived `U1 → refinement set R → U2`，且 `true <= U2 <= U1`；
+- 每个 phase 的 identity/source/root/authority-epoch reproof 与 closed-set conservation equations；
+- final mixed-frontier exact cardinality、canonical order 与 item identity；
+- phase before/mid/after mutation race fail-closed。
+
+小 cohort、存储查询 spike、局部 phase benchmark 或 SQL-only result 都不能授权端到端 scale claim。
+如果 phase-internal seam 位于 opaque tool 内且 Hook 不可见，维持 read-only/unqualified，不能让 child
+用运行中便利假设改写 completion condition。
+
 ## 下一步执行顺序
 
 1. **重建环境身份**：clone/fetch，核对 `origin/main`、branch、full HEAD、Codex CLI/version；确认无意外 dirty files。
@@ -150,23 +167,27 @@ agent template checks passed
 5. **先闭合 P1/P2**：真实 capture、flush、root/nested/concurrent identity；不精确则停在 read-only。
 6. **再闭合 P4**：逐 mutation surface 证明 visibility + mediation + sandbox trust；任一负空间保留即不合格。
 7. **闭合 P5/P5b**：durable resume、strong termination receipt、post-termination disk barrier 与 late-write tests。
-8. **闭合 P6/P7**：真实 callback/final adjudication、DeepSeek regression、POSIX/Windows parity。
-9. **G4 fresh adjudication**：对照 `docs/compatibility-model.md` 逐 gate 记录 evidence；只有全部 PASS 才允许把
+8. **闭合 P6b/P6c**：补齐独立 latency/dense witness、U1→R→U2、phase conservation、
+   mixed-frontier exactness 与 before/mid/after race fixtures。
+9. **闭合 P6/P7**：真实 callback/final adjudication、DeepSeek regression、POSIX/Windows parity。
+10. **G4 fresh adjudication**：对照 `docs/compatibility-model.md` 逐 gate 记录 evidence；只有全部 PASS 才允许把
    `direct_write_qualified` 改为 `true`。
-10. **Phase 2 仍后置**：G4 完成后再建立 declarative worker/provider profile；profile 名倾向 `glm-thinking`，
+11. **Phase 2 仍后置**：G4 完成后再建立 declarative worker/provider profile；profile 名倾向 `glm-thinking`，
     但 ZHIPU/GLM bridge 必须继续等待 Phase 2 独立授权。
 
 ## Phase 1 完成验收标准
 
 Phase 1 只有同时满足以下条件才算完成：
 
-- P1–P7（含 P5a/P5b/P6a/P6b）全部 provider-free 与所需 live evidence PASS；
+- P1–P7（含 P5a/P5b/P6a/P6b/P6c）全部 provider-free 与所需 live evidence PASS；
 - mutation matrix 没有不可见/不可阻断的 mutation-capable surface；
 - real Hook events 上可复现 exact SessionMeta/child identity binding；
 - compaction/resume 后 durable capsule 可重新证明，缺失/歧义时新增 mutation 被阻断；
 - interrupt/cancel 有 strong child-terminated + mutation-quiesced receipt 和 post-termination disk barrier；
 - SubagentStop/final adjudication 能机械核对 actual root/branch/HEAD/status/path hashes、inventory、
   provenance、feasibility 与 completion boundary；
+- invocation 与 latency authority 分离，representative dense p95、phase timing、U1→R→U2、
+  cross-phase conservation 与 mixed-frontier exactness 都有 fresh owner evidence；
 - POSIX/Windows parity 和 DeepSeek regression 全绿；
 - live install 切换与 rollback evidence 已单独审计；
 - `direct_write_qualified=true` 的变化有上述证据，而不是 prompt/narrative 推断。
@@ -192,7 +213,8 @@ Phase 1 只有同时满足以下条件才算完成：
 - Phase 1 未完成；direct_write_qualified=false。
 - Isolated schema v2/runtime/control/provenance/feasibility fixtures 已实现并曾有 143 tests 全绿。
 - G4 仍缺 live mutation-surface、真实 SessionMeta identity、sandbox trust、
-  termination/quiescence、callback 和 POSIX/Windows/DeepSeek regression evidence。
+  termination/quiescence、end-to-end cost/staged-authority continuity、callback 和
+  POSIX/Windows/DeepSeek regression evidence。
 - Phase 2 worker/provider profile 与 ZHIPU/GLM bridge关闭，不得启动。
 
 不可改变的目标与边界：
@@ -203,7 +225,8 @@ Phase 1 只有同时满足以下条件才算完成：
 - Assignment transport、wire transport、request normalization 正交；adapter 产品无关。
 - Immutable capsule 必须在 compaction/resume 后重新证明 exact identity、root/branch/full base、
   owned/excluded paths、Git authority、authoritative input roots、stop condition、verification、
-  provenance 与 feasibility；缺失或歧义必须 fail closed。
+  provenance、feasibility、cost unit/distribution、phase derivation 与 final mixed-frontier
+  equivalence；缺失或歧义必须 fail closed。
 - Worker tests/hashes/narrative 只是 contribution evidence；parent/disk/fresh owner adjudication 才有 integration authority。
 - 不用 external worker 证明它自己的正确性；只允许 native subagent 做边界明确的只读 scout。
 - 不修改无关产品仓库；不覆盖 live Hook/skill/state，直到 G4 明确授权。
@@ -215,11 +238,14 @@ Phase 1 只有同时满足以下条件才算完成：
    SessionMeta flush、requested task name→canonical AgentPath contract；若版本变化，更新 pinned source anchors。
 4. 产出下一批可执行 live/isolated probe 计划，优先真实 root/nested/serial/concurrent identity binding
    与完整 mutation negative space；任何 identity 不精确或 mutation surface 不可见，维持 read-only。
-5. 能安全推进时做一个小步实现+tests+evidence commit；不能证明时提交可复用 probe/docs，
+5. 同时设计 P6c provider-free fixtures：独立 invocation/latency authority、representative dense p95、
+   sample/stat definition、U1→R→U2、phase binding/conservation、mixed-frontier exactness 与
+   before/mid/after mutation races；小 cohort 或 SQL-only spike 不得授权端到端完成。
+6. 能安全推进时做一个小步实现+tests+evidence commit；不能证明时提交可复用 probe/docs，
    不伪造 runtime guarantee，不开启 Phase 2。
 
 Phase 1 验收：
-- P1–P7（含 P5a/P5b/P6a/P6b）证据闭合；
+- P1–P7（含 P5a/P5b/P6a/P6b/P6c）证据闭合；
 - 所有 mutation surface 有可审计 visibility/mediation/sandbox block；
 - real SessionMeta/child identity 精确绑定；
 - durable resume re-attestation 与 final SubagentStop/adjudication 可复现；
@@ -228,15 +254,17 @@ Phase 1 验收：
 未全部满足前，禁止把 direct_write_qualified 改为 true。
 
 换机接管成功后，单独 revert 临时 docs(handoff) 提交或删除
-docs/phase1-handoff-snapshot.md；不要回退 Phase 1 实现提交。
+docs/phase1-handoff-snapshot.md；由于 snapshot 有追加提交，优先用新的 `git rm` 提交，
+不要逐个 revert handoff 历史，也不要回退 Phase 1 实现提交。
 ```
 
 ## 临时文档撤回方式
 
-本提交推送后属于共享历史。换机恢复完成时优先使用非破坏性操作：
+本文件包含多个共享历史提交。换机恢复完成时优先使用一个新的非破坏性清理提交：
 
 ```bash
-git revert <本次 docs(handoff) commit>
+git rm docs/phase1-handoff-snapshot.md
+git commit -m "docs(handoff): remove temporary phase 1 snapshot"
 git push origin main
 ```
 

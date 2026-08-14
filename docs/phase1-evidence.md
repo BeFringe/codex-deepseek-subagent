@@ -356,3 +356,38 @@ Equivalence grouping is not accepted as a precomputed builder argument. The
 builder invokes the owner derivation callback over the frozen input and stamps
 the authoritative owner/origin fields itself. A callback result that attempts
 to self-report `grouping_origin` is structurally rejected rather than trusted.
+
+## Pending end-to-end cost and staged-authority qualification
+
+Status: **pending; not covered by the current 143-test result.** A later
+product-independent large-scale incident showed that semantic correctness,
+fail-closed behavior, invocation-domain feasibility, and small-cohort tests can
+all pass while the end-to-end mechanism still violates its frozen latency gate.
+The current fixture freezes one work-budget unit/domain and scale evidence, but
+does not yet model an independent latency statistic, representative dense
+distribution, phase timing, or staged authority derivation.
+
+P6c must add provider-free owner-internal fixtures for all of the following:
+
+- invocation feasibility passes while a representative dense end-to-end p95
+  exceeds its independently frozen latency limit;
+- a small cohort or storage-query-only spike cannot authorize dispatch without
+  a representative dense witness or proven monotonicity;
+- the capsule freezes sample count, p95 window/calculation, multiplicity and
+  equivalence-class distribution identities, per-phase timing, and the original
+  stop condition;
+- owner-derived two-level refinement mechanically proves
+  `true <= refined_upper_bound <= coarse_upper_bound`;
+- exact phase input/output identity, source/root binding, and authority epoch
+  are re-proved across the frozen phase catalog;
+- closed-set conservation equations reject missing, duplicate, orphaned, or
+  cross-phase substituted identities;
+- final mixed-frontier output rejects exact-cardinality or canonical-order
+  drift even when aggregate counts and digests are self-consistent;
+- mutation at a phase-before, phase-internal, or phase-after seam fails closed.
+
+If an intermediate seam is invisible because the mechanism runs inside one
+opaque tool event, the fixture must record that negative space rather than
+pretend prompt continuity provides mediation. Until these fixtures and required
+live evidence close, `feasibility_contract_integrity` remains unverified for
+multi-phase scale delivery and direct write remains unqualified.
