@@ -72,7 +72,7 @@ controlled comparison: the Windows Desktop child/callback succeeded after
 inheriting `env_key`, while the same Agent's User/HKCU command auth was
 unavailable under a sandbox identity.
 On macOS, the Python/POSIX route has passed the same callback flow on Codex
-`0.146.0` and 27 protocol tests; Linux uses the same POSIX implementation.
+`0.146.0` and 31 protocol tests; Linux uses the same POSIX implementation.
 
 Codex `0.145.0` marked configurable subagent models and reasoning effort in
 Multi-agent V2 stable. Custom agents, Hooks, and cross-provider transport still

@@ -370,6 +370,150 @@ class PlaintextHandoffCliTests(unittest.TestCase):
         self.assertIn("handoff", failures[0].stderr.lower())
         self.assertFalse(self.handoff_state_files())
 
+    def test_reviewer_role_child_racing_target_child_never_consumes_pending(self):
+        # A child with a different role (for example a reviewer subagent) must
+        # never consume a v4_flash_worker assignment, even when it starts at the
+        # same moment as the intended worker.
+        assignment = "only for the v4_flash_worker"
+        self.write_pending(envelope(assignment))
+        start_gate = threading.Barrier(3)
+
+        def invoke_after_gate(agent_type, agent_id):
+            start_gate.wait()
+            hook_input = json.dumps(
+                {
+                    "hook_event_name": "SubagentStart",
+                    "agent_type": agent_type,
+                    "agent_id": agent_id,
+                }
+            )
+            return self.invoke("hook", hook_input)
+
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            futures = [
+                executor.submit(invoke_after_gate, "reviewer", "reviewer-1"),
+                executor.submit(invoke_after_gate, AGENT_TYPE, "worker-1"),
+            ]
+            start_gate.wait()
+            reviewer_result, worker_result = [future.result(timeout=30) for future in futures]
+
+        self.assertEqual(reviewer_result.returncode, 0, reviewer_result.stderr)
+        self.assertEqual(reviewer_result.stdout, "")
+        self.assertEqual(worker_result.returncode, 0, worker_result.stderr)
+        delivered = json.loads(worker_result.stdout)["hookSpecificOutput"]["additionalContext"]
+        self.assertIn(assignment, delivered)
+        self.assertFalse(self.handoff_state_files())
+
+    def test_concurrent_target_hooks_never_deliver_an_expired_pending(self):
+        # Two children racing for an already-expired pending assignment must
+        # both fail closed: the winner consumes and reports the expiry, the
+        # loser sees the handoff is gone or the lock is held, and the expired
+        # assignment is never delivered to either child.
+        self.write_pending(envelope("expired secret", expires_in=-10))
+        start_gate = threading.Barrier(3)
+
+        def invoke_after_gate(agent_id):
+            start_gate.wait()
+            return self.invoke("hook", self.target_hook_input(agent_id))
+
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            futures = [
+                executor.submit(invoke_after_gate, "agent-one"),
+                executor.submit(invoke_after_gate, "agent-two"),
+            ]
+            start_gate.wait()
+            results = [future.result(timeout=30) for future in futures]
+
+        for result in results:
+            self.assertNotIn("Traceback", result.stderr)
+            self.assertNotIn("BEGIN PARENT ASSIGNMENT", result.stdout)
+            self.assertNotIn("expired secret", result.stdout)
+        self.assertEqual([r.returncode for r in results].count(6), 1)
+        self.assertNotIn(0, [r.returncode for r in results])
+        self.assertFalse(self.handoff_state_files())
+
+    @unittest.skipUnless(os.name == "posix", "requires the POSIX dispatch lock")
+    def test_stage_racing_hook_over_expired_pending_never_delivers_expired_assignment(self):
+        # A stage recovering an expired pending can race the Hook claim of the
+        # next child. Whichever acquires the dispatch lock first, the expired
+        # assignment must never be delivered, and a complete fresh envelope must
+        # eventually be published or delivered.
+        self.write_pending(envelope("EXPIRED-SECRET-ASSIGNMENT", expires_in=-10))
+        start_gate = threading.Barrier(3)
+
+        def stage_after_gate():
+            start_gate.wait()
+            return self.invoke("stage", "FRESH-ASSIGNMENT")
+
+        def hook_after_gate():
+            start_gate.wait()
+            return self.invoke("hook", self.target_hook_input("racing-child"))
+
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            futures = [executor.submit(stage_after_gate), executor.submit(hook_after_gate)]
+            start_gate.wait()
+            stage_result, hook_result = [future.result(timeout=30) for future in futures]
+
+        self.assertNotIn("Traceback", stage_result.stderr)
+        self.assertNotIn("Traceback", hook_result.stderr)
+        self.assertNotIn("EXPIRED-SECRET-ASSIGNMENT", hook_result.stdout)
+        if "BEGIN PARENT ASSIGNMENT" in hook_result.stdout:
+            self.assertIn("FRESH-ASSIGNMENT", hook_result.stdout)
+            self.assertFalse(self.handoff_state_files())
+        else:
+            self.assertTrue(self.retry_stage_publishes_fresh_envelope())
+
+    @unittest.skipUnless(os.name == "posix", "requires the POSIX dispatch lock")
+    def test_stage_racing_hook_over_expired_claim_recovers_it_fail_closed(self):
+        # Recovery of an expired orphan claim races a fresh stage and the next
+        # Hook claim. The orphan must be removed by the recovery, its content
+        # must never be delivered, and a fresh envelope must eventually exist.
+        self.state_directory.mkdir(parents=True)
+        orphan = self.state_directory / f"{AGENT_TYPE}.claimed.crashed-agent.json"
+        orphan.write_text(json.dumps(envelope("ORPHAN-SECRET-ASSIGNMENT", expires_in=-10)), encoding="utf-8")
+        start_gate = threading.Barrier(3)
+
+        def stage_after_gate():
+            start_gate.wait()
+            return self.invoke("stage", "FRESH-ASSIGNMENT")
+
+        def hook_after_gate():
+            start_gate.wait()
+            return self.invoke("hook", self.target_hook_input("racing-child"))
+
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            futures = [executor.submit(stage_after_gate), executor.submit(hook_after_gate)]
+            start_gate.wait()
+            stage_result, hook_result = [future.result(timeout=30) for future in futures]
+
+        self.assertNotIn("Traceback", stage_result.stderr)
+        self.assertNotIn("Traceback", hook_result.stderr)
+        self.assertNotIn("ORPHAN-SECRET-ASSIGNMENT", hook_result.stdout)
+        self.assertFalse(orphan.exists())
+        if "BEGIN PARENT ASSIGNMENT" in hook_result.stdout:
+            self.assertIn("FRESH-ASSIGNMENT", hook_result.stdout)
+            self.assertFalse(self.handoff_state_files())
+        else:
+            self.assertTrue(self.retry_stage_publishes_fresh_envelope())
+
+    def retry_stage_publishes_fresh_envelope(self):
+        # The parent protocol retries a stage until the occupied state is
+        # explicitly clear; lock contention and an in-flight claim are expected
+        # transient outcomes of the race, never a reason to deliver stale bytes.
+        for attempt in range(5):
+            if self.pending_path.exists():
+                try:
+                    pending = json.loads(self.pending_path.read_text(encoding="utf-8"))
+                except (json.JSONDecodeError, OSError, UnicodeDecodeError):
+                    pending = None
+                if pending is not None and pending.get("assignment", "").startswith("FRESH"):
+                    return True
+            result = self.invoke("stage", "FRESH-ASSIGNMENT")
+            if result.returncode == 0:
+                self.assertNotIn("Traceback", result.stderr)
+                return True
+        return False
+
     @unittest.skipUnless(os.name == "posix", "requires the POSIX dispatch lock")
     def test_concurrent_stages_publish_exactly_one_complete_envelope(self):
         # Launch several stages concurrently and release their communicate()

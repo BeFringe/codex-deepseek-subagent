@@ -113,7 +113,7 @@ CLI。
 
 Windows Desktop 路径已有 live smoke；当前 PowerShell 加固实现通过本地协议、并发
 与恢复测试，尚待一次更新后的 live smoke。macOS 的 Python/POSIX 路径已在 Codex
-`0.146.0` 上通过原生 callback smoke 和 27 项协议测试；Linux 使用同一 POSIX 实现。
+`0.146.0` 上通过原生 callback smoke 和 31 项协议测试；Linux 使用同一 POSIX 实现。
 
 ## 费用与关联声明
 
