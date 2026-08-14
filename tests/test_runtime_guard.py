@@ -170,8 +170,23 @@ class RuntimeGuardTests(unittest.TestCase):
                     },
                     "bounded_completion": {
                         "completion_condition": "assigned slice",
-                        "work_budget": {"unit": "fixture-step", "limit": 10},
+                        "work_budget": {
+                            "unit": "fixture-step",
+                            "cardinality_domain": "fixture-object",
+                            "limit": 10,
+                        },
                         "proposed_mechanism": "bounded fixture mechanism",
+                        "mechanism_measurement": {
+                            "unit": "fixture-step",
+                            "cardinality_domain": "fixture-object",
+                            "required_lower_bound": 9,
+                        },
+                        "scale_evidence": {
+                            "basis": "proven_monotonicity",
+                            "witness_input_sha256": None,
+                            "evidence_sha256": "4" * 64,
+                        },
+                        "equivalence_compression": None,
                         "mechanism_satisfies": True,
                         "evidence_sha256": "3" * 64,
                     },
@@ -681,6 +696,31 @@ class RuntimeGuardTests(unittest.TestCase):
 
         self.assertEqual(result["decision"], "block")
         self.assertIn("authority_violation", result["reason"])
+
+    def test_recovery_artifact_identity_does_not_expand_mutation_authority(self):
+        artifact = self.repository / "reusable-evidence.json"
+        artifact.write_text('{"owner":"parent"}\n', encoding="utf-8")
+        digest = hashlib.sha256(artifact.read_bytes()).hexdigest()
+        self.capsule["preexisting_dirty"] = [
+            {
+                "path": "reusable-evidence.json",
+                "status": "??",
+                "kind": "file",
+                "sha256": digest,
+            }
+        ]
+
+        unchanged = runtime_guard.collect_git_snapshot(str(self.repository))
+        self.assertEqual(
+            runtime_guard._snapshot_authority_violations(unchanged, self.capsule), []
+        )
+
+        artifact.write_text('{"owner":"child"}\n', encoding="utf-8")
+        changed = runtime_guard.collect_git_snapshot(str(self.repository))
+        self.assertIn(
+            "final disk contains unauthorized change: reusable-evidence.json",
+            runtime_guard._snapshot_authority_violations(changed, self.capsule),
+        )
 
 
 if __name__ == "__main__":

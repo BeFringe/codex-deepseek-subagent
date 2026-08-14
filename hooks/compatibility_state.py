@@ -137,16 +137,33 @@ BOUNDED_COMPLETION_FIELDS = {
     "completion_condition",
     "work_budget",
     "proposed_mechanism",
+    "mechanism_measurement",
+    "scale_evidence",
+    "equivalence_compression",
     "mechanism_satisfies",
     "evidence_sha256",
 }
-WORK_BUDGET_FIELDS = {"unit", "limit"}
+WORK_BUDGET_FIELDS = {"unit", "cardinality_domain", "limit"}
+MECHANISM_MEASUREMENT_FIELDS = {"unit", "cardinality_domain", "required_lower_bound"}
+SCALE_EVIDENCE_FIELDS = {"basis", "witness_input_sha256", "evidence_sha256"}
+EQUIVALENCE_COMPRESSION_FIELDS = {
+    "authoritative_owner_id",
+    "equivalence_rule",
+    "grouping_origin",
+    "class_cardinality_domain",
+    "identity_cardinality_domain",
+    "evaluated_class_count",
+    "proven_identity_count",
+    "fanout_identity_count",
+    "evidence_sha256",
+}
 UNRESOLVED_ASSUMPTION_FIELDS = {"assumption", "blocking"}
 PARENT_ADJUDICATION_FIELDS = {
     "location_integrity",
     "mutation_scope_integrity",
     "verification_freshness",
     "derivation_provenance_integrity",
+    "feasibility_contract_integrity",
     "evidence_sha256",
 }
 STATE_KINDS = (
@@ -789,7 +806,9 @@ def validate_capsule(capsule: object, assignment: str) -> dict:
         if not isinstance(feasibility, dict) or set(feasibility) != FEASIBILITY_ATTESTATION_FIELDS:
             raise CorruptState("capsule feasibility attestation fields are not exact")
         if feasibility["parent_owner_id"] not in provenance["authoritative_input_owners"]:
-            raise CorruptState("feasibility attestation is not authored by an authoritative parent owner")
+            raise CorruptState(
+                "feasibility attestation is not authored by an authoritative parent owner"
+            )
         _nonempty_string(
             feasibility["exact_claimed_invariant"],
             "feasibility exact_claimed_invariant",
@@ -815,11 +834,88 @@ def validate_capsule(capsule: object, assignment: str) -> dict:
         work_budget = bounded["work_budget"]
         if not isinstance(work_budget, dict) or set(work_budget) != WORK_BUDGET_FIELDS:
             raise CorruptState("work budget fields are not exact")
-        _nonempty_string(work_budget["unit"], "work budget unit")
+        for field in ("unit", "cardinality_domain"):
+            _nonempty_string(work_budget[field], f"work budget {field}")
         if type(work_budget["limit"]) not in {int, float} or work_budget["limit"] <= 0:
             raise CorruptState("work budget limit must be positive")
+
+        measurement = bounded["mechanism_measurement"]
+        if not isinstance(measurement, dict) or set(measurement) != MECHANISM_MEASUREMENT_FIELDS:
+            raise CorruptState("mechanism measurement fields are not exact")
+        for field in ("unit", "cardinality_domain"):
+            _nonempty_string(measurement[field], f"mechanism measurement {field}")
+        if (
+            type(measurement["required_lower_bound"]) is not int
+            or measurement["required_lower_bound"] < 0
+        ):
+            raise CorruptState("mechanism required_lower_bound must be a non-negative integer")
+
+        scale = bounded["scale_evidence"]
+        if not isinstance(scale, dict) or set(scale) != SCALE_EVIDENCE_FIELDS:
+            raise CorruptState("scale evidence fields are not exact")
+        if scale["basis"] not in {"proven_monotonicity", "adversarial_scale_witness"}:
+            raise CorruptState("scale evidence basis is invalid")
+        witness_sha256 = scale["witness_input_sha256"]
+        if scale["basis"] == "adversarial_scale_witness":
+            if not isinstance(witness_sha256, str) or not SHA256_RE.fullmatch(witness_sha256):
+                raise CorruptState("adversarial scale witness hash is invalid")
+        elif witness_sha256 is not None:
+            raise CorruptState("monotonicity evidence cannot carry a scale witness hash")
+        if not isinstance(scale["evidence_sha256"], str) or not SHA256_RE.fullmatch(
+            scale["evidence_sha256"]
+        ):
+            raise CorruptState("scale evidence_sha256 is invalid")
+
+        compression = bounded["equivalence_compression"]
+        compression_valid = True
+        if compression is not None:
+            if (
+                not isinstance(compression, dict)
+                or set(compression) != EQUIVALENCE_COMPRESSION_FIELDS
+            ):
+                raise CorruptState("equivalence compression fields are not exact")
+            for field in (
+                "authoritative_owner_id",
+                "equivalence_rule",
+                "grouping_origin",
+                "class_cardinality_domain",
+                "identity_cardinality_domain",
+            ):
+                _nonempty_string(compression[field], f"equivalence compression {field}")
+            for field in (
+                "evaluated_class_count",
+                "proven_identity_count",
+                "fanout_identity_count",
+            ):
+                if type(compression[field]) is not int or compression[field] < 0:
+                    raise CorruptState(f"equivalence compression {field} must be non-negative")
+            if not isinstance(compression["evidence_sha256"], str) or not SHA256_RE.fullmatch(
+                compression["evidence_sha256"]
+            ):
+                raise CorruptState("equivalence compression evidence_sha256 is invalid")
+            compression_valid = all(
+                (
+                    compression["authoritative_owner_id"] == feasibility["parent_owner_id"],
+                    compression["grouping_origin"] == "owner_derived",
+                    compression["class_cardinality_domain"] == measurement["cardinality_domain"],
+                    compression["evaluated_class_count"] <= compression["proven_identity_count"],
+                    compression["fanout_identity_count"] == compression["proven_identity_count"],
+                    measurement["required_lower_bound"] >= compression["evaluated_class_count"],
+                )
+            )
+
+        mechanism_satisfies = all(
+            (
+                measurement["unit"] == work_budget["unit"],
+                measurement["cardinality_domain"] == work_budget["cardinality_domain"],
+                measurement["required_lower_bound"] <= work_budget["limit"],
+                compression_valid,
+            )
+        )
         if type(bounded["mechanism_satisfies"]) is not bool:
             raise CorruptState("mechanism_satisfies must be boolean")
+        if bounded["mechanism_satisfies"] != mechanism_satisfies:
+            raise CorruptState("mechanism_satisfies contradicts budget-domain evidence")
         if not isinstance(bounded["evidence_sha256"], str) or not SHA256_RE.fullmatch(
             bounded["evidence_sha256"]
         ):

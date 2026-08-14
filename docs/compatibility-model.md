@@ -227,8 +227,33 @@ assignment 的 capsule，不能被 provider profile 默认、推断或归一化�
       },
       "bounded_completion": {
         "completion_condition": "condition also frozen in stop_condition",
-        "work_budget": {"unit": "bounded unit", "limit": 10},
+        "work_budget": {
+          "unit": "expensive evaluator invocation",
+          "cardinality_domain": "semantic equivalence class",
+          "limit": 2048
+        },
         "proposed_mechanism": "mechanism tested by the parent owner",
+        "mechanism_measurement": {
+          "unit": "expensive evaluator invocation",
+          "cardinality_domain": "semantic equivalence class",
+          "required_lower_bound": 300
+        },
+        "scale_evidence": {
+          "basis": "proven_monotonicity|adversarial_scale_witness",
+          "witness_input_sha256": "hex-or-null",
+          "evidence_sha256": "hex"
+        },
+        "equivalence_compression": {
+          "authoritative_owner_id": "authoritative parent owner",
+          "equivalence_rule": "owner-verifiable equality",
+          "grouping_origin": "owner_derived",
+          "class_cardinality_domain": "semantic equivalence class",
+          "identity_cardinality_domain": "object identity",
+          "evaluated_class_count": 300,
+          "proven_identity_count": 3000,
+          "fanout_identity_count": 3000,
+          "evidence_sha256": "hex"
+        },
         "mechanism_satisfies": true,
         "evidence_sha256": "hex"
       },
@@ -296,7 +321,15 @@ assignment 的 capsule，不能被 provider profile 默认、推断或归一化�
   owner assessor 证明 proposed mechanism 能在冻结预算内满足 completion condition、且没有
   blocking assumption 时，`owner_decision=dispatch` 才自洽；否则 direct-write spawn fail closed。
   capsule freeze 不能把一个经验上过松、预算内不可闭合的机制变成可执行证明边界。
-- pre-existing dirty hashes 防止 child 把用户修改误报为自己的贡献。
+- 每个 budget 与 conservation count 必须冻结 exact unit 和 cardinality domain。owner assessor
+  计算的 invocation lower bound 必须与预算使用同一计数域；小 cohort 只有在 completion
+  condition 证明 monotonicity，或包含 adversarial multiplicity/scale witness 时才可支撑 scale
+  claim。若机制使用 equivalence compression，分组必须由 authoritative owner 派生，class/identity
+  count 分离，且 fan-out 必须守恒。builder 只调用 owner derivation callback 并自行写入 owner/origin，
+  不接受 precomputed grouping 或 caller 自报的 `grouping_origin`；digest 自洽不能补足来源。
+- pre-existing dirty hashes 防止 child 把用户修改误报为自己的贡献。blocked long run 的 recovery
+  capsule 可以同时冻结 reusable generated artifact 的 path/status/hash identity，但该记录不增加
+  `owned_paths`；artifact 未改变时可复用，任何越出既有 ownership 的修改仍被拒绝。
 - `capture_preflight` 是 parent 可选的只收窄断言：Hook 只比较 expected root/branch/full
   HEAD 与当前实际 Git snapshot，任何不相等都在 spawn 前 block。它不能授权 branch/commit、
   改写 owned paths 或自行推断新任务。
@@ -322,7 +355,7 @@ active/<assignment_id>.json
        ↓ worker final attestation 与 disk evidence 一致
 reported/<assignment_id>.json
   └─ 仅表示 callback/contribution 已被记录，不表示 parent integration 通过
-       ↓ parent fresh verification + causal source review 四维全 PASS
+       ↓ parent fresh verification + causal source review 五维全 PASS
 consumed/<assignment_id>.json
 ```
 
@@ -498,9 +531,11 @@ path hashes 全部未变为 `unresponsive_no_disk_change`；有磁盘 delta 但�
 标记为 `initial_authority_mismatch`、`baseline_comparable=false`、`disk_changed=null`，再由
 parent 使用独立可信 baseline 裁决，不能把 HEAD mismatch 误报成贡献。
 
-SubagentStop 的成功只把状态推进到 `reported`。parent 以四个独立维度裁决：location
+SubagentStop 的成功只把状态推进到 `reported`。parent 以五个独立维度裁决：location
 integrity、mutation-scope integrity、verification freshness、derivation/provenance
-integrity。前三者全绿也不能替代第四项：对 attacker-selected derived inputs 计算出的
+integrity、feasibility-contract integrity。前三者全绿也不能替代 provenance；所有 artifact
+自洽也不能替代 budget unit/domain、scale witness 与 mechanism conformance 的 fresh 核对。对
+attacker-selected derived inputs 计算出的
 self-consistent digest 仍可伪造 PASS。只有 owner-internal real-mode derivation（必要时一次
 昂贵 derivation 在同一 owner boundary 内复用于多个输出）、fresh verification 与源码级
 causal review 都通过，parent 才能推进到 `consumed`。worker tests/hashes 只是 contribution
@@ -547,6 +582,7 @@ test-only completion，但不能据此证明 child 没有撒谎；receipt digest
 | P5b | ownership handover | interrupt ack、strong termination receipt、post-termination barrier、late write before/after re-spawn | 无 quiescence 仍重叠认领即失败 |
 | P6 | final attestation | no-assignment narrative、slice→parent claim、disk hash mismatch | 不 block 错误 final 即失败 |
 | P6a | causal provenance | hash-valid forged derived facts、test-only seam in real mode、owner-internal shared derivation | caller 可自授权 PASS 即失败 |
+| P6b | feasibility contract | budget/measurement domain drift、scale witness、owner-derived equivalence fan-out、recovery artifact baseline | mismatch、forged grouping 与 artifact authority expansion 即失败 |
 | P7 | parity/regression | POSIX/Windows protocol、DeepSeek existing path | 全绿后才能进入 Phase 2 |
 
 ## Decision gates
@@ -559,7 +595,9 @@ test-only completion，但不能据此证明 child 没有撒谎；receipt digest
   capsule gate。prompt-only re-attestation 不通过此 gate。
 - **G4 — Phase 1 complete**：schema/hash、mismatch preserve、corrupt quarantine、
   nested/concurrent、expiry/recovery、Windows/POSIX 与 DeepSeek regression 全绿，并记录
-  live evidence。G4 前禁止 Phase 2；Phase 2 前禁止 Phase 3。
+  live evidence；parent-owned feasibility 必须证明 budget unit/cardinality domain 一致、scale
+  claim 有 monotonicity 或 adversarial witness、equivalence fan-out 守恒且 recovery artifact 不扩权。
+  G4 前禁止 Phase 2；Phase 2 前禁止 Phase 3。
 
 ## Rollback
 
