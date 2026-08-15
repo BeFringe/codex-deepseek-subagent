@@ -391,6 +391,16 @@ consumed/<assignment_id>.json
 PTY、outer executor、MCP 或其他 mutation source 已静默。interrupt ack 不能单独作为
 mutation quiescence，也不能授权立即把相同 owned paths 交给新 child。
 
+mutation-capable assignment 从 pending/claimed/active 到 reported/unresolved 期间，其
+`owned_paths` 必须处于包含 parent 与所有 sibling child 的 single-writer 域。parent 在已交给
+active child 的相同或父子重叠路径上调用 `apply_patch`、shell 或其他写工具，是竞争 ownership
+claim，不是隐含的 integration authority。assignment 中声明 ownership、提示“并非唯一 agent”或
+在每次写前 refresh capsule，都不是文件系统互斥：refresh 与实际 mutation 之间仍存在 TOCTOU
+窗口。parent 若需接管这些路径，必须先停止自己的重叠写入，冻结 child authority，取得下述强
+termination+quiescence receipt 与 post-termination disk barrier，再以新的 authority epoch
+取得 writer lease；无法在 parent 与 child 两侧共同 mediation/serialization 时，direct write
+保持不合格。
+
 重派相同/父子重叠 ownership 的顺序必须是：先把旧 active authority 冻结为 unresolved，
 再取得 host-owned `child_terminated_and_mutations_quiesced` receipt，最后在 termination 之后
 采集 exact root/branch/HEAD/index/status/path hashes。barrier 与 prior assignment/child ThreadId
@@ -425,6 +435,9 @@ owner provenance 与 dispatch decision；若未来把任意 executable probe 接
 不能依据后一 child 的 attestation 把所有 bytes 单独归因给后一 assignment。
 state lock 不是 filesystem transaction；fresh pre-stage snapshot 之后的剩余窗口仍由新 child
 首次 exact attestation 捕获。没有 host quiescence guarantee 时这两个检查都不能升级为强证明。
+同理，state lock 只会串行化 capsule 转换，不会阻止 parent 在 active child 的 tool call 之间或
+执行中直接修改 owned file。事后 hash mismatch 只能冻结混合 provenance，不能把已经发生的交错
+写入重新证明为安全；live qualification 仍需 host dispatch serialization 或独立 sandbox/block。
 
 ### 为什么 assignment 不能补足外层不可见性
 

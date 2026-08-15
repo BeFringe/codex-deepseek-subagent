@@ -313,6 +313,41 @@ link. Parent fresh source review and tests are still required. These are
 isolated fixtures: no verified Codex 0.148.0-alpha.9 host termination receipt is yet
 available, so the live path must refuse overlapping direct-write reassignment.
 
+## Native parent/child same-path race witness
+
+On 2026-08-15, a LocalCAT `feature5` native xhigh child at
+`/root/m_v16_candidate_u4` and its `/root` parent concurrently modified the
+declared-owned `tm_candidate_index.py` in one shared worktree. The parent added
+a performance experiment while the child inserted its assigned prototype.
+Their insertions interleaved and left a parent `return distance` at class scope;
+the child detected foreign bytes, paused, and reported `SyntaxError: 'return'
+outside function`. The parent stopped the child and repaired only the
+indentation.
+
+The supplied witness binds root
+`/Users/pearly/文档/CAT/localcat-feature5`, branch `feature5`, full HEAD
+`3f59f60998da63f5cdc8cf3145dc354ec0560143`, parent/child AgentPaths, assignment
+paths, and post-repair file SHA-256
+`2551bd81f8b0e57a7d9da579efd6ad9a28e8051c21a9cd6a0d235523b6d73368`.
+A fresh product-independent read confirmed that HEAD, branch, digest,
+`python3 -m py_compile tm_candidate_index.py`, and `git diff --check` all pass;
+the three assignment paths remain modified and unstaged.
+
+Classification: `p5b_parent_active_child_single_writer_violation`. This is not
+an assignment-transport, Hook, SessionMeta, compact/resume, callback, or sandbox
+failure on the available evidence. It is a shared-worktree authority-scheduling
+failure: declared ownership and the “not alone” narrative did not exclude the
+parent from the active child's path. The existing handover fixtures cover old
+child to replacement-child transfer, not parent mutation during active child
+authority. A capsule/claim refresh would only detect some between-call races;
+it cannot close an in-flight TOCTOU window.
+
+This is a real negative witness, not evidence that the isolated adapter already
+mediates the parent. P5b must add parent/child single-writer live probes and a
+joint writer-lease or host serialization/sandbox barrier. Until that seam is
+visible and enforced on both sides, `direct_write_qualified=false` remains the
+only valid decision.
+
 The lifecycle now distinguishes a worker report from parent integration. A
 trusted parent adjudication must separately pass location integrity,
 mutation-scope integrity, verification freshness, derivation/provenance

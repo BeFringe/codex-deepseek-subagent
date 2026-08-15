@@ -135,6 +135,33 @@ Success requires both mediation visibility and an independent sandbox denial.
 If an operation is invisible to the Hook, the result is `block-session` or
 read-only downgrade, never a newly inferred matcher.
 
+### Parent/child single-writer negative space
+
+Treat the parent as a mutation participant in the same P5b ownership domain,
+not as an implicit super-writer. Run these cases against one exact root and
+normalized overlapping path set:
+
+1. Hold an active child lease, then attempt parent `apply_patch`, opaque shell,
+   Git/index mutation, MCP/app write, and an already-open PTY continuation on an
+   owned path. Every surface must be visibly denied or independently sandboxed.
+2. Start a parent mutation, then race child capture/claim; race simultaneous
+   parent/child claims; and race two children. Exactly one overlapping writer
+   may win, while disjoint path sets remain concurrent.
+3. Mutate after child capture but before its first attestation, between two
+   child tool calls, and during an in-flight child mutation. The first two must
+   fail closed with mixed-provenance evidence; the in-flight race requires host
+   dispatch serialization or sandbox proof rather than a later hash check.
+4. After interrupt acknowledgement, prove the parent remains blocked until the
+   exact child has a strong termination/quiescence receipt and a fresh disk
+   barrier. Transfer ownership only in a new authority epoch.
+5. Repeat with parent/child paths, symlink aliases, `..`, absolute aliases,
+   platform case behavior, and pre-existing dirty bytes.
+
+A claim refresh is useful re-attestation after a pause or observed foreign
+change, but it is not mutual exclusion and cannot qualify direct write by
+itself. If parent mutation surfaces cannot enter the same guard, keep the child
+read-only.
+
 ## IV. Resume, callback, and termination probes
 
 1. Force manual and automatic compaction after the first valid read-only child

@@ -261,6 +261,19 @@ prove that the child process, existing PTY, outer executor, MCP call, or every
 other mutation source is quiescent. An interrupt acknowledgement alone cannot
 authorize immediate reassignment of the same owned paths.
 
+While a mutation-capable assignment is pending, claimed, active, reported, or
+unresolved, its `owned_paths` must be in one single-writer domain that includes
+the parent and every sibling child. A parent `apply_patch`, shell command, or
+other write to the same or hierarchically overlapping path is a competing
+ownership claim, not implicit integration authority. Declaring ownership in an
+assignment, warning that other agents exist, or refreshing the capsule before
+each write is not filesystem exclusion: a TOCTOU window remains between the
+refresh and the mutation. To take those paths back, the parent must stop its own
+overlapping writes, freeze child authority, obtain the strong termination plus
+quiescence receipt and post-termination disk barrier below, and acquire the
+writer lease in a new authority epoch. Direct write remains unqualified unless
+both parent and child mutation dispatch can be jointly mediated or serialized.
+
 Overlapping ownership requires this order: freeze old active authority into
 unresolved state; obtain a host-owned
 `child_terminated_and_mutations_quiesced` receipt; then capture exact
@@ -286,6 +299,11 @@ A state lock is not a filesystem transaction. The replacement child's exact
 first attestation covers the remaining window after the fresh pre-stage
 snapshot; neither check becomes strong proof without a host quiescence
 guarantee.
+Likewise, that lock only serializes capsule transitions. It cannot stop the
+parent from changing an owned file between or during active-child tool calls.
+A later hash mismatch can freeze mixed provenance, but cannot retroactively make
+interleaved writes safe; live qualification still needs host dispatch
+serialization or an independent sandbox/block.
 
 A committed-range strict read-only review claims no mutation ownership and does
 not use this handover lifecycle. It still re-attests its compact invariant,
