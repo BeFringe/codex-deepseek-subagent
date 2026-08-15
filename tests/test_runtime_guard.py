@@ -388,6 +388,35 @@ class RuntimeGuardTests(unittest.TestCase):
         self.assertEqual(result["hookSpecificOutput"]["permissionDecision"], "deny")
         self.assertIn("read-only allowlist", result["hookSpecificOutput"]["permissionDecisionReason"])
 
+    def test_read_only_child_cannot_restore_foreign_parent_dirty_bytes(self):
+        target = self.repository / "baseline.txt"
+        target.write_text("parent-owned update\n", encoding="utf-8")
+        before = hashlib.sha256(target.read_bytes()).hexdigest()
+
+        result = runtime_guard.pre_tool_use(
+            self.store,
+            self.child_hook(
+                "PreToolUse",
+                tool_name="apply_patch",
+                tool_input={
+                    "patch": (
+                        "*** Begin Patch\n"
+                        "*** Update File: baseline.txt\n"
+                        "@@\n"
+                        "-parent-owned update\n"
+                        "+baseline\n"
+                        "*** End Patch"
+                    )
+                },
+            ),
+        )
+
+        self.assertEqual(result["hookSpecificOutput"]["permissionDecision"], "deny")
+        self.assertIn("read-only allowlist", result["hookSpecificOutput"]["permissionDecisionReason"])
+        self.assertEqual(target.read_text(encoding="utf-8"), "parent-owned update\n")
+        self.assertEqual(hashlib.sha256(target.read_bytes()).hexdigest(), before)
+        self.assertIn(" M baseline.txt", self.git("status", "--short").stdout)
+
     def test_ambiguous_active_capsules_fail_closed(self):
         second = self.make_capsule()
         self.store.stage(second, self.assignment)

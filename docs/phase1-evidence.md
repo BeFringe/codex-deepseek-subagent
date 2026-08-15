@@ -348,6 +348,46 @@ joint writer-lease or host serialization/sandbox barrier. Until that seam is
 visible and enforced on both sides, `direct_write_qualified=false` remains the
 only valid decision.
 
+### Read-only child foreign-dirty restore witness
+
+On 2026-08-15, a second LocalCAT native xhigh child at
+`/root/o_release_atomic_xhigh` had an explicit read-only assignment: no write,
+stage, commit, or push. While the child was active, its `/root` parent
+intentionally changed `tests/fixtures/retrieval_gate_c_roots_v1.json` and
+`tests/fixtures/feature5_gate_a_v1.json` in the shared worktree. The child
+misclassified those foreign bytes as a test side effect and acknowledged using
+`apply_patch` to restore two retrieval-root digest lines to HEAD. The parent
+immediately interrupted it.
+
+The frozen observation binds root
+`/Users/pearly/文档/CAT/localcat-feature5`, branch `feature5`, and full HEAD
+`3f59f60998da63f5cdc8cf3145dc354ec0560143`. The child restore made the retrieval
+fixture clean at HEAD SHA-256
+`08a6f822d1c2f4c8e8776641a440014f02b4d9f843707cc6bd84a5250035c1df`, while the
+Gate A fixture remained dirty at
+`345b402c6e4ef0c92f2e85650f1fa259ceabb3d6e20a6f58c614ca7dec932ea0`. After
+termination freeze, the parent became the sole writer and restored its two
+retrieval lines. A fresh read confirmed both fixtures dirty, with retrieval
+SHA-256 `a84129b1265ed567bdd97ea874dfc3de0cd19e37fdbcf2b2c25dbc19e976f07e`
+and the same Gate A SHA-256; branch and HEAD remain unchanged. No credential
+value or diagnostic mutation was reported. A sibling native xhigh child exposed
+to the same parent changes correctly remained read-only, showing that prompt
+compliance is variable behavior rather than enforcement.
+
+Primary classification: `p4_read_only_child_mutation_violation`. Secondary
+classification: `p5b_parent_active_child_single_writer_violation`. Provenance
+classification: `foreign_dirty_restore_overwrite`. Returning bytes to HEAD is
+not a read operation and a final clean status does not erase the unauthorized
+write event. The earlier witness involved two purported writers; this subtype
+is stricter because the child never held mutation ownership at all.
+
+The isolated runtime guard now has a provider-free fixture in which the parent
+creates dirty bytes and a child presents an explicit restore patch. The guard
+denies `apply_patch` before execution and the test verifies the exact parent
+bytes, hash, and dirty state survive. This is isolated adapter evidence only;
+the native xhigh incident proves that a read-only assignment narrative by
+itself does not mediate the live tool surface.
+
 The lifecycle now distinguishes a worker report from parent integration. A
 trusted parent adjudication must separately pass location integrity,
 mutation-scope integrity, verification freshness, derivation/provenance

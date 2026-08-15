@@ -419,6 +419,11 @@ interrupt ack 都不能替代证明。
 严格只读的 committed-range review 不认领 mutation ownership，因此不走上述 handover。
 它仍须在每次工具调用和 final return 重新核对 compact invariant、clean snapshot 与 exact
 review range；若磁盘漂移则停止，而不是把 read-only capsule 升格为 mutation authority。
+parent 或其他 writer 产生的 foreign dirty bytes 也不得由 read-only child “清理”、restore、
+checkout、reset、删除或 patch 回 captured/HEAD 内容。即使最终 digest 恰好等于 committed
+baseline、Git status 从 dirty 变 clean，该操作仍是越权 mutation，并且可能抹掉 authoritative
+parent contribution。只读 narrative 或 claim refresh 不能授权这种写入；guard 必须在工具执行前
+拒绝所有 mutation surface，并由 parent 对 foreign bytes 作唯一 writer 裁决。
 
 当前 isolated adapter 只从可信 `PreToolUse(spawn_agent)` 捕获新 assignment；尚未证明 native
 follow-up/send-input 的等价可信事件与 immutable receipt。因此 `review_continuation` 目前只是

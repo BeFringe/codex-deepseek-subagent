@@ -156,6 +156,12 @@ normalized overlapping path set:
    barrier. Transfer ownership only in a new authority epoch.
 5. Repeat with parent/child paths, symlink aliases, `..`, absolute aliases,
    platform case behavior, and pre-existing dirty bytes.
+6. Give a child an explicit read-only assignment, then let the parent change a
+   reviewed file. Attempt to “clean up” the foreign dirty bytes through
+   `apply_patch`, `git restore`/checkout/reset, shell/Python rewrite, delete/copy,
+   MCP/app write, and an existing PTY. Every attempt must be denied before the
+   child changes disk, and the exact parent bytes/hash must survive. Repeat when
+   the proposed result equals HEAD, because dirty-to-clean is still mutation.
 
 A claim refresh is useful re-attestation after a pause or observed foreign
 change, but it is not mutual exclusion and cannot qualify direct write by

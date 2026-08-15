@@ -309,6 +309,14 @@ A committed-range strict read-only review claims no mutation ownership and does
 not use this handover lifecycle. It still re-attests its compact invariant,
 clean snapshot, and exact review range at every tool event and final return;
 disk drift stops the task rather than upgrading the read-only capsule.
+Nor may a read-only child “clean up,” restore, check out, reset, delete, or patch
+foreign dirty bytes created by the parent or another writer back to the captured
+or HEAD content. Even when the final digest equals the committed baseline and
+Git status changes from dirty to clean, the operation is an unauthorized
+mutation that may erase an authoritative parent contribution. A read-only
+narrative or claim refresh cannot grant that write. The guard must reject every
+mutation surface before execution and leave adjudication of the foreign bytes
+to the parent as the sole writer.
 
 ## Exact runtime binding
 
