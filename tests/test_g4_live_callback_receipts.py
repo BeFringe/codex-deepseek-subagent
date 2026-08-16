@@ -14,7 +14,7 @@ class G4LiveCallbackReceiptTests(unittest.TestCase):
         record = json.loads(RECORD.read_text(encoding="utf-8"))
 
         self.assertEqual(record["schema"], 1)
-        self.assertEqual(record["provider_free_tests"], {"count": 229, "status": "passed"})
+        self.assertEqual(record["provider_free_tests"], {"count": 232, "status": "passed"})
         overlay = record["live_overlay"]
         self.assertEqual(overlay["v4_subagent_start_order"], 0)
         self.assertEqual(overlay["g4_subagent_start_order"], 1)

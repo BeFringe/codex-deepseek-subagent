@@ -4,7 +4,7 @@
   "source_base_head": "2741c31d079f2dd07784d6ea7fc0630b1b727165",
   "authorization": "explicit_user_install_authorization",
   "provider_free_tests": {
-    "count": 230,
+    "count": 232,
     "status": "passed"
   },
   "live_overlay": {

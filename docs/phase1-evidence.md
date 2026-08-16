@@ -184,6 +184,9 @@ Neither fact proves that a real compacted child sees the re-injected seed; that
 remains a live target-child probe and no qualification status changes here.
 The fresh provider-free suite passed 230 tests in 33.519 seconds, including the
 new seed contract and initial/post-recovery injection fixtures.
+The subsequent native-probe prompt generator adds two fail-closed fixtures for
+exact clean Git binding and dirty/invalid-task rejection; the fresh aggregate
+suite is therefore 232 tests.
 
 The probe corrected an earlier identity assumption: Hook `session_id` is the
 runtime session shared by root and descendants, not the child ThreadId. Current
