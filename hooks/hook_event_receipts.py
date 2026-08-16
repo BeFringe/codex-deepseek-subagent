@@ -19,6 +19,7 @@ from compatibility_state import (
     sha256_bytes,
     validate_writer_abort,
 )
+from assignment_transport import SPAWN_TOOL_NAMES
 from runtime_guard import child_identity_from_hook, child_identity_from_stop
 from writer_lease_guard import actor_identity_from_hook
 
@@ -293,7 +294,7 @@ def is_target_spawn(
     tool_input = hook_input.get("tool_input")
     return (
         hook_input.get("hook_event_name") == "PreToolUse"
-        and hook_input.get("tool_name") == "spawn_agent"
+        and hook_input.get("tool_name") in SPAWN_TOOL_NAMES
         and isinstance(tool_input, dict)
         and tool_input.get("agent_type") in plaintext_agent_types
     )

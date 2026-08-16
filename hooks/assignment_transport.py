@@ -54,7 +54,7 @@ AUTHORITY_FIELDS = {
 GIT_AUTHORITY_FIELDS = {"stage", "commit", "branch", "push"}
 TASK_NAME_RE = re.compile(r"^[a-z0-9_]+$")
 GIT_OID_RE = re.compile(r"^(?:[0-9a-f]{40}|[0-9a-f]{64})$")
-SPAWN_TOOL_NAMES = {"spawn_agent", "Agent"}
+SPAWN_TOOL_NAMES = {"spawn_agent", "Agent", "collaborationspawn_agent"}
 LOCATION_PREFLIGHT_FIELDS = {
     "expected_root",
     "expected_branch",

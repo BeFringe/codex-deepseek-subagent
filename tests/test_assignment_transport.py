@@ -405,6 +405,24 @@ class AssignmentTransportTests(unittest.TestCase):
             envelope["capsule"]["spawn_tool_use_id"], "agent-alias-spawn"
         )
 
+    def test_parent_capture_accepts_observed_collaboration_hook_name(self):
+        hook = self.spawn_hook(
+            tool_name="collaborationspawn_agent",
+            tool_use_id="collaboration-spawn",
+        )
+
+        result = self.capture(hook)
+
+        self.assertNotIn("permissionDecision", result["hookSpecificOutput"])
+        envelope = json.loads(
+            next((self.store.root / "pending").glob("*.json")).read_text(
+                encoding="utf-8"
+            )
+        )
+        self.assertEqual(
+            envelope["capsule"]["spawn_tool_use_id"], "collaboration-spawn"
+        )
+
     def test_write_spawn_requires_parent_recorded_explicit_user_intent(self):
         authority = json.loads(
             self.message().split("BEGIN CODEX WORKER AUTHORITY\n", 1)[1].split(
@@ -1492,7 +1510,7 @@ class AssignmentTransportTests(unittest.TestCase):
         )
 
     def test_executable_hook_runs_capture_claim_recovery_and_final_lifecycle(self):
-        spawn = self.spawn_hook()
+        spawn = self.spawn_hook(tool_name="collaborationspawn_agent")
         captured = self.invoke_hook_cli(spawn)
         self.assertEqual(captured.returncode, 0, captured.stderr)
         self.assertNotIn(spawn["tool_input"]["message"], captured.stdout)
