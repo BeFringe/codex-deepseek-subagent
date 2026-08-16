@@ -31,6 +31,9 @@ runtime_guard = load_module("runtime_guard", REPO / "hooks" / "runtime_guard.py"
 assignment_transport = load_module(
     "assignment_transport", REPO / "hooks" / "assignment_transport.py"
 )
+writer_lease_guard = load_module(
+    "writer_lease_guard", REPO / "hooks" / "writer_lease_guard.py"
+)
 
 
 StateStore = compatibility_state.StateStore
@@ -204,6 +207,46 @@ class AssignmentTransportTests(unittest.TestCase):
             "tool_input": tool_input,
         }
         value.update(overrides)
+        return value
+
+    def parent_patch_hook(
+        self,
+        path="owned/result.txt",
+        *,
+        event="PreToolUse",
+        tool_use_id="parent-patch",
+        move_to=None,
+        transcript_path=None,
+    ):
+        if move_to is None:
+            command = (
+                "*** Begin Patch\n"
+                f"*** Add File: {path}\n"
+                "+parent bytes\n"
+                "*** End Patch"
+            )
+        else:
+            command = (
+                "*** Begin Patch\n"
+                f"*** Update File: {path}\n"
+                f"*** Move to: {move_to}\n"
+                "@@\n"
+                "-baseline\n"
+                "+parent bytes\n"
+                "*** End Patch"
+            )
+        value = {
+            "hook_event_name": event,
+            "session_id": "runtime-session",
+            "turn_id": "parent-turn",
+            "transcript_path": str(transcript_path or self.parent_transcript),
+            "cwd": str(self.repository),
+            "tool_name": "apply_patch",
+            "tool_use_id": tool_use_id,
+            "tool_input": {"command": command},
+        }
+        if event == "PostToolUse":
+            value["tool_response"] = {"status": "completed"}
         return value
 
     def child_hook(self, task_name="bounded_task", *, parent_path="/root"):
@@ -838,6 +881,318 @@ class AssignmentTransportTests(unittest.TestCase):
         ]
         self.assertEqual(sorted(decisions), ["deny", "pass"])
         self.assertEqual(len(list((self.store.root / "pending").glob("*.json"))), 1)
+
+    def test_parent_patch_over_active_child_path_is_blocked_and_audited(self):
+        self.capture(self.spawn_hook())
+        assignment_transport.subagent_start(self.store, self.child_hook())
+
+        result = writer_lease_guard.pre_tool_use(
+            self.store,
+            self.parent_patch_hook(),
+        )
+
+        self.assertEqual(result["hookSpecificOutput"]["permissionDecision"], "deny")
+        self.assertIn("overlap", result["hookSpecificOutput"]["permissionDecisionReason"])
+        self.assertEqual(len(list((self.store.root / "writer_claim").glob("*.json"))), 0)
+        evidence = json.loads(
+            next((self.store.root / "writer_conflict").glob("*.json")).read_text(
+                encoding="utf-8"
+            )
+        )
+        self.assertEqual(
+            evidence["classification"],
+            "foreign_actor_writer_lease_conflict",
+        )
+        self.assertEqual(evidence["conflicts"][0]["kind"], "active")
+
+    def test_exact_quiescence_barrier_allows_parent_reclaim_in_new_claim(self):
+        self.capture(self.spawn_hook())
+        assignment_transport.subagent_start(self.store, self.child_hook())
+        prior_assignment_id, _ = self.freeze_active_and_record_barrier()
+
+        result = writer_lease_guard.pre_tool_use(
+            self.store,
+            self.parent_patch_hook(),
+        )
+
+        self.assertIn("WRITER.LEASED", result["hookSpecificOutput"]["additionalContext"])
+        claim = json.loads(
+            next((self.store.root / "writer_claim").glob("*.json")).read_text(
+                encoding="utf-8"
+            )
+        )
+        self.assertEqual(
+            claim["ownership_handover"][0]["prior_assignment_id"],
+            prior_assignment_id,
+        )
+
+    def test_parent_reclaim_blocks_disk_drift_after_quiescence_barrier(self):
+        self.capture(self.spawn_hook())
+        assignment_transport.subagent_start(self.store, self.child_hook())
+        self.freeze_active_and_record_barrier()
+        (self.repository / "owned").mkdir()
+        (self.repository / "owned" / "late.txt").write_text(
+            "late bytes\n",
+            encoding="utf-8",
+        )
+
+        result = writer_lease_guard.pre_tool_use(
+            self.store,
+            self.parent_patch_hook(),
+        )
+
+        self.assertEqual(result["hookSpecificOutput"]["permissionDecision"], "deny")
+        evidence = json.loads(
+            next((self.store.root / "writer_conflict").glob("*.json")).read_text(
+                encoding="utf-8"
+            )
+        )
+        self.assertEqual(evidence["conflicts"][0]["kind"], "unresolved")
+
+    def test_inflight_parent_patch_blocks_overlapping_child_until_exact_post(self):
+        pre = self.parent_patch_hook()
+        leased = writer_lease_guard.pre_tool_use(self.store, pre)
+        self.assertIn("WRITER.LEASED", leased["hookSpecificOutput"]["additionalContext"])
+        self.assertEqual(len(list((self.store.root / "writer_claim").glob("*.json"))), 1)
+
+        blocked = self.capture(self.spawn_hook())
+        self.assertEqual(blocked["hookSpecificOutput"]["permissionDecision"], "deny")
+        self.assertIn("in-flight", blocked["hookSpecificOutput"]["permissionDecisionReason"])
+
+        released = writer_lease_guard.post_tool_use(
+            self.store,
+            self.parent_patch_hook(event="PostToolUse"),
+        )
+        self.assertEqual(released, {})
+        self.assertEqual(len(list((self.store.root / "writer_claim").glob("*.json"))), 0)
+        self.assertEqual(len(list((self.store.root / "writer_receipt").glob("*.json"))), 1)
+
+        accepted = self.capture(self.spawn_hook("after_parent_patch"))
+        self.assertNotIn("permissionDecision", accepted["hookSpecificOutput"])
+
+    def test_disjoint_parent_patch_and_child_ownership_remain_concurrent(self):
+        leased = writer_lease_guard.pre_tool_use(
+            self.store,
+            self.parent_patch_hook("other/result.txt"),
+        )
+        self.assertIn("WRITER.LEASED", leased["hookSpecificOutput"]["additionalContext"])
+
+        accepted = self.capture(self.spawn_hook())
+        self.assertNotIn("permissionDecision", accepted["hookSpecificOutput"])
+
+    def test_concurrent_parent_claims_allow_only_one_overlapping_writer(self):
+        hooks = [
+            self.parent_patch_hook(tool_use_id="parent-race-one"),
+            self.parent_patch_hook(tool_use_id="parent-race-two"),
+        ]
+
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            results = list(
+                executor.map(
+                    lambda hook: writer_lease_guard.pre_tool_use(self.store, hook),
+                    hooks,
+                )
+            )
+
+        decisions = [
+            result["hookSpecificOutput"].get("permissionDecision", "pass")
+            for result in results
+        ]
+        self.assertEqual(sorted(decisions), ["deny", "pass"])
+        self.assertEqual(len(list((self.store.root / "writer_claim").glob("*.json"))), 1)
+        self.assertEqual(len(list((self.store.root / "writer_conflict").glob("*.json"))), 1)
+
+    def test_concurrent_disjoint_parent_claims_both_persist(self):
+        hooks = [
+            self.parent_patch_hook("one/result.txt", tool_use_id="parent-disjoint-one"),
+            self.parent_patch_hook("two/result.txt", tool_use_id="parent-disjoint-two"),
+        ]
+
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            results = list(
+                executor.map(
+                    lambda hook: writer_lease_guard.pre_tool_use(self.store, hook),
+                    hooks,
+                )
+            )
+
+        self.assertTrue(
+            all("permissionDecision" not in result["hookSpecificOutput"] for result in results)
+        )
+        self.assertEqual(len(list((self.store.root / "writer_claim").glob("*.json"))), 2)
+
+    def test_strict_read_only_capture_requires_no_inflight_parent_writer(self):
+        writer_lease_guard.pre_tool_use(
+            self.store,
+            self.parent_patch_hook("other/result.txt"),
+        )
+        head = self.git("rev-parse", "HEAD").stdout.strip()
+        authority = json.loads(
+            self.message().split("BEGIN CODEX WORKER AUTHORITY\n", 1)[1].split(
+                "\nEND CODEX WORKER AUTHORITY", 1
+            )[0]
+        )
+        authority["owned_paths"] = []
+        authority["excluded_paths"] = []
+        authority["execution_contract"]["posture"] = "strict_read_only"
+        authority["execution_contract"]["review_range"] = {
+            "base_oid": head,
+            "head_oid": head,
+        }
+        authority["execution_contract"]["capsule_feasibility_attestation"] = None
+
+        blocked = self.capture(
+            self.spawn_hook(
+                "read_only_during_parent_patch",
+                tool_input={"message": self.message(authority=authority)},
+            )
+        )
+
+        self.assertEqual(blocked["hookSpecificOutput"]["permissionDecision"], "deny")
+        self.assertIn("in-flight", blocked["hookSpecificOutput"]["permissionDecisionReason"])
+
+    def test_symlink_alias_cannot_bypass_active_child_ownership(self):
+        (self.repository / "owned").mkdir()
+        (self.repository / "alias").symlink_to("owned", target_is_directory=True)
+        self.capture(self.spawn_hook())
+        assignment_transport.subagent_start(self.store, self.child_hook())
+
+        result = writer_lease_guard.pre_tool_use(
+            self.store,
+            self.parent_patch_hook("alias/result.txt"),
+        )
+
+        self.assertEqual(result["hookSpecificOutput"]["permissionDecision"], "deny")
+        evidence = json.loads(
+            next((self.store.root / "writer_conflict").glob("*.json")).read_text(
+                encoding="utf-8"
+            )
+        )
+        self.assertEqual(evidence["paths"], ["owned/result.txt"])
+
+    def test_move_destination_cannot_bypass_active_child_ownership(self):
+        self.capture(self.spawn_hook())
+        assignment_transport.subagent_start(self.store, self.child_hook())
+
+        result = writer_lease_guard.pre_tool_use(
+            self.store,
+            self.parent_patch_hook("baseline.txt", move_to="owned/moved.txt"),
+        )
+
+        self.assertEqual(result["hookSpecificOutput"]["permissionDecision"], "deny")
+        evidence = json.loads(
+            next((self.store.root / "writer_conflict").glob("*.json")).read_text(
+                encoding="utf-8"
+            )
+        )
+        self.assertEqual(evidence["paths"], ["baseline.txt", "owned/moved.txt"])
+
+    def test_parent_patch_absolute_dotdot_and_excluded_aliases_are_blocked(self):
+        self.capture(self.spawn_hook())
+        assignment_transport.subagent_start(self.store, self.child_hook())
+        paths = (
+            str(self.repository / "owned" / "absolute.txt"),
+            "other/../owned/dotdot.txt",
+            "owned/excluded/result.txt",
+        )
+
+        for index, path in enumerate(paths):
+            with self.subTest(path=path):
+                result = writer_lease_guard.pre_tool_use(
+                    self.store,
+                    self.parent_patch_hook(path, tool_use_id=f"alias-{index}"),
+                )
+                self.assertEqual(
+                    result["hookSpecificOutput"]["permissionDecision"],
+                    "deny",
+                )
+
+        evidence = [
+            json.loads(path.read_text(encoding="utf-8"))
+            for path in (self.store.root / "writer_conflict").glob("*.json")
+        ]
+        self.assertEqual(len(evidence), 3)
+        self.assertEqual(
+            {item["paths"][0] for item in evidence},
+            {
+                "owned/absolute.txt",
+                "owned/dotdot.txt",
+                "owned/excluded/result.txt",
+            },
+        )
+
+    def test_wrong_post_identity_does_not_release_parent_writer_claim(self):
+        writer_lease_guard.pre_tool_use(
+            self.store,
+            self.parent_patch_hook("other/result.txt"),
+        )
+        other_transcript = self.root / "other-parent.jsonl"
+        self.write_meta(
+            other_transcript,
+            session_id="runtime-session",
+            thread_id="other-parent",
+            agent_path=None,
+            parent_thread_id=None,
+            agent_role=None,
+        )
+
+        result = writer_lease_guard.post_tool_use(
+            self.store,
+            self.parent_patch_hook(
+                "other/result.txt",
+                event="PostToolUse",
+                transcript_path=other_transcript,
+            ),
+        )
+
+        self.assertIn("TASK.WRITER_LEASE_UNRESOLVED", result["systemMessage"])
+        self.assertEqual(len(list((self.store.root / "writer_claim").glob("*.json"))), 1)
+
+    def test_executable_hook_persists_and_releases_parent_writer_claim(self):
+        pre = self.invoke_hook_cli(self.parent_patch_hook("other/result.txt"))
+        self.assertEqual(pre.returncode, 0, pre.stderr)
+        self.assertIn(
+            "WRITER.LEASED",
+            json.loads(pre.stdout)["hookSpecificOutput"]["additionalContext"],
+        )
+        self.assertEqual(len(list((self.store.root / "writer_claim").glob("*.json"))), 1)
+
+        post = self.invoke_hook_cli(
+            self.parent_patch_hook("other/result.txt", event="PostToolUse")
+        )
+
+        self.assertEqual(post.returncode, 0, post.stderr)
+        self.assertEqual(json.loads(post.stdout), {})
+        self.assertEqual(len(list((self.store.root / "writer_claim").glob("*.json"))), 0)
+        self.assertEqual(len(list((self.store.root / "writer_receipt").glob("*.json"))), 1)
+
+    def test_tampered_writer_claim_is_quarantined_and_blocks_capture(self):
+        writer_lease_guard.pre_tool_use(
+            self.store,
+            self.parent_patch_hook(),
+        )
+        claim_path = next((self.store.root / "writer_claim").glob("*.json"))
+        claim = json.loads(claim_path.read_text(encoding="utf-8"))
+        claim["paths"] = ["other/result.txt"]
+        claim_path.write_text(json.dumps(claim), encoding="utf-8")
+
+        blocked = self.capture(self.spawn_hook())
+
+        self.assertEqual(blocked["hookSpecificOutput"]["permissionDecision"], "deny")
+        self.assertIn("hash does not match", blocked["hookSpecificOutput"]["permissionDecisionReason"])
+        self.assertEqual(len(list((self.store.root / "writer_claim").glob("*.json"))), 0)
+        self.assertEqual(len(list((self.store.root / "quarantine").glob("*.json"))), 1)
+        self.assertEqual(len(list((self.store.root / "pending").glob("*.json"))), 0)
+
+    def test_unknown_apply_patch_shape_fails_closed_without_claim(self):
+        hook = self.parent_patch_hook("other/result.txt")
+        hook["tool_input"] = {"command": "not a structured patch"}
+
+        result = writer_lease_guard.pre_tool_use(self.store, hook)
+
+        self.assertEqual(result["hookSpecificOutput"]["permissionDecision"], "deny")
+        self.assertIn("envelope is not exact", result["hookSpecificOutput"]["permissionDecisionReason"])
+        self.assertEqual(len(list((self.store.root / "writer_claim").glob("*.json"))), 0)
 
     def test_nested_parent_path_derives_exact_child_agent_path(self):
         self.write_meta(

@@ -15,6 +15,8 @@ import json
 import os
 import pathlib
 import re
+import sys
+import unicodedata
 import uuid
 from typing import Iterator, Mapping, Sequence
 
@@ -178,7 +180,16 @@ STATE_KINDS = (
     "unresolved",
     "quiescence",
     "overlap",
+    "writer_claim",
+    "writer_receipt",
+    "writer_conflict",
 )
+WRITER_ACTOR_FIELDS = {
+    "runtime_session_id",
+    "thread_id",
+    "agent_type",
+    "canonical_agent_path",
+}
 
 
 class StateError(RuntimeError):
@@ -318,6 +329,16 @@ def _paths_overlap(first: Sequence[str], second: Sequence[str]) -> bool:
     return False
 
 
+def _paths_overlap_case_safe(first: Sequence[str], second: Sequence[str]) -> bool:
+    if _paths_overlap(first, second):
+        return True
+    if os.name != "nt" and sys.platform != "darwin":
+        return False
+    folded_first = [unicodedata.normalize("NFC", item).casefold() for item in first]
+    folded_second = [unicodedata.normalize("NFC", item).casefold() for item in second]
+    return _paths_overlap(folded_first, folded_second)
+
+
 def _snapshot_sha256(snapshot: Mapping[str, object]) -> str:
     _validate_git_snapshot(snapshot)
     return sha256_bytes(canonical_json(dict(snapshot)))
@@ -325,6 +346,82 @@ def _snapshot_sha256(snapshot: Mapping[str, object]) -> str:
 
 def git_snapshot_sha256(snapshot: Mapping[str, object]) -> str:
     return _snapshot_sha256(snapshot)
+
+
+def writer_claim_sha256(claim: Mapping[str, object]) -> str:
+    unsigned = {key: value for key, value in claim.items() if key != "claim_sha256"}
+    return sha256_bytes(canonical_json(unsigned))
+
+
+def _validate_writer_actor(actor: object) -> dict:
+    if not isinstance(actor, dict) or set(actor) != WRITER_ACTOR_FIELDS:
+        raise CorruptState("writer actor fields are not exact")
+    for field in WRITER_ACTOR_FIELDS:
+        _nonempty_string(actor[field], f"writer_actor.{field}")
+    if not actor["canonical_agent_path"].startswith("/"):
+        raise CorruptState("writer actor canonical path must be absolute")
+    return actor
+
+
+def _validate_writer_claim(claim: object) -> dict:
+    if not isinstance(claim, dict) or set(claim) != {
+        "schema",
+        "claim_id",
+        "actor",
+        "root",
+        "paths",
+        "tool_name",
+        "tool_use_id",
+        "created_at",
+        "ownership_handover",
+        "before_snapshot",
+        "before_snapshot_sha256",
+        "claim_sha256",
+    }:
+        raise CorruptState("writer claim fields are not exact")
+    if claim["schema"] != 1:
+        raise CorruptState("writer claim schema is invalid")
+    _uuid(claim["claim_id"], "writer_claim.claim_id")
+    _validate_writer_actor(claim["actor"])
+    root = pathlib.Path(_nonempty_string(claim["root"], "writer_claim.root"))
+    if not root.is_absolute() or str(root.resolve()) != str(root):
+        raise CorruptState("writer claim root is not canonical and absolute")
+    _relative_paths(claim["paths"], "writer_claim.paths")
+    if not claim["paths"]:
+        raise CorruptState("writer claim paths are empty")
+    if claim["tool_name"] != "apply_patch":
+        raise CorruptState("writer claim tool is not qualified")
+    _nonempty_string(claim["tool_use_id"], "writer_claim.tool_use_id")
+    _timestamp(claim["created_at"], "writer_claim.created_at")
+    handovers = claim["ownership_handover"]
+    if not isinstance(handovers, list):
+        raise CorruptState("writer claim ownership_handover is invalid")
+    prior_ids = set()
+    for handover in handovers:
+        if not isinstance(handover, dict) or set(handover) != {
+            "prior_assignment_id",
+            "barrier_sha256",
+            "snapshot_sha256",
+        }:
+            raise CorruptState("writer claim ownership_handover fields are not exact")
+        prior_id = _uuid(
+            handover["prior_assignment_id"],
+            "writer_claim.ownership_handover.prior_assignment_id",
+        )
+        if prior_id in prior_ids:
+            raise CorruptState("writer claim ownership_handover contains a duplicate")
+        prior_ids.add(prior_id)
+        for field in ("barrier_sha256", "snapshot_sha256"):
+            if not isinstance(handover[field], str) or not SHA256_RE.fullmatch(handover[field]):
+                raise CorruptState(f"writer claim ownership_handover.{field} is invalid")
+    snapshot = _validate_git_snapshot(claim["before_snapshot"])
+    if pathlib.Path(snapshot["root"]).resolve() != root:
+        raise CorruptState("writer claim snapshot root does not match")
+    if claim["before_snapshot_sha256"] != _snapshot_sha256(snapshot):
+        raise CorruptState("writer claim snapshot hash does not match")
+    if claim["claim_sha256"] != writer_claim_sha256(claim):
+        raise CorruptState("writer claim hash does not match")
+    return claim
 
 
 def _validate_git_snapshot(snapshot: object) -> dict:
@@ -1261,6 +1358,246 @@ class StateStore:
                 values.append((envelope["capsule"]["assignment_id"], envelope))
         return values
 
+    def acquire_writer_claim(
+        self,
+        actor: Mapping[str, str],
+        *,
+        root: str,
+        paths: Sequence[str],
+        tool_name: str,
+        tool_use_id: str,
+        before_snapshot: Mapping[str, object],
+        observed_at: dt.datetime | None = None,
+    ) -> pathlib.Path:
+        _validate_writer_actor(dict(actor))
+        canonical_root = pathlib.Path(root).resolve()
+        if str(canonical_root) != root:
+            raise AuthorityViolation("writer claim root is not canonical")
+        normalized_paths = list(_relative_paths(list(paths), "writer_claim.paths"))
+        if not normalized_paths:
+            raise AuthorityViolation("writer claim must name at least one path")
+        if tool_name != "apply_patch":
+            raise AuthorityViolation("writer claim tool is not qualified")
+        _nonempty_string(tool_use_id, "writer_claim.tool_use_id")
+        _validate_git_snapshot(dict(before_snapshot))
+        if pathlib.Path(before_snapshot["root"]).resolve() != canonical_root:
+            raise AuthorityViolation("writer claim snapshot root does not match")
+        now = observed_at or dt.datetime.now(dt.timezone.utc)
+        if now.tzinfo is None or now.utcoffset() is None:
+            raise StateError("writer claim time must include a UTC offset")
+
+        with self.locked():
+            conflicts: list[dict] = []
+            ownership_handover: list[dict] = []
+            claims_directory = self.root / "writer_claim"
+            if claims_directory.exists():
+                for path in sorted(claims_directory.glob("*.json")):
+                    try:
+                        prior_claim = _validate_writer_claim(self._read(path))
+                    except CorruptState:
+                        self._quarantine(path)
+                        raise
+                    same_tool_use = (
+                        prior_claim["actor"] == dict(actor)
+                        and prior_claim["tool_use_id"] == tool_use_id
+                    )
+                    if pathlib.Path(prior_claim["root"]).resolve() == canonical_root and (
+                        same_tool_use
+                        or _paths_overlap_case_safe(normalized_paths, prior_claim["paths"])
+                    ):
+                        conflicts.append(
+                            {
+                                "kind": "writer_claim",
+                                "claim_id": prior_claim["claim_id"],
+                                "paths": prior_claim["paths"],
+                            }
+                        )
+
+            for kind in ("pending", "claimed", "active", "reported"):
+                directory = self.root / kind
+                if not directory.exists():
+                    continue
+                for path in sorted(directory.glob("*.json")):
+                    try:
+                        envelope = self._validated_envelope(path)
+                    except CorruptState:
+                        self._quarantine(path)
+                        raise
+                    capsule = envelope["capsule"]
+                    if pathlib.Path(capsule["root"]["path"]).resolve() != canonical_root:
+                        continue
+                    if not _paths_overlap_case_safe(normalized_paths, capsule["owned_paths"]):
+                        continue
+                    binding = envelope.get("binding")
+                    conflicts.append(
+                        {
+                            "kind": kind,
+                            "assignment_id": capsule["assignment_id"],
+                            "owned_paths": capsule["owned_paths"],
+                            "parent_thread_id": capsule["parent_thread_id"],
+                            "bound_child_thread_id": (
+                                binding.get("child_thread_id")
+                                if isinstance(binding, dict)
+                                else None
+                            ),
+                        }
+                    )
+
+            unresolved_directory = self.root / "unresolved"
+            if unresolved_directory.exists():
+                for path in sorted(unresolved_directory.glob("*.json")):
+                    try:
+                        envelope = self._validated_envelope(path)
+                    except CorruptState:
+                        self._quarantine(path)
+                        raise
+                    capsule = envelope["capsule"]
+                    if pathlib.Path(capsule["root"]["path"]).resolve() != canonical_root:
+                        continue
+                    if not _paths_overlap_case_safe(normalized_paths, capsule["owned_paths"]):
+                        continue
+                    barrier_path = self.path("quiescence", capsule["assignment_id"])
+                    barrier = None
+                    if barrier_path.exists():
+                        try:
+                            barrier = _validate_quiescence_barrier(self._read(barrier_path))
+                        except CorruptState:
+                            self._quarantine(barrier_path)
+                            raise
+                    parent_reclaim_is_exact = (
+                        barrier is not None
+                        and actor["runtime_session_id"] == capsule["runtime_session_id"]
+                        and actor["thread_id"] == capsule["parent_thread_id"]
+                        and barrier["snapshot_sha256"] == _snapshot_sha256(before_snapshot)
+                    )
+                    if parent_reclaim_is_exact:
+                        ownership_handover.append(
+                            {
+                                "prior_assignment_id": capsule["assignment_id"],
+                                "barrier_sha256": barrier["barrier_sha256"],
+                                "snapshot_sha256": barrier["snapshot_sha256"],
+                            }
+                        )
+                        continue
+                    binding = envelope.get("binding")
+                    conflicts.append(
+                        {
+                            "kind": "unresolved",
+                            "assignment_id": capsule["assignment_id"],
+                            "owned_paths": capsule["owned_paths"],
+                            "parent_thread_id": capsule["parent_thread_id"],
+                            "bound_child_thread_id": (
+                                binding.get("child_thread_id")
+                                if isinstance(binding, dict)
+                                else None
+                            ),
+                        }
+                    )
+
+            if conflicts:
+                conflict_id = str(uuid.uuid4())
+                self._publish(
+                    self.path("writer_conflict", conflict_id),
+                    {
+                        "schema": 1,
+                        "classification": "foreign_actor_writer_lease_conflict",
+                        "conflict_id": conflict_id,
+                        "actor": dict(actor),
+                        "root": str(canonical_root),
+                        "paths": normalized_paths,
+                        "tool_name": tool_name,
+                        "tool_use_id": tool_use_id,
+                        "conflicts": conflicts,
+                        "observed_at": now.isoformat(),
+                    },
+                )
+                raise AuthorityViolation(
+                    "apply_patch paths overlap an existing child or foreign writer lease"
+                )
+
+            claim_id = str(uuid.uuid4())
+            claim = {
+                "schema": 1,
+                "claim_id": claim_id,
+                "actor": dict(actor),
+                "root": str(canonical_root),
+                "paths": normalized_paths,
+                "tool_name": tool_name,
+                "tool_use_id": tool_use_id,
+                "created_at": now.isoformat(),
+                "ownership_handover": ownership_handover,
+                "before_snapshot": dict(before_snapshot),
+                "before_snapshot_sha256": _snapshot_sha256(before_snapshot),
+            }
+            claim["claim_sha256"] = writer_claim_sha256(claim)
+            _validate_writer_claim(claim)
+            target = self.path("writer_claim", claim_id)
+            self._publish(target, claim)
+            return target
+
+    def release_writer_claim(
+        self,
+        actor: Mapping[str, str],
+        *,
+        tool_name: str,
+        tool_use_id: str,
+        after_snapshot: Mapping[str, object],
+        observed_at: dt.datetime | None = None,
+    ) -> pathlib.Path:
+        _validate_writer_actor(dict(actor))
+        if tool_name != "apply_patch":
+            raise AuthorityViolation("writer release tool is not qualified")
+        _nonempty_string(tool_use_id, "writer_release.tool_use_id")
+        _validate_git_snapshot(dict(after_snapshot))
+        now = observed_at or dt.datetime.now(dt.timezone.utc)
+        if now.tzinfo is None or now.utcoffset() is None:
+            raise StateError("writer release time must include a UTC offset")
+
+        with self.locked():
+            matches: list[tuple[pathlib.Path, dict]] = []
+            directory = self.root / "writer_claim"
+            if directory.exists():
+                for path in sorted(directory.glob("*.json")):
+                    try:
+                        claim = _validate_writer_claim(self._read(path))
+                    except CorruptState:
+                        self._quarantine(path)
+                        raise
+                    if (
+                        claim["actor"] == dict(actor)
+                        and claim["tool_name"] == tool_name
+                        and claim["tool_use_id"] == tool_use_id
+                    ):
+                        matches.append((path, claim))
+            if not matches:
+                raise MissingState("expected one in-flight writer claim, found 0")
+            if len(matches) > 1:
+                raise AmbiguousState(
+                    f"expected one in-flight writer claim, found {len(matches)}"
+                )
+            claim_path, claim = matches[0]
+            if pathlib.Path(after_snapshot["root"]).resolve() != pathlib.Path(claim["root"]):
+                raise AuthorityViolation("writer release snapshot root does not match claim")
+            receipt = {
+                "schema": 1,
+                "claim_id": claim["claim_id"],
+                "claim_sha256": claim["claim_sha256"],
+                "actor": dict(actor),
+                "root": claim["root"],
+                "paths": claim["paths"],
+                "tool_name": tool_name,
+                "tool_use_id": tool_use_id,
+                "ownership_handover": claim["ownership_handover"],
+                "before_snapshot_sha256": claim["before_snapshot_sha256"],
+                "after_snapshot": dict(after_snapshot),
+                "after_snapshot_sha256": _snapshot_sha256(after_snapshot),
+                "released_at": now.isoformat(),
+            }
+            target = self.path("writer_receipt", claim["claim_id"])
+            self._publish(target, receipt)
+            claim_path.unlink()
+            return target
+
     def terminate_active(
         self,
         assignment_id: str,
@@ -1355,9 +1692,24 @@ class StateStore:
         snapshot: Mapping[str, object],
         *,
         observed_at: dt.datetime,
+        require_quiet_root: bool = False,
     ) -> list[dict]:
         current_snapshot_sha256 = _snapshot_sha256(snapshot)
         handovers = []
+        claims_directory = self.root / "writer_claim"
+        if claims_directory.exists():
+            for path in sorted(claims_directory.glob("*.json")):
+                try:
+                    claim = _validate_writer_claim(self._read(path))
+                except CorruptState:
+                    self._quarantine(path)
+                    raise
+                if pathlib.Path(claim["root"]).resolve() != pathlib.Path(snapshot["root"]).resolve():
+                    continue
+                if require_quiet_root or _paths_overlap_case_safe(owned_paths, claim["paths"]):
+                    raise AuthorityViolation(
+                        "assignment capture overlaps an in-flight parent or sibling writer claim"
+                    )
         for kind in ("pending", "claimed", "active", "reported"):
             directory = self.root / kind
             if not directory.exists():
@@ -1432,6 +1784,7 @@ class StateStore:
         snapshot: Mapping[str, object],
         *,
         observed_at: dt.datetime | None = None,
+        require_quiet_root: bool = False,
     ) -> list[dict]:
         _relative_paths(list(owned_paths), "owned_paths")
         now = observed_at or dt.datetime.now(dt.timezone.utc)
@@ -1442,6 +1795,7 @@ class StateStore:
                 owned_paths,
                 snapshot,
                 observed_at=now,
+                require_quiet_root=require_quiet_root,
             )
 
     def stage_with_ownership_recheck(
@@ -1460,6 +1814,9 @@ class StateStore:
                 capsule["owned_paths"],
                 snapshot,
                 observed_at=observed_at,
+                require_quiet_root=(
+                    capsule["execution_contract"]["posture"] == "strict_read_only"
+                ),
             )
             if handover != capsule["ownership_handover"]:
                 raise AuthorityViolation("ownership handover changed before atomic staging")

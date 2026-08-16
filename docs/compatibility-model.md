@@ -378,6 +378,19 @@ reported/<assignment_id>.json
 consumed/<assignment_id>.json
 ```
 
+parent/sibling 的 structured mutation 另有不授予 child authority 的短期 claim：
+
+```text
+PreToolUse(apply_patch) -> writer_claim/<claim_id>.json
+  -> successful exact PostToolUse -> writer_receipt/<claim_id>.json
+```
+
+claim 在 PreToolUse 返回前持久化，并由 child capture/stage 在同一 state lock 内检查；因此
+in-flight parent patch 与新 overlapping child ownership 只能有一方进入。PostToolUse 只在
+工具产生 successful output 时存在，失败、部分失败、callback 丢失或 identity mismatch 都保留
+claim 并 fail closed。不得用 TTL 静默释放；后续恢复仍需 host-owned tool-failure termination、
+mutation quiescence 与 fresh disk barrier。
+
 - pending/claimed/active/consumed/quarantine 的所有转换都在 OS-owned lock 下完成。
 - identity mismatch 只拒绝该 claim，不消费、不覆盖、不 quarantine 有效 assignment。
 - 只有 JSON/schema/UUID/hash/timestamp/required identity 等 state corruption 才 quarantine。
@@ -400,6 +413,15 @@ claim，不是隐含的 integration authority。assignment 中声明 ownership�
 termination+quiescence receipt 与 post-termination disk barrier，再以新的 authority epoch
 取得 writer lease；无法在 parent 与 child 两侧共同 mediation/serialization 时，direct write
 保持不合格。
+
+当前 isolated candidate 只对源码已固定为 `{command: raw_patch}` 的 `apply_patch` 建立上述
+双向 writer claim。它严格解析 add/delete/update/move path，按 Git root 归一化 absolute、`..`
+与 symlink alias，拒绝 active/pending/reported/unresolved ownership overlap，并让 exact
+PostToolUse actor/tool-use identity 释放成功 claim。只有 exact direct parent、强 quiescence
+barrier 与当前 full snapshot 完全相等时，unresolved child ownership 才能作为 hash-bound
+handover 进入新的 parent claim；barrier 后 disk drift 继续 block。unknown patch shape fail closed；shell、
+`write_stdin`、MCP、code mode 与其他 mutation surface 仍未取得相同 transaction boundary，
+所以这项实现不能改变 direct-write 裁决。
 
 重派相同/父子重叠 ownership 的顺序必须是：先把旧 active authority 冻结为 unresolved，
 再取得 host-owned `child_terminated_and_mutations_quiesced` receipt，最后在 termination 之后
@@ -424,6 +446,10 @@ checkout、reset、删除或 patch 回 captured/HEAD 内容。即使最终 diges
 baseline、Git status 从 dirty 变 clean，该操作仍是越权 mutation，并且可能抹掉 authoritative
 parent contribution。只读 narrative 或 claim refresh 不能授权这种写入；guard 必须在工具执行前
 拒绝所有 mutation surface，并由 parent 对 foreign bytes 作唯一 writer 裁决。
+target read-only child 一旦请求非 allowlist tool，isolated guard 在执行前记录 attempted tool 与
+fresh disk snapshot，把 active authority 冻结为 `read_only_child_mutation_attempt` unresolved
+evidence；若此前已有 disk drift，只能标为 `pre_attempt_disk_drift_unattributed`，不得归因给 child
+或 parent。单次 deny 后继续保留 active authority 不再是候选语义。
 
 当前 isolated adapter 只从可信 `PreToolUse(spawn_agent)` 捕获新 assignment；尚未证明 native
 follow-up/send-input 的等价可信事件与 immutable receipt。因此 `review_continuation` 目前只是

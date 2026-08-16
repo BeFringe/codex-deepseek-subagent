@@ -174,8 +174,22 @@ def pre_tool_use(
         assignment_id, envelope = store.find_active(identity)
         tool_name = hook_input.get("tool_name")
         if tool_name not in READ_ONLY_TOOL_NAMES:
+            capsule = envelope["capsule"]
+            observed_at = now or dt.datetime.now(dt.timezone.utc)
+            snapshot = collect_git_snapshot(capsule["root"]["path"])
+            evidence = _termination_evidence(
+                capsule,
+                snapshot,
+                reason="read_only_mutation_attempt",
+                observed_at=observed_at,
+                attempted_tool_name=(
+                    tool_name if isinstance(tool_name, str) and tool_name else "<invalid>"
+                ),
+            )
+            store.terminate_active(assignment_id, evidence)
             raise AuthorityViolation(
-                f"tool {tool_name!r} is not in the qualified read-only allowlist"
+                f"tool {tool_name!r} is not in the qualified read-only allowlist; "
+                "active authority terminated before execution"
             )
         capsule = envelope["capsule"]
         cwd = hook_input.get("cwd")
@@ -490,6 +504,7 @@ def _termination_evidence(
     *,
     reason: str,
     observed_at: dt.datetime,
+    attempted_tool_name: str | None = None,
 ) -> dict:
     disk_changed = disk_change_from_baseline(snapshot, capsule)
     if disk_changed is None:
@@ -512,14 +527,17 @@ def _termination_evidence(
             if capsule["ownership_handover"]
             else "unresponsive_with_disk_change_before_attestation"
         )
+    elif reason == "read_only_mutation_attempt":
+        classification = "read_only_child_mutation_attempt"
     else:
         classification = "initial_authority_mismatch"
-    provenance_status = (
-        "overlapping_assignment_provenance"
-        if classification == "late_mutation_after_interrupt"
-        else None
-    )
-    return {
+    if classification == "late_mutation_after_interrupt":
+        provenance_status = "overlapping_assignment_provenance"
+    elif classification == "read_only_child_mutation_attempt" and disk_changed:
+        provenance_status = "pre_attempt_disk_drift_unattributed"
+    else:
+        provenance_status = None
+    evidence = {
         "schema": 1,
         "reason": reason,
         "classification": classification,
@@ -529,6 +547,10 @@ def _termination_evidence(
         "observed_at": observed_at.isoformat(),
         "snapshot": dict(snapshot),
     }
+    if attempted_tool_name is not None:
+        evidence["attempted_tool_name"] = attempted_tool_name
+        evidence["mutation_blocked_before_execution"] = True
+    return evidence
 
 
 def sweep_deadlines(

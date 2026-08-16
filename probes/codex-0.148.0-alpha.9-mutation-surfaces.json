@@ -39,9 +39,11 @@
       "canonical_hook_name": "apply_patch",
       "semantically_constrainable": true,
       "decision": "candidate-covered",
-      "negative_space": "Path extraction, symlink traversal, and post-write hashes still require isolated and live probes.",
+      "negative_space": "Provider-free path claims now cover normalized structured paths and exact successful PostToolUse release. Live path/filesystem TOCTOU, failed or missing PostToolUse recovery, sandbox confinement, and platform parity remain open.",
       "anchors": [
-        {"path": "codex-rs/core/src/tools/handlers/apply_patch.rs", "contains": "tool_name: HookToolName::apply_patch()"}
+        {"path": "codex-rs/core/src/tools/handlers/apply_patch.rs", "contains": "tool_name: HookToolName::apply_patch()"},
+        {"path": "codex-rs/core/src/tools/registry.rs", "contains": "let post_tool_use_payload = if success {"},
+        {"path": "codex-rs/core/src/hook_runtime.rs", "contains": "Runs matching `PostToolUse` hooks after a tool has produced a successful output."}
       ]
     },
     {

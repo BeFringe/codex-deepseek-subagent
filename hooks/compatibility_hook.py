@@ -12,6 +12,8 @@ import sys
 from assignment_transport import capture_spawn, subagent_start
 from compatibility_state import StateError, StateStore
 from runtime_guard import pre_compact, pre_tool_use, subagent_stop
+from writer_lease_guard import post_tool_use as release_writer_lease
+from writer_lease_guard import pre_tool_use as guard_writer_lease
 
 
 def dispatch(
@@ -25,11 +27,14 @@ def dispatch(
     if event == "PreToolUse":
         if child_is_target:
             return pre_tool_use(store, hook_input)
-        return capture_spawn(
+        captured = capture_spawn(
             store,
             hook_input,
             plaintext_agent_types=plaintext_agent_types,
         )
+        return captured or guard_writer_lease(store, hook_input)
+    if event == "PostToolUse":
+        return {} if child_is_target else release_writer_lease(store, hook_input)
     if event == "SubagentStart":
         return subagent_start(store, hook_input) if child_is_target else {}
     if event == "PreCompact":

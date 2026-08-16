@@ -47,8 +47,8 @@ agent template checks passed
 ```
 
 The same 143 tests also passed under the new user-default Python 3.14.7. After
-the P6c and current mutation-matrix fixtures in this continuation, the fresh
-result is recorded below in the P6c section.
+the P6c, mutation-matrix, and writer-claim fixtures in this continuation, the
+latest fresh result is recorded below in the writer-claim section.
 
 The original standalone negative probes were rerun without touching live state:
 
@@ -387,6 +387,66 @@ denies `apply_patch` before execution and the test verifies the exact parent
 bytes, hash, and dirty state survive. This is isolated adapter evidence only;
 the native xhigh incident proves that a read-only assignment narrative by
 itself does not mediate the live tool surface.
+
+## Provider-free parent/sibling apply-patch writer claims
+
+`hooks/writer_lease_guard.py` now supplies the first bidirectional
+single-writer candidate for the source-pinned structured `apply_patch` surface.
+A non-target parent or sibling PreToolUse proves its real SessionMeta actor,
+parses the raw patch envelope, includes add/delete/update and move-destination
+paths, resolves absolute/`..`/symlink aliases against the actual Git root, and
+persists a hash-bound `writer_claim` before returning. Assignment capture and
+its final atomic stage both scan those claims under the same state lock.
+
+An overlapping patch against pending/claimed/active/reported/unresolved child
+ownership is denied before execution and creates a path/actor/tool-use conflict
+receipt without storing patch content. Conversely, an in-flight parent claim
+blocks overlapping child capture. Disjoint path claims remain structurally
+allowed. Strict read-only capture requires a quiet root because its exact clean
+review baseline cannot be established during any in-flight writer.
+After child authority is unresolved, the exact direct parent may reclaim an
+overlapping path only when a strong quiescence barrier exists and the full
+current snapshot still equals that barrier. The new claim freezes the handover
+digests. A late disk change after the barrier blocks parent reclaim.
+
+Only the exact actor and tool-use id in a successful PostToolUse can move the
+claim to a before/after snapshot receipt. Pinned Codex source calls PostToolUse
+only after successful output. A failed/partial tool, wrong actor, missing
+callback, or crash therefore leaves the durable claim in place and blocks later
+overlap. The isolated candidate intentionally has no TTL cleanup that could
+convert uncertain liveness into authority; a future recovery path needs a
+host-owned tool-failure termination/quiescence and disk barrier.
+
+The runtime guard also changed one-shot denial semantics for target read-only
+children. Requesting `apply_patch` or any other non-allowlisted tool now freezes
+active authority before execution as `read_only_child_mutation_attempt`. The
+receipt records only the tool name and fresh disk snapshot. Pre-attempt dirty
+bytes are `pre_attempt_disk_drift_unattributed`, so the guard does not assign
+causality merely from final Git state.
+
+Provider-free fixtures cover active-child conflict/audit, parent-claim versus
+child-capture ordering, atomic overlapping parent claims, disjoint concurrency,
+strict-read-only quiet-root capture, symlink/absolute/`..`/excluded/move
+aliases, exact successful release,
+wrong-identity non-release, executable Hook dispatch, and hash-tampered claim
+quarantine. This still does not provide a filesystem transaction across path
+resolution and execution, a success callback for failed tools, live native
+Hook evidence, or coverage for shell, `write_stdin`, MCP, extensions, code mode,
+permissions, and agent control. `direct_write_qualified=false` remains the only
+valid result.
+
+The fresh complete provider-free result after this slice is:
+
+```text
+Ran 176 tests in 27.277s
+OK
+agent template checks passed
+```
+
+The pinned 0.148.0-alpha.9 source anchors, including structured apply-patch
+input and success-only PostToolUse dispatch, verified with zero drift. The
+mutation matrix still returned `direct_write_qualified=false`, and the same-UID
+probe still overwrote its disposable rollout/state fixtures as expected.
 
 The lifecycle now distinguishes a worker report from parent integration. A
 trusted parent adjudication must separately pass location integrity,

@@ -43,6 +43,12 @@ for the writer acknowledgement. The writer uses file `flush()` but this path has
 no `sync_all()`/fsync durability barrier. It supports an immediate-read probe; it
 does not prove crash/power-loss durability or post-termination quiescence.
 
+`PostToolUse` carries the same optional child identity, stable tool name/input,
+tool-use id, and tool response, but current source dispatches it only after a
+successful tool output. A writer claim therefore releases on an exact success
+callback; tool failure or callback loss must leave it unresolved until a
+host-owned failure/quiescence barrier proves disk state.
+
 `write_stdin` still intentionally emits no second `PreToolUse`. Function-shaped
 extensions get the default function Hook payload, while freeform/custom and
 tool-search payloads do not. Provider-hosted web search bypasses local tool Hook
@@ -167,6 +173,15 @@ A claim refresh is useful re-attestation after a pause or observed foreign
 change, but it is not mutual exclusion and cannot qualify direct write by
 itself. If parent mutation surfaces cannot enter the same guard, keep the child
 read-only.
+
+The provider-free apply-patch candidate now makes PreToolUse acquire a durable
+parent/sibling claim before execution, makes capture/stage check it under the
+same lock, and accepts release only from the exact successful PostToolUse actor
+and tool-use id. Live probes must still exercise callback success, tool failure,
+partial mutation, missing/duplicate/reordered PostToolUse, crash between write
+and callback, and recovery by a strong host-owned failure/quiescence barrier.
+The claim is evidence of serialization for this one structured surface, not a
+generic shell/MCP/write-stdin lease.
 
 ## IV. Resume, callback, and termination probes
 

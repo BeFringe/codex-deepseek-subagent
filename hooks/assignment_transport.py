@@ -327,6 +327,9 @@ def capture_spawn(
             declaration["owned_paths"],
             snapshot,
             observed_at=created_at,
+            require_quiet_root=(
+                declaration["execution_contract"]["posture"] == "strict_read_only"
+            ),
         )
         assignment_id = str(uuid.uuid4())
         handoff_id = str(uuid.uuid4())

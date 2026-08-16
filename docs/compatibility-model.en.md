@@ -254,6 +254,22 @@ evidence rather than being silently deleted.
 `reported` means only that the callback and contribution were recorded. Only a
 trusted parent adjudication can move it to `consumed`.
 
+Structured parent/sibling mutation uses a short-lived claim that grants no
+child authority:
+
+```text
+PreToolUse(apply_patch) -> writer_claim/<claim_id>.json
+  -> successful exact PostToolUse -> writer_receipt/<claim_id>.json
+```
+
+The claim is durable before PreToolUse returns, and child capture/staging checks
+it under the same state lock. An in-flight parent patch and overlapping new
+child ownership therefore cannot both enter. PostToolUse exists only after a
+successful tool output. Failure, partial failure, callback loss, or identity
+mismatch retains the claim and fails closed. A TTL may not silently release it;
+recovery still requires a host-owned tool-failure termination, mutation-
+quiescence receipt, and fresh disk barrier.
+
 ### Interrupt/cancel and ownership handover
 
 An `interrupt_agent`/cancel return acknowledges a control request; it does not
@@ -273,6 +289,19 @@ overlapping writes, freeze child authority, obtain the strong termination plus
 quiescence receipt and post-termination disk barrier below, and acquire the
 writer lease in a new authority epoch. Direct write remains unqualified unless
 both parent and child mutation dispatch can be jointly mediated or serialized.
+
+The isolated candidate currently creates this bidirectional claim only for
+`apply_patch`, whose pinned source exposes `{command: raw_patch}`. It strictly
+extracts add/delete/update/move paths, normalizes absolute, `..`, and symlink
+aliases against the Git root, rejects overlap with active/pending/reported/
+unresolved ownership, and releases a successful claim only for the exact
+PostToolUse actor/tool-use identity. Unresolved child ownership enters a new
+parent claim only when the actor is the exact direct parent, a strong quiescence
+barrier exists, and the complete current snapshot still equals that barrier;
+post-barrier drift remains blocked. Unknown patch shapes fail closed. Shell,
+`write_stdin`, MCP, code mode, and other mutation surfaces still lack this
+transaction boundary, so this implementation cannot change the direct-write
+decision.
 
 Overlapping ownership requires this order: freeze old active authority into
 unresolved state; obtain a host-owned
@@ -317,6 +346,13 @@ mutation that may erase an authoritative parent contribution. A read-only
 narrative or claim refresh cannot grant that write. The guard must reject every
 mutation surface before execution and leave adjudication of the foreign bytes
 to the parent as the sole writer.
+A target read-only child that requests any non-allowlisted tool now has its
+active authority frozen before execution as
+`read_only_child_mutation_attempt` unresolved evidence. The receipt binds the
+attempted tool and a fresh disk snapshot. Any already-present drift is only
+`pre_attempt_disk_drift_unattributed`; it is not attributed to the child or
+parent. Keeping active authority after a one-off deny is no longer candidate
+semantics.
 
 ## Exact runtime binding
 

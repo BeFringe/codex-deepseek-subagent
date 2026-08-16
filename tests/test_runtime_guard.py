@@ -387,6 +387,19 @@ class RuntimeGuardTests(unittest.TestCase):
 
         self.assertEqual(result["hookSpecificOutput"]["permissionDecision"], "deny")
         self.assertIn("read-only allowlist", result["hookSpecificOutput"]["permissionDecisionReason"])
+        self.assertFalse(self.store.path("active", self.capsule["assignment_id"]).exists())
+        unresolved = json.loads(
+            self.store.path("unresolved", self.capsule["assignment_id"]).read_text(
+                encoding="utf-8"
+            )
+        )
+        self.assertEqual(
+            unresolved["termination_evidence"]["classification"],
+            "read_only_child_mutation_attempt",
+        )
+        self.assertTrue(
+            unresolved["termination_evidence"]["mutation_blocked_before_execution"]
+        )
 
     def test_read_only_child_cannot_restore_foreign_parent_dirty_bytes(self):
         target = self.repository / "baseline.txt"
@@ -416,6 +429,19 @@ class RuntimeGuardTests(unittest.TestCase):
         self.assertEqual(target.read_text(encoding="utf-8"), "parent-owned update\n")
         self.assertEqual(hashlib.sha256(target.read_bytes()).hexdigest(), before)
         self.assertIn(" M baseline.txt", self.git("status", "--short").stdout)
+        unresolved = json.loads(
+            self.store.path("unresolved", self.capsule["assignment_id"]).read_text(
+                encoding="utf-8"
+            )
+        )
+        self.assertEqual(
+            unresolved["termination_evidence"]["provenance_status"],
+            "pre_attempt_disk_drift_unattributed",
+        )
+        self.assertEqual(
+            unresolved["termination_evidence"]["attempted_tool_name"],
+            "apply_patch",
+        )
 
     def test_ambiguous_active_capsules_fail_closed(self):
         second = self.make_capsule()
