@@ -52,6 +52,66 @@
     "v4_plaintext_hook_sha256": "16353e6eb4484412bd7560a10eeae4dcf1533709910a373a4e98d414dc725a49",
     "v4_agent_sha256": "051f0e767415a86fd09b4e125868d3a4e4cf41ba3d2fd81e9018edee62e9ed69"
   },
+  "retry_after_agent_alias_fix": {
+    "observed_at": "2026-08-17T02:11:00+08:00",
+    "source_head": "4d3c1aedc65eedb72ee00a23d546d8238f7dc69a",
+    "parent": {
+      "thread_id": "01a00bc4-2e6e-71c0-b707-f12cb01687f5",
+      "runtime_session_id": "01a00bc4-2e6e-71c0-b707-f12cb01687f5",
+      "agent_path": "/root",
+      "cwd": "/Users/pearly/文档/CAT/codex-deepseek-subagent",
+      "model_provider": "openai",
+      "spawn_function_name_in_rollout": "spawn_agent",
+      "spawn_result_task_name": "/root/g4_cli_root_identity_2",
+      "rollout_sha256": "5f3aaf00ed7126723068c2ef2bfd7fea7265d3bc29751236b80c6fc0343caf3a",
+      "native_task_complete": true,
+      "process_exit_code": 0,
+      "strong_quiescence_receipt": false,
+      "post_termination_disk_barrier": false
+    },
+    "child": {
+      "thread_id": "01a00bc4-956a-7241-bdbc-9c3c27f55246",
+      "parent_thread_id": "01a00bc4-2e6e-71c0-b707-f12cb01687f5",
+      "runtime_session_id": "01a00bc4-2e6e-71c0-b707-f12cb01687f5",
+      "requested_task_name": "g4_cli_root_identity_2",
+      "canonical_agent_path": "/root/g4_cli_root_identity_2",
+      "agent_type": "g4_qualification_probe_worker",
+      "agent_nickname": "Maxwell",
+      "model_provider": "openai",
+      "sandbox_mode": "read-only",
+      "function_call_count": 0,
+      "first_and_final_return": "TASK.CONTEXT_LOST",
+      "subagentstop_receipt_count": 1,
+      "rollout_sha256": "08edbe5e932eb818b0fe88cfb7b618d0f0f9c0e288e400f40e4c171ede96133e"
+    },
+    "hook_state": {
+      "pending_count": 0,
+      "claimed_count": 0,
+      "active_count": 0,
+      "reported_count": 0,
+      "new_lost_count": 1,
+      "lost_reason": "expected one pending authority capsule, found 0",
+      "lost_record_sha256": "9eb88cec1fadde6823d88842b8d8658dfa03536b229da86331ee423c6b3a0dd0",
+      "target_spawn_receipt_count": 0,
+      "subagentstart_receipt_sequence": 131,
+      "subagentstop_receipt_sequence": 132,
+      "pretooluse_tool_name_observed": null
+    },
+    "hypothesis_disposition": {
+      "spawn_tool_agent_alias_was_sufficient": false,
+      "exact_context_lost_marker_stopped_repeated_continuations": true,
+      "next_required_evidence": "value-free exact PreToolUse tool name and input field/type receipt"
+    },
+    "qualification": {
+      "real_sessionmeta_identity_exact": true,
+      "native_spawn_wait_callback_complete": true,
+      "assignment_capture": "failed_closed",
+      "subagentstart_binding": "failed_closed",
+      "termination_quiescence": "pending",
+      "phase1_complete": false,
+      "direct_write_qualified": false
+    }
+  },
   "privacy": {
     "credential_value_read_or_stored": false,
     "raw_assignment_copied_to_evidence": false,

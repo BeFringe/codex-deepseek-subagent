@@ -1190,3 +1190,28 @@ The adapter candidate now accepts both exact names and tells a context-lost
 child to return only the bare marker. Provider-free coverage precedes any
 reinstall/retry. Raw non-credential hashes and the fail-closed verdict are in
 `probes/g4-live-root-identity-20260817.json`.
+
+A second clean, fresh native parent retried after installing exact `Agent` and
+`spawn_agent` alias acceptance. Native spawn, exact SessionMeta identity,
+wait/callback, and task completion all succeeded for
+`/root/g4_cli_root_identity_2`; the child made zero function calls and returned
+the exact bare `TASK.CONTEXT_LOST` once. One SubagentStart receipt and one
+SubagentStop receipt were joined at sequences 131–132, and the parent process
+exited 0. This closes the repeated stop-continuation defect from the first
+probe, but not assignment capture: there was still no pending capsule or
+target-spawn receipt, and SubagentStart again recorded `expected one pending
+authority capsule, found 0`. The alias hypothesis is therefore disproved as a
+sufficient repair. No strong quiescence receipt or post-termination disk
+barrier exists, so termination remains unqualified.
+
+The next probe adds an explicitly scoped, value-free PreToolUse schema
+observer. It records only exact SessionMeta actor identity, cwd, tool name,
+tool-use id, and sorted top-level input field names/types. Assignment values,
+tool responses, transcript paths, nested values, and credentials are omitted;
+receipt hashes make tampering visible. Observation is disabled by default and
+must be enabled for one exact root with
+`--pretool-schema-observation-root`. Any enabled observation whose actor cannot
+be joined to pinned SessionMeta fails closed. Provider-free fixtures prove
+scope equality, omission, tamper rejection, and fail-closed identity before a
+live retry. The fresh provider-free suite ran 239 tests in 36.069 seconds with
+all tests green; the agent-template checks included in that suite also passed.

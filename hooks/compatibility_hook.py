@@ -16,6 +16,7 @@ from hook_event_receipts import (
     is_target_spawn,
     record_from_hook,
 )
+from pretool_schema_observation import record_from_hook as record_pretool_schema
 from runtime_guard import pre_compact, pre_tool_use, subagent_stop
 from writer_lease_guard import post_tool_use as release_writer_lease
 from writer_lease_guard import pre_tool_use as guard_writer_lease
@@ -100,8 +101,15 @@ def dispatch_with_receipts(
     hook_input: dict,
     *,
     plaintext_agent_types: set[str],
+    pretool_schema_observation_root: Path | None = None,
 ) -> dict:
     event = hook_input.get("hook_event_name")
+    if pretool_schema_observation_root is not None:
+        record_pretool_schema(
+            store,
+            hook_input,
+            observation_root=pretool_schema_observation_root,
+        )
     child_is_target = hook_input.get("agent_type") in plaintext_agent_types
     is_parent_writer = (
         event in {"PreToolUse", "PostToolUse"}
@@ -148,12 +156,14 @@ def run_dispatch(
     hook_input: dict,
     *,
     plaintext_agent_types: set[str],
+    pretool_schema_observation_root: Path | None = None,
 ) -> dict:
     try:
         return dispatch_with_receipts(
             store,
             hook_input,
             plaintext_agent_types=plaintext_agent_types,
+            pretool_schema_observation_root=pretool_schema_observation_root,
         )
     except (OSError, StateError) as error:
         return fail_closed_output(hook_input.get("hook_event_name"), error)
@@ -168,6 +178,7 @@ def main() -> int:
         required=True,
         dest="plaintext_agent_types",
     )
+    parser.add_argument("--pretool-schema-observation-root", type=Path)
     arguments = parser.parse_args()
     try:
         hook_input = json.load(sys.stdin)
@@ -181,6 +192,7 @@ def main() -> int:
         StateStore(arguments.state_directory),
         hook_input,
         plaintext_agent_types=set(arguments.plaintext_agent_types),
+        pretool_schema_observation_root=arguments.pretool_schema_observation_root,
     )
     json.dump(output, sys.stdout, ensure_ascii=False, separators=(",", ":"))
     sys.stdout.flush()

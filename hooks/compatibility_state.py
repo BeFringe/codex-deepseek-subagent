@@ -185,6 +185,7 @@ STATE_KINDS = (
     "writer_abort",
     "writer_conflict",
     "hook_event_chain",
+    "pretool_schema_observation",
 )
 WRITER_ACTOR_FIELDS = {
     "runtime_session_id",
