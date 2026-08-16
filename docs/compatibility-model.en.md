@@ -41,10 +41,19 @@ one `task_name` field with both meanings.
 
 ### B. Assignment transport
 
-A worker selects `native` or `plaintext-v2`. Plaintext v2 captures the real,
-self-contained `spawn_agent.message` in a trusted `PreToolUse(spawn_agent)`
-Hook without rewriting spawn arguments. A `handoff_id` identifies one transport
-instance; it is not a logical task identity.
+A worker selects `native` or `plaintext-v2`. The plaintext-v2 design contract
+requires a trusted `PreToolUse(spawn_agent)` Hook to capture the real plaintext
+assignment without rewriting spawn arguments. A `handoff_id` identifies one
+transport instance; it is not a logical task identity.
+
+The live native collaboration surface in Codex 0.148.0-alpha.9 does not satisfy
+that premise. Its actual PreToolUse name is `collaborationspawn_agent`, and the
+`message` exactly matches the rollout function-call value by hash but is an
+opaque token-like payload with no authority markers. The generator's plaintext
+assignment has a different length and hash and one marker pair. SubagentStart
+provides real SessionMeta/AgentPath identity but no `message`, `prompt`, or
+other assignment-plaintext field. This is a P1 runtime blocker, not permission
+to treat the opaque payload as an authority source.
 
 ### C. Authority continuity
 
@@ -405,10 +414,16 @@ semantics.
 
 ## Exact runtime binding
 
-Parent PreToolUse captures the real `session_id`, `turn_id`, `tool_use_id`,
-message, requested task name, role, fork mode, transcript path, and cwd. Stage
-failure blocks spawn. Non-plaintext workers pass unchanged. The Hook does not
-return `updatedInput`.
+The candidate protocol requires parent PreToolUse to capture the real
+`session_id`, `turn_id`, `tool_use_id`, plaintext message, requested task name,
+role, fork mode, transcript path, and cwd. Stage failure blocks spawn.
+Non-plaintext workers pass unchanged. The Hook does not return `updatedInput`.
+
+The 2026-08-17 live probe showed that current native collaboration does not
+expose the plaintext assignment at that Hook seam. Seeing the agent-control
+event is not assignment capture. Parent staging alone also cannot close P1
+until Codex exposes a verifiable plaintext seam or a trusted host mechanism can
+prove exact equality between staged bytes and child-delivered bytes.
 
 `SubagentStart` does not directly expose the parent, task name, or AgentPath.
 The claimant must read the first `SessionMeta` from the materialized child
@@ -546,9 +561,10 @@ v4 agent/skill/schema-1 plaintext Hook has been restored. A qualification-only
 G4 schema-2 overlay is now installed beside it after explicit user approval; it
 does not qualify direct write. The user approved its initial five definitions,
 then a live warning repair changed the `PreCompact` and `SubagentStop`
-definitions, so those two require fresh exact-hash review. Schema 2 continues to
-use a dedicated state directory until qualified. Rollback selects the recorded
-schema 1 adapter baseline without
+definitions. The repaired config was then reviewed and trusted by the user;
+fresh-process exact-hash reload/rollback qualification is still pending. Schema
+2 continues to use a dedicated state directory until qualified. Rollback
+selects the recorded schema 1 adapter baseline without
 claiming durable continuity; it never changes the OpenAI parent provider or
 deletes quarantine/unresolved evidence.
 

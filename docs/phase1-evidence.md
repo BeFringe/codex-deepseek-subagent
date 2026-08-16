@@ -1215,3 +1215,67 @@ be joined to pinned SessionMeta fails closed. Provider-free fixtures prove
 scope equality, omission, tamper rejection, and fail-closed identity before a
 live retry. The fresh provider-free suite ran 239 tests in 36.069 seconds with
 all tests green; the agent-template checks included in that suite also passed.
+
+## Live native Hook schema and assignment-seam blocker (2026-08-17)
+
+Status: **agent-control visibility and exact child identity observed; P1 remains
+blocked because neither event exposes the plaintext assignment.** A fresh
+read-only parent positive control proved that the trusted PreToolUse Hook was
+active for the exact root. Current native tool names were `Bash`,
+`collaborationspawn_agent`, and `collaborationwait_agent`; spawn input shape was
+`agent_type:string`, `fork_turns:string`, `message:string`, and
+`task_name:string`. This replaces the earlier unverified `spawn_agent`/`Agent`
+alias hypothesis with a value-free live observation.
+
+The follow-up fingerprint probe stored no message bytes. The Hook-observed
+spawn `message` and the rollout function-call value were both 4600 bytes with
+SHA-256 `4c68211f0c9834cb5ef88daf3c3633808e5b1085db78acd63e5d91616ec1f1f1`
+and zero authority begin/end markers. The exact assignment embedded in the
+generator prompt was 3223 bytes with SHA-256
+`00f047600048c0140d106f1683ba535aa02d34c3f1f4becf80b286e4720aa8e7`
+and one marker pair. The wire value is therefore classified only as an opaque
+token-like payload; no cryptographic format is inferred. With the strict
+matcher restored, capsule staging blocks before spawn because the opaque value
+does not contain the exact authority envelope.
+
+A separate exact-root, five-minute, tamper-evident diagnostic arm observed one
+real `SubagentStart` without changing the trusted Hook command. The event shape
+contained `agent_id`, `agent_type`, `cwd`, `hook_event_name`, `model`,
+`permission_mode`, `session_id`, `transcript_path`, and `turn_id`, but no
+`message`, `prompt`, or other selected plaintext-bearing field. Its SessionMeta
+jointly bound parent `01a00bf2-1c5f-7d01-8bba-164bc4c3be04`, child
+`01a00bf2-8ff0-7942-bea6-ffa3d53ec36b`, role
+`g4_qualification_probe_worker`, and canonical path
+`/root/g4_cli_root_identity_10`. Because no pending exact assignment existed,
+the child made zero function calls and returned `TASK.CONTEXT_LOST`; the parent
+and child completed the native task without promoting authority.
+The shared Hook chain recorded the same target child at adjacent sequence 230
+`SubagentStart` and sequence 231 `SubagentStop`; that proves one lifecycle
+pair's visibility, not pending→active assignment continuity.
+
+The arm was disarmed to immutable history, the trusted Hook config returned to
+SHA-256 `ffaad5c3533a2016253af148c96721818807823f779845a35c5d7dad2c676c2b`,
+and installed candidate sources match the repository hashes recorded in
+`probes/g4-live-native-hook-schema-20260817.json`. These facts close neither P1
+nor P2: exact SessionMeta identity cannot be joined to exact assignment bytes
+when the only pre-spawn message is opaque, and the startup event has no
+plaintext. An explicit parent staging API remains only a design direction
+unless a trusted host can prove equality to the child-delivered bytes. Phase 1
+and `direct_write_qualified` remain false; Phases 2/3 remain closed.
+
+The exact post-probe provider-free suite ran 251 tests in 36.110 seconds and
+passed, including agent-template checks. An earlier full-discovery run exposed
+a test-only duplicate `CorruptState` class identity caused by suites reloading
+top-level Hook modules; the arm test now binds its exception/store to the same
+module instance as the implementation, and the final complete run is green.
+The executable G4 gate remained valid
+but returned exit 2 with all twelve P-gates and nine exit receipts unresolved.
+Pinned mutation-source anchors at
+`9392c3fa5bcda342b5b96a1a04d67b2f781617c2` had zero drift and the matrix
+retained ten blockers, so require-qualified exited 2. The same-UID trust probe
+again showed rollout and state unprotected and exited 2 in require-protected
+mode. The global callback chain was structurally valid through sequence 255,
+but require-complete exited 2 for one callback pending in foreign runtime
+session `01a009f8-d83c-73e2-b960-2cba273d2250`; it is not attributed to or
+recovered by this runtime. These are raw fail-closed summaries, not completion
+evidence.

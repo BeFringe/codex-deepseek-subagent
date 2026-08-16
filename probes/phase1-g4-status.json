@@ -9,8 +9,11 @@
         "id": "P1",
         "state": "partial",
         "provider_free": "pass",
-        "evidence": ["docs/phase1-evidence.md"],
-        "blocker": "fresh live PreToolUse capture/block/no-rewrite receipt is missing"
+        "evidence": [
+          "docs/phase1-evidence.md",
+          "probes/g4-live-native-hook-schema-20260817.json"
+        ],
+        "blocker": "current native collaborationspawn_agent PreToolUse exposes an opaque message without the plaintext authority envelope, while SubagentStart exposes exact SessionMeta identity but no plaintext assignment field; no verified exact-assignment capsule seam exists"
       },
       {
         "id": "P2",
@@ -20,10 +23,11 @@
           "docs/phase1-g4-probe-plan.md#ii-real-identity-and-sessionmeta-probe",
           "probes/check_sessionmeta_identity.py",
           "tests/test_sessionmeta_identity.py",
+          "probes/g4-live-native-hook-schema-20260817.json",
           "hooks/runtime_guard.py",
           "tests/test_runtime_guard.py"
         ],
-        "blocker": "two real concurrent child SessionMeta records are only partial; complete Hook/spawn/root/nested/serial/concurrent identity joins are missing"
+        "blocker": "one real root child and two real concurrent child SessionMeta records are partial; exact assignment-to-child binding is blocked by the opaque spawn seam and complete nested/serial/concurrent identity joins are missing"
       },
       {
         "id": "P3",
@@ -33,9 +37,10 @@
           "docs/phase1-evidence.md",
           "hooks/hook_event_receipts.py",
           "probes/check_hook_event_chain.py",
-          "tests/test_hook_event_receipts.py"
+          "tests/test_hook_event_receipts.py",
+          "probes/g4-live-native-hook-schema-20260817.json"
         ],
-        "blocker": "root writer callback receipts are partial; live target-child keyed lifecycle, crash recovery, and durable resume receipts are missing"
+        "blocker": "one exact target-child SubagentStart/SubagentStop pair is observed without assignment capture; active keyed lifecycle, crash recovery, durable resume, and final parent adjudication receipts are missing"
       },
       {
         "id": "P4",

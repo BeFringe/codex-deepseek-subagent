@@ -1,0 +1,201 @@
+{
+  "schema": 1,
+  "observed_at": "2026-08-17T03:01:00+08:00",
+  "codex_version": "0.148.0-alpha.9",
+  "root": "/Users/pearly/文档/CAT/codex-deepseek-subagent",
+  "branch": "main",
+  "model_provider": "openai",
+  "source_heads": {
+    "pretool_positive_control": "f23b29ddf220e78f06d63928eb7304817d86d01e",
+    "opaque_spawn_fingerprint": "b2123fd2da7f2cfeae966d9dc3a4baf09990bb2c",
+    "subagentstart_schema": "2878be92b43d155ba0070a24e91e51eeaea7466d"
+  },
+  "pretool_positive_control": {
+    "parent_runtime_session_id": "01a00bd8-e71b-7811-97e1-eb41ea9386c0",
+    "canonical_agent_path": "/root",
+    "rollout_sha256": "8f52cd394a38ca9dffa2181b41da61b0216088f02dfb0cc39e895680f62caa4c",
+    "observed_tools": [
+      {
+        "tool_name": "Bash",
+        "input_shape": {
+          "command": "string"
+        },
+        "receipt_sha256": "819410bdc8fafafbf351be0e584effd1612c4bef31fd25341e98981396f1129a",
+        "receipt_file_sha256": "eb9634337424976b1e6d00ebb97aec6ad23461fd040df59f37b3ef71a0cf4dd1"
+      },
+      {
+        "tool_name": "collaborationspawn_agent",
+        "input_shape": {
+          "agent_type": "string",
+          "fork_turns": "string",
+          "message": "string",
+          "task_name": "string"
+        },
+        "receipt_sha256": "8d8aabfa476e1292b42a16e36ece5cbfa581615c95292718598a3dbe3c6f6eaf",
+        "receipt_file_sha256": "b82509db0a218ce87cc2e7b5d41dda5b49999b4e6f1492ea1e83578c337d9c88"
+      },
+      {
+        "tool_name": "collaborationwait_agent",
+        "input_shape": {
+          "timeout_ms": "integer"
+        },
+        "receipt_sha256": "57bab3d27d7dd33c02e64edc60ff692442de9df6c5dc72a188e95e727f2cb119",
+        "receipt_file_sha256": "d9f4f486a0df5d7948717103f4510afbd6801ece2b181c67ca7167cc8080c8fa"
+      }
+    ],
+    "hook_scope_exact": true,
+    "raw_payload_stored": false
+  },
+  "opaque_spawn_message": {
+    "parent_runtime_session_id": "01a00bdf-6a23-7ae0-8e91-b6b3c90ef572",
+    "canonical_agent_path": "/root",
+    "task_name": "g4_cli_root_identity_7",
+    "hook_tool_name": "collaborationspawn_agent",
+    "hook_message_fingerprint": {
+      "length": 4600,
+      "sha256": "4c68211f0c9834cb5ef88daf3c3633808e5b1085db78acd63e5d91616ec1f1f1",
+      "authority_begin_count": 0,
+      "authority_end_count": 0
+    },
+    "rollout_function_call_message_fingerprint": {
+      "length": 4600,
+      "sha256": "4c68211f0c9834cb5ef88daf3c3633808e5b1085db78acd63e5d91616ec1f1f1",
+      "authority_begin_count": 0,
+      "authority_end_count": 0
+    },
+    "generator_plaintext_assignment_fingerprint": {
+      "length": 3223,
+      "sha256": "00f047600048c0140d106f1683ba535aa02d34c3f1f4becf80b286e4720aa8e7",
+      "authority_begin_count": 1,
+      "authority_end_count": 1
+    },
+    "schema_receipt_sha256": "65ae0d2628b42c1ed51612bfd60ca79952483f02d64f590dba73409dd447309e",
+    "schema_receipt_file_sha256": "94b1f791ec2ca2e07b4d3934c7898026ea136783a95d2a3aea192063a054cb1a",
+    "parent_rollout_sha256": "06108b2f55d2edb94273422a4e9fd37ad6c18267496069e3ac19c8e5518d4336",
+    "raw_message_stored": false,
+    "classification": "opaque_token_like_wire_payload_not_plaintext_assignment",
+    "capture_result_with_strict_matcher": "blocked_missing_exact_authority_declaration"
+  },
+  "subagentstart_schema": {
+    "parent_runtime_session_id": "01a00bf2-1c5f-7d01-8bba-164bc4c3be04",
+    "child_thread_id": "01a00bf2-8ff0-7942-bea6-ffa3d53ec36b",
+    "parent_thread_id": "01a00bf2-1c5f-7d01-8bba-164bc4c3be04",
+    "requested_task_name": "g4_cli_root_identity_10",
+    "canonical_agent_path": "/root/g4_cli_root_identity_10",
+    "agent_type": "g4_qualification_probe_worker",
+    "agent_nickname": "Meitner",
+    "hook_input_shape": {
+      "agent_id": "string",
+      "agent_type": "string",
+      "cwd": "string",
+      "hook_event_name": "string",
+      "model": "string",
+      "permission_mode": "string",
+      "session_id": "string",
+      "transcript_path": "string",
+      "turn_id": "string"
+    },
+    "plaintext_assignment_fields_present": [],
+    "selected_string_fingerprints": [],
+    "schema_receipt_sha256": "a1f580ab29e2143d2b4c0b801fad1176263218713d020b2d7d82ec7a3d59cc11",
+    "schema_receipt_file_sha256": "af90b0601fdd43706f7119e5759e50ae4f05a9654a8c13106b0e42a05df6330f",
+    "parent_rollout_sha256": "d2320b598a76b402c7999b967149490c421481ce884392eb4429fa1401bc0fea",
+    "child_rollout_sha256": "267d53bd5003a1ec7e3c34695198cabbee744d7e606060c17b9d8c143a7071d6",
+    "native_task_complete": true,
+    "child_function_call_count": 0,
+    "child_final_result": "TASK.CONTEXT_LOST",
+    "lifecycle_receipts": [
+      {
+        "sequence": 230,
+        "hook_event_name": "SubagentStart",
+        "scope": "target_child",
+        "receipt_sha256": "2d12b0b14444e2e2b48a23d96fae5ec75ab00ddc1ef9855a8ba30ae589d87522"
+      },
+      {
+        "sequence": 231,
+        "hook_event_name": "SubagentStop",
+        "scope": "target_child",
+        "receipt_sha256": "343eb35a1c6e4958bfa8d83c32d20ad731d2328f51d09cb0a663255639d38f71"
+      }
+    ],
+    "lost_reason": "expected one pending authority capsule, found 0",
+    "lost_record_file_sha256": "31c10873bb5a71df057b0c9256c683e3b50a373eec2e6535eadc6cdfe78f6ed8"
+  },
+  "diagnostic_arm": {
+    "arm_id": "3deec63a-7639-44ec-92a5-aae93881e35b",
+    "arm_sha256": "7e56d8381512b3d4fa0998ef2c2a67e620e54e10800a2120ef9f8d071a6c43fc",
+    "enabled_events": [
+      "SubagentStart"
+    ],
+    "exact_root": "/Users/pearly/文档/CAT/codex-deepseek-subagent",
+    "ttl_seconds": 300,
+    "current_arm_present_after_probe": false,
+    "history_file_sha256": "1eec24be72f669ec1096e00b66d370427ab61d874b87ebabb19d779f34f04e55"
+  },
+  "live_restoration": {
+    "hooks_json_sha256": "ffaad5c3533a2016253af148c96721818807823f779845a35c5d7dad2c676c2b",
+    "trusted_hook_command_changed_after_probe": false,
+    "temporary_observer_overlay_active": false,
+    "source_matches_installed_sha256": {
+      "assignment_transport.py": "1cb28bb945548ea346fa60ee163b6e78471c4930df06f6ab2e4091939258ae6c",
+      "hook_event_receipts.py": "5627215819700a53c054ba86bb3c4db94d73dae31440bc8d66ff330bf040a1a9",
+      "compatibility_hook.py": "7daf3f2a8642dc084f51e0de5ea39f12880c69b059f821145d10e7ef08358ee4",
+      "compatibility_state.py": "c60d33b2ff92bebf3ba0c5a931e77cb4029b0fba775c0439ce59fcfa59a730b7",
+      "hook_schema_observation_arm.py": "1df811c56c20fbc558cb40d9dd169535d227af2b3250224b70079bd11940f157",
+      "subagentstart_schema_observation.py": "bc59717c8cbb0d176ade45780e6089cadbdd99702b813151f3fa6643add11575",
+      "pretool_schema_observation.py": "93bc80eae279c028a73ffbe77d189ba03e13eed4b290c87c122ea73a16c147b0"
+    }
+  },
+  "privacy": {
+    "credential_value_read_or_stored": false,
+    "raw_assignment_copied_to_evidence": false,
+    "raw_wire_message_copied_to_evidence": false,
+    "transcript_content_copied_to_evidence": false
+  },
+  "fresh_verification": {
+    "provider_free_tests": {
+      "count": 251,
+      "duration_seconds": 36.110,
+      "status": "passed",
+      "agent_template_checks": "passed"
+    },
+    "phase1_g4_gate": {
+      "valid": true,
+      "require_complete_exit_code": 2,
+      "unresolved_p_gate_count": 12,
+      "unresolved_exit_receipt_count": 9
+    },
+    "mutation_surface_matrix": {
+      "source_commit": "9392c3fa5bcda342b5b96a1a04d67b2f781617c2",
+      "anchor_failure_count": 0,
+      "blocker_count": 10,
+      "require_qualified_exit_code": 2
+    },
+    "same_uid_trust": {
+      "rollout_protected": false,
+      "state_protected": false,
+      "require_protected_exit_code": 2
+    },
+    "global_callback_audit": {
+      "event_count": 255,
+      "chain_sha256": "8bccc553333574b3e837888b32eb6c43f43726cecc28df0d9673b4d78e3ab12a",
+      "pending_callback_count": 1,
+      "pending_runtime_session_id": "01a009f8-d83c-73e2-b960-2cba273d2250",
+      "pending_tool_use_id": "exec-04d901ca-1eb5-4ecf-a046-16440788c4d3",
+      "belongs_to_current_runtime_session": false,
+      "require_complete_callbacks_exit_code": 2
+    }
+  },
+  "verdict": {
+    "pretool_agent_control_visible": true,
+    "exact_sessionmeta_identity_visible": true,
+    "plaintext_assignment_visible_pretool": false,
+    "plaintext_assignment_visible_subagentstart": false,
+    "assignment_capsule_capture": "blocked_no_verified_plaintext_seam",
+    "p1_state": "partial",
+    "phase1_complete": false,
+    "direct_write_qualified": false,
+    "phase2": "closed",
+    "phase3": "closed"
+  }
+}

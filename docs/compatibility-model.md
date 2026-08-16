@@ -47,10 +47,18 @@ relation、agent role、lifecycle、wait/callback 和 cancel。`requested_task_n
 
 ### B. Assignment transport
 
-每个 worker 只能选择 `native` 或 `plaintext-v2`。`plaintext-v2` 从可信
-`PreToolUse(spawn_agent)` 捕获真实 `spawn_agent.message`；真实 message 仍保持自洽，
-Hook 不改写 spawn arguments。transport instance 使用独立 `handoff_id`，不能用
-logical task name 充当 handoff identity。
+每个 worker 只能选择 `native` 或 `plaintext-v2`。`plaintext-v2` 的设计合同要求从可信
+`PreToolUse(spawn_agent)` 捕获真实 plaintext assignment；真实 message 仍保持自洽，Hook
+不改写 spawn arguments。transport instance 使用独立 `handoff_id`，不能用 logical task
+name 充当 handoff identity。
+
+当前 Codex 0.148.0-alpha.9 的 live native collaboration surface 不满足这个前提：
+`PreToolUse` 的实际 tool name 是 `collaborationspawn_agent`，它的 `message` 与 rollout
+function-call 值完全同 hash，但只是无 authority marker 的 opaque token-like payload；生成器
+提供的 plaintext assignment 有不同 length/hash 和一对 marker。`SubagentStart` 提供真实
+SessionMeta/AgentPath identity，却没有 `message`、`prompt` 或其他 assignment plaintext
+字段。这是 P1 的 runtime blocker，而不是允许 adapter 把 opaque payload 当 authority source
+的理由。
 
 ### C. Authority continuity
 
@@ -526,7 +534,7 @@ runtime 看不见的 mutation，且 narrative 还可能在 compaction 后丢失�
 
 ### Parent capture
 
-`PreToolUse(spawn_agent)` 输入必须精确保存：
+候选协议要求 `PreToolUse(spawn_agent)` 输入必须精确保存：
 
 - `session_id`, `turn_id`, `tool_use_id`；
 - `tool_input.message`, `task_name`, `agent_type`, `fork_turns`；
@@ -534,6 +542,11 @@ runtime 看不见的 mutation，且 narrative 还可能在 compaction 后丢失�
 
 stage 失败必须 block spawn。非 plaintext worker 原样 pass。Hook 不返回
 `updatedInput`，以免 transport 层成为第二个 assignment source。
+
+2026-08-17 live probe 已证明当前 native collaboration 调用没有向上述 Hook seam 暴露
+plaintext assignment。观察到 agent-control event 并不等于捕获 assignment；在 Codex 提供
+可核验 plaintext seam，或存在能证明 staging bytes 与 child-delivered bytes exact equality
+的 trusted host mechanism 之前，parent staging 也不能单独闭合 P1。
 
 ### Child claim
 
@@ -660,10 +673,12 @@ test-only completion，但不能据此证明 child 没有撒谎；receipt digest
 
 ### 已重建事实
 
-- workflow checkout 为 `main@076ee0df9aca11fbc0c19a6ccd7cd8befc0051f7`，与
-  2026-08-15 fresh fetch 的 `origin/main` 相等。用户明确要求恢复的 legacy v4 agent/skill/
-  schema-1 plaintext Hook 已从迁移归档安装，但 G4 candidate/schema 2 未安装，Hook trust 仍需
-  在新 Codex 进程中由用户审查。
+- workflow checkout 的迁移基线为
+  `main@076ee0df9aca11fbc0c19a6ccd7cd8befc0051f7`，与 2026-08-15 fresh fetch 的
+  `origin/main` 相等。资格验证专用 G4 schema-2 overlay 后续已获用户明确安装/
+  trust 授权，当前 Hook config SHA-256 为
+  `ffaad5c3533a2016253af148c96721818807823f779845a35c5d7dad2c676c2b`；这不等于
+  fresh-process reload/rollback 资格，也不改变 direct-write 裁决。
 - 现有 repo/live Hook 是 schema 1、按 role 单槽、manual stage、initial delivery 后立即
   删除 claimed state。
 - 多次真实事件显示 initial assignment transport 正确且 owned-path changes 落盘；长
@@ -675,10 +690,15 @@ test-only completion，但不能据此证明 child 没有撒谎；receipt digest
   `task_name` 实际序列化 canonical path。
 - child rollout materialization 会在 Hook 取得 `transcript_path` 时落下 SessionMeta；
   是否在所有支持平台/host 上无 race 仍需 live probe。
+- 本机 live `PreToolUse` 对 native spawn 使用 `collaborationspawn_agent`，并暴露
+  `agent_type`、`fork_turns`、`message`、`task_name` 的 field/type shape；其中 `message`
+  与 rollout function call 同为 4600-byte opaque token-like value，和生成器的 3223-byte
+  plaintext assignment 不同。live `SubagentStart` shape 有 exact child/session/transcript
+  identity，但没有 assignment plaintext。原始 hashes 与 fail-closed 裁决记录在
+  `probes/g4-live-native-hook-schema-20260817.json`。
 
 ### 当前假设
 
-- trusted PreToolUse Hook 能稳定匹配 Codex 对 `spawn_agent` 的 canonical tool name。
 - child `SessionMeta` 在 SubagentStart 时已包含完整 parent/path/role；源码支持这一点，
   但 root/nested/concurrent live behavior 尚未资格认证。
 - 所有 direct-write 路径都能被一组可枚举的 PreToolUse matcher 覆盖。

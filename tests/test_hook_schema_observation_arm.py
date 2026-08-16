@@ -9,8 +9,15 @@ import unittest
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "hooks"))
 
-from compatibility_state import CorruptState, StateStore
 import hook_schema_observation_arm
+
+
+# Several provider-free suites deliberately reload the hook modules under their
+# executable top-level names. Bind the exception and store to the same module
+# instance as the arm implementation so full-suite import order cannot create
+# two incompatible CorruptState class identities.
+CorruptState = hook_schema_observation_arm.CorruptState
+StateStore = hook_schema_observation_arm.StateStore
 
 
 class HookSchemaObservationArmTests(unittest.TestCase):
