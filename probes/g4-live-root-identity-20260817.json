@@ -1,0 +1,73 @@
+{
+  "schema": 1,
+  "observed_at": "2026-08-17T02:04:09+08:00",
+  "source_head": "9ba75e00b20a1e188c4e4dccca190ae98617c6da",
+  "codex_version": "0.148.0-alpha.9",
+  "parent": {
+    "thread_id": "01a00bbb-851a-7fa1-9a3f-e92e7d389106",
+    "runtime_session_id": "01a00bbb-851a-7fa1-9a3f-e92e7d389106",
+    "agent_path": "/root",
+    "cwd": "/Users/pearly/文档/CAT/codex-deepseek-subagent",
+    "model_provider": "openai",
+    "spawn_function_name_in_rollout": "spawn_agent",
+    "spawn_result_task_name": "/root/g4_cli_root_identity_1",
+    "rollout_sha256": "bade2215587f8346aceca62301d6082320ab15e815360fc2d7649d01662ec745",
+    "termination": {
+      "primitive": "host_interrupt_after_repeated_stop_continuation",
+      "process_exit_code": 130,
+      "strong_quiescence_receipt": false,
+      "post_termination_disk_barrier_before_parent_edits": false
+    }
+  },
+  "child": {
+    "thread_id": "01a00bbb-f879-7232-a421-c4696a467e15",
+    "parent_thread_id": "01a00bbb-851a-7fa1-9a3f-e92e7d389106",
+    "runtime_session_id": "01a00bbb-851a-7fa1-9a3f-e92e7d389106",
+    "requested_task_name": "g4_cli_root_identity_1",
+    "canonical_agent_path": "/root/g4_cli_root_identity_1",
+    "agent_type": "g4_qualification_probe_worker",
+    "agent_nickname": "Harvey",
+    "model_provider": "openai",
+    "sandbox_mode": "read-only",
+    "function_call_count": 0,
+    "first_return": "TASK.CONTEXT_LOST",
+    "stop_continuation_count": 38,
+    "rollout_sha256": "5bd36aaf3eb081c0e5148f04c8129083ed80995a7f9f8791de74cb48a1ce2452"
+  },
+  "hook_state": {
+    "pending_count": 0,
+    "claimed_count": 0,
+    "active_count": 0,
+    "reported_count": 0,
+    "lost_count": 1,
+    "lost_reason": "expected one pending authority capsule, found 0",
+    "lost_record_sha256": "3305b512b78b6dcc2a46cfc0bc2dee58ee4da6af557387d5e5690cc86bec0c93",
+    "pretooluse_tool_name_observed": null,
+    "capture_alias_mismatch": "inference_only_until_raw_hook_or_successful_capture_receipt"
+  },
+  "live_install": {
+    "hooks_json_sha256": "ffaad5c3533a2016253af148c96721818807823f779845a35c5d7dad2c676c2b",
+    "runtime_guard_sha256": "04e7bb81e84c26dd8f4999e3b4d2bc85a689248f3a037794aaf2fed795151902",
+    "assignment_transport_sha256": "bf7e6600961435e2b14775f341d1a35e492edb1bc88bbd9e1c809d1249ed9209",
+    "v4_plaintext_hook_sha256": "16353e6eb4484412bd7560a10eeae4dcf1533709910a373a4e98d414dc725a49",
+    "v4_agent_sha256": "051f0e767415a86fd09b4e125868d3a4e4cf41ba3d2fd81e9018edee62e9ed69"
+  },
+  "privacy": {
+    "credential_value_read_or_stored": false,
+    "raw_assignment_copied_to_evidence": false,
+    "encrypted_rollout_content_copied_to_evidence": false
+  },
+  "qualification": {
+    "custom_role_loaded": true,
+    "real_sessionmeta_identity_exact": true,
+    "assignment_capture": "failed_closed",
+    "subagentstart_binding": "failed_closed",
+    "context_lost_child_mutation": "none_observed",
+    "subagentstop_context_lost_exit": "failed_repeated_continuation",
+    "termination_quiescence": "pending",
+    "phase1_complete": false,
+    "direct_write_qualified": false,
+    "phase2": "closed",
+    "phase3": "closed"
+  }
+}

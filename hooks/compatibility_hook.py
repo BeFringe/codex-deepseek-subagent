@@ -46,6 +46,7 @@ def fail_closed_output(event: object, error: BaseException) -> dict:
         # child. Make the loss explicit; the later PreToolUse guard must deny it.
         context = (
             f"TASK.CONTEXT_LOST: {reason}. Do not call tools or claim completion; "
+            "return exactly TASK.CONTEXT_LOST and no other text. "
             "SubagentStart cannot itself cancel this child."
         )
         return {

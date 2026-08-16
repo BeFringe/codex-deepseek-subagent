@@ -1162,3 +1162,31 @@ real target-child lifecycle chain, sandbox confinement, same-UID state trust,
 strong termination/quiescence, platform/DeepSeek regression, or rollback after
 this overlay. `phase1_complete=false`, `direct_write_qualified=false`, and
 Phases 2/3 remain closed.
+
+## First fresh native G4 root child (2026-08-17)
+
+A clean-worktree prompt generated at full HEAD
+`9ba75e00b20a1e188c4e4dccca190ae98617c6da` started a fresh persisted
+`codex exec` parent with the current OpenAI login/provider, read-only sandbox,
+and no Hook-trust bypass. The custom role loaded and native spawn returned
+`/root/g4_cli_root_identity_1`. Real SessionMeta exactly bound parent thread
+`01a00bbb-851a-7fa1-9a3f-e92e7d389106`, child thread
+`01a00bbb-f879-7232-a421-c4696a467e15`, shared runtime session, direct parent,
+role, nickname, and canonical AgentPath.
+
+The negative result is equally important: parent capture created no pending
+capsule, so `SubagentStart` wrote one lost record with reason `expected one
+pending authority capsule, found 0`. The child made zero function calls and
+first returned `TASK.CONTEXT_LOST`, but the stop gate accepted only the exact
+bare marker and requested continuation 38 times. The host interrupted the
+read-only process with exit 130. No strong quiescence receipt or disk barrier
+was captured before later parent edits, so this is not termination
+qualification.
+
+The parent rollout names `spawn_agent`, while current Codex documentation also
+exposes the Hook alias `Agent`; the raw Hook input tool name was not retained.
+An alias mismatch is therefore a repair hypothesis, not a claimed observation.
+The adapter candidate now accepts both exact names and tells a context-lost
+child to return only the bare marker. Provider-free coverage precedes any
+reinstall/retry. Raw non-credential hashes and the fail-closed verdict are in
+`probes/g4-live-root-identity-20260817.json`.

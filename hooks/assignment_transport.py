@@ -54,6 +54,7 @@ AUTHORITY_FIELDS = {
 GIT_AUTHORITY_FIELDS = {"stage", "commit", "branch", "push"}
 TASK_NAME_RE = re.compile(r"^[a-z0-9_]+$")
 GIT_OID_RE = re.compile(r"^(?:[0-9a-f]{40}|[0-9a-f]{64})$")
+SPAWN_TOOL_NAMES = {"spawn_agent", "Agent"}
 LOCATION_PREFLIGHT_FIELDS = {
     "expected_root",
     "expected_branch",
@@ -325,7 +326,7 @@ def capture_spawn(
 ) -> dict:
     if hook_input.get("hook_event_name") != "PreToolUse":
         return {}
-    if hook_input.get("tool_name") != "spawn_agent":
+    if hook_input.get("tool_name") not in SPAWN_TOOL_NAMES:
         return {}
     tool_input = hook_input.get("tool_input")
     if not isinstance(tool_input, dict):
@@ -485,7 +486,9 @@ def subagent_start(store: StateStore, hook_input: Mapping[str, object]) -> dict:
                 "hookEventName": "SubagentStart",
                 "additionalContext": (
                     "TASK.CONTEXT_LOST: runtime could not uniquely bind an authority capsule. "
-                    f"Do not call tools or claim completion. Binding error: {error}"
+                    "Do not call tools or claim completion. Return exactly "
+                    "TASK.CONTEXT_LOST and no other text. "
+                    f"Binding error: {error}"
                 ),
             }
         }

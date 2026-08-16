@@ -387,6 +387,21 @@ class AssignmentTransportTests(unittest.TestCase):
             },
         )
 
+    def test_parent_capture_accepts_current_native_agent_hook_alias(self):
+        hook = self.spawn_hook(tool_name="Agent", tool_use_id="agent-alias-spawn")
+
+        result = self.capture(hook)
+
+        self.assertNotIn("permissionDecision", result["hookSpecificOutput"])
+        envelope = json.loads(
+            next((self.store.root / "pending").glob("*.json")).read_text(
+                encoding="utf-8"
+            )
+        )
+        self.assertEqual(
+            envelope["capsule"]["spawn_tool_use_id"], "agent-alias-spawn"
+        )
+
     def test_write_spawn_requires_parent_recorded_explicit_user_intent(self):
         authority = json.loads(
             self.message().split("BEGIN CODEX WORKER AUTHORITY\n", 1)[1].split(
@@ -1426,6 +1441,9 @@ class AssignmentTransportTests(unittest.TestCase):
         context = output["hookSpecificOutput"]["additionalContext"]
         self.assertIn("TASK.CONTEXT_LOST", context)
         self.assertIn("Do not call tools or claim completion", context)
+        self.assertIn(
+            "Return exactly TASK.CONTEXT_LOST and no other text", context
+        )
 
     def test_executable_invalid_json_uses_blocking_exit_code(self):
         completed = subprocess.run(
@@ -1463,6 +1481,10 @@ class AssignmentTransportTests(unittest.TestCase):
         start = compatibility_hook.fail_closed_output("SubagentStart", error)
         self.assertIn(
             "SubagentStart cannot itself cancel this child",
+            start["hookSpecificOutput"]["additionalContext"],
+        )
+        self.assertIn(
+            "return exactly TASK.CONTEXT_LOST and no other text",
             start["hookSpecificOutput"]["additionalContext"],
         )
 
