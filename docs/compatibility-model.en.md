@@ -522,10 +522,13 @@ The complete closed-stage contracts are
 The workflow checkout is now
 `main@076ee0df9aca11fbc0c19a6ccd7cd8befc0051f7`, equal to `origin/main` after
 the 2026-08-15 fresh fetch. At the user's explicit request, the migrated legacy
-v4 agent/skill/schema-1 plaintext Hook has been restored; the G4 candidate/schema
-2 has not been installed, and a new Codex process still requires user Hook trust
-review. Schema 2 continues to use only isolated state and configuration until
-qualified. Rollback selects the recorded schema 1 adapter baseline without
+v4 agent/skill/schema-1 plaintext Hook has been restored. A qualification-only
+G4 schema-2 overlay is now installed beside it after explicit user approval; it
+does not qualify direct write. The user approved its initial five definitions,
+then a live warning repair changed the `PreCompact` and `SubagentStop`
+definitions, so those two require fresh exact-hash review. Schema 2 continues to
+use a dedicated state directory until qualified. Rollback selects the recorded
+schema 1 adapter baseline without
 claiming durable continuity; it never changes the OpenAI parent provider or
 deletes quarantine/unresolved evidence.
 

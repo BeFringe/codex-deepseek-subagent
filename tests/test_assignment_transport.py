@@ -1247,6 +1247,60 @@ class AssignmentTransportTests(unittest.TestCase):
         self.assertEqual(len(list((self.store.root / "writer_claim").glob("*.json"))), 0)
         self.assertEqual(len(list((self.store.root / "writer_receipt").glob("*.json"))), 1)
 
+    def test_patch_target_resolves_git_root_when_hook_cwd_is_repo_parent(self):
+        hook = self.parent_patch_hook(str(self.repository / "other" / "result.txt"))
+        hook["cwd"] = str(self.root)
+
+        leased = writer_lease_guard.pre_tool_use(self.store, hook)
+
+        self.assertIn("WRITER.LEASED", leased["hookSpecificOutput"]["additionalContext"])
+        claim = json.loads(
+            next((self.store.root / "writer_claim").glob("*.json")).read_text(
+                encoding="utf-8"
+            )
+        )
+        self.assertEqual(claim["root"], str(self.repository.resolve()))
+        self.assertEqual(claim["paths"], ["other/result.txt"])
+
+        released = writer_lease_guard.post_tool_use(
+            self.store,
+            dict(hook, hook_event_name="PostToolUse", tool_response={"status": "completed"}),
+        )
+        self.assertEqual(released, {})
+        self.assertEqual(len(list((self.store.root / "writer_claim").glob("*.json"))), 0)
+
+    def test_relative_patch_target_can_enter_one_child_repo_from_parent_cwd(self):
+        hook = self.parent_patch_hook("repository/other/result.txt")
+        hook["cwd"] = str(self.root)
+
+        leased = writer_lease_guard.pre_tool_use(self.store, hook)
+
+        self.assertIn("WRITER.LEASED", leased["hookSpecificOutput"]["additionalContext"])
+        claim = json.loads(
+            next((self.store.root / "writer_claim").glob("*.json")).read_text(
+                encoding="utf-8"
+            )
+        )
+        self.assertEqual(claim["paths"], ["other/result.txt"])
+
+    def test_patch_targets_cannot_span_git_root_and_foreign_path(self):
+        hook = self.parent_patch_hook(str(self.repository / "other" / "result.txt"))
+        hook["cwd"] = str(self.root)
+        hook["tool_input"]["command"] = (
+            "*** Begin Patch\n"
+            f"*** Add File: {self.repository / 'other' / 'result.txt'}\n"
+            "+inside\n"
+            f"*** Add File: {self.root / 'foreign.txt'}\n"
+            "+outside\n"
+            "*** End Patch"
+        )
+
+        denied = writer_lease_guard.pre_tool_use(self.store, hook)
+
+        self.assertEqual(denied["hookSpecificOutput"]["permissionDecision"], "deny")
+        self.assertIn("escapes the Git root", denied["hookSpecificOutput"]["permissionDecisionReason"])
+        self.assertEqual(len(list((self.store.root / "writer_claim").glob("*.json"))), 0)
+
     def test_tampered_writer_claim_is_quarantined_and_blocks_capture(self):
         writer_lease_guard.pre_tool_use(
             self.store,

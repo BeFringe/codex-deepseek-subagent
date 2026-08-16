@@ -98,10 +98,6 @@ def normalize_patch_paths(
 ) -> list[str]:
     canonical_root = Path(root).resolve()
     canonical_cwd = Path(cwd).resolve()
-    try:
-        canonical_cwd.relative_to(canonical_root)
-    except ValueError as error:
-        raise WriterLeaseError("writer cwd is outside the Git root") from error
     normalized: list[str] = []
     for raw in raw_paths:
         candidate = Path(raw)
@@ -123,6 +119,32 @@ def normalize_patch_paths(
     return normalized
 
 
+def collect_patch_git_snapshot(
+    raw_paths: list[str],
+    *,
+    cwd: str,
+) -> tuple[dict, list[str]]:
+    """Bind a patch to the unique Git root containing its resolved targets."""
+
+    canonical_cwd = Path(cwd).resolve()
+    first = Path(raw_paths[0])
+    first_resolved = (
+        first.resolve() if first.is_absolute() else (canonical_cwd / first).resolve()
+    )
+    probe = first_resolved.parent
+    while not probe.exists() and probe != probe.parent:
+        probe = probe.parent
+    if not probe.is_dir():
+        raise WriterLeaseError("apply_patch target has no existing parent directory")
+    snapshot = collect_git_snapshot(str(probe))
+    paths = normalize_patch_paths(
+        raw_paths,
+        cwd=str(canonical_cwd),
+        root=snapshot["root"],
+    )
+    return snapshot, paths
+
+
 def pre_tool_use(store: StateStore, hook_input: Mapping[str, object]) -> dict:
     if hook_input.get("hook_event_name") != "PreToolUse":
         return {}
@@ -139,12 +161,10 @@ def pre_tool_use(store: StateStore, hook_input: Mapping[str, object]) -> dict:
         tool_use_id = hook_input.get("tool_use_id")
         if not isinstance(tool_use_id, str) or not tool_use_id:
             raise WriterLeaseError("apply_patch Hook has no tool_use_id")
-        snapshot = collect_git_snapshot(cwd)
         raw_paths = extract_apply_patch_paths(tool_input["command"])
-        paths = normalize_patch_paths(
+        snapshot, paths = collect_patch_git_snapshot(
             raw_paths,
             cwd=cwd,
-            root=snapshot["root"],
         )
         claim = store.acquire_writer_claim(
             actor,
@@ -177,7 +197,11 @@ def post_tool_use(store: StateStore, hook_input: Mapping[str, object]) -> dict:
         tool_use_id = hook_input.get("tool_use_id")
         if not isinstance(tool_use_id, str) or not tool_use_id:
             raise WriterLeaseError("apply_patch PostToolUse has no tool_use_id")
-        snapshot = collect_git_snapshot(cwd)
+        tool_input = hook_input.get("tool_input")
+        if not isinstance(tool_input, dict) or set(tool_input) != {"command"}:
+            raise WriterLeaseError("apply_patch PostToolUse input fields are not exact")
+        raw_paths = extract_apply_patch_paths(tool_input["command"])
+        snapshot, _ = collect_patch_git_snapshot(raw_paths, cwd=cwd)
         store.release_writer_claim(
             actor,
             tool_name="apply_patch",

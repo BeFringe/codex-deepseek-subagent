@@ -37,10 +37,71 @@
   },
   "trust": {
     "existing_v4_entry_preserved": true,
-    "g4_entries": "pending_user_review",
+    "g4_entries_approved_before_repair": [
+      "PreToolUse",
+      "PostToolUse",
+      "SubagentStart",
+      "PreCompact",
+      "SubagentStop"
+    ],
+    "definition_changed_after_approval": [
+      "PreCompact",
+      "SubagentStop"
+    ],
+    "current_review_status": "precompact_and_subagentstop_require_re_review",
     "trust_hash_forged_or_copied": false
   },
-  "live_hook_dispatch_observed": false,
+  "live_hook_dispatch_observed": true,
+  "live_warning_repair": {
+    "observed_at": "2026-08-17T00:47:06+08:00",
+    "configuration_warnings": [
+      "PreCompact cannot emit additionalContext",
+      "SubagentStop cannot emit additionalContext"
+    ],
+    "first_pretooluse_negative": {
+      "runtime_agent_path": "/root",
+      "cwd": "/Users/pearly/文档/CAT",
+      "decision": "deny",
+      "failure": "TASK.WRITER_LEASE_BLOCKED: Git snapshot command failed: rev-parse --show-toplevel",
+      "disk_mutation_executed": false,
+      "writer_claim_persisted": false
+    },
+    "loaded_definition_persisted_after_disk_removal": true,
+    "temporary_mutation_pair_disable": {
+      "full_overlay_backup": "/Users/pearly/Downloads/codex-g4-live-backup-20260817T002114+0800/hooks.before-warning-repair-20260817T004058+0800.json",
+      "full_overlay_backup_sha256": "8c7356e340db49abd86f41f49c09a8b59c5db1b7125e69f8808ab3a9b7720ff7",
+      "pair_disabled_backup": "/Users/pearly/Downloads/codex-g4-live-backup-20260817T002114+0800/hooks.mutation-pair-disabled-20260817T004556+0800.json",
+      "pair_disabled_backup_sha256": "7975751e2622ced3d159e892d4be55d7830aa0d54402270e774edcb14439402d"
+    },
+    "repair": {
+      "git_root_resolution": "derive one root from resolved patch targets instead of assuming hook cwd is the root",
+      "cross_root_policy": "deny",
+      "invalid_additional_context_limits_removed": [
+        "PreCompact",
+        "SubagentStop"
+      ],
+      "provider_free_tests": 218,
+      "installed_hooks_json_sha256": "ffaad5c3533a2016253af148c96721818807823f779845a35c5d7dad2c676c2b",
+      "installed_writer_lease_guard_sha256": "2c6c9aa7cfda1eda7bdbb99f7cf27f7fce16c0c35f31504849b082a27bfce028",
+      "v4_hook_sha256": "16353e6eb4484412bd7560a10eeae4dcf1533709910a373a4e98d414dc725a49",
+      "v4_agent_sha256": "051f0e767415a86fd09b4e125868d3a4e4cf41ba3d2fd81e9018edee62e9ed69",
+      "mutation_pair_reinstalled": true,
+      "post_repair_live_roundtrip": {
+        "status": "observed",
+        "claim_id": "0828d752-de07-4976-9cf8-e551ac2b881f",
+        "receipt_sha256": "e93f74ee3b64ee10e59b0d82210e6526dcf382497308cf2777bc1b42c419bd5c",
+        "runtime_session_id": "01a00147-39cb-7b50-b78d-7baed910eb45",
+        "thread_id": "01a00147-39cb-7b50-b78d-7baed910eb45",
+        "canonical_agent_path": "/root",
+        "root": "/Users/pearly/文档/CAT/codex-deepseek-subagent",
+        "tool_name": "apply_patch",
+        "tool_use_id": "exec-3643556c-dfaf-4ee6-a31b-2a41c1177f03",
+        "before_snapshot_sha256": "01ef537a0bf15569353d324f7cbbf5dc6e8723ea700c8c2c4134328295ce8a8f",
+        "after_snapshot_sha256": "3cb470ac18060a2a838dc105968fa3b44cd8782b6d736124001b214f4a52e345",
+        "claim_absent_after_callback": true
+      }
+    }
+  },
   "rollback": {
     "performed": true,
     "first_attempt_error": "Hook and state directories had the same basename in one backup destination",

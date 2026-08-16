@@ -707,8 +707,10 @@ Phase 2/3 的完整关闭状态合同分别见
 
 ## Rollback
 
-- Phase 0/1 开发只改仓库，不覆盖 live Hook/skill/state。
-- schema 2 与 hook matchers 在未资格认证前使用隔离 state directory/config。
+- 用户明确批准后，已将 qualification-only schema 2 overlay 安装在现有 v4
+  Hook 之旁；这不构成 direct-write 资格。首次五项定义已审批，但修复
+  `PreCompact`/`SubagentStop` 无效字段后，这两项需重新按精确哈希审核。
+- schema 2 在未资格认证前使用独立 state directory。
 - 保留 v4 wrapper/alias；失败时恢复到已记录的 schema 1 repo baseline，不伪造 continuity
   guarantee。
 - 不修改 OpenAI parent provider/base URL，不把 bridge 放进全局配置。

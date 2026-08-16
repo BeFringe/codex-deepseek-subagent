@@ -337,13 +337,14 @@ Running the same command inside the model shell sandbox was denied before state
 write, which confirms event-level fail-closed behavior but does not prove how a
 trusted Hook host process is sandboxed.
 
-The user's `config.toml` still contains only the prior v4
-`subagent_start:0:0` trust entry. No trust hash was forged or copied. Therefore
-the installed candidate is **trust pending**: no real live Hook dispatch,
-sandbox receipt, callback, compaction, stop, or complete rollback qualification
-is claimed. `codex --strict-config doctor --json` reported `config.load=ok`; its
-separate provider-reachability and state-database diagnostics were not changed
-or treated as G4 evidence. Phase 1 and `direct_write_qualified` remain false.
+The user subsequently reviewed and approved all five G4 command definitions in
+the Hook UI. No trust hash was forged or copied. A real parent `PreToolUse`
+dispatch then failed closed before mutation because the task cwd was the
+workspace parent, not a Git root. That is real negative loader/mediation
+evidence, not successful mutation qualification. `codex --strict-config doctor
+--json` had previously reported `config.load=ok`; its separate
+provider-reachability and state-database diagnostics were not changed or treated
+as G4 evidence. Phase 1 and `direct_write_qualified` remain false.
 
 A subsequent real file-level rollback moved the new agent, Hook directory, and
 state into the backup, restored the old `hooks.json` hash exactly, verified all
@@ -359,6 +360,49 @@ This promotes the install/rollback receipt only from pending to **partial**. It
 proves artifact-level recovery and diagnostic preservation, not behavior of an
 already trusted/loaded Hook process across reload. That functional rollback,
 plus Windows and DeepSeek regression, remains open.
+
+### Trusted-Hook warning and root-resolution repair
+
+The Hook browser reported that `additionalContextLimit` is invalid for
+`PreCompact` and `SubagentStop`, because neither event can emit additional
+context. The two unsupported fields were removed; the lifecycle hooks remain
+because current Codex supports blocking JSON output for both events and G4
+requires pre-compaction re-attestation plus final stop adjudication.
+
+The first trusted parent `apply_patch` also exposed an over-broad cwd
+assumption. Its exact cwd was `/Users/pearly/文档/CAT`, while all patch
+targets were inside the nested `codex-deepseek-subagent` repository. The old
+guard ran `git rev-parse --show-toplevel` against the cwd and denied before any
+disk mutation or writer claim. Removing the mutation entry from `hooks.json`
+did not change the already loaded definition in this task; a second call was
+denied identically. This is partial negative reload evidence, not proof of
+hot-reload behavior across processes.
+
+The mutation pair was disabled together, preserved in timestamped backups, and
+reinstalled only after the guard learned to derive one Git root from the
+resolved patch targets. All targets must still normalize beneath that same
+root; a cross-root target fails closed. The repaired provider-free suite passed
+218 tests. Current live hashes are merged `hooks.json`
+`ffaad5c3533a2016253af148c96721818807823f779845a35c5d7dad2c676c2b` and
+`writer_lease_guard.py`
+`2c6c9aa7cfda1eda7bdbb99f7cf27f7fce16c0c35f31504849b082a27bfce028`.
+The v4 script/agent hashes remain exactly
+`16353e6eb4484412bd7560a10eeae4dcf1533709910a373a4e98d414dc725a49`
+and `051f0e767415a86fd09b4e125868d3a4e4cf41ba3d2fd81e9018edee62e9ed69`.
+Because the two lifecycle definitions changed after approval, `PreCompact` and
+`SubagentStop` require fresh UI review; no stale trust value is treated as
+authority.
+
+The first repaired live `apply_patch` then bound root actor/session/AgentPath
+`01a00147-39cb-7b50-b78d-7baed910eb45`/`/root` to the exact nested repository
+and five requested paths. `PreToolUse` published claim
+`0828d752-de07-4976-9cf8-e551ac2b881f`; the successful `PostToolUse` removed the
+claim and published receipt SHA-256
+`e93f74ee3b64ee10e59b0d82210e6526dcf382497308cf2777bc1b42c419bd5c`.
+This promotes mutation visibility and callback continuity from pending-only to
+**partial** positive live evidence. It does not cover shell/MCP/GUI mutation
+negative space, child sandbox denial, callback loss, compaction, stop,
+termination/quiescence, or cross-platform behavior.
 
 ## Pre-write deadline and unresponsive-run evidence
 

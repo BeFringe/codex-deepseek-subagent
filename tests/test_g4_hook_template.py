@@ -32,14 +32,18 @@ class G4HookTemplateTests(unittest.TestCase):
 
     def test_every_event_uses_one_shared_qualification_command(self):
         commands = []
-        for groups in self.hooks.values():
+        context_capable_events = {"PreToolUse", "PostToolUse", "SubagentStart"}
+        for event_name, groups in self.hooks.items():
             self.assertEqual(len(groups), 1)
             handlers = groups[0]["hooks"]
             self.assertEqual(len(handlers), 1)
             handler = handlers[0]
             self.assertEqual(handler["type"], "command")
             self.assertEqual(handler["timeout"], 15)
-            self.assertEqual(handler["additionalContextLimit"], 0)
+            if event_name in context_capable_events:
+                self.assertEqual(handler["additionalContextLimit"], 0)
+            else:
+                self.assertNotIn("additionalContextLimit", handler)
             commands.append(handler["command"])
         self.assertEqual(len(set(commands)), 1)
         command = commands[0]

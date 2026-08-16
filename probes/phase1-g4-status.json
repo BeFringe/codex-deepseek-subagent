@@ -120,7 +120,10 @@
       {
         "id": "mutation_visibility",
         "state": "partial",
-        "evidence": ["probes/codex-0.148.0-alpha.9-mutation-surfaces.json"]
+        "evidence": [
+          "probes/codex-0.148.0-alpha.9-mutation-surfaces.json",
+          "probes/g4-live-install-20260817.json"
+        ]
       },
       {
         "id": "sandbox_block",
@@ -129,8 +132,11 @@
       },
       {
         "id": "callback_continuity",
-        "state": "pending",
-        "evidence": ["docs/phase1-g4-probe-plan.md#iv-resume-callback-and-termination-probes"]
+        "state": "partial",
+        "evidence": [
+          "docs/phase1-g4-probe-plan.md#iv-resume-callback-and-termination-probes",
+          "probes/g4-live-install-20260817.json"
+        ]
       },
       {
         "id": "termination_quiescence",

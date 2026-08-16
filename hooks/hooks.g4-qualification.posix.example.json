@@ -51,8 +51,7 @@
             "type": "command",
             "command": "python3 \"/absolute/path/to/compatibility_hook.py\" --state-directory \"/absolute/private/path/to/g4-state\" --plaintext-agent-type g4_qualification_probe_worker",
             "timeout": 15,
-            "statusMessage": "Re-attesting before compaction",
-            "additionalContextLimit": 0
+            "statusMessage": "Re-attesting before compaction"
           }
         ]
       }
@@ -65,8 +64,7 @@
             "type": "command",
             "command": "python3 \"/absolute/path/to/compatibility_hook.py\" --state-directory \"/absolute/private/path/to/g4-state\" --plaintext-agent-type g4_qualification_probe_worker",
             "timeout": 15,
-            "statusMessage": "Adjudicating the final authority attestation",
-            "additionalContextLimit": 0
+            "statusMessage": "Adjudicating the final authority attestation"
           }
         ]
       }
