@@ -756,3 +756,63 @@ timing, or a live mediated phase boundary. If the real mechanism runs inside one
 opaque tool event, it must be split into observable invocations or P6c remains
 pending. `feasibility_contract_integrity` is therefore still unverified for
 live multi-phase delivery and direct write remains unqualified.
+
+## Phase roadmap recovery and executable G4 stage gate
+
+On 2026-08-16, a complete `git log --all`/tree audit found that independent
+Phase 2 and Phase 3 documents had never been committed to this repository. The
+detailed design remained in the original three-stage task record. A separate
+read-only scan from the initial design through the end of the migrated rollout,
+plus the LocalCAT Feature 5 thread, applied latest-decision-wins and found no
+stage reorder: Phase 2 defines the generic Worker / Provider Profile and its
+opaque credential-source slot; Phase 3 qualifies `zhipu_plan_worker` using
+`responses-direct` when available or an optional loopback Responses bridge when
+needed. A pre-existing `ZHIPU_API_KEY` environment variable is host preparation,
+not a Phase 2 deliverable or authorization. It never enters the handoff; a later
+approved live probe may record presence only, never its value.
+
+The recovered Chinese/English contracts now live in
+`docs/phase2-worker-provider-profiles*.md` and
+`docs/phase3-zhipu-responses-bridge*.md`. Both explicitly remain closed. The
+current Codex configuration reference also establishes `responses` as the only
+supported custom-provider `wire_api` value, so `docs/advanced*.md` no longer
+describes Chat Completions as a parallel direct Codex wire. A Chat-Completions-
+only external provider instead requires the separately qualified, child-local
+Phase 3 bridge.
+
+`probes/phase1-g4-status.json` names every required P1–P7 subgate and the live
+exit receipts for exact SessionMeta identity, mutation visibility, independent
+sandbox denial, callback continuity, termination/quiescence, POSIX/Windows,
+DeepSeek regression, and install rollback. `probes/check_phase1_g4.py` derives
+completion instead of trusting a boolean. Missing P6c, a premature Phase 2 open,
+or a manually asserted completion/direct-write boolean is invalid. The fresh
+result was:
+
+```text
+valid=true
+phase1_complete=false
+direct_write_qualified=false
+phase2=closed
+phase3=closed
+12 unresolved P-gates
+9 unresolved exit receipts
+--require-phase1-complete exit=2
+```
+
+The complete fresh provider-free suite based on
+`392b21044f6d225b16961ae15e8cfd3a14079946` plus this worktree ran:
+
+```text
+Ran 184 tests in 28.771s
+OK
+agent template checks passed
+```
+
+The pinned Codex `0.148.0-alpha.9` mutation matrix revalidated all source
+anchors at `9392c3fa5bcda342b5b96a1a04d67b2f781617c2`, retained ten blocker
+classes, and returned `direct_write_qualified=false`; its require-qualified
+mode exited 2. The same-UID probe again showed both rollout and state
+unprotected, returned `direct_write_qualified=false`, and its require-protected
+mode exited 2. No live Hook, skill, provider profile, bridge, credential, or
+LocalCAT product file was changed. These are fresh negative qualification
+results, not a Phase 1 completion claim.

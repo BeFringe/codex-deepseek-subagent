@@ -264,3 +264,8 @@ direct_write_qualified: false
 Phase 2 worker/provider profile: closed
 ZHIPU/GLM bridge: closed
 ```
+
+The closed future-stage contracts are documented separately so their design is
+not lost: [Phase 2 Worker / Provider Profile](phase2-worker-provider-profiles.md)
+and [Phase 3 ZHIPU Responses bridge](phase3-zhipu-responses-bridge.md). Their
+presence does not satisfy or bypass this G4 gate.

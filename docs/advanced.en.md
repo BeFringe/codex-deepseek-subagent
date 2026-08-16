@@ -23,28 +23,34 @@ another Codex CLI, or a global provider switch such as CC Switch.
 Using different provider/model pairs for the main task and child is a general
 Codex composition capability, not a DeepSeek exception. Codex loads each
 standalone custom-agent TOML as configuration for the spawned session, so it
-can override model and provider settings supported by a normal session. Codex
-also officially permits any model/provider pair that supports the Responses or
-Chat Completions API. Because Chat Completions support is deprecated and will
-be removed, new adaptations should prefer Responses.
+can override model and provider settings supported by a normal session. The
+current
+[Codex config reference](https://learn.chatgpt.com/docs/config-file/config-reference#model_providersidwire_api)
+defines `responses` as the only supported `wire_api` value for a custom model
+provider. Re-check the project's pinned Codex baseline for every qualification;
+do not keep describing Chat Completions as a parallel direct Codex wire. An
+external provider that only supports Chat Completions needs a separately
+qualified, local `responses-bridge`, never a proxy for the OpenAI parent.
 
-A new provider/model pair must satisfy at least these conditions:
+A new worker must pass three orthogonal layers, not one “provider can chat” test:
 
-1. The provider exposes a wire API supported by the current Codex release and
-   authentication can be obtained safely from the standalone agent setup.
-2. The model has the capabilities required by the delegated job. Work that
-   searches or reads local material also requires reliable corresponding tool
-   calls.
-3. The standalone agent can define its own identity, model, `model_provider`,
-   provider configuration, instructions, and permissions without switching the
-   main task provider.
-4. The user accepts that the provider receives the child assignment, context,
-   and tool results.
-5. Native spawn, task delivery, required tools, result callback, and
-   cancellation semantics pass a real qualification. If the provider can
-   consume native V2 collaboration messages reliably, this Hook is unnecessary.
-   If it still encounters the cross-provider ciphertext boundary, the same
-   one-shot Hook protocol can be adapted.
+1. **Agent/runtime compatibility:** real discovery, spawn, requested-name to
+   canonical-AgentPath binding, parent relation, tool calls, wait, cancellation,
+   callback, resume, and termination.
+2. **Assignment transport compatibility:** explicitly select `native` or
+   `plaintext-v2`. Do not use the Hook when native V2 collaboration is reliable;
+   otherwise reuse the single plaintext protocol that passed G4.
+3. **Wire/provider compatibility:** explicitly select `native`,
+   `responses-direct`, or `responses-bridge`, then declare only proven request
+   normalization.
+
+The standalone Agent must also acquire its own authentication safely without
+switching the parent provider; the model must reliably support the tools needed
+by the job; and the user must accept that the external provider receives child
+assignment, context, and tool results. See the complete future qualification
+contracts in [Phase 2 Worker / Provider Profile](phase2-worker-provider-profiles.en.md)
+and [Phase 3 ZHIPU Responses bridge](phase3-zhipu-responses-bridge.en.md). Both
+stages remain closed.
 
 The ready-made artifacts in this repository remain deliberately bound to
 `v4_flash_worker` and DeepSeek. The agent template, authentication, Hook

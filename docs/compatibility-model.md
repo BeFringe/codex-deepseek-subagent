@@ -5,6 +5,11 @@
 状态：v1 控制面设计，2026-08-12。当前批准 Phase 0 证据与 probe 驱动的 Phase 1
 实现，但 Phase 1 尚未通过 G4；Phase 2/3 尚未获准实施。
 
+阶段文档：[Phase 1 / G4 probe plan](phase1-g4-probe-plan.md) ·
+[Phase 2 Worker / Provider Profile（关闭）](phase2-worker-provider-profiles.md) ·
+[Phase 3 ZHIPU Responses bridge（关闭）](phase3-zhipu-responses-bridge.md)。未来阶段文档的
+存在只保存设计与准入条件，不改变当前阶段裁决。
+
 ## 目标与非目标
 
 本仓库是可删除的异构 worker compatibility layer，不是全局 model router：
@@ -693,6 +698,10 @@ test-only completion，但不能据此证明 child 没有撒谎；receipt digest
   claim 有 monotonicity 或 adversarial witness、equivalence fan-out 守恒、end-to-end latency/dense
   witness 与 staged authority continuity 闭合，且 recovery artifact 不扩权。
   G4 前禁止 Phase 2；Phase 2 前禁止 Phase 3。
+
+Phase 2/3 的完整关闭状态合同分别见
+[Worker / Provider Profile](phase2-worker-provider-profiles.md) 与
+[ZHIPU child optional Responses bridge](phase3-zhipu-responses-bridge.md)。
 
 ## Rollback
 

@@ -19,21 +19,27 @@
 
 “主任务与 child 使用不同 provider/model”是 Codex 的通用组合能力，不是 DeepSeek
 特例。Codex 将每个独立 custom-agent TOML 作为 spawned session 的配置层，因此它
-可以覆盖普通 session 支持的模型与 provider 设置。Codex 官方也允许指向任何支持
-Responses 或 Chat Completions API 的模型/provider；由于 Chat Completions 支持已经
-标记为将来移除，新的适配应优先使用 Responses。
+可以覆盖普通 session 支持的模型与 provider 设置。当前
+[Codex config reference](https://learn.chatgpt.com/docs/config-file/config-reference#model_providersidwire_api)
+把 custom model provider 的 `wire_api` 唯一支持值定义为 `responses`；新的资格认证必须
+按项目锁定的 Codex baseline 重新核对，不能再把 Chat Completions 写成 Codex 可直连的
+并列 wire。只支持 Chat Completions 的 external provider 需要独立、局部且经资格认证的
+`responses-bridge`，不能把 OpenAI parent 一起代理化。
 
-一个新的 provider/model 组合至少需要满足：
+一个新的 worker 必须分别通过三个正交层级，而不是一次“provider 可聊天”的测试：
 
-1. provider 暴露 Codex 当前支持的 wire API，并能通过独立 Agent 配置安全取得认证；
-2. model 具备目标任务真正需要的能力；若要执行本地搜索、读取或其他工具工作，
-   还必须可靠支持相应 tool calls；
-3. 独立 Agent 文件能够完整定义自己的身份、model、`model_provider`、provider
-   配置、指令与权限，而不切换主任务 provider；
-4. 用户接受该 provider 会收到 child assignment、上下文与工具结果的数据边界；
-5. 实测 native spawn、任务交付、必要工具、结果 callback 与取消语义。若目标
-   provider 已能可靠消费原生 V2 collaboration message，就不需要本仓库的 Hook；
-   若仍遇到跨 provider ciphertext 边界，则可适配同一 one-shot Hook 协议。
+1. **Agent/runtime compatibility**：真实 discover、spawn、requested name → canonical
+   AgentPath、parent relation、tool call、wait、cancel、callback、resume 与 termination；
+2. **Assignment transport compatibility**：明确选择 `native` 或 `plaintext-v2`。原生 V2
+   collaboration 已可靠就不使用 Hook；否则复用同一个通过 G4 的 plaintext protocol；
+3. **Wire/provider compatibility**：明确选择 `native`、`responses-direct` 或
+   `responses-bridge`，并只声明已证明必要的 request profile。
+
+此外，独立 Agent 必须在不切换主任务 provider 的前提下安全取得自己的认证；model
+必须可靠支持任务所需 tool calls；用户必须接受 child assignment、上下文与工具结果会
+进入该 external provider 的数据边界。完整的未来抽象与 bridge 资格条件见
+[Phase 2 Worker / Provider Profile](phase2-worker-provider-profiles.md) 与
+[Phase 3 ZHIPU Responses bridge](phase3-zhipu-responses-bridge.md)，两阶段当前均关闭。
 
 本仓库的现成工件仍然有意绑定 `v4_flash_worker` 和 DeepSeek：Agent 模板、认证、
 Hook matcher、脚本中的 role、skill、`AGENTS.md` 索引与 smoke oracle 必须作为一个

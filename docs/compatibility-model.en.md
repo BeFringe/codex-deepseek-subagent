@@ -6,6 +6,12 @@ Status: v1 control-plane design, 2026-08-12. Phase 0 evidence and probe-driven
 Phase 1 implementation are approved, but Phase 1 has not passed G4. Phases 2
 and 3 are not approved for implementation yet.
 
+Stage documents: [Phase 1 / G4 probe plan](phase1-g4-probe-plan.md) ·
+[Phase 2 Worker / Provider Profile (closed)](phase2-worker-provider-profiles.en.md) ·
+[Phase 3 ZHIPU Responses bridge (closed)](phase3-zhipu-responses-bridge.en.md).
+Future-stage documentation preserves design and entry conditions; it does not
+change the current stage decision.
+
 ## Boundary
 
 This repository is a removable compatibility layer, not a global model router.
@@ -505,6 +511,10 @@ child is truthful; the parent must revalidate any receipt at the owner boundary.
 
 Phase 2 cannot start until P1–P7 and live evidence close the Phase 1 gate. Phase
 3 cannot start before Phase 2.
+
+The complete closed-stage contracts are
+[Worker / Provider Profile](phase2-worker-provider-profiles.en.md) and the
+[optional Responses bridge for a ZHIPU child](phase3-zhipu-responses-bridge.en.md).
 
 ## Baseline and rollback
 
