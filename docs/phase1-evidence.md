@@ -388,6 +388,14 @@ bytes, hash, and dirty state survive. This is isolated adapter evidence only;
 the native xhigh incident proves that a read-only assignment narrative by
 itself does not mediate the live tool surface.
 
+Evidence-availability boundary: on 2026-08-16 the Feature 5 parent confirmed
+that it retains the incident classification summaries and final disk/barrier
+observations, but not enough raw material to reconstruct the complete original
+tool acknowledgement, tool-use id, or interrupt/termination timeline without
+ambiguity. These two incidents therefore remain summary-level negative
+witnesses. They do not close a live P4/P5b, callback, or termination probe, and
+no synthetic event sequence is substituted for the missing raw evidence.
+
 ## Provider-free parent/sibling apply-patch writer claims
 
 `hooks/writer_lease_guard.py` now supplies the first bidirectional
