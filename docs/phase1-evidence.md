@@ -340,10 +340,25 @@ trusted Hook host process is sandboxed.
 The user's `config.toml` still contains only the prior v4
 `subagent_start:0:0` trust entry. No trust hash was forged or copied. Therefore
 the installed candidate is **trust pending**: no real live Hook dispatch,
-sandbox receipt, callback, compaction, stop, or rollback qualification is
-claimed. `codex --strict-config doctor --json` reported `config.load=ok`; its
+sandbox receipt, callback, compaction, stop, or complete rollback qualification
+is claimed. `codex --strict-config doctor --json` reported `config.load=ok`; its
 separate provider-reachability and state-database diagnostics were not changed
 or treated as G4 evidence. Phase 1 and `direct_write_qualified` remain false.
+
+A subsequent real file-level rollback moved the new agent, Hook directory, and
+state into the backup, restored the old `hooks.json` hash exactly, verified all
+three candidate paths absent, and rechecked the unchanged v4 agent/script hashes
+`051f0e767415a86fd09b4e125868d3a4e4cf41ba3d2fd81e9018edee62e9ed69` and
+`16353e6eb4484412bd7560a10eeae4dcf1533709910a373a4e98d414dc725a49`.
+The first move attempt collided because Hook and state directories share the
+same basename; state was then preserved under an explicit `state-...` backup
+name. No data was deleted. The installed-state receipt retained its exact hash.
+Reinstall restored every candidate hash above and the merged Hook hash exactly.
+
+This promotes the install/rollback receipt only from pending to **partial**. It
+proves artifact-level recovery and diagnostic preservation, not behavior of an
+already trusted/loaded Hook process across reload. That functional rollback,
+plus Windows and DeepSeek regression, remains open.
 
 ## Pre-write deadline and unresponsive-run evidence
 

@@ -18,7 +18,12 @@ class G4LiveInstallRecordTests(unittest.TestCase):
         self.assertFalse(record["live_hook_dispatch_observed"])
         self.assertEqual(record["trust"]["g4_entries"], "pending_user_review")
         self.assertFalse(record["trust"]["trust_hash_forged_or_copied"])
-        self.assertFalse(record["rollback"]["performed"])
+        self.assertTrue(record["rollback"]["performed"])
+        self.assertTrue(record["rollback"]["candidate_paths_absent_verified"])
+        self.assertTrue(record["rollback"]["diagnostic_receipt_preserved"])
+        self.assertTrue(record["rollback"]["reinstalled"])
+        self.assertFalse(record["rollback"]["functional_live_reload_observed"])
+        self.assertFalse(record["rollback"]["qualifies_exit_receipt"])
         self.assertFalse(record["phase1_complete"])
         self.assertFalse(record["direct_write_qualified"])
         self.assertEqual(record["phase2"], "closed")
@@ -31,6 +36,10 @@ class G4LiveInstallRecordTests(unittest.TestCase):
             record["installed"]["agent_sha256"],
             *record["installed"]["scripts"].values(),
             record["manual_host_probe"]["receipt_sha256"],
+            record["rollback"]["restored_hooks_json_sha256"],
+            record["rollback"]["v4_agent_sha256"],
+            record["rollback"]["v4_hook_sha256"],
+            record["rollback"]["reinstalled_hooks_json_sha256"],
         ]
         self.assertTrue(all(SHA256.fullmatch(value) for value in hashes))
 

@@ -42,8 +42,18 @@
   },
   "live_hook_dispatch_observed": false,
   "rollback": {
-    "performed": false,
-    "diagnostic_receipt_preserved": true
+    "performed": true,
+    "first_attempt_error": "Hook and state directories had the same basename in one backup destination",
+    "recovery": "moved state under the explicit state-codex-deepseek-subagent-g4 name",
+    "restored_hooks_json_sha256": "e20d6b3c3e70c088ca9e56afd25a3ee52660d16bbfb0d95b427adaa2cd7ba659",
+    "candidate_paths_absent_verified": true,
+    "v4_agent_sha256": "051f0e767415a86fd09b4e125868d3a4e4cf41ba3d2fd81e9018edee62e9ed69",
+    "v4_hook_sha256": "16353e6eb4484412bd7560a10eeae4dcf1533709910a373a4e98d414dc725a49",
+    "diagnostic_receipt_preserved": true,
+    "reinstalled": true,
+    "reinstalled_hooks_json_sha256": "8c7356e340db49abd86f41f49c09a8b59c5db1b7125e69f8808ab3a9b7720ff7",
+    "functional_live_reload_observed": false,
+    "qualifies_exit_receipt": false
   },
   "phase1_complete": false,
   "direct_write_qualified": false,
