@@ -49,14 +49,6 @@ successful tool output. A writer claim therefore releases on an exact success
 callback; tool failure or callback loss must leave it unresolved until a
 host-owned failure/quiescence barrier proves disk state.
 
-Current source also persists user input as a turn-stamped response item before
-the model can request tools, and rollout serializes it as `response_item`.
-The new provider-free authorization ceiling joins that record to the exact
-PreToolUse `turn_id`; source shape is not proof that every live host has flushed
-fresh bytes or prevents same-UID rewriting. A live write-mode capture must
-therefore record the raw user item ordinal/hash seen by the Hook and a fresh
-parent observer hash. Missing or divergent observations fail closed.
-
 `write_stdin` still intentionally emits no second `PreToolUse`. Function-shaped
 extensions get the default function Hook payload, while freeform/custom and
 tool-search payloads do not. Provider-hosted web search bypasses local tool Hook
@@ -71,34 +63,29 @@ Pinned anchors:
 - [requested name to AgentPath](https://github.com/openai/codex/blob/9392c3fa5bcda342b5b96a1a04d67b2f781617c2/codex-rs/core/src/tools/handlers/multi_agents_common.rs)
 - [V2 spawn canonical return](https://github.com/openai/codex/blob/9392c3fa5bcda342b5b96a1a04d67b2f781617c2/codex-rs/core/src/tools/handlers/multi_agents_v2/spawn.rs)
 - [rollout persist/flush distinction](https://github.com/openai/codex/blob/9392c3fa5bcda342b5b96a1a04d67b2f781617c2/codex-rs/rollout/src/recorder.rs)
-- [turn-stamped user prompt persistence](https://github.com/openai/codex/blob/9392c3fa5bcda342b5b96a1a04d67b2f781617c2/codex-rs/core/src/session/mod.rs)
-- [response-item rollout wire shape](https://github.com/openai/codex/blob/9392c3fa5bcda342b5b96a1a04d67b2f781617c2/codex-rs/history/src/rollout_payload.rs)
-- [response-item turn metadata](https://github.com/openai/codex/blob/9392c3fa5bcda342b5b96a1a04d67b2f781617c2/codex-rs/protocol/src/models.rs)
 
-## 0. User child-write authorization ceiling
+## 0. Parent intent ceiling and trusted-host consent gate
 
 Run these before any mutation-surface probe. They test only whether write mode
 may enter later gates; none authorizes tool execution by itself.
 
 | Case | Expected capture result |
 |---|---|
-| read-only assignment, no marker | pass only as strict read-only; receipt is exact `not_required/null/null` |
-| write assignment, no current-turn marker | deny before staging |
-| parent declares authorized but user marker is absent | deny before staging |
-| marker belongs to a prior/wrong turn | deny before staging |
-| two current-turn markers or authorizing messages | deny as ambiguous |
-| malformed, non-terminal, or open-field marker | deny before staging |
-| one exact current-turn marker | freeze turn/content hash, then continue to path/lease/qualification gates only |
-| exact marker plus overlapping parent/sibling writer claim | deny on writer conflict |
-| exact marker and no writer conflict while direct write is unqualified | capture may stage, but first mutation request freezes unresolved before execution |
+| read-only plus parent intent `deny` | pass only as strict read-only |
+| read-only plus parent intent `allow` | deny before staging |
+| write plus missing/default/`deny` parent intent | deny before staging |
+| write plus parent intent `allow` | freeze the intent, but write no host-consent receipt |
+| parent attempts to supply `trusted_host_user_write_consent=verified` | reject as corrupt/untrusted state |
+| allow intent plus overlapping parent/sibling writer claim | deny on writer conflict |
+| allow intent and no writer conflict | capture may stage, but first mutation request freezes unresolved with host-consent, qualification, and live-mediation blockers |
 
-For the positive ceiling case, preserve the raw PreToolUse input, the exact
-rollout line and ordinal read by the Hook, the canonical prompt hash, parent
-turn/tool-use identity, capsule hash, and fresh parent observation. Do not place
-credentials in the marker or evidence. Repeat after manual/automatic compaction
-and on root/nested parent paths; any loss or inferred reauthorization is a
-failure. Same-UID writable rollout/state remains a sandbox-trust blocker even
-if every functional case passes.
+Preserve the raw PreToolUse declaration, parent turn/tool-use identity, capsule
+hash, compact invariant, and unresolved blocker receipt. The parent intent is
+an audit fact, not a security proof. A live qualification probe for real user
+consent remains blocked until Codex exposes a host/UI signal that the parent and
+child cannot synthesize; do not substitute transcript text, a prompt marker,
+same-UID state, or an assignment boolean. Repeat root/nested and compaction cases
+only to prove the deny/intent record remains exact, never to infer consent.
 
 ## I. Isolated harness layout
 

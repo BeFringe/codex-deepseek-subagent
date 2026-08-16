@@ -130,21 +130,13 @@ class RuntimeGuardTests(unittest.TestCase):
             "capture_preflight": None,
             "capture_snapshot_sha256": "e" * 64,
             "assignment_mutation_mode": mutation_mode,
-            "user_child_write_authorization": (
-                {
-                    "schema": 1,
-                    "decision": "not_required",
-                    "authorizing_turn_id": None,
-                    "user_prompt_sha256": None,
-                }
-                if read_only
-                else {
-                    "schema": 1,
-                    "decision": "allow",
-                    "authorizing_turn_id": "parent-turn",
-                    "user_prompt_sha256": "f" * 64,
-                }
-            ),
+            "parent_recorded_user_write_intent": "deny" if read_only else "allow",
+            "trusted_host_user_write_consent": {
+                "schema": 1,
+                "status": "unavailable",
+                "source": None,
+                "receipt_sha256": None,
+            },
             "owned_paths": [] if read_only else ["owned"],
             "excluded_paths": [] if read_only else ["owned/excluded"],
             "git_authority": {"stage": False, "commit": False, "branch": False, "push": False},
@@ -409,7 +401,7 @@ class RuntimeGuardTests(unittest.TestCase):
         self.assertEqual(result["hookSpecificOutput"]["permissionDecision"], "deny")
         self.assertIn("outside.txt", result["hookSpecificOutput"]["permissionDecisionReason"])
 
-    def test_user_authorized_mutation_is_blocked_while_direct_write_is_unqualified(self):
+    def test_parent_recorded_intent_does_not_bypass_write_authority_gates(self):
         result = runtime_guard.pre_tool_use(
             self.store, self.child_hook("PreToolUse", tool_name="apply_patch")
         )
@@ -417,6 +409,10 @@ class RuntimeGuardTests(unittest.TestCase):
         self.assertEqual(result["hookSpecificOutput"]["permissionDecision"], "deny")
         self.assertIn(
             "direct_write_qualified=false",
+            result["hookSpecificOutput"]["permissionDecisionReason"],
+        )
+        self.assertIn(
+            "trusted host user consent is unavailable",
             result["hookSpecificOutput"]["permissionDecisionReason"],
         )
         self.assertFalse(self.store.path("active", self.capsule["assignment_id"]).exists())
@@ -427,7 +423,15 @@ class RuntimeGuardTests(unittest.TestCase):
         )
         self.assertEqual(
             unresolved["termination_evidence"]["classification"],
-            "direct_write_qualification_missing",
+            "write_authority_gates_missing",
+        )
+        self.assertEqual(
+            unresolved["termination_evidence"]["blocking_gates"],
+            [
+                "trusted_host_user_write_consent",
+                "direct_write_qualification",
+                "live_mutation_mediation",
+            ],
         )
         self.assertTrue(
             unresolved["termination_evidence"]["mutation_blocked_before_execution"]

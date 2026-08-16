@@ -396,10 +396,16 @@ ambiguity. These two incidents therefore remain summary-level negative
 witnesses. They do not close a live P4/P5b, callback, or termination probe, and
 no synthetic event sequence is substituted for the missing raw evidence.
 
-## Provider-free explicit user child-write ceiling
+## Superseded provider-free rollout-bound child-write ceiling
 
-The authority declaration and immutable capsule now separate five gates that
-were previously easy to conflate:
+This subsection records the exact `d2e79f5` experiment and its 180-test result.
+It is historical evidence, not the current schema: the next subsection removes
+the rollout marker/turn/prompt-hash mechanism after review found that it added a
+private user syntax and flush/schema coupling without creating a trusted host
+boundary.
+
+At that checkpoint, the authority declaration and immutable capsule separated
+five gates that were previously easy to conflate:
 
 | Gate | Provider-free candidate | Remaining qualification gap |
 |---|---|---|
@@ -442,6 +448,51 @@ are the expected evidence, not test failures.
 
 No live candidate was installed and no LocalCAT product file was modified.
 `Phase 1 complete=false` and `direct_write_qualified=false` remain unchanged.
+
+## Simplified parent intent and independent trusted-host gate
+
+The current isolated schema replaces the rollout-bound experiment with two
+small, explicitly different facts:
+
+- `parent_recorded_user_write_intent=deny|allow` is an auditable statement made
+  by the parent from the current instruction. It defaults/fails closed: a write
+  assignment with missing or `deny` intent cannot stage. It is not described as
+  host-attested user consent and grants no mutation authority.
+- `trusted_host_user_write_consent` is written by the Hook, not accepted from
+  the assignment. Schema 2 currently permits only
+  `status=unavailable, source=null, receipt_sha256=null`; a parent-fabricated
+  `verified` receipt is corrupt state. A future verified form requires a new
+  schema revision plus a real Codex host/UI consent signal.
+
+The compact invariant freezes both facts. A write capsule with parent intent
+`allow` may reach later read-only contribution/lifecycle checks, but its first
+mutation request is denied before execution and moved to unresolved as
+`write_authority_gates_missing`. The receipt mechanically lists all three
+current blockers: `trusted_host_user_write_consent`,
+`direct_write_qualification`, and `live_mutation_mediation`. Exact paths,
+parent/sibling writer claims, Git authority, sandbox, identity, callback,
+termination/quiescence, and the disk barrier remain separate gates.
+
+Provider-free tests prove missing/deny intent blocks write staging, allow intent
+does not fabricate host consent, forged host consent fails closed, read-only
+cannot carry allow intent, compact recovery preserves both facts, overlapping
+writer claims remain effective, and runtime mutation records all three blockers.
+The fresh complete result is:
+
+```text
+Ran 179 tests in 27.882s
+OK
+agent template checks passed
+```
+
+The post-simplification mutation matrix again reported `valid=true`, zero
+anchor failures, the same ten blocker classes, and
+`direct_write_qualified=false`. The same-UID probe again reported rollout and
+state unprotected and therefore also returned `direct_write_qualified=false`.
+
+This simplification removes rollout parsing from the Hook path and deletes the
+obsolete marker-specific negative space while preserving every downstream deny. It
+does not alter P4/P5b completion, install state, or the direct-write decision.
 
 ## Provider-free parent/sibling apply-patch writer claims
 

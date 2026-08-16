@@ -62,7 +62,6 @@ class AssignmentTransportTests(unittest.TestCase):
             parent_thread_id=None,
             agent_role=None,
         )
-        self.append_user_write_authorization()
 
     def tearDown(self):
         self.temporary_directory.cleanup()
@@ -105,35 +104,11 @@ class AssignmentTransportTests(unittest.TestCase):
         item = {"timestamp": payload["timestamp"], "type": "session_meta", "payload": payload}
         path.write_text(json.dumps(item) + "\n", encoding="utf-8")
 
-    def append_user_write_authorization(self, *, turn_id="parent-turn", allow=True):
-        marker = (
-            "Implement the requested task.\n\n"
-            "BEGIN CODEX CHILD WRITE AUTHORIZATION\n"
-            + json.dumps({"schema": 1, "allow": allow}, separators=(",", ":"))
-            + "\nEND CODEX CHILD WRITE AUTHORIZATION"
-        )
-        content = [{"type": "input_text", "text": marker}]
-        item = {
-            "timestamp": "2026-08-12T00:00:01Z",
-            "type": "response_item",
-            "payload": {
-                "type": "message",
-                "role": "user",
-                "content": content,
-                "internal_chat_message_metadata_passthrough": {"turn_id": turn_id},
-            },
-        }
-        with self.parent_transcript.open("a", encoding="utf-8") as stream:
-            stream.write(json.dumps(item) + "\n")
-        return assignment_transport.sha256_bytes(
-            assignment_transport.canonical_json({"turn_id": turn_id, "content": content})
-        )
-
     def message(self, *, authority=None):
         value = authority or {
             "schema": 1,
             "assignment_mutation_mode": "write",
-            "user_child_write_authorized": True,
+            "parent_recorded_user_write_intent": "allow",
             "owned_paths": ["owned"],
             "excluded_paths": ["owned/excluded"],
             "git_authority": {
@@ -377,74 +352,53 @@ class AssignmentTransportTests(unittest.TestCase):
         self.assertEqual(capsule["root"]["path"], str(self.repository.resolve()))
         self.assertEqual(capsule["assignment_mutation_mode"], "write")
         self.assertEqual(
-            capsule["user_child_write_authorization"]["decision"], "allow"
+            capsule["parent_recorded_user_write_intent"], "allow"
         )
         self.assertEqual(
-            capsule["user_child_write_authorization"]["authorizing_turn_id"],
-            "parent-turn",
+            capsule["trusted_host_user_write_consent"],
+            {
+                "schema": 1,
+                "status": "unavailable",
+                "source": None,
+                "receipt_sha256": None,
+            },
         )
 
-    def test_write_spawn_requires_exact_current_user_turn_authorization(self):
-        cases = []
-
-        self.write_meta(
-            self.parent_transcript,
-            session_id="runtime-session",
-            thread_id="parent-thread",
-            agent_path=None,
-            parent_thread_id=None,
-            agent_role=None,
-        )
-        cases.append(("missing", self.spawn_hook("missing_authorization")))
-
-        self.append_user_write_authorization(turn_id="different-turn")
-        cases.append(("wrong-turn", self.spawn_hook("wrong_turn_authorization")))
-
-        for name, hook in cases:
-            with self.subTest(name=name):
-                result = self.capture(hook)
-                self.assertEqual(
-                    result["hookSpecificOutput"]["permissionDecision"], "deny"
-                )
-                self.assertIn(
-                    "user authorization",
-                    result["hookSpecificOutput"]["permissionDecisionReason"],
-                )
-        self.assertFalse((self.store.root / "pending").exists())
-
-    def test_parent_declaration_cannot_self_authorize_write(self):
+    def test_write_spawn_requires_parent_recorded_explicit_user_intent(self):
         authority = json.loads(
             self.message().split("BEGIN CODEX WORKER AUTHORITY\n", 1)[1].split(
                 "\nEND CODEX WORKER AUTHORITY", 1
             )[0]
         )
-        authority["user_child_write_authorized"] = False
+        authority["parent_recorded_user_write_intent"] = "deny"
 
         result = self.capture(
             self.spawn_hook(
-                "parent_self_authorization",
+                "no_recorded_user_intent",
                 tool_input={"message": self.message(authority=authority)},
             )
         )
 
         self.assertEqual(result["hookSpecificOutput"]["permissionDecision"], "deny")
         self.assertIn(
-            "explicit user child-write authorization",
+            "parent-recorded explicit user intent",
             result["hookSpecificOutput"]["permissionDecisionReason"],
         )
         self.assertFalse((self.store.root / "pending").exists())
 
-    def test_duplicate_current_turn_user_write_authorizations_fail_closed(self):
-        self.append_user_write_authorization()
+    def test_parent_recorded_intent_never_fabricates_trusted_host_consent(self):
+        result = self.capture(self.spawn_hook("intent_is_not_host_consent"))
 
-        result = self.capture(self.spawn_hook("ambiguous_user_authorization"))
-
-        self.assertEqual(result["hookSpecificOutput"]["permissionDecision"], "deny")
-        self.assertIn(
-            "exactly one current-turn user authorization",
-            result["hookSpecificOutput"]["permissionDecisionReason"],
+        self.assertNotIn("permissionDecision", result["hookSpecificOutput"])
+        capsule = json.loads(
+            next((self.store.root / "pending").glob("*.json")).read_text(
+                encoding="utf-8"
+            )
+        )["capsule"]
+        self.assertEqual(capsule["parent_recorded_user_write_intent"], "allow")
+        self.assertEqual(
+            capsule["trusted_host_user_write_consent"]["status"], "unavailable"
         )
-        self.assertFalse((self.store.root / "pending").exists())
 
     def test_invalid_authority_or_fork_mode_blocks_spawn(self):
         invalid = self.message(authority={"schema": 1, "credentials": "forbidden"})
@@ -572,7 +526,7 @@ class AssignmentTransportTests(unittest.TestCase):
         authority["owned_paths"] = []
         authority["excluded_paths"] = []
         authority["assignment_mutation_mode"] = "read_only"
-        authority["user_child_write_authorized"] = False
+        authority["parent_recorded_user_write_intent"] = "deny"
         authority["authority_provenance"]["authoritative_input_roots"] = ["baseline.txt"]
         authority["execution_contract"] = {
             "posture": "strict_read_only",
@@ -629,7 +583,7 @@ class AssignmentTransportTests(unittest.TestCase):
         authority["owned_paths"] = []
         authority["excluded_paths"] = []
         authority["assignment_mutation_mode"] = "read_only"
-        authority["user_child_write_authorized"] = False
+        authority["parent_recorded_user_write_intent"] = "deny"
         authority["authority_provenance"]["authoritative_input_roots"] = ["baseline.txt"]
         authority["execution_contract"] = {
             "posture": "strict_read_only",
@@ -698,7 +652,7 @@ class AssignmentTransportTests(unittest.TestCase):
         authority["owned_paths"] = []
         authority["excluded_paths"] = []
         authority["assignment_mutation_mode"] = "read_only"
-        authority["user_child_write_authorized"] = False
+        authority["parent_recorded_user_write_intent"] = "deny"
         authority["execution_contract"].update(
             {
                 "posture": "strict_read_only",
@@ -1138,7 +1092,7 @@ class AssignmentTransportTests(unittest.TestCase):
         authority["owned_paths"] = []
         authority["excluded_paths"] = []
         authority["assignment_mutation_mode"] = "read_only"
-        authority["user_child_write_authorized"] = False
+        authority["parent_recorded_user_write_intent"] = "deny"
         authority["execution_contract"]["posture"] = "strict_read_only"
         authority["execution_contract"]["review_range"] = {
             "base_oid": head,
@@ -1308,7 +1262,6 @@ class AssignmentTransportTests(unittest.TestCase):
             agent_role="default",
             agent_path="/root/parent_task",
         )
-        self.append_user_write_authorization()
         hook = self.spawn_hook(agent_id="parent-thread", agent_type="default")
 
         self.capture(hook)

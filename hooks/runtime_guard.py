@@ -178,11 +178,15 @@ def pre_tool_use(
             observed_at = now or dt.datetime.now(dt.timezone.utc)
             snapshot = collect_git_snapshot(capsule["root"]["path"])
             mutation_mode = capsule["assignment_mutation_mode"]
-            reason = (
-                "read_only_mutation_attempt"
-                if mutation_mode == "read_only"
-                else "direct_write_qualification_missing"
-            )
+            reason = "read_only_mutation_attempt"
+            blocking_gates = None
+            if mutation_mode == "write":
+                reason = "write_authority_gates_missing"
+                blocking_gates = [
+                    "trusted_host_user_write_consent",
+                    "direct_write_qualification",
+                    "live_mutation_mediation",
+                ]
             evidence = _termination_evidence(
                 capsule,
                 snapshot,
@@ -191,6 +195,7 @@ def pre_tool_use(
                 attempted_tool_name=(
                     tool_name if isinstance(tool_name, str) and tool_name else "<invalid>"
                 ),
+                blocking_gates=blocking_gates,
             )
             store.terminate_active(assignment_id, evidence)
             if mutation_mode == "read_only":
@@ -199,8 +204,9 @@ def pre_tool_use(
                     "active authority terminated before execution"
                 )
             raise AuthorityViolation(
-                f"tool {tool_name!r} requested mutation with user authorization, but "
-                "direct_write_qualified=false and live mutation mediation is unproven; "
+                f"tool {tool_name!r} requested mutation with parent-recorded user intent, "
+                "but trusted host user consent is unavailable, direct_write_qualified=false, "
+                "and live mutation mediation is unproven; "
                 "active authority terminated before execution"
             )
         capsule = envelope["capsule"]
@@ -517,6 +523,7 @@ def _termination_evidence(
     reason: str,
     observed_at: dt.datetime,
     attempted_tool_name: str | None = None,
+    blocking_gates: list[str] | None = None,
 ) -> dict:
     disk_changed = disk_change_from_baseline(snapshot, capsule)
     if disk_changed is None:
@@ -541,15 +548,15 @@ def _termination_evidence(
         )
     elif reason == "read_only_mutation_attempt":
         classification = "read_only_child_mutation_attempt"
-    elif reason == "direct_write_qualification_missing":
-        classification = "direct_write_qualification_missing"
+    elif reason == "write_authority_gates_missing":
+        classification = "write_authority_gates_missing"
     else:
         classification = "initial_authority_mismatch"
     if classification == "late_mutation_after_interrupt":
         provenance_status = "overlapping_assignment_provenance"
     elif classification in {
         "read_only_child_mutation_attempt",
-        "direct_write_qualification_missing",
+        "write_authority_gates_missing",
     } and disk_changed:
         provenance_status = "pre_attempt_disk_drift_unattributed"
     else:
@@ -567,6 +574,8 @@ def _termination_evidence(
     if attempted_tool_name is not None:
         evidence["attempted_tool_name"] = attempted_tool_name
         evidence["mutation_blocked_before_execution"] = True
+    if blocking_gates is not None:
+        evidence["blocking_gates"] = list(blocking_gates)
     return evidence
 
 

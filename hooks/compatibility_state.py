@@ -190,11 +190,11 @@ WRITER_ACTOR_FIELDS = {
     "agent_type",
     "canonical_agent_path",
 }
-USER_CHILD_WRITE_AUTHORIZATION_FIELDS = {
+TRUSTED_HOST_USER_WRITE_CONSENT_FIELDS = {
     "schema",
-    "decision",
-    "authorizing_turn_id",
-    "user_prompt_sha256",
+    "status",
+    "source",
+    "receipt_sha256",
 }
 
 
@@ -257,7 +257,12 @@ def compact_invariant(capsule: Mapping[str, object]) -> dict:
         "canonical_agent_path": capsule["canonical_agent_path"],
         "root": capsule["root"],
         "assignment_mutation_mode": capsule["assignment_mutation_mode"],
-        "user_child_write_authorization": capsule["user_child_write_authorization"],
+        "parent_recorded_user_write_intent": capsule[
+            "parent_recorded_user_write_intent"
+        ],
+        "trusted_host_user_write_consent": capsule[
+            "trusted_host_user_write_consent"
+        ],
         "owned_paths": capsule["owned_paths"],
         "excluded_paths": capsule["excluded_paths"],
         "git_authority": capsule["git_authority"],
@@ -592,29 +597,29 @@ def validate_capsule(capsule: object, assignment: str) -> dict:
     mutation_mode = capsule.get("assignment_mutation_mode")
     if mutation_mode not in {"read_only", "write"}:
         raise CorruptState("assignment_mutation_mode must be read_only or write")
-    write_authorization = capsule.get("user_child_write_authorization")
+    parent_intent = capsule.get("parent_recorded_user_write_intent")
+    if parent_intent not in {"deny", "allow"}:
+        raise CorruptState("parent-recorded user write intent must be deny or allow")
+    if mutation_mode == "read_only" and parent_intent != "deny":
+        raise CorruptState("read-only assignment cannot record user write intent")
+    if mutation_mode == "write" and parent_intent != "allow":
+        raise CorruptState("write assignment lacks parent-recorded explicit user intent")
+    host_consent = capsule.get("trusted_host_user_write_consent")
     if (
-        not isinstance(write_authorization, dict)
-        or set(write_authorization) != USER_CHILD_WRITE_AUTHORIZATION_FIELDS
-        or write_authorization.get("schema") != 1
+        not isinstance(host_consent, dict)
+        or set(host_consent) != TRUSTED_HOST_USER_WRITE_CONSENT_FIELDS
+        or host_consent.get("schema") != 1
     ):
-        raise CorruptState("user child-write authorization fields are not exact")
-    if mutation_mode == "read_only":
-        if write_authorization != {
-            "schema": 1,
-            "decision": "not_required",
-            "authorizing_turn_id": None,
-            "user_prompt_sha256": None,
-        }:
-            raise CorruptState("read-only assignment cannot carry write authorization")
-    else:
-        if write_authorization.get("decision") != "allow":
-            raise CorruptState("write assignment lacks explicit user authorization")
-        if write_authorization.get("authorizing_turn_id") != capsule.get("parent_turn_id"):
-            raise CorruptState("write authorization turn does not match parent turn")
-        prompt_sha256 = write_authorization.get("user_prompt_sha256")
-        if not isinstance(prompt_sha256, str) or not SHA256_RE.fullmatch(prompt_sha256):
-            raise CorruptState("write authorization user prompt hash is invalid")
+        raise CorruptState("trusted host user write consent fields are not exact")
+    if host_consent != {
+        "schema": 1,
+        "status": "unavailable",
+        "source": None,
+        "receipt_sha256": None,
+    }:
+        raise CorruptState(
+            "trusted host user write consent is unavailable in isolated schema 2"
+        )
 
     _relative_paths(capsule.get("owned_paths"), "owned_paths")
     _relative_paths(capsule.get("excluded_paths"), "excluded_paths")

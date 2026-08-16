@@ -49,11 +49,12 @@ def capsule(assignment, **overrides):
         "capture_preflight": None,
         "capture_snapshot_sha256": "e" * 64,
         "assignment_mutation_mode": "write",
-        "user_child_write_authorization": {
+        "parent_recorded_user_write_intent": "allow",
+        "trusted_host_user_write_consent": {
             "schema": 1,
-            "decision": "allow",
-            "authorizing_turn_id": "parent-turn",
-            "user_prompt_sha256": "f" * 64,
+            "status": "unavailable",
+            "source": None,
+            "receipt_sha256": None,
         },
         "owned_paths": ["owned"],
         "excluded_paths": ["owned/excluded"],
@@ -183,13 +184,18 @@ class CompatibilityStateTests(unittest.TestCase):
         with self.assertRaisesRegex(CorruptState, "capsule_sha256"):
             validate_capsule(reordered, assignment)
 
-    def test_write_authorization_cannot_move_to_another_parent_turn(self):
+    def test_parent_intent_cannot_fabricate_trusted_host_consent(self):
         assignment = "bounded task"
         value = capsule(assignment)
-        value["user_child_write_authorization"]["authorizing_turn_id"] = "other-turn"
+        value["trusted_host_user_write_consent"] = {
+            "schema": 1,
+            "status": "verified",
+            "source": "parent_claim",
+            "receipt_sha256": "f" * 64,
+        }
         value["capsule_sha256"] = capsule_sha256(value)
 
-        with self.assertRaisesRegex(CorruptState, "does not match parent turn"):
+        with self.assertRaisesRegex(CorruptState, "unavailable in isolated schema 2"):
             validate_capsule(value, assignment)
 
     def test_compact_invariant_preserves_diagnostics_and_non_authorizing_baselines(self):
@@ -228,11 +234,12 @@ class CompatibilityStateTests(unittest.TestCase):
         value = capsule(
             assignment,
             assignment_mutation_mode="read_only",
-            user_child_write_authorization={
+            parent_recorded_user_write_intent="deny",
+            trusted_host_user_write_consent={
                 "schema": 1,
-                "decision": "not_required",
-                "authorizing_turn_id": None,
-                "user_prompt_sha256": None,
+                "status": "unavailable",
+                "source": None,
+                "receipt_sha256": None,
             },
             owned_paths=[],
             excluded_paths=[],
@@ -246,13 +253,14 @@ class CompatibilityStateTests(unittest.TestCase):
 
         self.assertEqual(invariant["execution_contract"], execution)
         self.assertEqual(invariant["assignment_mutation_mode"], "read_only")
+        self.assertEqual(invariant["parent_recorded_user_write_intent"], "deny")
         self.assertEqual(
-            invariant["user_child_write_authorization"],
+            invariant["trusted_host_user_write_consent"],
             {
                 "schema": 1,
-                "decision": "not_required",
-                "authorizing_turn_id": None,
-                "user_prompt_sha256": None,
+                "status": "unavailable",
+                "source": None,
+                "receipt_sha256": None,
             },
         )
         self.assertTrue(
@@ -265,12 +273,7 @@ class CompatibilityStateTests(unittest.TestCase):
         assignment = "reject authority smuggling"
         value = capsule(assignment)
         value["assignment_mutation_mode"] = "read_only"
-        value["user_child_write_authorization"] = {
-            "schema": 1,
-            "decision": "not_required",
-            "authorizing_turn_id": None,
-            "user_prompt_sha256": None,
-        }
+        value["parent_recorded_user_write_intent"] = "deny"
         value["execution_contract"] = {
             "posture": "strict_read_only",
             "review_range": {"base_oid": "a" * 64, "head_oid": "a" * 64},
@@ -320,11 +323,12 @@ class CompatibilityStateTests(unittest.TestCase):
         value = capsule(
             assignment,
             assignment_mutation_mode="read_only",
-            user_child_write_authorization={
+            parent_recorded_user_write_intent="deny",
+            trusted_host_user_write_consent={
                 "schema": 1,
-                "decision": "not_required",
-                "authorizing_turn_id": None,
-                "user_prompt_sha256": None,
+                "status": "unavailable",
+                "source": None,
+                "receipt_sha256": None,
             },
             owned_paths=[],
             excluded_paths=[],
