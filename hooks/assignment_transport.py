@@ -31,6 +31,8 @@ AUTHORITY_RE = re.compile(
 )
 AUTHORITY_FIELDS = {
     "schema",
+    "assignment_mutation_mode",
+    "user_child_write_authorized",
     "owned_paths",
     "excluded_paths",
     "git_authority",
@@ -42,6 +44,13 @@ AUTHORITY_FIELDS = {
     "pre_write_attestation_timeout_seconds",
     "ttl_seconds",
 }
+USER_WRITE_AUTHORIZATION_FIELDS = {"schema", "allow"}
+USER_WRITE_AUTHORIZATION_RE = re.compile(
+    r"(?:\A|\n)BEGIN CODEX CHILD WRITE AUTHORIZATION\n(\{.*\})\n"
+    r"END CODEX CHILD WRITE AUTHORIZATION\s*\Z",
+    re.DOTALL,
+)
+MAX_ROLLOUT_LINE = 8 * 1024 * 1024
 GIT_AUTHORITY_FIELDS = {"stage", "commit", "branch", "push"}
 TASK_NAME_RE = re.compile(r"^[a-z0-9_]+$")
 GIT_OID_RE = re.compile(r"^(?:[0-9a-f]{40}|[0-9a-f]{64})$")
@@ -78,6 +87,13 @@ def parse_authority_declaration(message: object) -> dict:
         raise GuardError("authority declaration fields are not exact")
     if value.get("schema") != 1:
         raise GuardError("authority declaration schema is invalid")
+    mutation_mode = value.get("assignment_mutation_mode")
+    if mutation_mode not in {"read_only", "write"}:
+        raise GuardError("assignment_mutation_mode must be read_only or write")
+    if type(value.get("user_child_write_authorized")) is not bool:
+        raise GuardError("user_child_write_authorized must be boolean")
+    if mutation_mode == "read_only" and value["user_child_write_authorized"]:
+        raise GuardError("read-only assignment cannot request child-write authorization")
     ttl_seconds = value.get("ttl_seconds")
     if type(ttl_seconds) is not int or not 1 <= ttl_seconds <= 3600:
         raise GuardError("authority ttl_seconds must be between 1 and 3600")
@@ -170,6 +186,11 @@ def _check_execution_contract(
         raise GuardError("execution_contract must be an object")
     posture = execution.get("posture")
     review_range = execution.get("review_range")
+    mutation_mode = declaration["assignment_mutation_mode"]
+    if mutation_mode == "read_only" and posture != "strict_read_only":
+        raise GuardError("read-only mutation mode requires strict_read_only posture")
+    if mutation_mode == "write" and posture != "direct_write_unqualified":
+        raise GuardError("write mutation mode requires direct_write_unqualified posture")
     if posture == "strict_read_only":
         if snapshot["index_changed"] or snapshot["git_status_short"] or snapshot["changed_paths"]:
             raise GuardError("strict read-only review requires a clean captured worktree")
@@ -240,6 +261,101 @@ def _check_execution_contract(
         actual = hashlib.sha256(resolved_manifest.read_bytes()).hexdigest()
         if actual != baseline.get("sha256"):
             raise GuardError("proven input baseline manifest hash does not match")
+
+
+def _user_child_write_authorization(
+    transcript_path: object,
+    parent_turn_id: object,
+    *,
+    mutation_mode: str,
+    requested: bool,
+) -> dict:
+    if mutation_mode == "read_only":
+        if requested:
+            raise GuardError("read-only assignment cannot request child-write authorization")
+        return {
+            "schema": 1,
+            "decision": "not_required",
+            "authorizing_turn_id": None,
+            "user_prompt_sha256": None,
+        }
+    if not requested:
+        raise GuardError("write assignment lacks explicit user child-write authorization")
+    if not isinstance(parent_turn_id, str) or not parent_turn_id:
+        raise GuardError("write authorization has no exact parent turn id")
+    if not isinstance(transcript_path, str) or not Path(transcript_path).is_absolute():
+        raise GuardError("write authorization has no absolute parent transcript path")
+
+    matches: list[dict] = []
+    try:
+        with Path(transcript_path).open("rb") as stream:
+            for raw_line in stream:
+                if len(raw_line) > MAX_ROLLOUT_LINE or not raw_line.endswith(b"\n"):
+                    raise GuardError("parent rollout contains an unbounded or partial line")
+                try:
+                    item = json.loads(raw_line.decode("utf-8"))
+                except (UnicodeDecodeError, json.JSONDecodeError) as error:
+                    raise GuardError("parent rollout contains invalid JSON") from error
+                if not isinstance(item, dict) or item.get("type") != "response_item":
+                    continue
+                payload = item.get("payload")
+                if not isinstance(payload, dict):
+                    continue
+                metadata = payload.get("internal_chat_message_metadata_passthrough")
+                if (
+                    payload.get("type") != "message"
+                    or payload.get("role") != "user"
+                    or not isinstance(metadata, dict)
+                    or metadata.get("turn_id") != parent_turn_id
+                ):
+                    continue
+                content = payload.get("content")
+                if not isinstance(content, list) or not content:
+                    raise GuardError("current-turn user prompt content is invalid")
+                text_parts = []
+                for part in content:
+                    if not isinstance(part, dict) or not isinstance(part.get("type"), str):
+                        raise GuardError("current-turn user prompt item is invalid")
+                    if part["type"] == "input_text":
+                        if set(part) != {"type", "text"} or not isinstance(part["text"], str):
+                            raise GuardError("current-turn user text item is invalid")
+                        text_parts.append(part["text"])
+                message = "\n".join(text_parts)
+                if message.count("BEGIN CODEX CHILD WRITE AUTHORIZATION") == 0:
+                    continue
+                if message.count("BEGIN CODEX CHILD WRITE AUTHORIZATION") != 1:
+                    raise GuardError("current-turn user prompt has ambiguous write authorization")
+                match = USER_WRITE_AUTHORIZATION_RE.search(message)
+                if match is None:
+                    raise GuardError("user child-write authorization must terminate the user prompt")
+                try:
+                    authorization = json.loads(match.group(1))
+                except json.JSONDecodeError as error:
+                    raise GuardError("user child-write authorization is invalid JSON") from error
+                if (
+                    not isinstance(authorization, dict)
+                    or set(authorization) != USER_WRITE_AUTHORIZATION_FIELDS
+                    or authorization.get("schema") != 1
+                    or authorization.get("allow") is not True
+                ):
+                    raise GuardError("user child-write authorization fields are not exact")
+                matches.append(
+                    {
+                        "schema": 1,
+                        "decision": "allow",
+                        "authorizing_turn_id": parent_turn_id,
+                        "user_prompt_sha256": sha256_bytes(
+                            canonical_json({"turn_id": parent_turn_id, "content": content})
+                        ),
+                    }
+                )
+    except OSError as error:
+        raise GuardError("parent rollout is unavailable for write authorization") from error
+    if len(matches) != 1:
+        raise GuardError(
+            "write assignment requires exactly one current-turn user authorization"
+        )
+    return matches[0]
 
 
 def _preexisting_dirty(root: Path, snapshot: Mapping[str, object]) -> list[dict]:
@@ -314,6 +430,13 @@ def capture_spawn(
         if tool_input.get("fork_turns") != "none":
             raise GuardError("plaintext-v2 spawn requires fork_turns=none")
         parent_meta, parent_path = _parent_runtime_identity(hook_input)
+        parent_turn_id = hook_input.get("turn_id")
+        write_authorization = _user_child_write_authorization(
+            hook_input.get("transcript_path"),
+            parent_turn_id,
+            mutation_mode=declaration["assignment_mutation_mode"],
+            requested=declaration["user_child_write_authorized"],
+        )
         cwd = hook_input.get("cwd")
         if not isinstance(cwd, str):
             raise GuardError("spawn Hook has no cwd")
@@ -340,7 +463,7 @@ def capture_spawn(
             "handoff_id": handoff_id,
             "runtime_session_id": str(hook_input["session_id"]),
             "parent_thread_id": parent_meta["id"],
-            "parent_turn_id": str(hook_input.get("turn_id") or ""),
+            "parent_turn_id": str(parent_turn_id or ""),
             "spawn_tool_use_id": str(hook_input.get("tool_use_id") or ""),
             "worker_profile": str(agent_type),
             "agent_type": str(agent_type),
@@ -356,6 +479,8 @@ def capture_spawn(
             },
             "capture_preflight": declaration["location_preflight"],
             "capture_snapshot_sha256": git_snapshot_sha256(snapshot),
+            "assignment_mutation_mode": declaration["assignment_mutation_mode"],
+            "user_child_write_authorization": write_authorization,
             "owned_paths": declaration["owned_paths"],
             "excluded_paths": declaration["excluded_paths"],
             "git_authority": git_authority,

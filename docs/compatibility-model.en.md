@@ -87,6 +87,8 @@ The schema 2 capsule contains at least:
 - resolved Git root, branch, base commit, and descendant-HEAD policy;
 - initial index/status facts and an optional narrowing-only capture preflight
   over expected root, branch, and the complete Git object id;
+- an explicit assignment mutation mode (`read_only` or `write`) and a
+  hash-bound current-user-turn child-write authorization receipt;
 - owned and excluded paths;
 - explicit stage/commit/branch/push authority;
 - ownership-handover references to trusted host termination/quiescence barriers
@@ -105,6 +107,37 @@ The schema 2 capsule contains at least:
 - a bounded first-Git-attestation deadline.
 
 `assignment_id` is immutable authority; `handoff_id` is one delivery attempt.
+The assignment mutation mode is intent, not qualification. `read_only` requires
+`strict_read_only` plus an exact `not_required/null/null` authorization receipt.
+`write` requires `direct_write_unqualified` and a unique current-turn user
+rollout message ending in this exact structured block:
+
+```text
+BEGIN CODEX CHILD WRITE AUTHORIZATION
+{"schema":1,"allow":true}
+END CODEX CHILD WRITE AUTHORIZATION
+```
+
+The assignment's `user_child_write_authorized=true` only asks the Hook to verify
+that record; a parent declaration cannot create the authorization. Capture
+joins `response_item(role=user)` to the exact Hook `turn_id`, hashes its
+canonical content, and freezes the receipt. Missing, wrong-turn, duplicate,
+non-terminal, malformed, or ambiguous authorization denies spawn.
+
+User authorization is only a mutation permission ceiling. It grants no owned
+path or Git authority, takes no parent/sibling writer lease, does not make
+`direct_write_qualified` true, and cannot replace sandbox, SessionMeta identity,
+Hook mediation, callback, termination/quiescence, or the post-termination disk
+barrier. In the current candidate, even a write capsule with a valid receipt has
+its first mutation request frozen before execution as
+`direct_write_qualification_missing`.
+
+This rollout turn/hash binding is provider-free source-bound evidence, not live
+trust proof. The same-UID probe still shows rollout/state bytes are writable,
+and no per-PreToolUse fsync guarantee is established. Until live probes prove
+transcript freshness, sandbox mediation, and non-forgeability, the receipt
+cannot qualify direct write.
+
 The canonical path is bound only after runtime metadata proves it. Recovery may
 create a new, explicitly linked assignment over a frozen dirty baseline; it may
 not replay a consumed handoff or mutate the old capsule to expand authority.

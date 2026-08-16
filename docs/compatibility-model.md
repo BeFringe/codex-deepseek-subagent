@@ -114,6 +114,13 @@ assignment 的 capsule，不能被 provider profile 默认、推断或归一化�
     "expected_base_head": "full exact object id"
   },
   "capture_snapshot_sha256": "hex",
+  "assignment_mutation_mode": "read_only|write",
+  "user_child_write_authorization": {
+    "schema": 1,
+    "decision": "not_required|allow",
+    "authorizing_turn_id": "exact parent turn id or null",
+    "user_prompt_sha256": "hex or null"
+  },
   "owned_paths": ["repo-relative/path"],
   "excluded_paths": ["repo-relative/path"],
   "git_authority": {
@@ -277,6 +284,31 @@ assignment 的 capsule，不能被 provider profile 默认、推断或归一化�
 规则：
 
 - `assignment_id` 标识 immutable authority；`handoff_id` 标识一次 transport instance。
+- `assignment_mutation_mode` 是 assignment 的 mutation intent，不是 qualification。
+  `read_only` 必须配 `strict_read_only`，且 authorization receipt 必须是精确的
+  `not_required/null/null`；`write` 必须配 `direct_write_unqualified`，并在 capture 时证明
+  当前 parent turn 的唯一 user rollout message 以如下结构化块结束：
+
+  ```text
+  BEGIN CODEX CHILD WRITE AUTHORIZATION
+  {"schema":1,"allow":true}
+  END CODEX CHILD WRITE AUTHORIZATION
+  ```
+
+  assignment declaration 中的 `user_child_write_authorized=true` 只是请求 Hook 核验，不能
+  由 parent 自报成为授权。Hook 从真实 `transcript_path` 的
+  `response_item(role=user)`、exact `turn_id` 重算 canonical prompt hash，并把 receipt 冻结进
+  capsule；缺失、wrong-turn、重复、非终止块或 hash/schema 歧义全部在 spawn 前 deny。
+- 用户授权只是 child mutation 的 permission ceiling。它不授予 owned path，不取得 parent/
+  sibling writer lease，不改变 Git authority，不把 `direct_write_qualified` 置 true，也不能替代
+  sandbox、SessionMeta identity、PreToolUse/PostToolUse mediation、callback、termination/
+  quiescence 或 post-termination disk barrier。当前 `write` capsule 即使拥有有效 user receipt，
+  第一次 mutation tool request 仍以 `direct_write_qualification_missing` 在执行前冻结为
+  unresolved。
+- rollout turn/hash binding 是 provider-free 的 source-bound candidate，不是 live trust 证明。
+  当前 same-UID probe 表明 rollout/state 可写，且当前 Codex 对每次 PreToolUse 没有独立 fsync
+  证明；在 isolated/live probe 证明 transcript freshness、sandbox mediation 与不可伪造性之前，
+  receipt 不能升级 direct-write 资格。
 - `canonical_agent_path` 只在 runtime metadata 证明后写入绑定记录，不能猜字符串格式。
 - capsule 本身不可原地扩大权限。恢复 assignment 必须新建 identity，并显式引用冻结的
   dirty baseline；不得 replay 已消费的 handoff。

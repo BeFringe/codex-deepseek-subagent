@@ -190,6 +190,12 @@ WRITER_ACTOR_FIELDS = {
     "agent_type",
     "canonical_agent_path",
 }
+USER_CHILD_WRITE_AUTHORIZATION_FIELDS = {
+    "schema",
+    "decision",
+    "authorizing_turn_id",
+    "user_prompt_sha256",
+}
 
 
 class StateError(RuntimeError):
@@ -250,6 +256,8 @@ def compact_invariant(capsule: Mapping[str, object]) -> dict:
         "requested_task_name": capsule["requested_task_name"],
         "canonical_agent_path": capsule["canonical_agent_path"],
         "root": capsule["root"],
+        "assignment_mutation_mode": capsule["assignment_mutation_mode"],
+        "user_child_write_authorization": capsule["user_child_write_authorization"],
         "owned_paths": capsule["owned_paths"],
         "excluded_paths": capsule["excluded_paths"],
         "git_authority": capsule["git_authority"],
@@ -581,6 +589,33 @@ def validate_capsule(capsule: object, assignment: str) -> dict:
     ):
         raise CorruptState("capture_snapshot_sha256 is invalid")
 
+    mutation_mode = capsule.get("assignment_mutation_mode")
+    if mutation_mode not in {"read_only", "write"}:
+        raise CorruptState("assignment_mutation_mode must be read_only or write")
+    write_authorization = capsule.get("user_child_write_authorization")
+    if (
+        not isinstance(write_authorization, dict)
+        or set(write_authorization) != USER_CHILD_WRITE_AUTHORIZATION_FIELDS
+        or write_authorization.get("schema") != 1
+    ):
+        raise CorruptState("user child-write authorization fields are not exact")
+    if mutation_mode == "read_only":
+        if write_authorization != {
+            "schema": 1,
+            "decision": "not_required",
+            "authorizing_turn_id": None,
+            "user_prompt_sha256": None,
+        }:
+            raise CorruptState("read-only assignment cannot carry write authorization")
+    else:
+        if write_authorization.get("decision") != "allow":
+            raise CorruptState("write assignment lacks explicit user authorization")
+        if write_authorization.get("authorizing_turn_id") != capsule.get("parent_turn_id"):
+            raise CorruptState("write authorization turn does not match parent turn")
+        prompt_sha256 = write_authorization.get("user_prompt_sha256")
+        if not isinstance(prompt_sha256, str) or not SHA256_RE.fullmatch(prompt_sha256):
+            raise CorruptState("write authorization user prompt hash is invalid")
+
     _relative_paths(capsule.get("owned_paths"), "owned_paths")
     _relative_paths(capsule.get("excluded_paths"), "excluded_paths")
     git_authority = capsule.get("git_authority")
@@ -654,6 +689,10 @@ def validate_capsule(capsule: object, assignment: str) -> dict:
     posture = execution["posture"]
     if posture not in {"strict_read_only", "direct_write_unqualified"}:
         raise CorruptState("execution_contract.posture is invalid")
+    if mutation_mode == "read_only" and posture != "strict_read_only":
+        raise CorruptState("read-only mutation mode requires strict_read_only posture")
+    if mutation_mode == "write" and posture != "direct_write_unqualified":
+        raise CorruptState("write mutation mode requires direct_write_unqualified posture")
     review_range = execution["review_range"]
     if review_range is not None:
         if not isinstance(review_range, dict) or set(review_range) != {"base_oid", "head_oid"}:

@@ -48,6 +48,13 @@ def capsule(assignment, **overrides):
         },
         "capture_preflight": None,
         "capture_snapshot_sha256": "e" * 64,
+        "assignment_mutation_mode": "write",
+        "user_child_write_authorization": {
+            "schema": 1,
+            "decision": "allow",
+            "authorizing_turn_id": "parent-turn",
+            "user_prompt_sha256": "f" * 64,
+        },
         "owned_paths": ["owned"],
         "excluded_paths": ["owned/excluded"],
         "git_authority": {
@@ -176,6 +183,15 @@ class CompatibilityStateTests(unittest.TestCase):
         with self.assertRaisesRegex(CorruptState, "capsule_sha256"):
             validate_capsule(reordered, assignment)
 
+    def test_write_authorization_cannot_move_to_another_parent_turn(self):
+        assignment = "bounded task"
+        value = capsule(assignment)
+        value["user_child_write_authorization"]["authorizing_turn_id"] = "other-turn"
+        value["capsule_sha256"] = capsule_sha256(value)
+
+        with self.assertRaisesRegex(CorruptState, "does not match parent turn"):
+            validate_capsule(value, assignment)
+
     def test_compact_invariant_preserves_diagnostics_and_non_authorizing_baselines(self):
         assignment = "strict read-only review"
         execution = {
@@ -211,6 +227,13 @@ class CompatibilityStateTests(unittest.TestCase):
         }
         value = capsule(
             assignment,
+            assignment_mutation_mode="read_only",
+            user_child_write_authorization={
+                "schema": 1,
+                "decision": "not_required",
+                "authorizing_turn_id": None,
+                "user_prompt_sha256": None,
+            },
             owned_paths=[],
             excluded_paths=[],
             preexisting_dirty=[],
@@ -222,6 +245,16 @@ class CompatibilityStateTests(unittest.TestCase):
         invariant = compatibility_state.compact_invariant(value)
 
         self.assertEqual(invariant["execution_contract"], execution)
+        self.assertEqual(invariant["assignment_mutation_mode"], "read_only")
+        self.assertEqual(
+            invariant["user_child_write_authorization"],
+            {
+                "schema": 1,
+                "decision": "not_required",
+                "authorizing_turn_id": None,
+                "user_prompt_sha256": None,
+            },
+        )
         self.assertTrue(
             invariant["execution_contract"]["proven_input_baselines"][0][
                 "non_authorizing"
@@ -231,6 +264,13 @@ class CompatibilityStateTests(unittest.TestCase):
     def test_strict_read_only_contract_rejects_owned_paths_or_authorizing_baseline(self):
         assignment = "reject authority smuggling"
         value = capsule(assignment)
+        value["assignment_mutation_mode"] = "read_only"
+        value["user_child_write_authorization"] = {
+            "schema": 1,
+            "decision": "not_required",
+            "authorizing_turn_id": None,
+            "user_prompt_sha256": None,
+        }
         value["execution_contract"] = {
             "posture": "strict_read_only",
             "review_range": {"base_oid": "a" * 64, "head_oid": "a" * 64},
@@ -279,6 +319,13 @@ class CompatibilityStateTests(unittest.TestCase):
         prior_assignment_id = str(uuid.uuid4())
         value = capsule(
             assignment,
+            assignment_mutation_mode="read_only",
+            user_child_write_authorization={
+                "schema": 1,
+                "decision": "not_required",
+                "authorizing_turn_id": None,
+                "user_prompt_sha256": None,
+            },
             owned_paths=[],
             excluded_paths=[],
             preexisting_dirty=[],

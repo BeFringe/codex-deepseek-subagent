@@ -396,6 +396,53 @@ ambiguity. These two incidents therefore remain summary-level negative
 witnesses. They do not close a live P4/P5b, callback, or termination probe, and
 no synthetic event sequence is substituted for the missing raw evidence.
 
+## Provider-free explicit user child-write ceiling
+
+The authority declaration and immutable capsule now separate five gates that
+were previously easy to conflate:
+
+| Gate | Provider-free candidate | Remaining qualification gap |
+|---|---|---|
+| user permission ceiling | a `write` declaration requires `user_child_write_authorized=true`; capture independently finds exactly one current-turn user rollout message ending in the closed authorization block and freezes its turn/content hash | live transcript freshness, same-UID trust, and UI/CLI usability |
+| assignment mutation mode | exact `read_only|write`; read-only cannot carry an authorization receipt and write cannot use the strict-review posture | live dispatch and sandbox binding |
+| exact ownership | owned/excluded paths remain independently validated and conflict-checked | child-side atomic mediation for every mutation surface |
+| writer serialization | parent/sibling structured `apply_patch` claims still block overlapping capture even when user authorization exists | shell, PTY, MCP, code-mode, extension, Git/config, and control surfaces |
+| qualification/lifecycle | an authorized write capsule's mutation request is frozen before execution as `direct_write_qualification_missing` | real identity, sandbox, callback, strong termination/quiescence, disk barrier, POSIX/Windows/DeepSeek/live rollback |
+
+The exact user marker is intentionally turn-scoped and terminates the user
+message. A parent-authored authority boolean is insufficient: missing marker,
+wrong turn, duplicate marker/message, malformed closed fields, or a read-only
+mode/authorization contradiction denies spawn. The compact invariant includes
+the mutation mode and receipt so compaction cannot erase or expand this ceiling.
+
+Pinned source confirms that current-turn user input is persisted as a
+turn-stamped response item before tools and that rollout encodes it as a
+`response_item`; this is only a schema/source anchor. It does not prove that a
+live Hook sees a fresh, unforgeable record on every supported host. The prior
+same-UID result remains negative, so this layer cannot alter the direct-write
+decision.
+
+Provider-free negative fixtures cover missing, wrong-turn, duplicate, and
+parent-only declarations; read-only non-expansion; compact receipt binding;
+authorized capture versus an overlapping parent writer claim; and authorized
+runtime mutation versus `direct_write_qualified=false`. The fresh complete
+result is:
+
+```text
+Ran 180 tests in 25.647s
+OK
+agent template checks passed
+```
+
+The re-pinned mutation matrix reported `valid=true`, zero anchor failures, and
+the same ten blocker classes; `direct_write_qualified=false`. The same-UID
+probe again reported both rollout and state unprotected and therefore also
+returned `direct_write_qualified=false`. These negative qualification results
+are the expected evidence, not test failures.
+
+No live candidate was installed and no LocalCAT product file was modified.
+`Phase 1 complete=false` and `direct_write_qualified=false` remain unchanged.
+
 ## Provider-free parent/sibling apply-patch writer claims
 
 `hooks/writer_lease_guard.py` now supplies the first bidirectional

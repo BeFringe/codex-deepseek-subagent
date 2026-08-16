@@ -177,18 +177,30 @@ def pre_tool_use(
             capsule = envelope["capsule"]
             observed_at = now or dt.datetime.now(dt.timezone.utc)
             snapshot = collect_git_snapshot(capsule["root"]["path"])
+            mutation_mode = capsule["assignment_mutation_mode"]
+            reason = (
+                "read_only_mutation_attempt"
+                if mutation_mode == "read_only"
+                else "direct_write_qualification_missing"
+            )
             evidence = _termination_evidence(
                 capsule,
                 snapshot,
-                reason="read_only_mutation_attempt",
+                reason=reason,
                 observed_at=observed_at,
                 attempted_tool_name=(
                     tool_name if isinstance(tool_name, str) and tool_name else "<invalid>"
                 ),
             )
             store.terminate_active(assignment_id, evidence)
+            if mutation_mode == "read_only":
+                raise AuthorityViolation(
+                    f"tool {tool_name!r} is not in the qualified read-only allowlist; "
+                    "active authority terminated before execution"
+                )
             raise AuthorityViolation(
-                f"tool {tool_name!r} is not in the qualified read-only allowlist; "
+                f"tool {tool_name!r} requested mutation with user authorization, but "
+                "direct_write_qualified=false and live mutation mediation is unproven; "
                 "active authority terminated before execution"
             )
         capsule = envelope["capsule"]
@@ -529,11 +541,16 @@ def _termination_evidence(
         )
     elif reason == "read_only_mutation_attempt":
         classification = "read_only_child_mutation_attempt"
+    elif reason == "direct_write_qualification_missing":
+        classification = "direct_write_qualification_missing"
     else:
         classification = "initial_authority_mismatch"
     if classification == "late_mutation_after_interrupt":
         provenance_status = "overlapping_assignment_provenance"
-    elif classification == "read_only_child_mutation_attempt" and disk_changed:
+    elif classification in {
+        "read_only_child_mutation_attempt",
+        "direct_write_qualification_missing",
+    } and disk_changed:
         provenance_status = "pre_attempt_disk_drift_unattributed"
     else:
         provenance_status = None

@@ -104,8 +104,9 @@ class RuntimeGuardTests(unittest.TestCase):
         item = {"timestamp": payload["timestamp"], "type": "session_meta", "payload": payload}
         self.parent_transcript.write_text(json.dumps(item) + "\n", encoding="utf-8")
 
-    def make_capsule(self):
+    def make_capsule(self, *, mutation_mode="write"):
         now = dt.datetime.now(dt.timezone.utc)
+        read_only = mutation_mode == "read_only"
         value = {
             "schema": 2,
             "assignment_id": str(uuid.uuid4()),
@@ -128,8 +129,24 @@ class RuntimeGuardTests(unittest.TestCase):
             },
             "capture_preflight": None,
             "capture_snapshot_sha256": "e" * 64,
-            "owned_paths": ["owned"],
-            "excluded_paths": ["owned/excluded"],
+            "assignment_mutation_mode": mutation_mode,
+            "user_child_write_authorization": (
+                {
+                    "schema": 1,
+                    "decision": "not_required",
+                    "authorizing_turn_id": None,
+                    "user_prompt_sha256": None,
+                }
+                if read_only
+                else {
+                    "schema": 1,
+                    "decision": "allow",
+                    "authorizing_turn_id": "parent-turn",
+                    "user_prompt_sha256": "f" * 64,
+                }
+            ),
+            "owned_paths": [] if read_only else ["owned"],
+            "excluded_paths": [] if read_only else ["owned/excluded"],
             "git_authority": {"stage": False, "commit": False, "branch": False, "push": False},
             "ownership_handover": [],
             "stop_condition": "assigned slice completion only",
@@ -142,8 +159,12 @@ class RuntimeGuardTests(unittest.TestCase):
                 "required_derivation_boundary": "fixture.owner.derive",
             },
             "execution_contract": {
-                "posture": "direct_write_unqualified",
-                "review_range": None,
+                "posture": "strict_read_only" if read_only else "direct_write_unqualified",
+                "review_range": (
+                    {"base_oid": self.base, "head_oid": self.base}
+                    if read_only
+                    else None
+                ),
                 "required_invariants": [],
                 "diagnostics": {
                     "stable_failure_codes": [],
@@ -158,7 +179,7 @@ class RuntimeGuardTests(unittest.TestCase):
                 "review_continuation": None,
                 "closed_registries": [],
                 "relation_contracts": [],
-                "capsule_feasibility_attestation": {
+                "capsule_feasibility_attestation": None if read_only else {
                     "parent_owner_id": "fixture.owner",
                     "exact_claimed_invariant": "the assigned slice closes within budget",
                     "counterexample_probe": {
@@ -202,6 +223,14 @@ class RuntimeGuardTests(unittest.TestCase):
         }
         value["capsule_sha256"] = capsule_sha256(value)
         return value
+
+    def replace_active_capsule(self, capsule):
+        self.store.finalize(self.capsule["assignment_id"], {}, complete=False)
+        self.capsule = capsule
+        self.store.stage(self.capsule, self.assignment)
+        identity = runtime_guard.child_identity_from_hook(self.child_hook("SubagentStart"))
+        self.store.claim(self.capsule["handoff_id"], identity)
+        self.store.activate(self.capsule["handoff_id"])
 
     def child_hook(self, event, **overrides):
         value = {
@@ -380,13 +409,16 @@ class RuntimeGuardTests(unittest.TestCase):
         self.assertEqual(result["hookSpecificOutput"]["permissionDecision"], "deny")
         self.assertIn("outside.txt", result["hookSpecificOutput"]["permissionDecisionReason"])
 
-    def test_unqualified_mutation_tool_is_blocked_even_with_valid_identity(self):
+    def test_user_authorized_mutation_is_blocked_while_direct_write_is_unqualified(self):
         result = runtime_guard.pre_tool_use(
             self.store, self.child_hook("PreToolUse", tool_name="apply_patch")
         )
 
         self.assertEqual(result["hookSpecificOutput"]["permissionDecision"], "deny")
-        self.assertIn("read-only allowlist", result["hookSpecificOutput"]["permissionDecisionReason"])
+        self.assertIn(
+            "direct_write_qualified=false",
+            result["hookSpecificOutput"]["permissionDecisionReason"],
+        )
         self.assertFalse(self.store.path("active", self.capsule["assignment_id"]).exists())
         unresolved = json.loads(
             self.store.path("unresolved", self.capsule["assignment_id"]).read_text(
@@ -395,13 +427,14 @@ class RuntimeGuardTests(unittest.TestCase):
         )
         self.assertEqual(
             unresolved["termination_evidence"]["classification"],
-            "read_only_child_mutation_attempt",
+            "direct_write_qualification_missing",
         )
         self.assertTrue(
             unresolved["termination_evidence"]["mutation_blocked_before_execution"]
         )
 
     def test_read_only_child_cannot_restore_foreign_parent_dirty_bytes(self):
+        self.replace_active_capsule(self.make_capsule(mutation_mode="read_only"))
         target = self.repository / "baseline.txt"
         target.write_text("parent-owned update\n", encoding="utf-8")
         before = hashlib.sha256(target.read_bytes()).hexdigest()
