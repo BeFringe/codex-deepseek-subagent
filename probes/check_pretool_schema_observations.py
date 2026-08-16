@@ -63,6 +63,9 @@ def main() -> int:
                 "tool_use_id": receipt["tool_use_id"],
                 "tool_input_type": receipt["tool_input_type"],
                 "tool_input_shape": receipt["tool_input_shape"],
+                "selected_string_fingerprints": receipt.get(
+                    "selected_string_fingerprints", []
+                ),
             }
             for receipt in receipts
         ],

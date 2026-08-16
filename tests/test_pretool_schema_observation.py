@@ -97,7 +97,23 @@ class PreToolSchemaObservationTests(unittest.TestCase):
                 {"key": "task_name", "value_type": "string"},
             ],
         )
+        fingerprint = receipt["selected_string_fingerprints"][0]
+        self.assertEqual(fingerprint["key"], "message")
+        self.assertEqual(fingerprint["length"], len("private-assignment-sentinel"))
+        self.assertEqual(fingerprint["authority_begin_count"], 0)
+        self.assertEqual(fingerprint["authority_end_count"], 0)
+        self.assertEqual(len(fingerprint["sha256"]), 64)
         self.assertFalse(receipt["raw_payload_stored"])
+
+    def test_existing_schema_one_receipt_remains_replayable(self):
+        receipt = pretool_schema_observation.observation_from_hook(self.hook())
+        receipt.pop("selected_string_fingerprints")
+        receipt["schema"] = 1
+        receipt["receipt_sha256"] = pretool_schema_observation.receipt_sha256(receipt)
+
+        accepted = pretool_schema_observation.validate_receipt(receipt)
+
+        self.assertEqual(accepted["schema"], 1)
 
     def test_observer_uses_realpath_equality_and_ignores_other_root(self):
         alias = self.repository / ".." / "repository"
@@ -119,7 +135,7 @@ class PreToolSchemaObservationTests(unittest.TestCase):
             observation_root=self.repository,
         )
         value = json.loads(path.read_text(encoding="utf-8"))
-        value["tool_name"] = "tampered"
+        value["cwd"] += "/tampered"
         path.write_text(json.dumps(value), encoding="utf-8")
 
         with self.assertRaisesRegex(CorruptState, "hash does not match"):

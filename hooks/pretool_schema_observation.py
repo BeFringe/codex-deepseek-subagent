@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import datetime as dt
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -15,7 +16,7 @@ from compatibility_state import CorruptState, StateStore, canonical_json, sha256
 from writer_lease_guard import actor_identity_from_hook
 
 
-SCHEMA = 1
+CURRENT_SCHEMA = 2
 OMITTED_PAYLOAD_FIELDS = [
     "agent_transcript_path",
     "last_assistant_message",
@@ -30,7 +31,7 @@ ACTOR_FIELDS = {
     "canonical_agent_path",
 }
 SHAPE_FIELDS = {"key", "value_type"}
-RECEIPT_FIELDS = {
+RECEIPT_FIELDS_V1 = {
     "schema",
     "observation_id",
     "observed_at",
@@ -45,6 +46,15 @@ RECEIPT_FIELDS = {
     "omitted_payload_fields",
     "receipt_sha256",
 }
+RECEIPT_FIELDS_V2 = RECEIPT_FIELDS_V1 | {"selected_string_fingerprints"}
+FINGERPRINT_FIELDS = {
+    "key",
+    "length",
+    "sha256",
+    "authority_begin_count",
+    "authority_end_count",
+}
+FINGERPRINTED_TOOL_NAMES = {"spawn_agent", "Agent", "collaborationspawn_agent"}
 JSON_TYPES = {"null", "boolean", "integer", "number", "string", "array", "object"}
 
 
@@ -90,9 +100,11 @@ def receipt_sha256(receipt: Mapping[str, object]) -> str:
 
 
 def validate_receipt(receipt: object) -> dict:
-    if not isinstance(receipt, dict) or set(receipt) != RECEIPT_FIELDS:
+    if not isinstance(receipt, dict):
         raise CorruptState("PreToolUse schema receipt fields are not exact")
-    if receipt["schema"] != SCHEMA:
+    schema = receipt.get("schema")
+    expected_fields = {1: RECEIPT_FIELDS_V1, 2: RECEIPT_FIELDS_V2}.get(schema)
+    if expected_fields is None or set(receipt) != expected_fields:
         raise CorruptState("PreToolUse schema receipt version is invalid")
     try:
         uuid.UUID(_nonempty(receipt["observation_id"], "observation_id"))
@@ -127,6 +139,34 @@ def validate_receipt(receipt: object) -> dict:
         raise CorruptState("schema receipt input keys are not unique and sorted")
     if receipt["tool_input_type"] != "object" and shape:
         raise CorruptState("non-object tool input cannot have a field shape")
+    if schema == 2:
+        fingerprints = receipt["selected_string_fingerprints"]
+        if not isinstance(fingerprints, list):
+            raise CorruptState("selected string fingerprints must be a list")
+        fingerprint_keys = []
+        for fingerprint in fingerprints:
+            if not isinstance(fingerprint, dict) or set(fingerprint) != FINGERPRINT_FIELDS:
+                raise CorruptState("selected string fingerprint fields are not exact")
+            key = _nonempty(fingerprint["key"], "selected fingerprint key")
+            fingerprint_keys.append(key)
+            if key != "message":
+                raise CorruptState("only the spawn message may be fingerprinted")
+            length = fingerprint["length"]
+            if isinstance(length, bool) or not isinstance(length, int) or length < 0:
+                raise CorruptState("selected string fingerprint length is invalid")
+            digest = fingerprint["sha256"]
+            if not isinstance(digest, str) or len(digest) != 64 or any(
+                character not in "0123456789abcdef" for character in digest
+            ):
+                raise CorruptState("selected string fingerprint hash is invalid")
+            for count_field in ("authority_begin_count", "authority_end_count"):
+                count = fingerprint[count_field]
+                if isinstance(count, bool) or not isinstance(count, int) or count < 0:
+                    raise CorruptState("selected string marker count is invalid")
+        if fingerprint_keys != sorted(set(fingerprint_keys)):
+            raise CorruptState("selected string fingerprint keys are not unique and sorted")
+        if fingerprints and receipt["tool_name"] not in FINGERPRINTED_TOOL_NAMES:
+            raise CorruptState("non-spawn tool cannot carry a message fingerprint")
     if receipt["raw_payload_stored"] is not False:
         raise CorruptState("schema receipt must not store the raw payload")
     if receipt["omitted_payload_fields"] != OMITTED_PAYLOAD_FIELDS:
@@ -161,8 +201,25 @@ def observation_from_hook(hook_input: Mapping[str, object]) -> dict:
             if not isinstance(key, str) or not key:
                 raise CorruptState("tool_input keys must be non-empty strings")
             shape.append({"key": key, "value_type": _json_type(tool_input[key])})
+    fingerprints = []
+    if tool_name in FINGERPRINTED_TOOL_NAMES and isinstance(tool_input, dict):
+        message = tool_input.get("message")
+        if isinstance(message, str):
+            fingerprints.append(
+                {
+                    "key": "message",
+                    "length": len(message),
+                    "sha256": hashlib.sha256(message.encode("utf-8")).hexdigest(),
+                    "authority_begin_count": message.count(
+                        "BEGIN CODEX WORKER AUTHORITY"
+                    ),
+                    "authority_end_count": message.count(
+                        "END CODEX WORKER AUTHORITY"
+                    ),
+                }
+            )
     receipt = {
-        "schema": SCHEMA,
+        "schema": CURRENT_SCHEMA,
         "observation_id": str(uuid.uuid4()),
         "observed_at": dt.datetime.now(dt.timezone.utc).isoformat(),
         "hook_event_name": "PreToolUse",
@@ -172,6 +229,7 @@ def observation_from_hook(hook_input: Mapping[str, object]) -> dict:
         "tool_use_id": tool_use_id,
         "tool_input_type": input_type,
         "tool_input_shape": shape,
+        "selected_string_fingerprints": fingerprints,
         "raw_payload_stored": False,
         "omitted_payload_fields": OMITTED_PAYLOAD_FIELDS,
     }
