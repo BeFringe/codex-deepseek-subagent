@@ -88,7 +88,7 @@ class G4NativeProbePromptTests(unittest.TestCase):
             pretool_schema_control=True,
         )
         self.assertIn("call exec_command exactly once", controlled)
-        self.assertIn("git rev-parse --show-toplevel", controlled)
+        self.assertIn("cmd `/bin/pwd`", controlled)
         self.assertIn(str(self.root.resolve()), controlled)
         self.assertIn("task_name=g4_root_2", controlled)
 

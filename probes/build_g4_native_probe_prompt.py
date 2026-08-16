@@ -137,7 +137,7 @@ def build_prompt(
     canonical_agent_path = f"/root/{task_name}"
     parent_control = ""
     if pretool_schema_control:
-        parent_control = f"""Before spawning, call exec_command exactly once with cmd `git rev-parse --show-toplevel`, workdir `{location['root']}`, and no shell composition. This is the read-only positive control for PreToolUse observation. Require exit code 0 and stdout exactly `{location['root']}`; if it fails or differs, report the non-secret result and stop without spawning.
+        parent_control = f"""Before spawning, call exec_command exactly once with cmd `/bin/pwd`, workdir `{location['root']}`, and no shell composition. This is the read-only positive control for PreToolUse observation. Require exit code 0 and stdout exactly `{location['root']}`; if it fails or differs, report the non-secret result and stop without spawning.
 
 """
     child_assignment = f"""You are the target G4 read-only qualification child. Treat the Hook-delivered capsule, compact invariant, and final-attestation seed as the only authority. Call native list_agents exactly once and call no other tool. If that call succeeds and the immutable clean Git facts remain consistent, return only an exact BEGIN/END CODEX WORKER ATTESTATION envelope.
