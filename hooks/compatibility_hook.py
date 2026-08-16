@@ -18,6 +18,9 @@ from hook_event_receipts import (
 )
 from pretool_schema_observation import record_from_hook as record_pretool_schema
 from runtime_guard import pre_compact, pre_tool_use, subagent_stop
+from subagentstart_schema_observation import (
+    record_from_hook as record_subagentstart_schema,
+)
 from writer_lease_guard import post_tool_use as release_writer_lease
 from writer_lease_guard import pre_tool_use as guard_writer_lease
 
@@ -106,6 +109,11 @@ def dispatch_with_receipts(
     event = hook_input.get("hook_event_name")
     if pretool_schema_observation_root is not None:
         record_pretool_schema(
+            store,
+            hook_input,
+            observation_root=pretool_schema_observation_root,
+        )
+        record_subagentstart_schema(
             store,
             hook_input,
             observation_root=pretool_schema_observation_root,

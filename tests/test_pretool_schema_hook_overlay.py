@@ -28,7 +28,15 @@ class PreToolSchemaHookOverlayTests(unittest.TestCase):
                     },
                     {
                         "matcher": "^g4_qualification_probe_worker$",
-                        "hooks": [{"type": "command", "command": "g4-hook --event start"}],
+                        "hooks": [
+                            {
+                                "type": "command",
+                                "command": (
+                                    "g4-hook --event start --plaintext-agent-type "
+                                    "g4_qualification_probe_worker"
+                                ),
+                            }
+                        ],
                     },
                 ],
                 "PreToolUse": [
@@ -63,9 +71,8 @@ class PreToolSchemaHookOverlayTests(unittest.TestCase):
     def sha256(self, path):
         return hashlib.sha256(path.read_bytes()).hexdigest()
 
-    def run_builder(self, *, expected_hash=None, output=None):
-        return subprocess.run(
-            [
+    def run_builder(self, *, expected_hash=None, output=None, include_start=False):
+        command = [
                 sys.executable,
                 str(SCRIPT),
                 "--input",
@@ -76,7 +83,11 @@ class PreToolSchemaHookOverlayTests(unittest.TestCase):
                 str(self.observed_root),
                 "--expected-input-sha256",
                 expected_hash or self.sha256(self.input),
-            ],
+            ]
+        if include_start:
+            command.append("--include-subagent-start")
+        return subprocess.run(
+            command,
             text=True,
             capture_output=True,
             check=False,
@@ -88,6 +99,7 @@ class PreToolSchemaHookOverlayTests(unittest.TestCase):
         self.assertEqual(built.returncode, 0, built.stderr)
         report = json.loads(built.stdout)
         self.assertEqual(report["changed_event"], "PreToolUse")
+        self.assertEqual(report["changed_events"], ["PreToolUse"])
         self.assertEqual(report["changed_command_count"], 1)
         self.assertTrue(report["other_hook_events_unchanged"])
         overlay = json.loads(self.output.read_text(encoding="utf-8"))
@@ -99,6 +111,21 @@ class PreToolSchemaHookOverlayTests(unittest.TestCase):
         self.assertIn("--pretool-schema-observation-root", command)
         self.assertIn("'" + str(self.observed_root.resolve()) + "'", command)
         self.assertEqual(self.output.stat().st_mode & 0o777, 0o600)
+
+    def test_optional_subagentstart_observer_changes_only_g4_commands(self):
+        built = self.run_builder(include_start=True)
+
+        self.assertEqual(built.returncode, 0, built.stderr)
+        report = json.loads(built.stdout)
+        self.assertEqual(report["changed_command_count"], 2)
+        self.assertEqual(report["changed_events"], ["PreToolUse", "SubagentStart"])
+        overlay = json.loads(self.output.read_text(encoding="utf-8"))
+        self.assertEqual(
+            overlay["hooks"]["SubagentStart"][0],
+            self.config["hooks"]["SubagentStart"][0],
+        )
+        g4_start = overlay["hooks"]["SubagentStart"][1]["hooks"][0]["command"]
+        self.assertIn("--pretool-schema-observation-root", g4_start)
 
     def test_hash_drift_fails_without_output(self):
         rejected = self.run_builder(expected_hash="0" * 64)

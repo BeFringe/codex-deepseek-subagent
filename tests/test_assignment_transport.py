@@ -40,6 +40,10 @@ hook_event_receipts = load_module(
 pretool_schema_observation = load_module(
     "pretool_schema_observation", REPO / "hooks" / "pretool_schema_observation.py"
 )
+subagentstart_schema_observation = load_module(
+    "subagentstart_schema_observation",
+    REPO / "hooks" / "subagentstart_schema_observation.py",
+)
 compatibility_hook = load_module(
     "compatibility_hook", REPO / "hooks" / "compatibility_hook.py"
 )

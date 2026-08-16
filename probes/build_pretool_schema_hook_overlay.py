@@ -61,7 +61,12 @@ def _is_target_command(command: object) -> bool:
     return len(matches) == 1
 
 
-def build_overlay(config: dict, *, observation_root: Path) -> tuple[dict, dict]:
+def build_overlay(
+    config: dict,
+    *,
+    observation_root: Path,
+    include_subagent_start: bool = False,
+) -> tuple[dict, dict]:
     canonical_root = observation_root.resolve(strict=True)
     hooks = config.get("hooks")
     if not isinstance(hooks, dict):
@@ -100,16 +105,50 @@ def build_overlay(config: dict, *, observation_root: Path) -> tuple[dict, dict]:
         + " --pretool-schema-observation-root "
         + shlex.quote(str(canonical_root))
     )
+    changed_command_count = 1
+    if include_subagent_start:
+        starts = result["hooks"].get("SubagentStart")
+        if not isinstance(starts, list):
+            raise OverlayError("Hooks configuration has no SubagentStart list")
+        start_candidates: list[tuple[int, int]] = []
+        for matcher_index, matcher in enumerate(starts):
+            if not isinstance(matcher, dict):
+                continue
+            commands = matcher.get("hooks")
+            if not isinstance(commands, list):
+                raise OverlayError("SubagentStart matcher hooks must be a list")
+            for command_index, candidate in enumerate(commands):
+                if not isinstance(candidate, dict) or candidate.get("type") != "command":
+                    continue
+                if _is_target_command(candidate.get("command")):
+                    start_candidates.append((matcher_index, command_index))
+        if len(start_candidates) != 1:
+            raise OverlayError(
+                "expected exactly one G4 SubagentStart command, found "
+                f"{len(start_candidates)}"
+            )
+        start_matcher, start_command = start_candidates[0]
+        start = result["hooks"]["SubagentStart"][start_matcher]["hooks"][start_command]
+        start_tokens = shlex.split(start["command"])
+        if "--pretool-schema-observation-root" in start_tokens:
+            raise OverlayError("SubagentStart schema observation is already enabled")
+        start["command"] += (
+            " --pretool-schema-observation-root "
+            + shlex.quote(str(canonical_root))
+        )
+        changed_command_count += 1
     changed = []
     for event_name in sorted(set(config["hooks"]) | set(result["hooks"])):
         if config["hooks"].get(event_name) != result["hooks"].get(event_name):
             changed.append(event_name)
-    if changed != ["PreToolUse"]:
-        raise OverlayError("overlay changed Hook events outside PreToolUse")
+    expected_changed = ["PreToolUse", "SubagentStart"] if include_subagent_start else ["PreToolUse"]
+    if changed != expected_changed:
+        raise OverlayError("overlay changed an unexpected Hook event set")
     return result, {
         "schema": 1,
         "changed_event": "PreToolUse",
-        "changed_command_count": 1,
+        "changed_command_count": changed_command_count,
+        "changed_events": changed,
         "observation_root": str(canonical_root),
         "other_hook_events_unchanged": True,
     }
@@ -135,6 +174,7 @@ def main() -> int:
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--observation-root", type=Path, required=True)
     parser.add_argument("--expected-input-sha256", required=True)
+    parser.add_argument("--include-subagent-start", action="store_true")
     arguments = parser.parse_args()
     try:
         if not HEX_SHA256.fullmatch(arguments.expected_input_sha256):
@@ -145,6 +185,7 @@ def main() -> int:
         overlay, report = build_overlay(
             _load(arguments.input),
             observation_root=arguments.observation_root,
+            include_subagent_start=arguments.include_subagent_start,
         )
         write_private_new(arguments.output, overlay)
         report["input_sha256"] = observed_input_sha256
