@@ -135,6 +135,48 @@ POSIX. A missing, empty, duplicated, unparsable, late, or ambiguous `SessionMeta
 fails G2 and keeps all external workers read-only. Counts are race exposure, not
 a proof by themselves; retain every raw event and the owner join receipt.
 
+### Mechanical raw-evidence joiner
+
+`probes/check_sessionmeta_identity.py` consumes a parent-captured evidence
+bundle pinned to Codex `0.148.0-alpha.9` source
+`9392c3fa5bcda342b5b96a1a04d67b2f781617c2`. Each observation must preserve the
+raw `PreToolUse(spawn_agent)` input, spawn result, `SubagentStart` input, and the
+exact first JSONL line plus absolute path for both parent and child rollouts.
+The joiner derives `requested_task_name` from the real tool input and canonical
+AgentPath from the real spawn result; the bundle has no separate caller-supplied
+expected-identity field.
+
+It requires exact pinned Hook fields and proves all of the following together:
+
+1. parent Hook, parent SessionMeta, child Hook, and child SessionMeta share the
+   same runtime session;
+2. the Hook transcript paths name the exact supplied parent/child first lines;
+3. child id, direct parent id, role, canonical path, requested final component,
+   and `source.subagent.thread_spawn` parent/depth/role/path all agree;
+4. nested captures carry exact parent agent id/role and advance source depth by
+   one; root captures have no child-source identity;
+5. case id, child id, requested name, canonical path, spawn tool-use id, child
+   start turn, and child transcript are unique across the cohort;
+6. root/nested serial/concurrent cases use one repeated role and concurrent
+   members share one exact parent/cohort without order-based matching.
+
+For the required POSIX density, use at least 50 observations in each of the four
+case kinds, which totals 100 serial and 100 concurrent starts:
+
+```text
+python3 probes/check_sessionmeta_identity.py \
+  --bundle /absolute/isolated/p2-identity-bundle.json \
+  --minimum-per-case 50 \
+  --require-complete-matrix
+```
+
+The bundle may contain plaintext assignment material and must remain inside the
+isolated evidence root; do not commit it. Even a mechanically exact
+`live_parent_capture` returns `adjudication_authority=none` and
+`p2_live_qualified=false`. A fresh parent/host must separately establish Hook-
+time durability, count completeness, file provenance, and platform behavior
+before changing P2/G2 status.
+
 ## III. Full mutation negative space
 
 The pinned schema-2 matrix is the closed starting catalog. For every

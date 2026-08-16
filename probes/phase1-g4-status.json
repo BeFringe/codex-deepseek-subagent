@@ -16,7 +16,11 @@
         "id": "P2",
         "state": "partial",
         "provider_free": "pass",
-        "evidence": ["docs/phase1-g4-probe-plan.md#ii-real-identity-and-sessionmeta-probe"],
+        "evidence": [
+          "docs/phase1-g4-probe-plan.md#ii-real-identity-and-sessionmeta-probe",
+          "probes/check_sessionmeta_identity.py",
+          "tests/test_sessionmeta_identity.py"
+        ],
         "blocker": "real root/nested/serial/concurrent SessionMeta identity binding is missing"
       },
       {

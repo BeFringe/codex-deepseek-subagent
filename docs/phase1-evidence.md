@@ -816,3 +816,71 @@ unprotected, returned `direct_write_qualified=false`, and its require-protected
 mode exited 2. No live Hook, skill, provider profile, bridge, credential, or
 LocalCAT product file was changed. These are fresh negative qualification
 results, not a Phase 1 completion claim.
+
+## P2 raw SessionMeta identity joiner
+
+Status: **provider-free join mechanics implemented; live identity qualification
+pending.** The prior runtime fixture read the child's first SessionMeta and
+compared its top-level session, id, parent, role, and path to a Hook event. It
+did not independently close the duplicated identity inside
+`SessionSource::SubAgent(ThreadSpawn)`, source depth, spawn-returned canonical
+path, or cohort-level uniqueness. A self-consistent top-level fixture therefore
+did not exercise the complete P2 join required by the pinned source contract.
+
+`probes/check_sessionmeta_identity.py` now accepts raw parent
+`PreToolUse(spawn_agent)`, spawn result, child `SubagentStart`, and exact first
+parent/child JSONL lines. It derives the requested name from `tool_input` and
+canonical path from the spawn result, then cross-checks SessionMeta top-level
+identity with `source.subagent.thread_spawn` parent, positive depth, role, and
+path. Nested observations must prove their parent source and depth increment;
+root observations must not carry child identity. Exact-field validation rejects
+schema drift instead of silently ignoring it.
+
+The cohort guard rejects duplicate case ids, child ids, requested names,
+canonical paths, spawn tool-use ids, child start turns, or child transcript
+paths; it also prevents a root/nested serial/concurrent matrix from mixing
+roles, parents, or concurrent cohort ids. Seventeen focused tests cover the full
+eight-observation provider-free matrix and wrong child, wrong source parent,
+non-UUID identity, prefix-only task match, spawn/path or nickname mismatch,
+wrong depth or Codex version, nonzero first ordinal, duplicate child/tool
+identity, duplicate SessionMeta lines, mixed roles, and incomplete matrix.
+
+The joiner deliberately returns:
+
+```text
+adjudication_authority=none
+p2_live_qualified=false
+```
+
+even for an input labelled `live_parent_capture`. The label and internally
+consistent hashes cannot prove Hook-time durability, parent ownership of the
+capture, 100 serial/100 concurrent POSIX coverage, Windows parity, or absence of
+a same-UID rewrite. Raw live capture plus fresh host/disk adjudication remains
+required before G2 can pass.
+
+The 2026-08-16 baseline refresh also exposed a migration configuration drift:
+the valid GitHub identity is selected by SSH Host `github.com-new`, while the
+repository remotes use `github.com`. Default fetch therefore failed public-key
+authentication. A one-shot `core.sshCommand` using the existing
+`id_ed25519_github2` identity authenticated as the expected GitHub account and
+successfully refreshed both remotes without editing SSH config or remote URLs.
+The refreshed full refs remained
+`origin/main@076ee0df9aca11fbc0c19a6ccd7cd8befc0051f7` and
+`upstream/main@c949e8d9b8922a48990b1e08259ad4baefc75f55`.
+
+The fresh host baseline was Codex CLI `0.148.0-alpha.9`, Python `3.14.7`, and
+macOS `26.2` on arm64. After the identity-joiner fixtures, the complete suite
+ran:
+
+```text
+Ran 201 tests in 27.439s
+OK
+agent template checks passed
+```
+
+The executable G4 gate still reported all twelve P-gates and nine exit receipts
+unresolved, with `phase1_complete=false`, `direct_write_qualified=false`, and
+Phases 2/3 closed. The pinned mutation anchors remained valid with the same ten
+blockers. The same-UID probe again altered both isolated rollout and state.
+Therefore the new receipt format improves the evidence path but changes no live
+qualification decision.
