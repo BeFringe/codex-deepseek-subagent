@@ -1238,6 +1238,32 @@ token-like payload; no cryptographic format is inferred. With the strict
 matcher restored, capsule staging blocks before spawn because the opaque value
 does not contain the exact authority envelope.
 
+The exact 0.148.0-alpha.9 source commit now makes the host-side boundary
+replayable. `ToolRegistry` derives Hook `tool_input` directly from the raw
+function-call `arguments` and runs PreToolUse before the tool handler. The V2
+spawn handler then reads `message`; unless the response explicitly marks the
+collaboration call with an empty `encrypted_function_args` array, it constructs
+`InterAgentCommunication::new_encrypted` and sends the same value to the child
+as `encrypted_content`. There is no host-side plaintext recovery between the
+Hook and child submission. The built-in integration fixture separately covers
+the explicit empty-array plaintext branch, but current configuration exposes
+no host control that selects it. `hide_spawn_agent_metadata` only changes the
+spawn result and is unrelated to assignment transport.
+
+`probes/check_native_assignment_seam.py` pins these anchors and their causal
+ordering to source commit
+`9392c3fa5bcda342b5b96a1a04d67b2f781617c2`. Fresh replay returned `valid=true`
+with zero anchor failures; `--require-plaintext-seam` returned exit 2. This
+narrows P1 to an upstream/runtime seam requirement rather than a Hook trust or
+filesystem-permission problem. A runtime-controlled plaintext assignment seam
+or separate trusted host staging API must still prove byte equality to the
+child-delivered assignment before P1 can qualify.
+The post-change provider-free suite ran 254 tests in 32.032 seconds and passed,
+including agent-template checks. The current task's five successful file edits
+all have paired PreToolUse/PostToolUse events; the global require-complete audit
+still exits 2 only for the previously recorded pending callback owned by the
+foreign runtime session, which this task does not recover.
+
 A separate exact-root, five-minute, tamper-evident diagnostic arm observed one
 real `SubagentStart` without changing the trusted Hook command. The event shape
 contained `agent_id`, `agent_type`, `cwd`, `hook_event_name`, `model`,

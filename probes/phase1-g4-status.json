@@ -11,9 +11,11 @@
         "provider_free": "pass",
         "evidence": [
           "docs/phase1-evidence.md",
-          "probes/g4-live-native-hook-schema-20260817.json"
+          "probes/g4-live-native-hook-schema-20260817.json",
+          "probes/codex-0.148.0-alpha.9-native-assignment-seam.json",
+          "probes/check_native_assignment_seam.py"
         ],
-        "blocker": "current native collaborationspawn_agent PreToolUse exposes an opaque message without the plaintext authority envelope, while SubagentStart exposes exact SessionMeta identity but no plaintext assignment field; no verified exact-assignment capsule seam exists"
+        "blocker": "current native collaborationspawn_agent PreToolUse runs before the handler and receives the raw private function arguments; the host then forwards the opaque message as encrypted_content, while SubagentStart exposes exact SessionMeta identity but no assignment field. A runtime-controlled plaintext assignment seam or separate trusted host staging API is required"
       },
       {
         "id": "P2",
