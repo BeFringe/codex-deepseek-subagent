@@ -34,6 +34,9 @@ assignment_transport = load_module(
 writer_lease_guard = load_module(
     "writer_lease_guard", REPO / "hooks" / "writer_lease_guard.py"
 )
+hook_event_receipts = load_module(
+    "hook_event_receipts", REPO / "hooks" / "hook_event_receipts.py"
+)
 compatibility_hook = load_module(
     "compatibility_hook", REPO / "hooks" / "compatibility_hook.py"
 )
@@ -1472,7 +1475,13 @@ class AssignmentTransportTests(unittest.TestCase):
         self.assertEqual(compacted.returncode, 0, compacted.stderr)
 
         checked = self.invoke_hook_cli(
-            dict(child, hook_event_name="PreToolUse", tool_name="view_image", tool_input={})
+            dict(
+                child,
+                hook_event_name="PreToolUse",
+                tool_name="view_image",
+                tool_use_id="child-read-one",
+                tool_input={},
+            )
         )
         self.assertEqual(checked.returncode, 0, checked.stderr)
         checked_output = json.loads(checked.stdout)
@@ -1526,6 +1535,27 @@ class AssignmentTransportTests(unittest.TestCase):
         self.assertEqual(stopped.returncode, 0, stopped.stderr)
         self.assertEqual(json.loads(stopped.stdout), {})
         self.assertEqual(len(list((self.store.root / "reported").glob("*.json"))), 1)
+        chain = hook_event_receipts.load_chain(self.store.root)
+        events = chain["events"]
+        self.assertEqual(
+            [(event["hook_event_name"], event["scope"]) for event in events],
+            [
+                ("PreToolUse", "target_spawn"),
+                ("SubagentStart", "target_child"),
+                ("PreCompact", "target_child"),
+                ("PreToolUse", "target_child"),
+                ("SubagentStop", "target_child"),
+            ],
+        )
+        self.assertEqual(events[0]["actor"]["canonical_agent_path"], "/root")
+        for event in events[1:]:
+            self.assertEqual(
+                event["actor"]["canonical_agent_path"],
+                "/root/bounded_task",
+            )
+        serialized_chain = compatibility_state.canonical_json(chain)
+        self.assertNotIn(spawn["tool_input"]["message"].encode(), serialized_chain)
+        self.assertNotIn(message.encode(), serialized_chain)
 
 
 if __name__ == "__main__":

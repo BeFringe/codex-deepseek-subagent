@@ -1070,3 +1070,71 @@ Phases 2/3 closed. The pinned mutation anchors remained valid with the same ten
 blockers. The same-UID probe again altered both isolated rollout and state.
 Therefore the corrected parser and partial native observation improve the
 evidence path but change no live qualification decision.
+
+## Privacy-minimized live Hook receipt overlay and callback-loss recovery
+
+Status: **root writer visibility improved; live child lifecycle and G4 exit
+qualification still pending.** With explicit user authorization, the G4
+overlay now records a single atomic, hash-linked event chain for qualified
+`PreToolUse`, `PostToolUse`, `SubagentStart`, `PreCompact`, and `SubagentStop`
+observations. Each receipt binds the SessionMeta-derived runtime session,
+thread, agent type, canonical AgentPath, event/stage, and applicable tool-use
+identity. It deliberately stores neither raw tool input/response nor assignment,
+transcript, or final-assistant content. Missing, duplicate, reordered, corrupt,
+or unwritable receipts fail closed. `probes/check_hook_event_chain.py` rejects
+an authorized writer event without its exact observed callback.
+
+The installed `SubagentStart` order remains the original
+`^v4_flash_worker$` plaintext Hook first and the G4 qualification-only worker
+second. The v4 plaintext script hash remains
+`16353e6eb4484412bd7560a10eeae4dcf1533709910a373a4e98d414dc725a49`;
+the live agent differs from the migration bundle only by the already-authorized
+Fedora-to-macOS `writable_roots` repair. The unsupported
+`additionalContextLimit` fields were removed from `PreCompact` and
+`SubagentStop`; those lifecycle events themselves remain required. No trust
+hash was copied or fabricated, and a fresh-process trust reapproval receipt is
+still pending.
+
+The first live chain prefix contained eight exact root writer
+PreToolUse/PostToolUse pairs, sequences 1–16, with no pending callback and no
+raw payload. A separate real negative occurred before receipt installation:
+an `apply_patch` whose context did not match acquired claim
+`f3ac4aee-f571-451d-884d-4e7643eee014`, returned tool failure, emitted no
+observable `PostToolUse`, and left the claim durable. A later overlapping patch
+was denied. This confirms that success-only callback semantics cannot be
+treated as a universal lease release.
+
+`probes/recover_writer_claim.py` therefore provides an explicit abort path,
+not a synthetic callback. It requires exact SessionMeta actor identity, the
+fixed `missing_posttooluse_after_tool_failure` reason, an unchanged Git
+frontier, and identical before/after identities for every claimed path.
+Unrelated dirty paths may progress, but any claimed-path or frontier drift
+keeps the claim unresolved. The real orphan was recovered as
+`aborted_unchanged_after_missing_callback`; its before/after path digest was
+`c943315fdbe2f54374f4d50f848289561df301a6cf28a18e2227b31a54763c00`
+and abort digest was
+`f214e2b0bb842a3443cd71cd2d5d375540f3d518e65e8be5bafa1a2b597bcbf0`.
+The same missing-callback shape then reproduced on a second context-mismatch
+failure. Its independent abort was joined by exact actor/tool-use identity and
+reported as `aborted_unchanged` with `post_sequence=null`; the earlier
+pre-overlay abort remained explicitly unmatched rather than being backfilled
+as a Hook callback. The quiescent verifier then returned no pending callbacks.
+
+Provider-free tests now cover the complete root→child lifecycle receipt order,
+exact root/child AgentPaths, payload omission, pending callback, orphan and
+duplicate PostToolUse, tamper, receipt-write failure, wrong recovery identity,
+claimed-path mutation, and unchanged abort with disjoint worktree drift. The
+fresh suite result was:
+
+```text
+Ran 229 tests in 37.073s
+OK
+agent template checks passed
+```
+
+The raw non-credential record is
+`probes/g4-live-callback-receipts-20260817.json`. These results do not prove a
+real target-child lifecycle chain, sandbox confinement, same-UID state trust,
+strong termination/quiescence, platform/DeepSeek regression, or rollback after
+this overlay. `phase1_complete=false`, `direct_write_qualified=false`, and
+Phases 2/3 remain closed.

@@ -274,6 +274,18 @@ and callback, and recovery by a strong host-owned failure/quiescence barrier.
 The claim is evidence of serialization for this one structured surface, not a
 generic shell/MCP/write-stdin lease.
 
+The installed receipt overlay now adds a privacy-minimized hash-linked event
+chain. Run `probes/check_hook_event_chain.py --require-complete-callbacks` at
+every quiescent boundary; raw tool input/response, assignment, transcript, and
+final-message content must be absent. A real failed `apply_patch` confirmed
+that Codex can omit PostToolUse after tool failure and leave the claim durable.
+Recovery must use `probes/recover_writer_claim.py` and remain classified as an
+unchanged abort, never as a callback. It requires the exact SessionMeta actor,
+fixed recovery reason, unchanged Git frontier, and identical state for every
+claimed path; claimed-path drift keeps the lease unresolved. Live partial
+mutation and process-death cases still require a stronger host-owned
+quiescence/disk barrier and cannot use this unchanged-only escape hatch.
+
 ## IV. Resume, callback, and termination probes
 
 1. Force manual and automatic compaction after the first valid read-only child

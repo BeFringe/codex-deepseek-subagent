@@ -295,6 +295,7 @@ child authority:
 ```text
 PreToolUse(apply_patch) -> writer_claim/<claim_id>.json
   -> successful exact PostToolUse -> writer_receipt/<claim_id>.json
+  -> failed tool + exact unchanged proof -> writer_abort/<claim_id>.json
 ```
 
 The claim is durable before PreToolUse returns, and child capture/staging checks
@@ -303,7 +304,13 @@ child ownership therefore cannot both enter. PostToolUse exists only after a
 successful tool output. Failure, partial failure, callback loss, or identity
 mismatch retains the claim and fails closed. A TTL may not silently release it;
 recovery still requires a host-owned tool-failure termination, mutation-
-quiescence receipt, and fresh disk barrier.
+quiescence receipt, and fresh disk barrier. The only narrower exception is a
+tool that failed before mutation: the exact SessionMeta actor may submit an
+explicit abort with the fixed recovery reason, but must re-prove the Git
+frontier and identical before/after identities for every claimed path. That
+abort is not a PostToolUse receipt and cannot cover partial writes, process
+death, or any uncertain disk state; those still require strong host-owned
+quiescence and a fresh barrier.
 
 ### Interrupt/cancel and ownership handover
 

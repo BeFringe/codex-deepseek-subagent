@@ -182,7 +182,9 @@ STATE_KINDS = (
     "overlap",
     "writer_claim",
     "writer_receipt",
+    "writer_abort",
     "writer_conflict",
+    "hook_event_chain",
 )
 WRITER_ACTOR_FIELDS = {
     "runtime_session_id",
@@ -361,8 +363,38 @@ def git_snapshot_sha256(snapshot: Mapping[str, object]) -> str:
     return _snapshot_sha256(snapshot)
 
 
+def writer_path_snapshot_sha256(
+    snapshot: Mapping[str, object], paths: Sequence[str], *, schema: int = 2
+) -> str:
+    if schema not in {1, 2}:
+        raise CorruptState("writer path snapshot schema is invalid")
+    value = _validate_git_snapshot(dict(snapshot))
+    normalized_paths = list(_relative_paths(list(paths), "writer_path_snapshot.paths"))
+    changed = {item["path"]: item for item in value["changed_paths"]}
+    path_states = []
+    for path in normalized_paths:
+        state = changed.get(path)
+        if state is None:
+            state = {"path": path, "kind": "clean_at_head", "sha256": None}
+        path_states.append(state)
+    identity = {
+        "root": value["root"],
+        "branch": value["branch"],
+        "head": value["head"],
+        "path_states": path_states,
+    }
+    if schema == 2:
+        identity["index_changed"] = value["index_changed"]
+    return sha256_bytes(canonical_json(identity))
+
+
 def writer_claim_sha256(claim: Mapping[str, object]) -> str:
     unsigned = {key: value for key, value in claim.items() if key != "claim_sha256"}
+    return sha256_bytes(canonical_json(unsigned))
+
+
+def writer_abort_sha256(receipt: Mapping[str, object]) -> str:
+    unsigned = {key: value for key, value in receipt.items() if key != "abort_sha256"}
     return sha256_bytes(canonical_json(unsigned))
 
 
@@ -435,6 +467,76 @@ def _validate_writer_claim(claim: object) -> dict:
     if claim["claim_sha256"] != writer_claim_sha256(claim):
         raise CorruptState("writer claim hash does not match")
     return claim
+
+
+def validate_writer_abort(receipt: object) -> dict:
+    if not isinstance(receipt, dict) or set(receipt) != {
+        "schema",
+        "classification",
+        "claim_id",
+        "claim_sha256",
+        "actor",
+        "root",
+        "paths",
+        "tool_name",
+        "tool_use_id",
+        "ownership_handover",
+        "before_snapshot_sha256",
+        "before_path_snapshot_sha256",
+        "after_snapshot",
+        "after_snapshot_sha256",
+        "after_path_snapshot_sha256",
+        "recovery_reason",
+        "recovered_at",
+        "abort_sha256",
+    }:
+        raise CorruptState("writer abort fields are not exact")
+    if receipt["schema"] not in {1, 2}:
+        raise CorruptState("writer abort schema is invalid")
+    if receipt["classification"] != "aborted_unchanged_after_missing_callback":
+        raise CorruptState("writer abort classification is invalid")
+    _uuid(receipt["claim_id"], "writer_abort.claim_id")
+    if not isinstance(receipt["claim_sha256"], str) or not SHA256_RE.fullmatch(
+        receipt["claim_sha256"]
+    ):
+        raise CorruptState("writer abort claim hash is invalid")
+    _validate_writer_actor(receipt["actor"])
+    root = pathlib.Path(_nonempty_string(receipt["root"], "writer_abort.root"))
+    if not root.is_absolute() or str(root.resolve()) != str(root):
+        raise CorruptState("writer abort root is not canonical and absolute")
+    paths = _relative_paths(receipt["paths"], "writer_abort.paths")
+    if not paths:
+        raise CorruptState("writer abort paths are empty")
+    if receipt["tool_name"] != "apply_patch":
+        raise CorruptState("writer abort tool is not qualified")
+    _nonempty_string(receipt["tool_use_id"], "writer_abort.tool_use_id")
+    if not isinstance(receipt["ownership_handover"], list):
+        raise CorruptState("writer abort ownership_handover is invalid")
+    for field in (
+        "before_snapshot_sha256",
+        "before_path_snapshot_sha256",
+        "after_snapshot_sha256",
+        "after_path_snapshot_sha256",
+    ):
+        if not isinstance(receipt[field], str) or not SHA256_RE.fullmatch(receipt[field]):
+            raise CorruptState(f"writer abort {field} is invalid")
+    after_snapshot = _validate_git_snapshot(receipt["after_snapshot"])
+    if pathlib.Path(after_snapshot["root"]).resolve() != root:
+        raise CorruptState("writer abort snapshot root does not match")
+    if receipt["after_snapshot_sha256"] != _snapshot_sha256(after_snapshot):
+        raise CorruptState("writer abort after snapshot hash does not match")
+    if receipt["after_path_snapshot_sha256"] != writer_path_snapshot_sha256(
+        after_snapshot, paths, schema=receipt["schema"]
+    ):
+        raise CorruptState("writer abort after path snapshot hash does not match")
+    if receipt["before_path_snapshot_sha256"] != receipt["after_path_snapshot_sha256"]:
+        raise CorruptState("writer abort path snapshot changed")
+    if receipt["recovery_reason"] != "missing_posttooluse_after_tool_failure":
+        raise CorruptState("writer abort recovery reason is invalid")
+    _timestamp(receipt["recovered_at"], "writer_abort.recovered_at")
+    if receipt["abort_sha256"] != writer_abort_sha256(receipt):
+        raise CorruptState("writer abort hash does not match")
+    return receipt
 
 
 def _validate_git_snapshot(snapshot: object) -> dict:
@@ -1577,6 +1679,86 @@ class StateStore:
             _validate_writer_claim(claim)
             target = self.path("writer_claim", claim_id)
             self._publish(target, claim)
+            return target
+
+    def read_writer_claim(self, claim_id: str) -> dict:
+        _uuid(claim_id, "writer_claim.claim_id")
+        target = self.path("writer_claim", claim_id)
+        with self.locked():
+            if not target.exists():
+                raise MissingState("writer claim does not exist")
+            try:
+                return _validate_writer_claim(self._read(target))
+            except CorruptState:
+                self._quarantine(target)
+                raise
+
+    def abort_unchanged_writer_claim(
+        self,
+        actor: Mapping[str, str],
+        *,
+        claim_id: str,
+        after_snapshot: Mapping[str, object],
+        recovery_reason: str,
+        observed_at: dt.datetime | None = None,
+    ) -> pathlib.Path:
+        _validate_writer_actor(dict(actor))
+        _uuid(claim_id, "writer_abort.claim_id")
+        if recovery_reason != "missing_posttooluse_after_tool_failure":
+            raise AuthorityViolation("writer abort recovery reason is not qualified")
+        _validate_git_snapshot(dict(after_snapshot))
+        now = observed_at or dt.datetime.now(dt.timezone.utc)
+        if now.tzinfo is None or now.utcoffset() is None:
+            raise StateError("writer abort time must include a UTC offset")
+
+        claim_path = self.path("writer_claim", claim_id)
+        with self.locked():
+            if not claim_path.exists():
+                raise MissingState("writer claim does not exist")
+            try:
+                claim = _validate_writer_claim(self._read(claim_path))
+            except CorruptState:
+                self._quarantine(claim_path)
+                raise
+            if claim["actor"] != dict(actor):
+                raise AuthorityViolation("writer abort actor does not match claim")
+            if pathlib.Path(after_snapshot["root"]).resolve() != pathlib.Path(claim["root"]):
+                raise AuthorityViolation("writer abort snapshot root does not match claim")
+            abort_schema = 2
+            before_path_sha256 = writer_path_snapshot_sha256(
+                claim["before_snapshot"], claim["paths"], schema=abort_schema
+            )
+            after_path_sha256 = writer_path_snapshot_sha256(
+                after_snapshot, claim["paths"], schema=abort_schema
+            )
+            if after_path_sha256 != before_path_sha256:
+                raise AuthorityViolation(
+                    "writer abort requires every claimed path and Git frontier to be unchanged"
+                )
+            receipt = {
+                "schema": abort_schema,
+                "classification": "aborted_unchanged_after_missing_callback",
+                "claim_id": claim["claim_id"],
+                "claim_sha256": claim["claim_sha256"],
+                "actor": dict(actor),
+                "root": claim["root"],
+                "paths": claim["paths"],
+                "tool_name": claim["tool_name"],
+                "tool_use_id": claim["tool_use_id"],
+                "ownership_handover": claim["ownership_handover"],
+                "before_snapshot_sha256": claim["before_snapshot_sha256"],
+                "before_path_snapshot_sha256": before_path_sha256,
+                "after_snapshot": dict(after_snapshot),
+                "after_snapshot_sha256": _snapshot_sha256(after_snapshot),
+                "after_path_snapshot_sha256": after_path_sha256,
+                "recovery_reason": recovery_reason,
+                "recovered_at": now.isoformat(),
+            }
+            receipt["abort_sha256"] = writer_abort_sha256(receipt)
+            validate_writer_abort(receipt)
+            target = self.path("writer_abort", claim["claim_id"])
+            self._publish(target, receipt)
+            claim_path.unlink()
             return target
 
     def release_writer_claim(

@@ -11,6 +11,11 @@ import sys
 
 from assignment_transport import capture_spawn, subagent_start
 from compatibility_state import StateError, StateStore
+from hook_event_receipts import (
+    UnverifiableHookIdentity,
+    is_target_spawn,
+    record_from_hook,
+)
 from runtime_guard import pre_compact, pre_tool_use, subagent_stop
 from writer_lease_guard import post_tool_use as release_writer_lease
 from writer_lease_guard import pre_tool_use as guard_writer_lease
@@ -89,6 +94,70 @@ def dispatch(
     return {}
 
 
+def dispatch_with_receipts(
+    store: StateStore,
+    hook_input: dict,
+    *,
+    plaintext_agent_types: set[str],
+) -> dict:
+    event = hook_input.get("hook_event_name")
+    child_is_target = hook_input.get("agent_type") in plaintext_agent_types
+    is_parent_writer = (
+        event in {"PreToolUse", "PostToolUse"}
+        and hook_input.get("tool_name") == "apply_patch"
+        and not child_is_target
+    )
+    observe_before = (
+        (child_is_target and event in {"SubagentStart", "PreToolUse", "PreCompact", "SubagentStop"})
+        or is_target_spawn(hook_input, plaintext_agent_types=plaintext_agent_types)
+        or (is_parent_writer and event == "PostToolUse")
+    )
+    if observe_before:
+        try:
+            record_from_hook(
+                store,
+                hook_input,
+                plaintext_agent_types=plaintext_agent_types,
+                writer_stage="callback_observed" if is_parent_writer else None,
+            )
+        except UnverifiableHookIdentity:
+            pass
+    output = dispatch(
+        store,
+        hook_input,
+        plaintext_agent_types=plaintext_agent_types,
+    )
+    if is_parent_writer and event == "PreToolUse":
+        specific = output.get("hookSpecificOutput")
+        denied = isinstance(specific, dict) and specific.get("permissionDecision") == "deny"
+        try:
+            record_from_hook(
+                store,
+                hook_input,
+                plaintext_agent_types=plaintext_agent_types,
+                writer_stage="denied" if denied else "authorized",
+            )
+        except UnverifiableHookIdentity:
+            pass
+    return output
+
+
+def run_dispatch(
+    store: StateStore,
+    hook_input: dict,
+    *,
+    plaintext_agent_types: set[str],
+) -> dict:
+    try:
+        return dispatch_with_receipts(
+            store,
+            hook_input,
+            plaintext_agent_types=plaintext_agent_types,
+        )
+    except (OSError, StateError) as error:
+        return fail_closed_output(hook_input.get("hook_event_name"), error)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--state-directory", type=Path, required=True)
@@ -107,14 +176,11 @@ def main() -> int:
     if not isinstance(hook_input, dict):
         print("Hook input must be a JSON object.", file=sys.stderr)
         return 2
-    try:
-        output = dispatch(
-            StateStore(arguments.state_directory),
-            hook_input,
-            plaintext_agent_types=set(arguments.plaintext_agent_types),
-        )
-    except (OSError, StateError) as error:
-        output = fail_closed_output(hook_input.get("hook_event_name"), error)
+    output = run_dispatch(
+        StateStore(arguments.state_directory),
+        hook_input,
+        plaintext_agent_types=set(arguments.plaintext_agent_types),
+    )
     json.dump(output, sys.stdout, ensure_ascii=False, separators=(",", ":"))
     sys.stdout.flush()
     return 0

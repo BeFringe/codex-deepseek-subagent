@@ -29,8 +29,13 @@
         "id": "P3",
         "state": "partial",
         "provider_free": "pass",
-        "evidence": ["docs/phase1-evidence.md"],
-        "blocker": "live keyed lifecycle, crash recovery, and durable resume receipts are missing"
+        "evidence": [
+          "docs/phase1-evidence.md",
+          "hooks/hook_event_receipts.py",
+          "probes/check_hook_event_chain.py",
+          "tests/test_hook_event_receipts.py"
+        ],
+        "blocker": "root writer callback receipts are partial; live target-child keyed lifecycle, crash recovery, and durable resume receipts are missing"
       },
       {
         "id": "P4",
@@ -42,7 +47,8 @@
           "hooks/hooks.g4-qualification.posix.example.json",
           "agents/g4-qualification-probe-worker.toml",
           "hooks/writer_lease_guard.py",
-          "tests/test_assignment_transport.py"
+          "tests/test_assignment_transport.py",
+          "probes/g4-live-callback-receipts-20260817.json"
         ],
         "blocker": "complete live mutation visibility/mediation and independent sandbox denial are missing"
       },
@@ -67,7 +73,10 @@
         "evidence": [
           "docs/phase1-g4-probe-plan.md#parentchild-single-writer-negative-space",
           "hooks/writer_lease_guard.py",
-          "tests/test_assignment_transport.py"
+          "probes/recover_writer_claim.py",
+          "tests/test_assignment_transport.py",
+          "tests/test_hook_event_receipts.py",
+          "probes/g4-live-callback-receipts-20260817.json"
         ],
         "blocker": "all-surface writer serialization plus strong termination/quiescence handover is missing"
       },
@@ -122,7 +131,8 @@
         "state": "partial",
         "evidence": [
           "probes/codex-0.148.0-alpha.9-mutation-surfaces.json",
-          "probes/g4-live-install-20260817.json"
+          "probes/g4-live-install-20260817.json",
+          "probes/g4-live-callback-receipts-20260817.json"
         ]
       },
       {
@@ -135,7 +145,9 @@
         "state": "partial",
         "evidence": [
           "docs/phase1-g4-probe-plan.md#iv-resume-callback-and-termination-probes",
-          "probes/g4-live-install-20260817.json"
+          "probes/g4-live-install-20260817.json",
+          "probes/g4-live-callback-receipts-20260817.json",
+          "probes/check_hook_event_chain.py"
         ]
       },
       {

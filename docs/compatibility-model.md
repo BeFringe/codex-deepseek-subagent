@@ -415,13 +415,17 @@ parent/sibling 的 structured mutation 另有不授予 child authority 的短期
 ```text
 PreToolUse(apply_patch) -> writer_claim/<claim_id>.json
   -> successful exact PostToolUse -> writer_receipt/<claim_id>.json
+  -> failed tool + exact unchanged proof -> writer_abort/<claim_id>.json
 ```
 
 claim 在 PreToolUse 返回前持久化，并由 child capture/stage 在同一 state lock 内检查；因此
 in-flight parent patch 与新 overlapping child ownership 只能有一方进入。PostToolUse 只在
 工具产生 successful output 时存在，失败、部分失败、callback 丢失或 identity mismatch 都保留
 claim 并 fail closed。不得用 TTL 静默释放；后续恢复仍需 host-owned tool-failure termination、
-mutation quiescence 与 fresh disk barrier。
+mutation quiescence 与 fresh disk barrier。唯一较窄的例外是工具在 mutation 前失败：exact
+SessionMeta actor 可提交固定原因的 explicit abort，但必须重证 Git frontier 及所有 claimed
+path 的 before/after identity 完全相同。该 abort 不能记为 PostToolUse，也不能处理部分写入、
+进程死亡或任何不确定 disk state；这些情况仍需 strong host-owned quiescence/barrier。
 
 - pending/claimed/active/consumed/quarantine 的所有转换都在 OS-owned lock 下完成。
 - identity mismatch 只拒绝该 claim，不消费、不覆盖、不 quarantine 有效 assignment。
