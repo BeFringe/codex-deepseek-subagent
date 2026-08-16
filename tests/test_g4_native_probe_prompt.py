@@ -80,6 +80,17 @@ class G4NativeProbePromptTests(unittest.TestCase):
             },
         )
         self.assertNotIn("API_KEY", prompt)
+        self.assertNotIn("read-only positive control", prompt)
+
+        controlled = probe_prompt.build_prompt(
+            self.root,
+            "g4_root_2",
+            pretool_schema_control=True,
+        )
+        self.assertIn("call exec_command exactly once", controlled)
+        self.assertIn("git rev-parse --show-toplevel", controlled)
+        self.assertIn(str(self.root.resolve()), controlled)
+        self.assertIn("task_name=g4_root_2", controlled)
 
     def test_dirty_worktree_and_noncanonical_task_name_fail_closed(self):
         (self.root / "dirty.txt").write_text("dirty\n", encoding="utf-8")

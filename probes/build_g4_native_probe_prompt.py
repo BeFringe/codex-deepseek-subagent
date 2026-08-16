@@ -122,7 +122,12 @@ def authority_declaration(location: dict[str, object]) -> dict[str, object]:
     }
 
 
-def build_prompt(root: Path, task_name: str) -> str:
+def build_prompt(
+    root: Path,
+    task_name: str,
+    *,
+    pretool_schema_control: bool = False,
+) -> str:
     if not TASK_NAME_RE.fullmatch(task_name):
         raise ProbePromptError(
             "task name must contain only lowercase letters, digits, and underscores"
@@ -130,6 +135,11 @@ def build_prompt(root: Path, task_name: str) -> str:
     location = clean_git_location(root)
     authority = authority_declaration(location)
     canonical_agent_path = f"/root/{task_name}"
+    parent_control = ""
+    if pretool_schema_control:
+        parent_control = f"""Before spawning, call exec_command exactly once with cmd `git rev-parse --show-toplevel`, workdir `{location['root']}`, and no shell composition. This is the read-only positive control for PreToolUse observation. Require exit code 0 and stdout exactly `{location['root']}`; if it fails or differs, report the non-secret result and stop without spawning.
+
+"""
     child_assignment = f"""You are the target G4 read-only qualification child. Treat the Hook-delivered capsule, compact invariant, and final-attestation seed as the only authority. Call native list_agents exactly once and call no other tool. If that call succeeds and the immutable clean Git facts remain consistent, return only an exact BEGIN/END CODEX WORKER ATTESTATION envelope.
 
 Use the mechanically supplied seed for assignment_id, handoff_id, capsule_sha256, compact_invariant_sha256, authority_provenance.policy_sha256, canonical_agent_path, recovery_count, and the verification command name. The expected canonical AgentPath is {canonical_agent_path}. For this clean read-only probe, the capsule baseline is root {location['root']}, branch {location['branch']}, head {location['head']}, index_changed false, empty git_status_short, and empty changed_paths.
@@ -141,7 +151,7 @@ BEGIN CODEX WORKER AUTHORITY
 END CODEX WORKER AUTHORITY"""
     return f"""Perform one product-independent Phase 1/G4 live root identity probe. You are the native OpenAI parent. Do not edit files, stage, commit, push, change providers, inspect credentials, or substitute another agent type.
 
-Call native spawn_agent exactly once with agent_type={AGENT_TYPE}, task_name={task_name}, fork_turns=none, and message equal to the exact child assignment below, including its terminating authority declaration. If the custom agent type is unavailable, Hook trust is inactive, capture is denied, or spawn fails, report the exact non-secret error and stop. Do not fall back to default, explorer, worker, or v4. If spawn succeeds, use the native wait/callback path until that exact child returns, then report the spawn result, returned canonical AgentPath, and child final result. Do not mutate the repository.
+{parent_control}Call native spawn_agent exactly once with agent_type={AGENT_TYPE}, task_name={task_name}, fork_turns=none, and message equal to the exact child assignment below, including its terminating authority declaration. If the custom agent type is unavailable, Hook trust is inactive, capture is denied, or spawn fails, report the exact non-secret error and stop. Do not fall back to default, explorer, worker, or v4. If spawn succeeds, use the native wait/callback path until that exact child returns, then report the spawn result, returned canonical AgentPath, and child final result. Do not mutate the repository.
 
 EXACT CHILD ASSIGNMENT:
 
@@ -153,9 +163,14 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--root", type=Path, required=True)
     parser.add_argument("--task-name", default="g4_cli_root_identity_1")
+    parser.add_argument("--pretool-schema-control", action="store_true")
     arguments = parser.parse_args()
     try:
-        prompt = build_prompt(arguments.root, arguments.task_name)
+        prompt = build_prompt(
+            arguments.root,
+            arguments.task_name,
+            pretool_schema_control=arguments.pretool_schema_control,
+        )
     except (OSError, ProbePromptError) as error:
         print(f"G4 native probe prompt denied: {error}", file=sys.stderr)
         return 2
