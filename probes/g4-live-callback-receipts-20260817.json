@@ -4,7 +4,7 @@
   "source_base_head": "2741c31d079f2dd07784d6ea7fc0630b1b727165",
   "authorization": "explicit_user_install_authorization",
   "provider_free_tests": {
-    "count": 229,
+    "count": 230,
     "status": "passed"
   },
   "live_overlay": {
@@ -107,6 +107,52 @@
     "pending_callback_count": 0,
     "raw_payload_stored": false,
     "scope": "historical chain prefix captured before this record update"
+  },
+  "final_attestation_seed_update_callback_regression": {
+    "source_base_head": "29756eeceb5bb4cd2d3a655764a0f442d1b22852",
+    "classification": "missing_posttooluse_after_tool_failure",
+    "failed_context_match_aborts": [
+      {
+        "claim_id": "84ef3884-da81-44f8-8f16-c9edfa8cb250",
+        "claim_sha256": "d36b8ef54a0682df5a28aea5ce69e66931ae8e2cfd3ecf58b963f2b6f6a32ec9",
+        "tool_use_id": "exec-e4e6faaf-8650-4c2a-9ba4-35d4ce3225b7",
+        "paths": [
+          "docs/compatibility-model.md",
+          "docs/compatibility-model.en.md",
+          "docs/phase1-g4-probe-plan.md",
+          "docs/phase1-evidence.md"
+        ],
+        "before_path_snapshot_sha256": "4ff833b4bd3fb0bb12eadcc1e5611153845c56bfccbbe2752117137583369938",
+        "after_path_snapshot_sha256": "4ff833b4bd3fb0bb12eadcc1e5611153845c56bfccbbe2752117137583369938",
+        "abort_sha256": "246ae696267345e0ad9252440c0bced973c4e9a63f05e6e27388b296f8e738cc"
+      },
+      {
+        "claim_id": "c472794e-f9d5-43fc-bae7-00aaaf3c8e1c",
+        "claim_sha256": "54ad2267e801b196151eccbae800ddaf7bc9fe8fc5f24add9ff1e8bd5334ccb4",
+        "tool_use_id": "exec-40d7985e-eb01-4058-a951-3f7ff9372efa",
+        "paths": [
+          "docs/phase1-g4-probe-plan.md"
+        ],
+        "before_path_snapshot_sha256": "86978981d7c319a88d0545e296f4cf600bda68c13787c2be9387cdce027bea4f",
+        "after_path_snapshot_sha256": "86978981d7c319a88d0545e296f4cf600bda68c13787c2be9387cdce027bea4f",
+        "abort_sha256": "ac1166079ebb67e41e7b46b5ff686328c7a5b66579ccce1a5f24341e78fb228f"
+      }
+    ],
+    "post_abort_chain_prefix": {
+      "last_sequence": 74,
+      "event_count": 74,
+      "chain_sha256": "f2834804dd75eddb54a6e265f9433e294ed43c44b79dc581bd1180cce27b58f2",
+      "matched_abort_claim_ids": [
+        "84ef3884-da81-44f8-8f16-c9edfa8cb250",
+        "9ac647c3-b172-4bc5-86f4-d380ace03a1a",
+        "c472794e-f9d5-43fc-bae7-00aaaf3c8e1c"
+      ],
+      "pending_callback_count": 0,
+      "raw_payload_stored": false,
+      "scope": "historical chain prefix captured before this record update"
+    },
+    "recorded_as_posttooluse_callback": false,
+    "claimed_path_or_git_frontier_drift_denied": true
   },
   "qualification": {
     "live_root_writer_callback_visibility": "partial_pass",

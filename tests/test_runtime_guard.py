@@ -383,6 +383,48 @@ class RuntimeGuardTests(unittest.TestCase):
         self.assertIn("AUTHORITY.REATTESTED", first["hookSpecificOutput"]["additionalContext"])
         self.assertEqual(second["hookSpecificOutput"]["permissionDecision"], "deny")
 
+    def test_final_attestation_seed_is_mechanical_and_non_authorizing(self):
+        seed = runtime_guard.final_attestation_seed(self.capsule, 3)
+
+        self.assertEqual(
+            set(seed),
+            {
+                "schema",
+                "assignment_id",
+                "handoff_id",
+                "capsule_sha256",
+                "compact_invariant_sha256",
+                "authority_provenance_policy_sha256",
+                "canonical_agent_path",
+                "recovery_count",
+                "verification_commands",
+            },
+        )
+        self.assertEqual(seed["recovery_count"], 3)
+        self.assertEqual(seed["verification_commands"], self.capsule["verification"])
+        self.assertEqual(
+            seed["compact_invariant_sha256"],
+            compatibility_state.compact_invariant_sha256(self.capsule),
+        )
+        self.assertEqual(
+            seed["authority_provenance_policy_sha256"],
+            compatibility_state.provenance_policy_sha256(self.capsule),
+        )
+        for forbidden in (
+            "worker_claimed_origin",
+            "test_only_injection_used",
+            "derivation_receipt_sha256",
+            "root",
+            "branch",
+            "head",
+            "git_status_short",
+            "changed_paths",
+            "verification",
+            "authority_violation",
+            "assigned_slice_complete",
+        ):
+            self.assertNotIn(forbidden, seed)
+
     def test_corrupt_active_runtime_metadata_fails_closed(self):
         active = self.store.path("active", self.capsule["assignment_id"])
         envelope = json.loads(active.read_text(encoding="utf-8"))

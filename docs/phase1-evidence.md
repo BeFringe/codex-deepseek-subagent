@@ -172,6 +172,19 @@ The successful PreToolUse context is rebuilt from active state and includes the
 complete immutable capsule plus the exact original assignment, not only an id
 or narrative reminder.
 
+The provider-free candidate now also injects a deterministic final-attestation
+seed at `SubagentStart` and every successful child `PreToolUse`. It supplies only
+mechanical identity/hash/epoch/verification-command inputs that a strict
+read-only child cannot calculate with shell access disabled. Focused fixtures
+prove the seed excludes provenance origin, test-only status, verification
+results, disk state, authority-violation status, and completion. The installed
+0.148.0-alpha.9 binary embeds a `PreToolUse` output schema with
+`hookSpecificOutput.additionalContext`, consistent with the pinned source.
+Neither fact proves that a real compacted child sees the re-injected seed; that
+remains a live target-child probe and no qualification status changes here.
+The fresh provider-free suite passed 230 tests in 33.519 seconds, including the
+new seed contract and initial/post-recovery injection fixtures.
+
 The probe corrected an earlier identity assumption: Hook `session_id` is the
 runtime session shared by root and descendants, not the child ThreadId. Current
 serialized SessionMeta does duplicate this shared session id. Exact binding
@@ -1119,6 +1132,14 @@ failure. Its independent abort was joined by exact actor/tool-use identity and
 reported as `aborted_unchanged` with `post_sequence=null`; the earlier
 pre-overlay abort remained explicitly unmatched rather than being backfilled
 as a Hook callback. The quiescent verifier then returned no pending callbacks.
+
+The final-attestation-seed update reproduced this failure-only path twice more
+on mismatched documentation patch contexts. Exact unchanged recovery produced
+abort hashes `246ae696267345e0ad9252440c0bced973c4e9a63f05e6e27388b296f8e738cc`
+and `ac1166079ebb67e41e7b46b5ff686328c7a5b66579ccce1a5f24341e78fb228f`;
+the joined chain prefix reached sequence 74 with zero pending callbacks. These
+are explicit aborts, not fabricated `PostToolUse` events, and do not close
+partial-mutation or process-death recovery.
 
 Provider-free tests now cover the complete root→child lifecycle receipt order,
 exact root/child AgentPaths, payload omission, pending callback, orphan and

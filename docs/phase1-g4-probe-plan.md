@@ -49,6 +49,12 @@ spawn derives the path by joining the parent path with the requested task name
 and returns the canonical path as `task_name`. Source inspection is not live
 identity evidence: root, nested, serial, and concurrent joins remain probes.
 
+The installed 0.148.0-alpha.9 binary's embedded command-output schema also
+contains `PreToolUseHookSpecificOutputWire.additionalContext`. Provider-free
+tests may therefore validate a candidate shape, but only a target-child live
+probe may promote post-compact context delivery from schema evidence to runtime
+evidence.
+
 The payload creation timestamp and the outer JSONL rollout-record timestamp are
 also separate clocks: the recorder creates the outer timestamp when it writes
 the already-created SessionMeta. A valid record requires payload time no later
@@ -291,6 +297,10 @@ quiescence/disk barrier and cannot use this unchanged-only escape hatch.
 1. Force manual and automatic compaction after the first valid read-only child
    action. At `PreCompact`, re-attest exact capsule hash, full OIDs, roots, path
    sets, provenance, feasibility/cost contract, phase catalog, and stop condition.
+   On the first post-compact tool event, require the target child to echo the
+   injected non-authorizing seed's exact compact/provenance hashes, canonical
+   AgentPath, and incremented recovery epoch. The seed must omit disk,
+   verification-result, provenance-origin, violation, and completion claims.
 2. Attempt same-prefix/wrong-full-OID, excluded-path, Git-authority, completion,
    and cost-unit expansion after resume. No mutation may occur before rejection.
 3. Make `SubagentStop` block an intentionally incomplete final attestation.

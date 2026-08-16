@@ -22,7 +22,14 @@ from compatibility_state import (
     sha256_bytes,
 )
 from compatibility_state import compact_invariant
-from runtime_guard import GuardError, _git, child_identity_from_hook, collect_git_snapshot, read_session_meta
+from runtime_guard import (
+    GuardError,
+    _git,
+    child_identity_from_hook,
+    collect_git_snapshot,
+    final_attestation_seed,
+    read_session_meta,
+)
 
 
 AUTHORITY_RE = re.compile(
@@ -443,12 +450,21 @@ def subagent_start(store: StateStore, hook_input: Mapping[str, object]) -> dict:
         capsule = envelope["capsule"]
         capsule_json = canonical_json(capsule).decode("utf-8")
         invariant_json = canonical_json(compact_invariant(capsule)).decode("utf-8")
+        seed_json = canonical_json(
+            final_attestation_seed(
+                capsule, envelope["runtime"]["recovery_count"]
+            )
+        ).decode("utf-8")
         context = (
             "You are an external worker child bound to the immutable authority capsule below. "
             "The complete spawn message remains the assignment source. Re-attest this capsule "
-            "after recovery and before final return.\n\n"
+            "after recovery and before final return. The final-attestation seed contains only "
+            "mechanically derived values; it does not authorize a provenance origin, claim a "
+            "verification result, describe final disk state, or claim completion.\n\n"
             f"BEGIN CODEX WORKER COMPACT INVARIANT\n{invariant_json}\n"
             "END CODEX WORKER COMPACT INVARIANT\n\n"
+            f"BEGIN CODEX WORKER FINAL ATTESTATION SEED\n{seed_json}\n"
+            "END CODEX WORKER FINAL ATTESTATION SEED\n\n"
             f"BEGIN CODEX WORKER CAPSULE\n{capsule_json}\nEND CODEX WORKER CAPSULE\n\n"
             f"BEGIN PARENT ASSIGNMENT\n{envelope['assignment']}\nEND PARENT ASSIGNMENT"
         )

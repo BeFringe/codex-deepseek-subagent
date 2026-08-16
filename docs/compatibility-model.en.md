@@ -151,6 +151,13 @@ runtime/child/parent identity, root/base, owned and excluded paths, Git
 authority, authoritative input roots, stop condition, and completion predicate.
 The full capsule and assignment remain in durable state; the compact copy cannot
 replace or expand them.
+A mechanically derived, non-authorizing final-attestation seed may accompany
+that context. It contains only assignment/handoff/capsule identity,
+compact/provenance-policy hashes, canonical AgentPath, recovery epoch, and the
+verification-command names. It must not prefill provenance origin, test-only
+selection, verification exit codes, final disk state, authority violation, or
+completion. Those remain worker claims independently adjudicated by
+`SubagentStop` against fresh host and disk state.
 The optional capture preflight compares parent-supplied expected location facts
 with the Hook's current actual Git snapshot and blocks spawn on any difference.
 It cannot authorize a commit/branch, change path ownership, infer a replacement
@@ -437,6 +444,12 @@ a recovery epoch without deleting active state. Every mutation-capable tool
 must re-resolve one active capsule and re-attest root, branch/base, owned paths,
 Git authority, and epoch before execution. Missing, ambiguous, or corrupt state
 blocks new writes and scope expansion.
+
+The local 0.148.0-alpha.9 binary's embedded schema contains
+`PreToolUseHookSpecificOutputWire.additionalContext`, consistent with the pinned
+`schema.rs` source anchor. That proves only that Codex parses the output field;
+a live compact probe must still show that the target child actually receives
+the recovered context.
 
 The capsule carries a short bounded first-attestation deadline. Before the first
 tool execution, the guard compares actual root, branch, full HEAD, index, status,

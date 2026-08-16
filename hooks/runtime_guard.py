@@ -117,6 +117,47 @@ def _active_runtime(envelope: Mapping[str, object]) -> dict:
     return runtime
 
 
+def final_attestation_seed(
+    capsule: Mapping[str, object], recovery_count: int
+) -> dict[str, object]:
+    """Return only mechanically derived fields needed to build a final claim.
+
+    This seed is deliberately non-authorizing.  It does not assert disk state,
+    provenance origin, verification results, completion, or the absence of an
+    authority violation; the worker must still make those claims and the stop
+    hook must independently adjudicate them against fresh host state.
+    """
+    if type(recovery_count) is not int or recovery_count < 0:
+        raise GuardError("final-attestation seed recovery_count is invalid")
+    string_fields = {
+        field: capsule.get(field)
+        for field in (
+            "assignment_id",
+            "handoff_id",
+            "capsule_sha256",
+            "canonical_agent_path",
+        )
+    }
+    if any(
+        not isinstance(value, str) or not value
+        for value in string_fields.values()
+    ):
+        raise GuardError("final-attestation seed identity fields are invalid")
+    verification = capsule.get("verification")
+    if not isinstance(verification, list) or any(
+        not isinstance(command, str) or not command for command in verification
+    ):
+        raise GuardError("final-attestation seed verification contract is invalid")
+    return {
+        "schema": 1,
+        **string_fields,
+        "compact_invariant_sha256": compact_invariant_sha256(capsule),
+        "authority_provenance_policy_sha256": provenance_policy_sha256(capsule),
+        "recovery_count": recovery_count,
+        "verification_commands": list(verification),
+    }
+
+
 def read_session_meta(transcript_path: str, *, require_child_fields: bool = True) -> dict:
     path = Path(transcript_path)
     if not path.is_absolute():
@@ -344,6 +385,12 @@ def pre_tool_use(
             now=observed_at,
         )
         recovery_count = envelope["runtime"]["recovery_count"]
+        attestation_seed = json.dumps(
+            final_attestation_seed(capsule, recovery_count),
+            ensure_ascii=False,
+            separators=(",", ":"),
+            sort_keys=True,
+        )
         context = (
             "AUTHORITY.REATTESTED "
             f"assignment_id={assignment_id} "
@@ -352,6 +399,9 @@ def pre_tool_use(
             "BEGIN CODEX WORKER COMPACT INVARIANT\n"
             f"{json.dumps(compact_invariant(capsule), ensure_ascii=False, separators=(',', ':'), sort_keys=True)}\n"
             "END CODEX WORKER COMPACT INVARIANT\n"
+            "BEGIN CODEX WORKER FINAL ATTESTATION SEED\n"
+            f"{attestation_seed}\n"
+            "END CODEX WORKER FINAL ATTESTATION SEED\n"
             "BEGIN CODEX WORKER CAPSULE\n"
             f"{json.dumps(capsule, ensure_ascii=False, separators=(',', ':'), sort_keys=True)}\n"
             "END CODEX WORKER CAPSULE\n"

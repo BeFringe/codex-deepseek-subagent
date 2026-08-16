@@ -749,6 +749,13 @@ class AssignmentTransportTests(unittest.TestCase):
 
         context = result["hookSpecificOutput"]["additionalContext"]
         self.assertIn("BEGIN CODEX WORKER CAPSULE", context)
+        seed_text = context.split(
+            "BEGIN CODEX WORKER FINAL ATTESTATION SEED\n", 1
+        )[1].split("\nEND CODEX WORKER FINAL ATTESTATION SEED", 1)[0]
+        seed = json.loads(seed_text)
+        self.assertEqual(seed["recovery_count"], 0)
+        self.assertEqual(seed["canonical_agent_path"], "/root/bounded_task")
+        self.assertNotIn("assigned_slice_complete", seed)
         self.assertIn(hook["tool_input"]["message"], context)
         self.assertEqual(len(list((self.store.root / "active").glob("*.json"))), 1)
         self.assertEqual(len(list((self.store.root / "pending").glob("*.json"))), 0)
@@ -1487,6 +1494,8 @@ class AssignmentTransportTests(unittest.TestCase):
         checked_output = json.loads(checked.stdout)
         checked_context = checked_output["hookSpecificOutput"]["additionalContext"]
         self.assertIn("recovery_count=1", checked_context)
+        self.assertIn("BEGIN CODEX WORKER FINAL ATTESTATION SEED", checked_context)
+        self.assertIn('"recovery_count":1', checked_context)
         self.assertIn(spawn["tool_input"]["message"], checked_context)
 
         active_path = next((self.store.root / "active").glob("*.json"))

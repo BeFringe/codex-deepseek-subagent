@@ -392,6 +392,12 @@ child/parent identity、owned/excluded paths、root/base、Git authority、autho
 roots、stop condition 和 completion predicate。完整 capsule/assignment 仍保留在 durable
 state；compact copy 不能扩大或替代它。
 
+同一上下文还可携带一个机械派生、非授权的 final-attestation seed，只提供 assignment/
+handoff/capsule identity、compact/provenance policy hash、canonical AgentPath、recovery epoch
+与 verification command 名单。它不得预填 worker provenance origin、test-only 选择、
+verification exit code、final disk snapshot、authority violation 或 completion claim；这些仍由
+worker 声明并由 `SubagentStop` 以 fresh host/disk state 独立裁决。
+
 ## handoff 与 authority 生命周期
 
 ```text
@@ -558,6 +564,11 @@ Phase 1 不以 prompt 里的 `TASK.CONTEXT_LOST` 代替 runtime gate：
 5. `SubagentStop` 要求 final attestation；缺失或与 disk 不符时 block，并提供只允许
    attestation/`TASK.CONTEXT_LOST` 的 continuation prompt。
 6. parent 以 actual disk、Git 和 capsule evidence 裁决；child narrative 只是一项输入。
+
+当前 0.148.0-alpha.9 本机二进制内嵌 schema 明确包含
+`PreToolUseHookSpecificOutputWire.additionalContext`，与 pinned `schema.rs` anchor 一致。
+这只证明输出字段可解析；仍须 live compact probe 证明该 context 在目标 child 中可见，不能
+用 provider-free JSON 解析测试替代。
 
 只缩小任务可以降低 compaction 风险，但不是协议修复。
 
