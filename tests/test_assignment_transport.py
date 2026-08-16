@@ -37,6 +37,9 @@ writer_lease_guard = load_module(
 hook_event_receipts = load_module(
     "hook_event_receipts", REPO / "hooks" / "hook_event_receipts.py"
 )
+hook_schema_observation_arm = load_module(
+    "hook_schema_observation_arm", REPO / "hooks" / "hook_schema_observation_arm.py"
+)
 pretool_schema_observation = load_module(
     "pretool_schema_observation", REPO / "hooks" / "pretool_schema_observation.py"
 )

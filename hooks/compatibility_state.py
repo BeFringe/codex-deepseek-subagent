@@ -187,6 +187,8 @@ STATE_KINDS = (
     "hook_event_chain",
     "pretool_schema_observation",
     "subagentstart_schema_observation",
+    "hook_schema_observation_arm",
+    "hook_schema_observation_arm_history",
 )
 WRITER_ACTOR_FIELDS = {
     "runtime_session_id",

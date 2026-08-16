@@ -16,6 +16,7 @@ from hook_event_receipts import (
     is_target_spawn,
     record_from_hook,
 )
+from hook_schema_observation_arm import observation_root_for_event
 from pretool_schema_observation import record_from_hook as record_pretool_schema
 from runtime_guard import pre_compact, pre_tool_use, subagent_stop
 from subagentstart_schema_observation import (
@@ -107,16 +108,19 @@ def dispatch_with_receipts(
     pretool_schema_observation_root: Path | None = None,
 ) -> dict:
     event = hook_input.get("hook_event_name")
-    if pretool_schema_observation_root is not None:
+    observation_root = pretool_schema_observation_root
+    if observation_root is None:
+        observation_root = observation_root_for_event(store, hook_input)
+    if observation_root is not None:
         record_pretool_schema(
             store,
             hook_input,
-            observation_root=pretool_schema_observation_root,
+            observation_root=observation_root,
         )
         record_subagentstart_schema(
             store,
             hook_input,
-            observation_root=pretool_schema_observation_root,
+            observation_root=observation_root,
         )
     child_is_target = hook_input.get("agent_type") in plaintext_agent_types
     is_parent_writer = (
