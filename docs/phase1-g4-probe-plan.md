@@ -7,8 +7,9 @@ to adjudicate its own behavior.
 
 ## Current pinned baseline
 
-- Repository: `main@076ee0df9aca11fbc0c19a6ccd7cd8befc0051f7`, equal to
-  `origin/main` at the 2026-08-15 fetch.
+- Continuation input: local
+  `main@dcdc6207503af8117e48b3f6178137f07f5b0523`; refreshed remote baseline
+  `origin/main@076ee0df9aca11fbc0c19a6ccd7cd8befc0051f7`.
 - Host: macOS 26.2 (`25C56`), Darwin arm64, Asia/Shanghai.
 - Codex app: `26.810.41047` (`6570`); CLI: `0.148.0-alpha.9`.
 - Codex source: tag `rust-v0.148.0-alpha.9`, peeled commit
@@ -16,7 +17,10 @@ to adjudicate its own behavior.
 - Provider-free Python: user default `3.14.7`; Apple `/usr/bin/python3`
   remains `3.9.6` and is not replaced.
 - Legacy v4 agent/skill/schema-1 plaintext Hook: restored after explicit user
-  authorization; G4 candidate/schema 2/state remain uninstalled and untrusted.
+  authorization. The installed `hooks.json` contains only the v4
+  `SubagentStart` matcher; migration did not restore an equivalent G4
+  `PreToolUse`/`PostToolUse`/compact/stop configuration. G4 candidate/schema
+  2/state remain uninstalled and untrusted.
 
 The migrated checkout initially had 62 blob-identical executable-bit changes.
 They were normalized only after a fresh remote fetch proved every content blob
@@ -53,6 +57,16 @@ host-owned failure/quiescence barrier proves disk state.
 extensions get the default function Hook payload, while freeform/custom and
 tool-search payloads do not. Provider-hosted web search bypasses local tool Hook
 routing. These are explicit negative spaces, not prompt-fixable gaps.
+
+The current [official Hooks guide](https://learn.chatgpt.com/docs/hooks) also
+fixes the candidate's event-level failure semantics. A `PreToolUse` internal
+failure must emit an explicit deny (or blocking exit 2), not an arbitrary Hook
+failure. `PreCompact` must return `continue=false` to stop before compaction,
+while `SubagentStop` must request continuation with `decision=block`.
+`PostToolUse` cannot undo a mutation, so a failed writer-claim release stops the
+flow and leaves the lease unresolved. `SubagentStart` cannot cancel a child;
+binding failure can only inject `TASK.CONTEXT_LOST`, after which later tool
+guards plus the host watchdog/cancel path remain mandatory.
 
 Pinned anchors:
 

@@ -252,6 +252,39 @@ explicit state directory and target agent-type list and is not referenced by
 the installer or live configuration. Its end-to-end fixture confirms the state
 path reaches reported only after an exact post-recovery final attestation.
 
+### Event-specific Hook failure semantics
+
+The migration-time live configuration is narrower than the candidate: the
+installed `/Users/pearly/.codex/hooks.json` SHA-256 is
+`e20d6b3c3e70c088ca9e56afd25a3ee52660d16bbfb0d95b427adaa2cd7ba659` and its
+only configured event is the trusted v4 `SubagentStart` plaintext handoff. The
+user confirmed that the earlier `PreToolUse` configuration was not migrated in
+equivalent form. This is an installed-state gap, not a negative runtime result;
+no G4 mutation-mediation callback can be inferred from the v4 Hook's trust
+entry.
+
+The current official Codex Hooks contract says `PreToolUse` blocks with an
+explicit deny JSON shape or exit 2; unsupported generic stop fields instead
+make that Hook run fail and allow the tool call to continue. It also says
+`SubagentStart` cannot be stopped by `continue=false`, `PreCompact` stops before
+compaction with `continue=false`, `SubagentStop` uses `decision=block` to
+continue an incomplete child, and `PostToolUse` cannot undo effects that have
+already occurred.
+
+The isolated executable previously converted any uncaught `StateError` into
+exit 12. It now emits the exact event-level safe shape: deny for `PreToolUse`,
+stop-before-compact for `PreCompact`, continuation for `SubagentStop`, explicit
+`TASK.CONTEXT_LOST` for the non-blockable `SubagentStart`, and stop-flow while
+retaining an unresolved lease for failed `PostToolUse` reconciliation. Invalid
+JSON uses exit 2. Six new focused tests exercise these shapes with real CLI
+dispatch for all four lifecycle events and direct event-shape checks; the
+existing failed writer-release fixture now also requires stop-flow output.
+
+These tests improve the uninstalled candidate only. They do not prove that a
+live Hook ran, that independent sandboxing blocked a mutation, that the host
+cancelled a context-lost child, or that a `PostToolUse` stop established disk
+quiescence. P1/P4/P5a/P5b and their exit receipts remain incomplete.
+
 ## Pre-write deadline and unresponsive-run evidence
 
 The capsule freezes a first-Git-attestation deadline plus exact initial
@@ -869,11 +902,11 @@ The refreshed full refs remained
 `upstream/main@c949e8d9b8922a48990b1e08259ad4baefc75f55`.
 
 The fresh host baseline was Codex CLI `0.148.0-alpha.9`, Python `3.14.7`, and
-macOS `26.2` on arm64. After the identity-joiner fixtures, the complete suite
-ran:
+macOS `26.2` on arm64. After the identity joiner and event-failure fixtures, the
+complete suite ran:
 
 ```text
-Ran 201 tests in 27.439s
+Ran 207 tests in 28.205s
 OK
 agent template checks passed
 ```

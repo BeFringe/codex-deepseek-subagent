@@ -34,7 +34,12 @@
         "id": "P4",
         "state": "partial",
         "provider_free": "partial",
-        "evidence": ["probes/codex-0.148.0-alpha.9-mutation-surfaces.json"],
+        "evidence": [
+          "probes/codex-0.148.0-alpha.9-mutation-surfaces.json",
+          "hooks/compatibility_hook.py",
+          "hooks/writer_lease_guard.py",
+          "tests/test_assignment_transport.py"
+        ],
         "blocker": "complete live mutation visibility/mediation and independent sandbox denial are missing"
       },
       {
@@ -55,7 +60,11 @@
         "id": "P5b",
         "state": "partial",
         "provider_free": "partial",
-        "evidence": ["docs/phase1-g4-probe-plan.md#parentchild-single-writer-negative-space"],
+        "evidence": [
+          "docs/phase1-g4-probe-plan.md#parentchild-single-writer-negative-space",
+          "hooks/writer_lease_guard.py",
+          "tests/test_assignment_transport.py"
+        ],
         "blocker": "all-surface writer serialization plus strong termination/quiescence handover is missing"
       },
       {

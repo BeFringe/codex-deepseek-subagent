@@ -16,6 +16,47 @@ from writer_lease_guard import post_tool_use as release_writer_lease
 from writer_lease_guard import pre_tool_use as guard_writer_lease
 
 
+def fail_closed_output(event: object, error: BaseException) -> dict:
+    """Translate an internal failure into the blocking shape for its Hook event."""
+
+    reason = f"TASK.AUTHORITY_BLOCKED: {error}"
+    if event == "PreToolUse":
+        return {
+            "hookSpecificOutput": {
+                "hookEventName": "PreToolUse",
+                "permissionDecision": "deny",
+                "permissionDecisionReason": reason,
+            }
+        }
+    if event == "SubagentStop":
+        return {
+            "decision": "block",
+            "reason": (
+                f"{reason}. Continue the child only to return a fail-closed "
+                "context-loss attestation."
+            ),
+        }
+    if event == "SubagentStart":
+        # Current Codex parses continue=false for this event but does not stop the
+        # child. Make the loss explicit; the later PreToolUse guard must deny it.
+        context = (
+            f"TASK.CONTEXT_LOST: {reason}. Do not call tools or claim completion; "
+            "SubagentStart cannot itself cancel this child."
+        )
+        return {
+            "systemMessage": context,
+            "hookSpecificOutput": {
+                "hookEventName": "SubagentStart",
+                "additionalContext": context,
+            },
+        }
+    return {
+        "continue": False,
+        "stopReason": reason,
+        "systemMessage": reason,
+    }
+
+
 def dispatch(
     store: StateStore,
     hook_input: dict,
@@ -40,10 +81,7 @@ def dispatch(
     if event == "PreCompact":
         if not child_is_target:
             return {}
-        try:
-            return pre_compact(store, hook_input)
-        except StateError as error:
-            raise StateError(f"TASK.AUTHORITY_BLOCKED: {error}") from error
+        return pre_compact(store, hook_input)
     if event == "PostCompact":
         return {}
     if event == "SubagentStop":
@@ -65,19 +103,18 @@ def main() -> int:
         hook_input = json.load(sys.stdin)
     except json.JSONDecodeError as error:
         print(f"Hook input was invalid JSON: {error}", file=sys.stderr)
-        return 4
+        return 2
     if not isinstance(hook_input, dict):
         print("Hook input must be a JSON object.", file=sys.stderr)
-        return 4
+        return 2
     try:
         output = dispatch(
             StateStore(arguments.state_directory),
             hook_input,
             plaintext_agent_types=set(arguments.plaintext_agent_types),
         )
-    except StateError as error:
-        print(str(error), file=sys.stderr)
-        return 12
+    except (OSError, StateError) as error:
+        output = fail_closed_output(hook_input.get("hook_event_name"), error)
     json.dump(output, sys.stdout, ensure_ascii=False, separators=(",", ":"))
     sys.stdout.flush()
     return 0

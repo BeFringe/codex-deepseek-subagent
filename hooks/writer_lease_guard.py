@@ -181,6 +181,9 @@ def post_tool_use(store: StateStore, hook_input: Mapping[str, object]) -> dict:
         )
         return {}
     except StateError as error:
+        reason = f"TASK.WRITER_LEASE_UNRESOLVED: {error}"
         return {
-            "systemMessage": f"TASK.WRITER_LEASE_UNRESOLVED: {error}",
+            "continue": False,
+            "stopReason": reason,
+            "systemMessage": reason,
         }

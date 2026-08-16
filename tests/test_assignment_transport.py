@@ -34,6 +34,9 @@ assignment_transport = load_module(
 writer_lease_guard = load_module(
     "writer_lease_guard", REPO / "hooks" / "writer_lease_guard.py"
 )
+compatibility_hook = load_module(
+    "compatibility_hook", REPO / "hooks" / "compatibility_hook.py"
+)
 
 
 StateStore = compatibility_state.StateStore
@@ -1205,6 +1208,8 @@ class AssignmentTransportTests(unittest.TestCase):
         )
 
         self.assertIn("TASK.WRITER_LEASE_UNRESOLVED", result["systemMessage"])
+        self.assertIs(result["continue"], False)
+        self.assertEqual(result["stopReason"], result["systemMessage"])
         self.assertEqual(len(list((self.store.root / "writer_claim").glob("*.json"))), 1)
 
     def test_executable_hook_persists_and_releases_parent_writer_claim(self):
@@ -1269,6 +1274,116 @@ class AssignmentTransportTests(unittest.TestCase):
         capsule = json.loads(pending.read_text(encoding="utf-8"))["capsule"]
 
         self.assertEqual(capsule["canonical_agent_path"], "/root/parent_task/bounded_task")
+
+    def test_executable_pretooluse_identity_failure_returns_explicit_deny(self):
+        child = self.child_hook()
+        child.update(
+            {
+                "hook_event_name": "PreToolUse",
+                "transcript_path": str(self.root / "missing-child.jsonl"),
+                "tool_name": "view_image",
+                "tool_input": {},
+                "tool_use_id": "missing-child-read",
+            }
+        )
+
+        completed = self.invoke_hook_cli(child)
+
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+        output = json.loads(completed.stdout)
+        self.assertEqual(
+            output["hookSpecificOutput"]["permissionDecision"], "deny"
+        )
+        self.assertIn(
+            "TASK.AUTHORITY_BLOCKED",
+            output["hookSpecificOutput"]["permissionDecisionReason"],
+        )
+
+    def test_executable_precompact_failure_stops_before_compaction(self):
+        child = self.child_hook()
+        child.update(
+            {
+                "hook_event_name": "PreCompact",
+                "transcript_path": str(self.root / "missing-child.jsonl"),
+                "trigger": "auto",
+            }
+        )
+
+        completed = self.invoke_hook_cli(child)
+
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+        output = json.loads(completed.stdout)
+        self.assertIs(output["continue"], False)
+        self.assertIn("TASK.AUTHORITY_BLOCKED", output["stopReason"])
+
+    def test_executable_subagentstop_identity_failure_requests_continuation(self):
+        completed = self.invoke_hook_cli(
+            {
+                "hook_event_name": "SubagentStop",
+                "session_id": "runtime-session",
+                "agent_id": "missing-child",
+                "agent_type": "fixture_worker",
+                "transcript_path": str(self.parent_transcript),
+                "agent_transcript_path": str(self.root / "missing-child.jsonl"),
+                "last_assistant_message": None,
+            }
+        )
+
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+        output = json.loads(completed.stdout)
+        self.assertEqual(output["decision"], "block")
+        self.assertIn("TASK.FINAL_ATTESTATION_REQUIRED", output["reason"])
+
+    def test_executable_subagentstart_identity_failure_is_context_lost(self):
+        child = self.child_hook()
+        child["transcript_path"] = str(self.root / "missing-child.jsonl")
+
+        completed = self.invoke_hook_cli(child)
+
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+        output = json.loads(completed.stdout)
+        context = output["hookSpecificOutput"]["additionalContext"]
+        self.assertIn("TASK.CONTEXT_LOST", context)
+        self.assertIn("Do not call tools or claim completion", context)
+
+    def test_executable_invalid_json_uses_blocking_exit_code(self):
+        completed = subprocess.run(
+            [
+                sys.executable,
+                str(HOOK_SCRIPT),
+                "--state-directory",
+                str(self.store.root),
+                "--plaintext-agent-type",
+                "fixture_worker",
+            ],
+            input="not-json",
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+        )
+
+        self.assertEqual(completed.returncode, 2)
+        self.assertIn("invalid JSON", completed.stderr)
+
+    def test_top_level_failure_shapes_are_event_specific(self):
+        error = compatibility_state.StateError("fixture state failure")
+
+        pre_tool = compatibility_hook.fail_closed_output("PreToolUse", error)
+        self.assertEqual(
+            pre_tool["hookSpecificOutput"]["permissionDecision"], "deny"
+        )
+        pre_compact = compatibility_hook.fail_closed_output("PreCompact", error)
+        self.assertIs(pre_compact["continue"], False)
+        post_tool = compatibility_hook.fail_closed_output("PostToolUse", error)
+        self.assertIs(post_tool["continue"], False)
+        stop = compatibility_hook.fail_closed_output("SubagentStop", error)
+        self.assertEqual(stop["decision"], "block")
+        start = compatibility_hook.fail_closed_output("SubagentStart", error)
+        self.assertIn(
+            "SubagentStart cannot itself cancel this child",
+            start["hookSpecificOutput"]["additionalContext"],
+        )
 
     def test_executable_hook_runs_capture_claim_recovery_and_final_lifecycle(self):
         spawn = self.spawn_hook()
