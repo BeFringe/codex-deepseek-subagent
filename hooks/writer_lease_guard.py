@@ -30,7 +30,8 @@ def actor_identity_from_hook(hook_input: Mapping[str, object]) -> dict[str, str]
     if not isinstance(transcript_path, str):
         raise WriterLeaseError("writer Hook has no transcript_path")
     meta = read_session_meta(transcript_path, require_child_fields=False)
-    if hook_input.get("session_id") != meta["session_id"]:
+    session_id = hook_input.get("session_id")
+    if session_id != meta["session_id"]:
         raise WriterLeaseError("writer Hook session does not match SessionMeta")
     hook_agent_id = hook_input.get("agent_id")
     if hook_agent_id is not None and hook_agent_id != meta["id"]:
@@ -44,13 +45,17 @@ def actor_identity_from_hook(hook_input: Mapping[str, object]) -> dict[str, str]
     if parent_thread_id is None:
         if canonical_path is None:
             canonical_path = "/root"
+        if meta["id"] != session_id or hook_agent_id is not None:
+            raise WriterLeaseError("root writer identity does not match SessionMeta")
     elif not isinstance(canonical_path, str) or not canonical_path:
         raise WriterLeaseError("nested writer SessionMeta has no canonical AgentPath")
+    elif hook_agent_id is None or hook_agent_type != meta_agent_type:
+        raise WriterLeaseError("nested writer Hook lacks exact SessionMeta identity")
     if not isinstance(canonical_path, str) or not canonical_path.startswith("/"):
         raise WriterLeaseError("writer canonical AgentPath is invalid")
     agent_type = meta_agent_type if isinstance(meta_agent_type, str) else "root"
     return {
-        "runtime_session_id": meta["session_id"],
+        "runtime_session_id": session_id,
         "thread_id": meta["id"],
         "agent_type": agent_type,
         "canonical_agent_path": canonical_path,

@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import argparse
+import datetime as dt
 import hashlib
 import json
 from pathlib import Path
@@ -108,6 +109,18 @@ def _uuid7(value, label: str) -> str:
     return value
 
 
+def _timestamp(value, label: str) -> dt.datetime:
+    value = _string(value, label)
+    normalized = f"{value[:-1]}+00:00" if value.endswith("Z") else value
+    try:
+        parsed = dt.datetime.fromisoformat(normalized)
+    except ValueError as error:
+        raise IdentityEvidenceError(f"{label} must be an RFC3339 timestamp") from error
+    if parsed.tzinfo is None or parsed.utcoffset() is None:
+        raise IdentityEvidenceError(f"{label} must include a UTC offset")
+    return parsed
+
+
 def _session_meta(rollout, label: str) -> tuple[str, dict, str]:
     rollout = _object(rollout, label)
     _exact_fields(rollout, {"path", "session_meta_line"}, set(), label)
@@ -133,15 +146,22 @@ def _session_meta(rollout, label: str) -> tuple[str, dict, str]:
     )
     if item["type"] != "session_meta":
         raise IdentityEvidenceError(f"{label} first rollout record is not SessionMeta")
-    _string(item["timestamp"], f"{label} SessionMeta timestamp")
+    record_timestamp = _timestamp(
+        item["timestamp"], f"{label} SessionMeta record timestamp"
+    )
     if "ordinal" in item and item["ordinal"] != 0:
         raise IdentityEvidenceError(f"{label} first SessionMeta ordinal is not zero")
     payload = _object(item["payload"], f"{label} SessionMeta payload")
     if payload.get("cli_version") != PINNED_CODEX_VERSION:
         raise IdentityEvidenceError(f"{label} SessionMeta cli_version is not pinned")
     _string(payload.get("cwd"), f"{label} SessionMeta cwd")
-    if payload.get("timestamp") != item["timestamp"]:
-        raise IdentityEvidenceError(f"{label} SessionMeta timestamps do not match")
+    created_timestamp = _timestamp(
+        payload.get("timestamp"), f"{label} SessionMeta payload timestamp"
+    )
+    if created_timestamp > record_timestamp:
+        raise IdentityEvidenceError(
+            f"{label} SessionMeta payload timestamp is later than its rollout record"
+        )
     return path, payload, hashlib.sha256(encoded).hexdigest()
 
 

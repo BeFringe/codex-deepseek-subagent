@@ -36,11 +36,19 @@ carry optional/exact `agent_id` plus `agent_type`; `SubagentStart` does not carr
 the requested task name or canonical path. The binding must therefore be joined
 against the child's first `SessionMeta`, not inferred from event order or role.
 
-For a thread-spawn child, `SessionMeta` contains the child thread id,
-`parent_thread_id`, `SessionSource::ThreadSpawn`, agent role, and `agent_path`.
-V2 spawn derives that path by joining the parent path with the requested task
-name and returns the canonical path as `task_name`. Source inspection is not live
+For a thread-spawn child, the current serialized `SessionMeta` payload contains
+the shared runtime `session_id`, child thread `id`, and duplicated flattened
+parent/role/nickname/path identity. The same direct parent, depth, role,
+nickname, and canonical path also live under
+`source.subagent.thread_spawn`; both representations must agree exactly. V2
+spawn derives the path by joining the parent path with the requested task name
+and returns the canonical path as `task_name`. Source inspection is not live
 identity evidence: root, nested, serial, and concurrent joins remain probes.
+
+The payload creation timestamp and the outer JSONL rollout-record timestamp are
+also separate clocks: the recorder creates the outer timestamp when it writes
+the already-created SessionMeta. A valid record requires payload time no later
+than record time; exact equality is not a contract.
 
 `hook_transcript_path()` waits for `persist(Standard)`, and the recorder waits
 for the writer acknowledgement. The writer uses file `flush()` but this path has

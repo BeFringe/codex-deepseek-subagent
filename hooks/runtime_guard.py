@@ -27,6 +27,7 @@ from compatibility_state import (
 
 
 MAX_SESSION_META_LINE = 1024 * 1024
+PINNED_CODEX_VERSION = "0.148.0-alpha.9"
 ATTESTATION_RE = re.compile(
     r"\ABEGIN CODEX WORKER ATTESTATION\n(\{.*\})\nEND CODEX WORKER ATTESTATION\Z",
     re.DOTALL,
@@ -45,6 +46,50 @@ READ_ONLY_TOOL_NAMES = {
 
 class GuardError(StateError):
     pass
+
+
+def _session_meta_timestamp(value: object, label: str) -> dt.datetime:
+    if not isinstance(value, str) or not value:
+        raise IdentityMismatch(f"{label} is missing")
+    normalized = f"{value[:-1]}+00:00" if value.endswith("Z") else value
+    try:
+        parsed = dt.datetime.fromisoformat(normalized)
+    except ValueError as error:
+        raise IdentityMismatch(f"{label} is invalid") from error
+    if parsed.tzinfo is None or parsed.utcoffset() is None:
+        raise IdentityMismatch(f"{label} lacks a UTC offset")
+    return parsed
+
+
+def _session_meta_thread_spawn(source: object) -> dict | None:
+    if isinstance(source, str) and source:
+        return None
+    if not isinstance(source, dict) or set(source) != {"subagent"}:
+        raise IdentityMismatch("SessionMeta source is invalid")
+    subagent = source.get("subagent")
+    if not isinstance(subagent, dict) or set(subagent) != {"thread_spawn"}:
+        raise IdentityMismatch("SessionMeta subagent source is invalid")
+    spawn = subagent.get("thread_spawn")
+    fields = {
+        "parent_thread_id",
+        "depth",
+        "agent_path",
+        "agent_nickname",
+        "agent_role",
+    }
+    if not isinstance(spawn, dict) or set(spawn) != fields:
+        raise IdentityMismatch("SessionMeta thread-spawn source fields are not exact")
+    for field in ("parent_thread_id", "agent_path", "agent_role"):
+        if not isinstance(spawn.get(field), str) or not spawn[field]:
+            raise IdentityMismatch(f"SessionMeta thread-spawn {field} is invalid")
+    if type(spawn.get("depth")) is not int or spawn["depth"] < 1:
+        raise IdentityMismatch("SessionMeta thread-spawn depth is invalid")
+    nickname = spawn.get("agent_nickname")
+    if nickname is not None and (not isinstance(nickname, str) or not nickname):
+        raise IdentityMismatch("SessionMeta thread-spawn nickname is invalid")
+    if not spawn["agent_path"].startswith("/"):
+        raise IdentityMismatch("SessionMeta thread-spawn AgentPath is invalid")
+    return spawn
 
 
 def _active_runtime(envelope: Mapping[str, object]) -> dict:
@@ -89,14 +134,44 @@ def read_session_meta(transcript_path: str, *, require_child_fields: bool = True
         raise IdentityMismatch("child SessionMeta line is invalid") from error
     if not isinstance(item, dict) or item.get("type") != "session_meta":
         raise IdentityMismatch("the first rollout record is not SessionMeta")
+    record_timestamp = _session_meta_timestamp(
+        item.get("timestamp"), "SessionMeta rollout-record timestamp"
+    )
     payload = item.get("payload")
     if not isinstance(payload, dict):
         raise IdentityMismatch("SessionMeta payload is invalid")
-    required = ("session_id", "id")
-    if require_child_fields:
-        required += ("parent_thread_id", "agent_role", "agent_path")
-    if any(not isinstance(payload.get(field), str) or not payload[field] for field in required):
-        raise IdentityMismatch("SessionMeta lacks child identity fields")
+    for field in ("session_id", "id", "cwd"):
+        if not isinstance(payload.get(field), str) or not payload[field]:
+            raise IdentityMismatch(f"SessionMeta {field} is invalid")
+    if payload.get("cli_version") != PINNED_CODEX_VERSION:
+        raise IdentityMismatch("SessionMeta cli_version is not pinned")
+    created_timestamp = _session_meta_timestamp(
+        payload.get("timestamp"), "SessionMeta payload timestamp"
+    )
+    if created_timestamp > record_timestamp:
+        raise IdentityMismatch(
+            "SessionMeta payload timestamp is later than its rollout record"
+        )
+    spawn = _session_meta_thread_spawn(payload.get("source"))
+    child_fields = {
+        "parent_thread_id": payload.get("parent_thread_id"),
+        "agent_role": payload.get("agent_role"),
+        "agent_path": payload.get("agent_path"),
+        "agent_nickname": payload.get("agent_nickname"),
+    }
+    if spawn is None:
+        if any(value is not None for value in child_fields.values()):
+            raise IdentityMismatch("root SessionMeta carries child identity fields")
+        if require_child_fields:
+            raise IdentityMismatch("SessionMeta is not a spawned child")
+        payload["agent_depth"] = None
+        return payload
+    for field in ("parent_thread_id", "agent_role", "agent_path", "agent_nickname"):
+        if child_fields[field] != spawn[field]:
+            raise IdentityMismatch(
+                f"SessionMeta {field} disagrees with thread-spawn source"
+            )
+    payload["agent_depth"] = spawn["depth"]
     return payload
 
 
@@ -140,7 +215,9 @@ def child_identity_from_stop(hook_input: Mapping[str, object]) -> dict[str, str]
     if agent_id != meta["id"]:
         raise IdentityMismatch("SubagentStop agent_id does not match SessionMeta.id")
     if runtime_session_id != meta["session_id"]:
-        raise IdentityMismatch("SubagentStop session does not match child SessionMeta.session_id")
+        raise IdentityMismatch(
+            "SubagentStop session does not match child SessionMeta.session_id"
+        )
     if agent_type != meta["agent_role"]:
         raise IdentityMismatch("SubagentStop role does not match SessionMeta.agent_role")
     parent_transcript = hook_input.get("transcript_path")
@@ -151,6 +228,8 @@ def child_identity_from_stop(hook_input: Mapping[str, object]) -> dict[str, str]
         raise IdentityMismatch("parent and child runtime sessions do not match")
     if parent_meta["id"] != meta["parent_thread_id"]:
         raise IdentityMismatch("stopping thread is not the direct parent")
+    if parent_meta.get("parent_thread_id") is None and parent_meta["id"] != runtime_session_id:
+        raise IdentityMismatch("root parent does not match Hook runtime session")
     return {
         "runtime_session_id": meta["session_id"],
         "child_thread_id": meta["id"],

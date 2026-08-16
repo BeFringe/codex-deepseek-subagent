@@ -60,7 +60,7 @@ class AssignmentTransportTests(unittest.TestCase):
         self.write_meta(
             self.parent_transcript,
             session_id="runtime-session",
-            thread_id="parent-thread",
+            thread_id="runtime-session",
             agent_path=None,
             parent_thread_id=None,
             agent_role=None,
@@ -94,17 +94,34 @@ class AssignmentTransportTests(unittest.TestCase):
             "timestamp": "2026-08-12T00:00:00Z",
             "cwd": str(self.repository),
             "originator": "fixture",
-            "cli_version": "0.147.0",
-            "source": "sub_agent" if parent_thread_id else "cli",
+            "cli_version": "0.148.0-alpha.9",
+            "source": "vscode",
             "model_provider": "fixture-provider",
         }
         if parent_thread_id is not None:
-            payload["parent_thread_id"] = parent_thread_id
-        if agent_role is not None:
-            payload["agent_role"] = agent_role
-        if agent_path is not None:
-            payload["agent_path"] = agent_path
-        item = {"timestamp": payload["timestamp"], "type": "session_meta", "payload": payload}
+            payload.update(
+                {
+                    "parent_thread_id": parent_thread_id,
+                    "agent_role": agent_role,
+                    "agent_path": agent_path,
+                }
+            )
+            payload["source"] = {
+                "subagent": {
+                    "thread_spawn": {
+                        "parent_thread_id": parent_thread_id,
+                        "depth": 1,
+                        "agent_path": agent_path,
+                        "agent_nickname": None,
+                        "agent_role": agent_role,
+                    }
+                }
+            }
+        item = {
+            "timestamp": "2026-08-12T00:00:00.070Z",
+            "type": "session_meta",
+            "payload": payload,
+        }
         path.write_text(json.dumps(item) + "\n", encoding="utf-8")
 
     def message(self, *, authority=None):
@@ -260,7 +277,7 @@ class AssignmentTransportTests(unittest.TestCase):
             child,
             session_id="runtime-session",
             thread_id=f"child-{task_name}",
-            parent_thread_id="parent-thread",
+            parent_thread_id="runtime-session",
             agent_role="fixture_worker",
             agent_path=f"{parent_path}/{task_name}",
         )
@@ -350,7 +367,7 @@ class AssignmentTransportTests(unittest.TestCase):
         capsule = envelope["capsule"]
         self.assertEqual(envelope["assignment"], hook["tool_input"]["message"])
         self.assertEqual(capsule["runtime_session_id"], "runtime-session")
-        self.assertEqual(capsule["parent_thread_id"], "parent-thread")
+        self.assertEqual(capsule["parent_thread_id"], "runtime-session")
         self.assertEqual(capsule["canonical_agent_path"], "/root/bounded_task")
         self.assertEqual(capsule["root"]["path"], str(self.repository.resolve()))
         self.assertEqual(capsule["assignment_mutation_mode"], "write")
@@ -1263,7 +1280,7 @@ class AssignmentTransportTests(unittest.TestCase):
             self.parent_transcript,
             session_id="runtime-session",
             thread_id="parent-thread",
-            parent_thread_id="root-thread",
+            parent_thread_id="runtime-session",
             agent_role="default",
             agent_path="/root/parent_task",
         )

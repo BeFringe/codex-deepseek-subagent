@@ -403,7 +403,8 @@ transcript and jointly prove:
 - Hook `session_id == SessionMeta.session_id` for the root/descendant shared
   runtime session;
 - Hook `agent_id == SessionMeta.id` for the child ThreadId;
-- direct parent thread id, role, and canonical path match the pending capsule;
+- direct parent thread id, role, and canonical path match the pending capsule
+  and their duplicates in `SessionMeta.source.subagent.thread_spawn`;
 - the requested task name has one unique logical relation to the actual path;
 - any precomputed expected path exactly matches.
 

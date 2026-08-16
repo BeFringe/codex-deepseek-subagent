@@ -157,7 +157,9 @@ state-core tests.
 
 `hooks/runtime_guard.py` now exercises the version-locked Hook shapes without
 installing them. The fixture reads only the first rollout `SessionMeta` and
-requires exact Hook session/agent id, parent id, role, and canonical AgentPath.
+requires the Hook session/agent id to match the payload's shared session and
+child id, then requires the flattened parent/role/path identity to match the
+exact duplicates in `source.subagent.thread_spawn`.
 Every synthetic PreToolUse re-reads that metadata and re-resolves exactly one
 active capsule. PreCompact increments a durable recovery epoch; a changed
 parent or AgentPath after that point is denied.
@@ -171,9 +173,11 @@ complete immutable capsule plus the exact original assignment, not only an id
 or narrative reminder.
 
 The probe corrected an earlier identity assumption: Hook `session_id` is the
-runtime session shared by root and descendants, not the child ThreadId. Exact
-binding therefore keeps `runtime_session_id`, direct `parent_thread_id`, and
-child `agent_id == SessionMeta.id` as separate fields.
+runtime session shared by root and descendants, not the child ThreadId. Current
+serialized SessionMeta does duplicate this shared session id. Exact binding
+therefore keeps `runtime_session_id`, direct `parent_thread_id`, and child
+`agent_id == SessionMeta.id` as separate fields while cross-checking the
+thread-spawn source duplicates.
 
 The current guard intentionally allows only a small read-only tool set. All
 mutation tools, including `apply_patch`, remain blocked because the complete
@@ -853,26 +857,26 @@ results, not a Phase 1 completion claim.
 ## P2 raw SessionMeta identity joiner
 
 Status: **provider-free join mechanics implemented; live identity qualification
-pending.** The prior runtime fixture read the child's first SessionMeta and
-compared its top-level session, id, parent, role, and path to a Hook event. It
-did not independently close the duplicated identity inside
-`SessionSource::SubAgent(ThreadSpawn)`, source depth, spawn-returned canonical
-path, or cohort-level uniqueness. A self-consistent top-level fixture therefore
-did not exercise the complete P2 join required by the pinned source contract.
+pending.** The prior runtime fixture compared only the top-level shared session,
+thread id, parent, role, and path. Current real `0.148.0-alpha.9` JSONL also
+duplicates direct parent, depth, role, nickname, and canonical path under
+`source.subagent.thread_spawn`; both representations must agree.
 
 `probes/check_sessionmeta_identity.py` now accepts raw parent
 `PreToolUse(spawn_agent)`, spawn result, child `SubagentStart`, and exact first
 parent/child JSONL lines. It derives the requested name from `tool_input` and
-canonical path from the spawn result, then cross-checks SessionMeta top-level
-identity with `source.subagent.thread_spawn` parent, positive depth, role, and
-path. Nested observations must prove their parent source and depth increment;
-root observations must not carry child identity. Exact-field validation rejects
-schema drift instead of silently ignoring it.
+canonical path from the spawn result, then cross-checks Hook identity and the
+flattened SessionMeta fields with the exact
+`source.subagent.thread_spawn` direct-parent/depth/role/path/nickname identity.
+Nested observations must prove their parent source and depth increment; root
+observations must not carry child identity. The joiner also treats payload
+creation time and the outer JSONL record time as distinct: payload time must be
+no later than record time, not exactly equal.
 
 The cohort guard rejects duplicate case ids, child ids, requested names,
 canonical paths, spawn tool-use ids, child start turns, or child transcript
 paths; it also prevents a root/nested serial/concurrent matrix from mixing
-roles, parents, or concurrent cohort ids. Seventeen focused tests cover the full
+roles, parents, or concurrent cohort ids. Eighteen focused tests cover the full
 eight-observation provider-free matrix and wrong child, wrong source parent,
 non-UUID identity, prefix-only task match, spawn/path or nickname mismatch,
 wrong depth or Codex version, nonzero first ordinal, duplicate child/tool
@@ -891,6 +895,39 @@ capture, 100 serial/100 concurrent POSIX coverage, Windows parity, or absence of
 a same-UID rewrite. Raw live capture plus fresh host/disk adjudication remains
 required before G2 can pass.
 
+### Partial native concurrent observation (2026-08-16)
+
+The parent launched two bounded native read-only explorers concurrently and
+then read their first rollout records from disk. Both children used root session
+`01a00147-39cb-7b50-b78d-7baed910eb45`, depth 1, role `explorer`, and distinct
+canonical paths/ThreadIds:
+
+- `/root/g4_identity_concurrent_a`, nickname `Gauss`, child
+  `01a00b44-79c4-7933-913d-7062e01dd948`; payload time
+  `2026-08-16T15:50:32.133Z`, record time `2026-08-16T15:50:32.203Z`, first-line
+  SHA-256 `e1ba063907895e9ea05037e09d7694f52c9348b4b5e00df104cd98591f6c082c`.
+- `/root/g4_identity_concurrent_b`, nickname `Beauvoir`, child
+  `01a00b44-9444-7aa2-af7d-466e48c9e7e3`; payload time
+  `2026-08-16T15:50:38.917Z`, record time `2026-08-16T15:50:38.982Z`, first-line
+  SHA-256 `d7cdcffd8fa2e624992b80a3e7fce30b2b58599c0969fc2ed7e4e9e67176b008`.
+
+The root first-line SHA-256 was
+`8dc09a540a2599307eb57247c117ecbef242a0a19c5dde6b46380a4be29ad569`.
+No raw `PreToolUse(spawn_agent)` or `SubagentStart` Hook input exists for this
+cohort because the migrated live config contained only the v4-specific
+`SubagentStart` matcher. The observations therefore prove real on-disk source
+shape and distinct concurrent child identities, but not the required Hook ↔
+spawn result ↔ SessionMeta join. They do not promote P2 or the
+`sessionmeta_identity` exit receipt.
+
+After adapting the runtime parser, an isolated CLI round trip used the real root
+SessionMeta and a synthetic `apply_patch` event against temporary state. It
+acquired and exactly released one root writer claim without executing the
+patch; receipt SHA-256 was
+`105392522a71df98753ece56c93c895985f9517af8e872b710504af206ab5253`.
+This validates parser/lease mechanics only. It is not evidence that a trusted
+live `PreToolUse` ran.
+
 The 2026-08-16 baseline refresh also exposed a migration configuration drift:
 the valid GitHub identity is selected by SSH Host `github.com-new`, while the
 repository remotes use `github.com`. Default fetch therefore failed public-key
@@ -902,11 +939,12 @@ The refreshed full refs remained
 `upstream/main@c949e8d9b8922a48990b1e08259ad4baefc75f55`.
 
 The fresh host baseline was Codex CLI `0.148.0-alpha.9`, Python `3.14.7`, and
-macOS `26.2` on arm64. After the identity joiner and event-failure fixtures, the
-complete suite ran:
+macOS `26.2` on arm64. After the identity joiner, real timestamp/source-duplicate
+parser correction, and event-failure fixtures, the complete suite ran on
+2026-08-17:
 
 ```text
-Ran 207 tests in 28.205s
+Ran 211 tests in 28.215s
 OK
 agent template checks passed
 ```
@@ -915,5 +953,5 @@ The executable G4 gate still reported all twelve P-gates and nine exit receipts
 unresolved, with `phase1_complete=false`, `direct_write_qualified=false`, and
 Phases 2/3 closed. The pinned mutation anchors remained valid with the same ten
 blockers. The same-UID probe again altered both isolated rollout and state.
-Therefore the new receipt format improves the evidence path but changes no live
-qualification decision.
+Therefore the corrected parser and partial native observation improve the
+evidence path but change no live qualification decision.

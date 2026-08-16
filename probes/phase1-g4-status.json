@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "as_of": "2026-08-16",
+  "as_of": "2026-08-17",
   "phase1": {
     "declared_complete": false,
     "declared_direct_write_qualified": false,
@@ -19,9 +19,11 @@
         "evidence": [
           "docs/phase1-g4-probe-plan.md#ii-real-identity-and-sessionmeta-probe",
           "probes/check_sessionmeta_identity.py",
-          "tests/test_sessionmeta_identity.py"
+          "tests/test_sessionmeta_identity.py",
+          "hooks/runtime_guard.py",
+          "tests/test_runtime_guard.py"
         ],
-        "blocker": "real root/nested/serial/concurrent SessionMeta identity binding is missing"
+        "blocker": "two real concurrent child SessionMeta records are only partial; complete Hook/spawn/root/nested/serial/concurrent identity joins are missing"
       },
       {
         "id": "P3",

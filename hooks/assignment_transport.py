@@ -299,7 +299,13 @@ def _parent_runtime_identity(hook_input: Mapping[str, object]) -> tuple[dict, st
     if not isinstance(parent_path, str) or not parent_path:
         if meta.get("parent_thread_id") is not None:
             raise GuardError("nested parent SessionMeta has no canonical AgentPath")
+        if meta["id"] != session_id:
+            raise GuardError("root parent SessionMeta id does not match Hook session_id")
         parent_path = "/root"
+    else:
+        hook_agent_type = hook_input.get("agent_type")
+        if hook_agent_id is None or hook_agent_type != meta.get("agent_role"):
+            raise GuardError("nested spawn Hook lacks exact parent identity")
     return meta, parent_path.rstrip("/")
 
 

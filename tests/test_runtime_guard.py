@@ -75,33 +75,63 @@ class RuntimeGuardTests(unittest.TestCase):
         payload = {
             "session_id": "runtime-session",
             "id": "child-thread",
-            "parent_thread_id": "parent-thread",
+            "parent_thread_id": "runtime-session",
             "timestamp": "2026-08-12T00:00:00Z",
             "cwd": str(self.repository),
             "originator": "fixture",
-            "cli_version": "0.147.0",
-            "source": "sub_agent",
+            "cli_version": "0.148.0-alpha.9",
+            "source": {
+                "subagent": {
+                    "thread_spawn": {
+                        "parent_thread_id": "runtime-session",
+                        "depth": 1,
+                        "agent_path": "/root/bounded_task",
+                        "agent_nickname": None,
+                        "agent_role": "fixture_worker",
+                    }
+                }
+            },
             "agent_role": "fixture_worker",
             "agent_path": "/root/bounded_task",
             "model_provider": "fixture-provider",
         }
+        spawn = payload["source"]["subagent"]["thread_spawn"]
+        for field in (
+            "parent_thread_id",
+            "agent_path",
+            "agent_nickname",
+            "agent_role",
+            "depth",
+        ):
+            if field in overrides:
+                spawn[field] = overrides.pop(field)
+                if field in {"parent_thread_id", "agent_path", "agent_role"}:
+                    payload[field] = spawn[field]
         payload.update(overrides)
-        item = {"timestamp": payload["timestamp"], "type": "session_meta", "payload": payload}
+        item = {
+            "timestamp": "2026-08-12T00:00:00.070Z",
+            "type": "session_meta",
+            "payload": payload,
+        }
         self.child_transcript.write_text(json.dumps(item) + "\n", encoding="utf-8")
 
     def write_parent_session_meta(self, **overrides):
         payload = {
             "session_id": "runtime-session",
-            "id": "parent-thread",
+            "id": "runtime-session",
             "timestamp": "2026-08-12T00:00:00Z",
             "cwd": str(self.repository),
             "originator": "fixture",
-            "cli_version": "0.147.0",
-            "source": "sub_agent",
+            "cli_version": "0.148.0-alpha.9",
+            "source": "vscode",
             "model_provider": "fixture-provider",
         }
         payload.update(overrides)
-        item = {"timestamp": payload["timestamp"], "type": "session_meta", "payload": payload}
+        item = {
+            "timestamp": "2026-08-12T00:00:00.070Z",
+            "type": "session_meta",
+            "payload": payload,
+        }
         self.parent_transcript.write_text(json.dumps(item) + "\n", encoding="utf-8")
 
     def make_capsule(self, *, mutation_mode="write"):
@@ -112,7 +142,7 @@ class RuntimeGuardTests(unittest.TestCase):
             "assignment_id": str(uuid.uuid4()),
             "handoff_id": str(uuid.uuid4()),
             "runtime_session_id": "runtime-session",
-            "parent_thread_id": "parent-thread",
+            "parent_thread_id": "runtime-session",
             "parent_turn_id": "parent-turn",
             "spawn_tool_use_id": "spawn-tool-use",
             "worker_profile": "fixture-worker",
@@ -295,7 +325,7 @@ class RuntimeGuardTests(unittest.TestCase):
 
         self.assertEqual(identity["runtime_session_id"], "runtime-session")
         self.assertEqual(identity["child_thread_id"], "child-thread")
-        self.assertEqual(identity["parent_thread_id"], "parent-thread")
+        self.assertEqual(identity["parent_thread_id"], "runtime-session")
         self.assertEqual(identity["agent_type"], "fixture_worker")
         self.assertEqual(identity["canonical_agent_path"], "/root/bounded_task")
 
@@ -304,7 +334,42 @@ class RuntimeGuardTests(unittest.TestCase):
             self.stop_hook(self.attestation())
         )
 
-        self.assertEqual(identity["parent_thread_id"], "parent-thread")
+        self.assertEqual(identity["parent_thread_id"], "runtime-session")
+
+    def test_runtime_parser_rejects_source_duplicate_mismatch(self):
+        item = json.loads(self.child_transcript.read_text(encoding="utf-8"))
+        item["payload"]["source"]["subagent"]["thread_spawn"]["agent_path"] = (
+            "/root/forged"
+        )
+        self.child_transcript.write_text(json.dumps(item) + "\n", encoding="utf-8")
+
+        with self.assertRaisesRegex(
+            compatibility_state.IdentityMismatch,
+            "agent_path disagrees with thread-spawn source",
+        ):
+            runtime_guard.read_session_meta(str(self.child_transcript))
+
+    def test_runtime_parser_rejects_cli_version_drift(self):
+        item = json.loads(self.child_transcript.read_text(encoding="utf-8"))
+        item["payload"]["cli_version"] = "0.148.0-alpha.10"
+        self.child_transcript.write_text(json.dumps(item) + "\n", encoding="utf-8")
+
+        with self.assertRaisesRegex(
+            compatibility_state.IdentityMismatch,
+            "cli_version is not pinned",
+        ):
+            runtime_guard.read_session_meta(str(self.child_transcript))
+
+    def test_runtime_parser_rejects_payload_time_after_record(self):
+        item = json.loads(self.child_transcript.read_text(encoding="utf-8"))
+        item["payload"]["timestamp"] = "2026-08-12T00:00:00.071Z"
+        self.child_transcript.write_text(json.dumps(item) + "\n", encoding="utf-8")
+
+        with self.assertRaisesRegex(
+            compatibility_state.IdentityMismatch,
+            "payload timestamp is later",
+        ):
+            runtime_guard.read_session_meta(str(self.child_transcript))
 
     def test_every_pre_tool_use_revalidates_session_meta(self):
         first = runtime_guard.pre_tool_use(

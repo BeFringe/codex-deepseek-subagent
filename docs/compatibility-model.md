@@ -532,9 +532,11 @@ stage 失败必须 block spawn。非 plaintext worker 原样 pass。Hook 不返�
 
 - Hook `session_id == SessionMeta.session_id`（root 与 descendants 共享）；
 - Hook `agent_id == SessionMeta.id`（child ThreadId）；
-- `SessionMeta.parent_thread_id == capsule.parent_thread_id`；
-- `SessionMeta.agent_role == capsule.agent_type`；
-- `SessionMeta.agent_path` 与 requested task name/parent AgentPath 的关系唯一；
+- `SessionMeta.parent_thread_id == capsule.parent_thread_id`，且与
+  `source.subagent.thread_spawn.parent_thread_id` 相等；
+- `SessionMeta.agent_role == capsule.agent_type`，且与 source role 相等；
+- `SessionMeta.agent_path` 与 source path 相等，并与 requested task name/parent
+  AgentPath 的关系唯一；
 - 预先算出的 expected path（如有）与实际 path 完全一致。
 
 任何零匹配或多匹配都 fail closed。bounded retry 只有在 live probe 证明存在短暂 flush

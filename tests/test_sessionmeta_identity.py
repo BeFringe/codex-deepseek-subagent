@@ -31,7 +31,7 @@ NESTED_PARENTS = {
 def session_meta_line(payload):
     return json.dumps(
         {
-            "timestamp": "2026-08-16T00:00:00Z",
+            "timestamp": "2026-08-16T00:00:00.070Z",
             "ordinal": 0,
             "type": "session_meta",
             "payload": payload,
@@ -245,6 +245,15 @@ class SessionMetaIdentityTests(unittest.TestCase):
         item["child_rollout"]["session_meta_line"] = json.dumps(line) + "\n"
 
         self.assert_invalid(bundle, "cli_version is not pinned")
+
+    def test_sessionmeta_payload_timestamp_after_record_fails(self):
+        bundle = copy.deepcopy(self.bundle)
+        item = bundle["observations"][0]
+        line = json.loads(item["child_rollout"]["session_meta_line"])
+        line["payload"]["timestamp"] = "2026-08-16T00:00:00.071Z"
+        item["child_rollout"]["session_meta_line"] = json.dumps(line) + "\n"
+
+        self.assert_invalid(bundle, "payload timestamp is later")
 
     def test_spawn_nickname_mismatch_fails(self):
         bundle = copy.deepcopy(self.bundle)
