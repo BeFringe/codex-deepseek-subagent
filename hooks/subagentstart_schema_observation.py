@@ -12,8 +12,8 @@ from typing import Mapping
 import uuid
 
 from compatibility_state import CorruptState, StateStore, canonical_json, sha256_bytes
-from pretool_schema_observation import _json_type, observes_root
-from runtime_guard import child_identity_from_hook
+from pretool_schema_observation import _json_type
+from runtime_guard import child_identity_from_hook, read_session_meta
 
 
 SCHEMA = 1
@@ -122,6 +122,8 @@ def observation_from_hook(hook_input: Mapping[str, object]) -> dict:
     if hook_input.get("hook_event_name") != "SubagentStart":
         raise CorruptState("SubagentStart observer only accepts SubagentStart")
     identity = child_identity_from_hook(hook_input)
+    transcript_path = _nonempty(hook_input.get("transcript_path"), "transcript_path")
+    meta = read_session_meta(transcript_path)
     shape = [
         {"key": key, "value_type": _json_type(hook_input[key])}
         for key in sorted(hook_input)
@@ -148,7 +150,7 @@ def observation_from_hook(hook_input: Mapping[str, object]) -> dict:
             "agent_type": identity["agent_type"],
             "canonical_agent_path": identity["canonical_agent_path"],
         },
-        "cwd": str(Path(_nonempty(hook_input.get("cwd"), "cwd")).resolve()),
+        "cwd": str(Path(meta["cwd"]).resolve()),
         "hook_input_shape": shape,
         "selected_string_fingerprints": fingerprints,
         "raw_payload_stored": False,
@@ -165,7 +167,11 @@ def record_from_hook(
 ) -> Path | None:
     if hook_input.get("hook_event_name") != "SubagentStart":
         return None
-    if not observes_root(hook_input, observation_root):
+    transcript_path = hook_input.get("transcript_path")
+    if not isinstance(transcript_path, str) or not transcript_path:
+        return None
+    meta = read_session_meta(transcript_path)
+    if Path(meta["cwd"]).resolve() != Path(observation_root).resolve():
         return None
     receipt = observation_from_hook(hook_input)
     with store.locked():

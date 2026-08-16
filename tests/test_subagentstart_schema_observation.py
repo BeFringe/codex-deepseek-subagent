@@ -99,6 +99,20 @@ class SubagentStartSchemaObservationTests(unittest.TestCase):
         self.assertIsNone(result)
         self.assertEqual(subagentstart_schema_observation.load_receipts(self.state), [])
 
+    def test_scope_uses_verified_sessionmeta_cwd_not_hook_cwd(self):
+        hook = self.hook()
+        hook["cwd"] = str(self.root)
+
+        target = subagentstart_schema_observation.record_from_hook(
+            StateStore(self.state),
+            hook,
+            observation_root=self.repository,
+        )
+
+        self.assertIsNotNone(target)
+        receipt = subagentstart_schema_observation.load_receipts(self.state)[0]
+        self.assertEqual(receipt["cwd"], str(self.repository.resolve()))
+
 
 if __name__ == "__main__":
     unittest.main()
