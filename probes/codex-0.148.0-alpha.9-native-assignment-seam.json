@@ -3,7 +3,14 @@
   "codex_version": "0.148.0-alpha.9",
   "source_commit": "9392c3fa5bcda342b5b96a1a04d67b2f781617c2",
   "runtime_evidence": "probes/g4-live-native-hook-schema-20260817.json",
+  "official_upstream": {
+    "reviewed_on": "2026-08-17",
+    "content_aware_preexecution_issue": "https://github.com/openai/codex/issues/33284",
+    "cross_provider_plaintext_issue": "https://github.com/openai/codex/issues/36376",
+    "mainline_plaintext_config_switch_observed": false
+  },
   "behavior": {
+    "schema_policy": "Multi-Agent V2 marks spawn_agent.message as an encrypted Responses parameter",
     "pretool_input_origin": "ResponseItem.FunctionCall.arguments",
     "pretool_dispatch_position": "before tool handler execution",
     "plaintext_source_signal": "collaboration spawn_agent plus encrypted_function_args present as an empty array",
@@ -16,6 +23,16 @@
       "id": "function_call_private_metadata",
       "path": "codex-rs/protocol/src/models.rs",
       "contains": "encrypted_function_args: Option<Vec<String>>"
+    },
+    {
+      "id": "v2_spawn_message_schema_encrypted",
+      "path": "codex-rs/core/src/tools/handlers/multi_agents_spec.rs",
+      "contains": "\"Initial plain-text task for the new agent.\".to_string(),\n            ))\n            .with_encrypted(),"
+    },
+    {
+      "id": "v2_encryption_regression_fixture",
+      "path": "codex-rs/core/src/tools/spec_plan_tests.rs",
+      "contains": "async fn multi_agent_v2_message_schemas_are_encrypted()"
     },
     {
       "id": "plaintext_source_discriminator",
@@ -77,6 +94,6 @@
     "pretool_plaintext_assignment_visible": false,
     "phase1_complete": false,
     "direct_write_qualified": false,
-    "blocker": "the current live spawn uses the private assignment branch, so PreToolUse receives opaque function arguments and SubagentStart has no assignment field; exact plaintext capsule capture requires a runtime-controlled plaintext assignment seam or a separate trusted host staging API"
+    "blocker": "the Multi-Agent V2 tool schema requests encryption for spawn_agent.message and the current live spawn therefore uses the private assignment branch: PreToolUse receives opaque function arguments and SubagentStart has no assignment field. Exact plaintext capsule capture requires an opt-in runtime plaintext schema/transport seam or a separate trusted host staging API"
   }
 }

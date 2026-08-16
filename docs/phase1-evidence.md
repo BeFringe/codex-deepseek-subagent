@@ -1239,7 +1239,9 @@ matcher restored, capsule staging blocks before spawn because the opaque value
 does not contain the exact authority envelope.
 
 The exact 0.148.0-alpha.9 source commit now makes the host-side boundary
-replayable. `ToolRegistry` derives Hook `tool_input` directly from the raw
+replayable. Multi-Agent V2 constructs the `spawn_agent.message` schema with
+`.with_encrypted()` and has a regression fixture requiring that marker.
+`ToolRegistry` derives Hook `tool_input` directly from the raw
 function-call `arguments` and runs PreToolUse before the tool handler. The V2
 spawn handler then reads `message`; unless the response explicitly marks the
 collaboration call with an empty `encrypted_function_args` array, it constructs
@@ -1249,6 +1251,15 @@ Hook and child submission. The built-in integration fixture separately covers
 the explicit empty-array plaintext branch, but current configuration exposes
 no host control that selects it. `hide_spawn_agent_metadata` only changes the
 spawn result and is unrelated to assignment transport.
+
+The official upstream main branch still has the encrypted schema and no
+observed plaintext configuration switch as of this audit. OpenAI Codex issue
+[#33284](https://github.com/openai/codex/issues/33284) tracks the same missing
+content-aware pre-execution boundary, and
+[#36376](https://github.com/openai/codex/issues/36376) records that the
+empty-array plaintext branch does not help when an OpenAI parent actually
+returns `encrypted_function_args:null`. Neither issue is treated as a runtime
+fix or local qualification.
 
 `probes/check_native_assignment_seam.py` pins these anchors and their causal
 ordering to source commit

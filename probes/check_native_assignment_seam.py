@@ -9,6 +9,8 @@ import sys
 
 REQUIRED_ANCHORS = {
     "function_call_private_metadata",
+    "v2_spawn_message_schema_encrypted",
+    "v2_encryption_regression_fixture",
     "plaintext_source_discriminator",
     "hook_input_from_arguments",
     "pretool_before_handler",

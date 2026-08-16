@@ -28,6 +28,12 @@ class NativeAssignmentSeamTests(unittest.TestCase):
             contract["source_commit"],
             "9392c3fa5bcda342b5b96a1a04d67b2f781617c2",
         )
+        self.assertIn(
+            "encrypted Responses parameter", contract["behavior"]["schema_policy"]
+        )
+        self.assertFalse(
+            contract["official_upstream"]["mainline_plaintext_config_switch_observed"]
+        )
         self.assertFalse(result["plaintext_assignment_seam_qualified"])
         self.assertFalse(result["phase1_complete"])
         self.assertFalse(result["direct_write_qualified"])
