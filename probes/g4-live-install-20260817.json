@@ -1,0 +1,52 @@
+{
+  "schema": 1,
+  "observed_at": "2026-08-17T00:21:14+08:00",
+  "source_commit": "8d23bc1ff18f8032541bfb28e7c78ec4332fe501",
+  "authorization": "explicit_user_install_authorization",
+  "existing_v4_hook_preserved": true,
+  "backup": {
+    "directory": "/Users/pearly/Downloads/codex-g4-live-backup-20260817T002114+0800",
+    "directory_mode": "0700",
+    "hooks_json_sha256": "e20d6b3c3e70c088ca9e56afd25a3ee52660d16bbfb0d95b427adaa2cd7ba659",
+    "config_toml_sha256": "15ba59a6e7c4378801ac708636df3e33a15f51e81b613e6b8ee4f7f26068f32a"
+  },
+  "installed": {
+    "hooks_json_sha256": "8c7356e340db49abd86f41f49c09a8b59c5db1b7125e69f8808ab3a9b7720ff7",
+    "agent_sha256": "f67c7c4eb3aaec875704ad1d5754650f1ac8cbecaf163988535c8bcb51d706d9",
+    "scripts": {
+      "compatibility_hook.py": "6cab5b674a7b60609c33d0d2908b028c7e81831d8de68fe2d8d5a2daea3a36e8",
+      "assignment_transport.py": "02fd2c29f261c8417acbc3951668dc89a6e0c9be40b12d172bb7511c7c19ec25",
+      "compatibility_state.py": "02f684ec771710e2a4b0f86ea73537eefff08bea9e9defeb8bdc1bbceff10215",
+      "runtime_guard.py": "479c1081553fc68cbe983fe69c04cf031eb786f7b33b16832a68e1a923fb913f",
+      "writer_lease_guard.py": "7c0fba8fbfc5560b22562562d492102ee5e7a1eeb61d343494c6e190a002551c"
+    },
+    "private_directory_mode": "0700",
+    "private_file_mode": "0600",
+    "entrypoint_mode": "0700"
+  },
+  "recovered_install_event": {
+    "failure": "state parent directory did not exist",
+    "recovery": "created exact ~/.codex/state and candidate child directories at mode 0700",
+    "overwritten_user_data": false
+  },
+  "manual_host_probe": {
+    "worktree_mutation_executed": false,
+    "writer_claim_acquired": true,
+    "writer_claim_released": true,
+    "receipt_sha256": "40777fffcff5c49257e84d482da70b4316359df9c82ef3617690465dcf6ac400"
+  },
+  "trust": {
+    "existing_v4_entry_preserved": true,
+    "g4_entries": "pending_user_review",
+    "trust_hash_forged_or_copied": false
+  },
+  "live_hook_dispatch_observed": false,
+  "rollback": {
+    "performed": false,
+    "diagnostic_receipt_preserved": true
+  },
+  "phase1_complete": false,
+  "direct_write_qualified": false,
+  "phase2": "closed",
+  "phase3": "closed"
+}

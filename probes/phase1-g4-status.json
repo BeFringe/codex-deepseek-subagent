@@ -39,6 +39,8 @@
         "evidence": [
           "probes/codex-0.148.0-alpha.9-mutation-surfaces.json",
           "hooks/compatibility_hook.py",
+          "hooks/hooks.g4-qualification.posix.example.json",
+          "agents/g4-qualification-probe-worker.toml",
           "hooks/writer_lease_guard.py",
           "tests/test_assignment_transport.py"
         ],
@@ -101,7 +103,11 @@
         "id": "P7",
         "state": "partial",
         "provider_free": "pass",
-        "evidence": ["docs/phase1-g4-probe-plan.md#vi-platform-and-regression-exit-sequence"],
+        "evidence": [
+          "docs/phase1-g4-probe-plan.md#vi-platform-and-regression-exit-sequence",
+          "docs/phase1-evidence.md#qualification-only-live-install-2026-08-17",
+          "probes/g4-live-install-20260817.json"
+        ],
         "blocker": "fresh POSIX/Windows parity, DeepSeek regression, and install rollback are missing"
       }
     ],

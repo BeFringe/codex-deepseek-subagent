@@ -1,14 +1,17 @@
 # Phase 1 / G4 executable probe plan
 
 Status: **read-only qualification only**. `direct_write_qualified=false` remains
-mandatory until every live/platform gate below closes. This plan does not enable
-Phase 2, install a live Hook, alter the parent provider, or ask an external worker
-to adjudicate its own behavior.
+mandatory until every live/platform gate below closes. After explicit user
+authorization, a qualification-only live candidate may be installed and trusted
+for the probes below; that installation does not enable Phase 2, alter the
+parent provider, or let an external worker adjudicate its own behavior.
 
 ## Current pinned baseline
 
-- Continuation input: local
-  `main@dcdc6207503af8117e48b3f6178137f07f5b0523`; refreshed remote baseline
+- Continuation input began at local
+  `main@dcdc6207503af8117e48b3f6178137f07f5b0523`; the current installed G4
+  script source is evidence commit
+  `8d23bc1ff18f8032541bfb28e7c78ec4332fe501`; refreshed remote baseline remains
   `origin/main@076ee0df9aca11fbc0c19a6ccd7cd8befc0051f7`.
 - Host: macOS 26.2 (`25C56`), Darwin arm64, Asia/Shanghai.
 - Codex app: `26.810.41047` (`6570`); CLI: `0.148.0-alpha.9`.
@@ -17,10 +20,11 @@ to adjudicate its own behavior.
 - Provider-free Python: user default `3.14.7`; Apple `/usr/bin/python3`
   remains `3.9.6` and is not replaced.
 - Legacy v4 agent/skill/schema-1 plaintext Hook: restored after explicit user
-  authorization. The installed `hooks.json` contains only the v4
-  `SubagentStart` matcher; migration did not restore an equivalent G4
-  `PreToolUse`/`PostToolUse`/compact/stop configuration. G4 candidate/schema
-  2/state remain uninstalled and untrusted.
+  authorization. Migration did not restore an equivalent G4
+  `PreToolUse`/`PostToolUse`/compact/stop configuration. On 2026-08-17 the user
+  separately authorized installing a qualification-only G4 candidate. Its
+  files/state are now installed beside the unchanged v4 Hook, but the new Hook
+  entries still require user trust and no live candidate event has yet run.
 
 The migrated checkout initially had 62 blob-identical executable-bit changes.
 They were normalized only after a fresh remote fetch proved every content blob

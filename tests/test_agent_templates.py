@@ -74,6 +74,14 @@ windows_source = (ROOT / "agents/windows-live-env/v4-flash-worker.toml").read_te
 assert "Optional compatibility variant" in windows_source
 assert "sandbox identity" in windows_source
 
+g4_probe = load("agents/g4-qualification-probe-worker.toml")
+assert g4_probe["name"] == "g4_qualification_probe_worker"
+assert g4_probe["sandbox_mode"] == "read-only"
+assert "model" not in g4_probe
+assert "model_provider" not in g4_probe
+assert "external provider credentials" in g4_probe["developer_instructions"]
+assert "parent, disk, and fresh-owner verification" in g4_probe["developer_instructions"]
+
 installer = (ROOT / "prompts/install-with-codex.md").read_text(encoding="utf-8")
 assert "On Windows or Linux, use agents/v4-flash-worker.toml" in installer
 assert "former command-auth template remains an explicit compatibility option" in installer

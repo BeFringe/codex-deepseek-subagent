@@ -284,10 +284,66 @@ JSON uses exit 2. Six new focused tests exercise these shapes with real CLI
 dispatch for all four lifecycle events and direct event-shape checks; the
 existing failed writer-release fixture now also requires stop-flow output.
 
-These tests improve the uninstalled candidate only. They do not prove that a
-live Hook ran, that independent sandboxing blocked a mutation, that the host
-cancelled a context-lost child, or that a `PostToolUse` stop established disk
-quiescence. P1/P4/P5a/P5b and their exit receipts remain incomplete.
+At that checkpoint these tests improved the uninstalled candidate only. They do
+not by themselves prove that a live Hook ran, that independent sandboxing
+blocked a mutation, that the host cancelled a context-lost child, or that a
+`PostToolUse` stop established disk quiescence. P1/P4/P5a/P5b and their exit
+receipts remain incomplete.
+
+## Qualification-only live install (2026-08-17)
+
+After explicit user authorization, the source from
+`8d23bc1ff18f8032541bfb28e7c78ec4332fe501` was installed beside—rather than
+overwriting—the existing v4 handoff. The new role is
+`g4_qualification_probe_worker`, omits `model` and `model_provider` so it keeps
+the native parent OpenAI route, and fixes `sandbox_mode="read-only"`. The Hook
+overlay covers all `PreToolUse`, successful `apply_patch` `PostToolUse`, the
+probe role's `SubagentStart`/`SubagentStop`, and all `PreCompact` triggers. The
+dispatcher remains fail closed and targets schema-v2 authority only for this
+dedicated role; the unchanged v4 matcher stays first in `SubagentStart`.
+
+The pre-install files were copied to the mode-0700 directory
+`/Users/pearly/Downloads/codex-g4-live-backup-20260817T002114+0800` before any
+replacement. Backup `hooks.json` SHA-256 is
+`e20d6b3c3e70c088ca9e56afd25a3ee52660d16bbfb0d95b427adaa2cd7ba659`;
+backup `config.toml` SHA-256 is
+`15ba59a6e7c4378801ac708636df3e33a15f51e81b613e6b8ee4f7f26068f32a`.
+The first state-directory creation exposed that `~/.codex/state` did not yet
+exist; the installer then created the exact parent and candidate directories at
+mode 0700. This recovered partial-install step is recorded rather than hidden.
+
+Installed hashes are:
+
+- merged `hooks.json`:
+  `8c7356e340db49abd86f41f49c09a8b59c5db1b7125e69f8808ab3a9b7720ff7`;
+- native read-only probe agent:
+  `f67c7c4eb3aaec875704ad1d5754650f1ac8cbecaf163988535c8bcb51d706d9`;
+- `compatibility_hook.py`:
+  `6cab5b674a7b60609c33d0d2908b028c7e81831d8de68fe2d8d5a2daea3a36e8`;
+- `assignment_transport.py`:
+  `02fd2c29f261c8417acbc3951668dc89a6e0c9be40b12d172bb7511c7c19ec25`;
+- `compatibility_state.py`:
+  `02f684ec771710e2a4b0f86ea73537eefff08bea9e9defeb8bdc1bbceff10215`;
+- `runtime_guard.py`:
+  `479c1081553fc68cbe983fe69c04cf031eb786f7b33b16832a68e1a923fb913f`;
+- `writer_lease_guard.py`:
+  `7c0fba8fbfc5560b22562562d492102ee5e7a1eeb61d343494c6e190a002551c`.
+
+A host-level manual invocation used the installed command and real root
+SessionMeta, acquired/released one synthetic apply-patch lease, executed no
+patch, and produced installed-state writer receipt SHA-256
+`40777fffcff5c49257e84d482da70b4316359df9c82ef3617690465dcf6ac400`.
+Running the same command inside the model shell sandbox was denied before state
+write, which confirms event-level fail-closed behavior but does not prove how a
+trusted Hook host process is sandboxed.
+
+The user's `config.toml` still contains only the prior v4
+`subagent_start:0:0` trust entry. No trust hash was forged or copied. Therefore
+the installed candidate is **trust pending**: no real live Hook dispatch,
+sandbox receipt, callback, compaction, stop, or rollback qualification is
+claimed. `codex --strict-config doctor --json` reported `config.load=ok`; its
+separate provider-reachability and state-database diagnostics were not changed
+or treated as G4 evidence. Phase 1 and `direct_write_qualified` remain false.
 
 ## Pre-write deadline and unresponsive-run evidence
 
@@ -944,7 +1000,7 @@ parser correction, and event-failure fixtures, the complete suite ran on
 2026-08-17:
 
 ```text
-Ran 211 tests in 28.215s
+Ran 215 tests in 29.734s
 OK
 agent template checks passed
 ```
