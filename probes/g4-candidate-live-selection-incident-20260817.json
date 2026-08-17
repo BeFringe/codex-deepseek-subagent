@@ -1,0 +1,88 @@
+{
+  "schema": 1,
+  "evidence_kind": "live_candidate_selection_incident_and_recovery",
+  "observed_at": "2026-08-17T16:12:00+08:00",
+  "historical_selection": {
+    "mechanism": "GUI App process environment CODEX_CLI_PATH",
+    "launchd_label": "org.openai.codex.g4.candidate.20260817",
+    "historical_wrapper_sha256": "031aac697ec6e63f6dd4c27d20b213b53b50bfde20e74f93fae5e7e943d68155",
+    "candidate_sha256": "e2874bda15552fac7b677b2553978a452c8c7beb5cae536ec95aead4d8b174d6",
+    "candidate_became_gui_app_server": true,
+    "signed_gui_shell_replaced": false,
+    "live_config_was_modified": true,
+    "live_hook_was_modified": false
+  },
+  "failure": {
+    "classification": "reserved_tool_schema_mismatch",
+    "server_error": "Function 'collaboration.followup_task' is reserved for use by this model and must match the configured schema.",
+    "raw_rollout": "/Users/pearly/.codex/sessions/2026/08/15/rollout-2026-08-15T01-17-20-01a00147-39cb-7b50-b78d-7baed910eb45.jsonl",
+    "raw_error_occurrences_before_handoff_echo": 2,
+    "cause": "plaintext mode removed the encrypted marker from reserved collaboration message fields, changing the server-pinned schema",
+    "scope": "the GUI App's sole app-server; all App requests returned HTTP 400 until external recovery",
+    "credential_value_observed_or_recorded": false,
+    "plaintext_assignment_delivered": false,
+    "qualifies_p1": false
+  },
+  "recovery": {
+    "performed_by": "external recovery sessions after the affected session became unusable",
+    "user_verified": true,
+    "launchd_job_absent": true,
+    "launchctl_codex_cli_path_absent": true,
+    "launchctl_candidate_guard_absent": true,
+    "official_app_server_path": "/Applications/Codex.app/Contents/Resources/codex",
+    "official_app_server_sha256": "6170ff5578170ee9b74ad92bfcff96e6186f41d02b60815a7c2b01ad424c754f",
+    "official_app_server_signature_valid": true,
+    "candidate_process_absent": true,
+    "hooks_json_sha256": "ffaad5c3533a2016253af148c96721818807823f779845a35c5d7dad2c676c2b",
+    "config_codex_cli_path": "/Applications/Codex.app/Contents/Resources/codex",
+    "is_candidate_self_rollback_qualification": false
+  },
+  "hardened_wrapper": {
+    "path": "probes/codex_plaintext_candidate_wrapper.sh",
+    "sha256": "a99352311c8516f6b33b5dbaa44fa42ec69d59a166cef17300323f0456089e34",
+    "historical_wrapper_disabled_by_replacement": true,
+    "allowed_entry_points": ["login status", "exec"],
+    "required_exec_flags": ["--ephemeral", "--ignore-user-config", "--ignore-rules"],
+    "forced_posture": {
+      "tool_namespace": "g4_assignment",
+      "sandbox": "read-only",
+      "approval_policy": "never",
+      "code_mode_host": false
+    },
+    "forbidden_entry_points": ["app-server", "app", "remote-control", "mcp-server"],
+    "can_be_used_as_gui_codex_cli_path": false
+  },
+  "isolated_server_schema_smoke": {
+    "observed_at": "2026-08-17T08:11:46Z",
+    "execution": "headless codex exec",
+    "ephemeral": true,
+    "ignored_user_config": true,
+    "ignored_project_rules": true,
+    "model": "gpt-5.6-sol",
+    "provider_auth": "current ChatGPT login",
+    "tool_namespace": "g4_assignment",
+    "sandbox": "read-only",
+    "approval_policy": "never",
+    "thread_id": "01a00ec6-d406-7f70-8797-c109f3d2ebf7",
+    "assistant_result": "READY",
+    "tool_calls": 0,
+    "http_400_observed": false,
+    "input_tokens": 14609,
+    "output_tokens": 5,
+    "candidate_process_exited": true,
+    "official_gui_app_unchanged": true,
+    "scope": "server-side acceptance of the non-reserved schema only; no spawn or assignment receipt"
+  },
+  "hard_rule": {
+    "gui_app_server_hijack_forbidden": true,
+    "future_candidate_probes_headless_and_process_isolated": true,
+    "failure_must_not_require_the_probe_session_for_rollback": true
+  },
+  "verdict": {
+    "phase1_complete": false,
+    "p1_complete": false,
+    "direct_write_qualified": false,
+    "phase2_open": false,
+    "phase3_open": false
+  }
+}

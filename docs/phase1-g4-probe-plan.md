@@ -135,24 +135,30 @@ fixtures. Do not treat that as a live receipt. Installing or selecting the
 candidate in the Codex App remains a separate user-authorized, rollback-bound
 step; until then the identity matrix stays non-qualifying/read-only.
 
-The prepared Apple-arm64 release candidate is selected through the App's
-observed `CODEX_CLI_PATH` seam, not by overwriting its Developer-ID-signed
-resource binary. `probes/codex_plaintext_candidate_wrapper.sh` verifies the
-exact candidate SHA-256 and prepends only
-`features.multi_agent_v2.enabled=true` plus
-`features.multi_agent_v2.message_delivery="plaintext"`. Its environment marker
-is an operational typo/accident guard, not a security-grade user-consent signal
-and not a write ceiling. The preflight receipt pins the current App/resource,
-candidate, wrapper, and internal App-source hashes.
+The Apple-arm64 candidate must never be selected through the GUI App's
+`CODEX_CLI_PATH`. A user-authorized attempt proved that this variable replaces
+the App's sole app-server, not an isolated CLI leaf. The plaintext candidate
+then changed a server-reserved `collaboration.followup_task` schema and every
+App request failed HTTP 400 until an external recovery session removed the
+launchd job and restored the official app-server. See
+`docs/incident-2026-08-17-candidate-live-selection.md` and the adjacent incident
+receipt. This emergency recovery is a live negative, not a candidate rollback
+qualification.
 
-Live selection requires a fresh App process. Before that restart, freeze the
-current task/Hook chain and obtain explicit user authorization. After launch,
-first verify the process executable and config mode, then run the schema-2
-paired delivery/deny calls. Roll back by terminating the candidate process and
-launching without `CODEX_CLI_PATH`; qualification requires a fresh official
-resource process, unchanged Hook/v4 hashes, no candidate descendants, and a
-post-termination disk barrier. Merely unsetting an environment variable in the
-old process is not rollback evidence.
+`probes/codex_plaintext_candidate_wrapper.sh` is now headless-only. It rejects
+`app-server`, `app`, `remote-control`, and `mcp-server` before candidate
+execution; permits only `login status` or an `exec` carrying
+`--ephemeral --ignore-user-config --ignore-rules`; and forces the non-reserved
+`g4_assignment` namespace, read-only sandbox, never-approve policy, and disabled
+code-mode host. A first no-tool READY request proved only that the server accepts
+this non-reserved schema. It did not spawn a child or close P1.
+
+All later candidate probes run as a headless process and must leave the official
+GUI App untouched. Freeze the official process/hash and the candidate hash before
+each call, use an ephemeral disposable Git root, terminate the candidate at the
+probe boundary, and prove that no candidate descendants or disk activity cross
+the post-termination barrier. A probe must be independently recoverable even if
+its own session dies.
 
 ## 0. Parent intent ceiling and trusted-host consent gate
 

@@ -16,6 +16,7 @@ SOURCE_RECEIPT = (
     / "probes"
     / "codex-0.148.0-alpha.9-plaintext-assignment-seam-candidate.json"
 )
+INCIDENT_RECEIPT = ROOT / "probes" / "g4-candidate-live-selection-incident-20260817.json"
 SHA256 = re.compile(r"^[0-9a-f]{64}$")
 
 
@@ -23,6 +24,7 @@ class PlaintextCandidateLivePreflightTests(unittest.TestCase):
     def setUp(self):
         self.receipt = json.loads(RECEIPT.read_text(encoding="utf-8"))
         self.source_receipt = json.loads(SOURCE_RECEIPT.read_text(encoding="utf-8"))
+        self.incident_receipt = json.loads(INCIDENT_RECEIPT.read_text(encoding="utf-8"))
 
     def test_preflight_binds_candidate_app_and_selection_seam(self):
         receipt = self.receipt
@@ -56,13 +58,20 @@ class PlaintextCandidateLivePreflightTests(unittest.TestCase):
         self.assertFalse(selection["live_config_edit_required"])
         self.assertTrue(selection["app_restart_required"])
 
-    def test_wrapper_hash_and_transport_only_arguments_are_exact(self):
+    def test_historical_wrapper_hash_is_superseded_by_the_incident_guard(self):
         selection = self.receipt["selection_seam"]
-        wrapper = ROOT / selection["wrapper_path"]
+        incident = self.incident_receipt
+        hardened = incident["hardened_wrapper"]
+        wrapper = ROOT / hardened["path"]
         self.assertEqual(
             hashlib.sha256(wrapper.read_bytes()).hexdigest(),
-            selection["wrapper_sha256"],
+            hardened["sha256"],
         )
+        self.assertEqual(
+            selection["wrapper_sha256"],
+            incident["historical_selection"]["historical_wrapper_sha256"],
+        )
+        self.assertNotEqual(selection["wrapper_sha256"], hardened["sha256"])
         self.assertEqual(
             selection["wrapper_injected_config"],
             [
@@ -72,6 +81,7 @@ class PlaintextCandidateLivePreflightTests(unittest.TestCase):
         )
         source = wrapper.read_text(encoding="utf-8")
         self.assertIn("CODEX_G4_CANDIDATE_SHA256", source)
+        self.assertIn("GUI and server entry points are forbidden", source)
         self.assertNotIn("provider", source.lower())
         self.assertNotIn("base_url", source.lower())
 

@@ -1387,3 +1387,48 @@ but require-complete exited 2 for one callback pending in foreign runtime
 session `01a009f8-d83c-73e2-b960-2cba273d2250`; it is not attributed to or
 recovered by this runtime. These are raw fail-closed summaries, not completion
 evidence.
+
+## Candidate GUI selection incident and headless-only recovery seam
+
+The previously prepared `CODEX_CLI_PATH` selection plan was attempted after
+explicit user authorization and failed at the server boundary. The variable
+caused the signed GUI shell to run the unsigned candidate as its sole app-server.
+Plaintext mode removed the encrypted marker from the server-reserved
+`collaboration.followup_task` schema, so two first-hand rollout errors reported
+that the reserved function did not match the configured schema. All App requests
+then returned HTTP 400; no plaintext assignment was delivered and P1 did not
+advance.
+
+External recovery sessions removed launchd job
+`org.openai.codex.g4.candidate.20260817`, restored the official signed resource
+at SHA-256
+`6170ff5578170ee9b74ad92bfcff96e6186f41d02b60815a7c2b01ad424c754f`,
+and returned `hooks.json` to
+`ffaad5c3533a2016253af148c96721818807823f779845a35c5d7dad2c676c2b`.
+Fresh inspection found no launchd guard variables or candidate process. Because
+the affected session could not execute its own rollback, this is an exact
+emergency recovery receipt but not the rollback exit receipt required by G4.
+
+The wrapper was replaced in place with a headless-only guard. It now rejects all
+GUI/server entry points, requires ephemeral/config/rules isolation for `exec`,
+and forces `g4_assignment`, read-only, never-approve, and no code-mode host. Its
+new SHA-256 is
+`a99352311c8516f6b33b5dbaa44fa42ec69d59a166cef17300323f0456089e34`;
+the incident receipt separately preserves the historical unsafe wrapper hash.
+A candidate `codex exec` no-tool smoke under the non-reserved namespace returned
+exactly `READY` through the current ChatGPT login without HTTP 400 and exited.
+That proves server schema acceptance only, not spawn, identity, assignment
+equality, or deny-before-dispatch.
+
+The 27 GiB temporary build is reproducibly bound by
+`probes/codex-0.148.0-alpha.9-plaintext-candidate-archive-20260817.json`:
+base commit, twelve-path diff, byte-identical checked-in patch, release SHA/size,
+and all thirteen candidate-root writer receipts are frozen without raw payload
+or credential values. The build target may be deleted after the isolated P1
+probe; the evidence does not depend on `/private/tmp` surviving. The full
+incident is recorded in
+`docs/incident-2026-08-17-candidate-live-selection.md` and
+`probes/g4-candidate-live-selection-incident-20260817.json`.
+
+This live negative invalidates GUI app-server selection as a qualification seam.
+It does not authorize Phase 2/3 and does not promote Phase 1, P1, or direct write.

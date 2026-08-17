@@ -30,13 +30,21 @@ class PlaintextCandidateWrapperTests(unittest.TestCase):
             "CODEX_G4_CANDIDATE_SHA256": digest,
         }
 
-    def test_wrapper_injects_only_transport_config_before_app_arguments(self):
+    def test_wrapper_injects_isolated_plaintext_probe_posture(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             directory = Path(temp_dir)
             candidate, digest = self._fake_candidate(directory)
             arg_log = directory / "args.txt"
             result = subprocess.run(
-                [str(WRAPPER), "-c", "features.code_mode_host=true", "app-server"],
+                [
+                    str(WRAPPER),
+                    "exec",
+                    "--ephemeral",
+                    "--ignore-user-config",
+                    "--ignore-rules",
+                    "--json",
+                    "Return READY.",
+                ],
                 env=self._environment(candidate, digest, arg_log),
                 text=True,
                 stdout=subprocess.PIPE,
@@ -53,10 +61,88 @@ class PlaintextCandidateWrapperTests(unittest.TestCase):
                     "-c",
                     'features.multi_agent_v2.message_delivery="plaintext"',
                     "-c",
-                    "features.code_mode_host=true",
-                    "app-server",
+                    'features.multi_agent_v2.tool_namespace="g4_assignment"',
+                    "-c",
+                    "features.code_mode_host=false",
+                    "-a",
+                    "never",
+                    "-s",
+                    "read-only",
+                    "exec",
+                    "--ephemeral",
+                    "--ignore-user-config",
+                    "--ignore-rules",
+                    "--json",
+                    "Return READY.",
                 ],
             )
+
+    def test_gui_and_server_entry_points_fail_before_candidate_execution(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            directory = Path(temp_dir)
+            candidate, digest = self._fake_candidate(directory)
+            for entry_point in ("app-server", "app", "remote-control", "mcp-server"):
+                with self.subTest(entry_point=entry_point):
+                    arg_log = directory / f"{entry_point}.txt"
+                    result = subprocess.run(
+                        [str(WRAPPER), entry_point],
+                        env=self._environment(candidate, digest, arg_log),
+                        text=True,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                        check=False,
+                    )
+                    self.assertEqual(result.returncode, 78)
+                    self.assertIn("entry points are forbidden", result.stderr)
+                    self.assertFalse(arg_log.exists())
+
+    def test_exec_requires_all_isolation_flags(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            directory = Path(temp_dir)
+            candidate, digest = self._fake_candidate(directory)
+            complete = ["--ephemeral", "--ignore-user-config", "--ignore-rules"]
+            for missing in complete:
+                with self.subTest(missing=missing):
+                    arg_log = directory / f"missing-{missing[2:]}.txt"
+                    arguments = ["exec", *(flag for flag in complete if flag != missing)]
+                    result = subprocess.run(
+                        [str(WRAPPER), *arguments],
+                        env=self._environment(candidate, digest, arg_log),
+                        text=True,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                        check=False,
+                    )
+                    self.assertEqual(result.returncode, 78)
+                    self.assertFalse(arg_log.exists())
+
+    def test_login_allows_status_only(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            directory = Path(temp_dir)
+            candidate, digest = self._fake_candidate(directory)
+            status_log = directory / "status.txt"
+            status = subprocess.run(
+                [str(WRAPPER), "login", "status"],
+                env=self._environment(candidate, digest, status_log),
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            self.assertEqual(status.returncode, 0, status.stderr)
+            self.assertTrue(status_log.exists())
+
+            logout_log = directory / "logout.txt"
+            logout = subprocess.run(
+                [str(WRAPPER), "login", "logout"],
+                env=self._environment(candidate, digest, logout_log),
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            self.assertEqual(logout.returncode, 78)
+            self.assertFalse(logout_log.exists())
 
     def test_missing_guard_fails_before_candidate_execution(self):
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -67,7 +153,7 @@ class PlaintextCandidateWrapperTests(unittest.TestCase):
             environment.pop("CODEX_G4_LIVE_SELECTION_AUTHORIZED")
 
             result = subprocess.run(
-                [str(WRAPPER), "app-server"],
+                [str(WRAPPER), "login", "status"],
                 env=environment,
                 text=True,
                 stdout=subprocess.PIPE,
@@ -86,7 +172,7 @@ class PlaintextCandidateWrapperTests(unittest.TestCase):
             environment = self._environment(candidate, "0" * 64, arg_log)
 
             result = subprocess.run(
-                [str(WRAPPER), "app-server"],
+                [str(WRAPPER), "login", "status"],
                 env=environment,
                 text=True,
                 stdout=subprocess.PIPE,

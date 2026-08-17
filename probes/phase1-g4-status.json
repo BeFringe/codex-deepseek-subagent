@@ -19,9 +19,12 @@
           "probes/codex-0.148.0-alpha.9-plaintext-assignment-seam-candidate.json",
           "probes/codex-0.148.0-alpha.9-plaintext-assignment-seam-candidate.patch",
           "probes/codex-0.148.0-alpha.9-plaintext-live-selection-preflight.json",
-          "probes/codex_plaintext_candidate_wrapper.sh"
+          "probes/codex_plaintext_candidate_wrapper.sh",
+          "docs/incident-2026-08-17-candidate-live-selection.md",
+          "probes/g4-candidate-live-selection-incident-20260817.json",
+          "probes/codex-0.148.0-alpha.9-plaintext-candidate-archive-20260817.json"
         ],
-        "blocker": "current live Multi-Agent V2 marks spawn_agent.message encrypted, so collaborationspawn_agent PreToolUse receives opaque private arguments and SubagentStart has no assignment field. An isolated encrypted-default/plaintext-opt-in source candidate compiles and passes focused regressions, but it is not selected live and no schema-2 receipt proves encrypted_function_args: [], exact PreToolUse plaintext, a distinct same-message deny-before-dispatch call, or byte-identical permitted recipient delivery"
+        "blocker": "GUI CODEX_CLI_PATH selection is disqualified after the candidate changed a reserved collaboration.followup_task schema and caused App-wide HTTP 400. A headless ephemeral no-tool smoke proves that the same candidate's non-reserved g4_assignment schema is accepted, but no isolated native spawn receipt yet proves encrypted_function_args: [], exact PreToolUse plaintext, a distinct same-message deny-before-dispatch call, or byte-identical permitted recipient delivery"
       },
       {
         "id": "P2",
