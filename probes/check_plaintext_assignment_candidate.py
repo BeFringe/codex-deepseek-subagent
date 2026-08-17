@@ -12,6 +12,7 @@ REQUIRED_INVARIANTS = {
     "explicit_opt_in_default_encrypted",
     "plaintext_schema_signal",
     "exact_pretool_plaintext",
+    "separate_delivery_and_deny_calls",
     "deny_before_dispatch",
     "exact_delivered_bytes",
     "native_multi_agent_v2_preserved",
@@ -20,18 +21,51 @@ REQUIRED_INVARIANTS = {
     "openai_parent_unchanged",
     "evidence_redacted",
 }
+REQUIRED_CASES = {"delivery_case", "deny_case"}
+REQUIRED_RUNTIME_FIELDS = {
+    "candidate_binary_sha256",
+    "candidate_patch_sha256",
+    "selected_executable",
+    "selection_mechanism",
+    "signed_app_resource_replaced",
+}
+REQUIRED_CALL_IDENTITY_FIELDS = {
+    "parent_session_id",
+    "parent_agent_path",
+    "parent_turn_id",
+    "tool_use_id",
+}
 SHA256 = re.compile(r"^[0-9a-f]{64}$")
 GIT_OID = re.compile(r"^[0-9a-f]{40}$|^[0-9a-f]{64}$")
+SESSION_ID = re.compile(
+    r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+)
+TASK_NAME = re.compile(r"^[a-z0-9_]+$")
+AGENT_PATH = re.compile(r"^/root(?:/[a-z0-9_]+)*$")
+ABSOLUTE_EXECUTABLE = re.compile(r"^(?:/|[A-Za-z]:[\\/])")
 
 
 def load_contract(path):
     value = json.loads(path.read_text(encoding="utf-8"))
-    if value.get("schema") != 1:
+    if value.get("schema") != 2:
         raise ValueError("plaintext assignment contract has an invalid schema")
     if set(value.get("required_operations", [])) != REQUIRED_OPERATIONS:
         raise ValueError("plaintext assignment contract has incomplete operations")
     if set(value.get("required_invariants", [])) != REQUIRED_INVARIANTS:
         raise ValueError("plaintext assignment contract has incomplete invariants")
+    if set(value.get("required_cases_per_operation", [])) != REQUIRED_CASES:
+        raise ValueError("plaintext assignment contract has incomplete paired cases")
+    case_semantics = value.get("case_semantics")
+    if (
+        not isinstance(case_semantics, dict)
+        or case_semantics.get("same_message_bytes_across_cases") is not True
+        or case_semantics.get("one_call_may_satisfy_both_cases") is not False
+    ):
+        raise ValueError("plaintext assignment contract conflates delivery and deny cases")
+    if set(value.get("required_runtime_fields", [])) != REQUIRED_RUNTIME_FIELDS:
+        raise ValueError("plaintext assignment contract has incomplete runtime provenance")
+    if set(value.get("required_call_identity_fields", [])) != REQUIRED_CALL_IDENTITY_FIELDS:
+        raise ValueError("plaintext assignment contract has incomplete call identity")
     if value.get("default_mode") != "encrypted":
         raise ValueError("plaintext assignment transport must remain opt-in")
     if value.get("qualification_mode") != "plaintext":
@@ -79,6 +113,36 @@ def _fingerprint(value, label):
     return {"length": length, "sha256": sha256}
 
 
+def _call_identity(value, label, *, delivery):
+    if not isinstance(value, dict):
+        raise ValueError(f"{label} call identity is missing")
+    if set(REQUIRED_CALL_IDENTITY_FIELDS) - set(value):
+        raise ValueError(f"{label} call identity is incomplete")
+    for key in ("parent_session_id", "parent_turn_id"):
+        if not isinstance(value.get(key), str) or SESSION_ID.fullmatch(value[key]) is None:
+            raise ValueError(f"{label} {key} is invalid")
+    parent_path = value.get("parent_agent_path")
+    if not isinstance(parent_path, str) or AGENT_PATH.fullmatch(parent_path) is None:
+        raise ValueError(f"{label} parent AgentPath is invalid")
+    tool_use_id = value.get("tool_use_id")
+    if not isinstance(tool_use_id, str) or not tool_use_id.strip():
+        raise ValueError(f"{label} tool-use identity is invalid")
+    if delivery:
+        target_session_id = value.get("target_session_id")
+        if (
+            not isinstance(target_session_id, str)
+            or SESSION_ID.fullmatch(target_session_id) is None
+        ):
+            raise ValueError(f"{label} target session identity is invalid")
+        canonical_path = value.get("canonical_agent_path")
+        if (
+            not isinstance(canonical_path, str)
+            or AGENT_PATH.fullmatch(canonical_path) is None
+        ):
+            raise ValueError(f"{label} canonical AgentPath is invalid")
+    return value
+
+
 def assess(contract, receipt):
     if receipt is None:
         return {
@@ -88,8 +152,8 @@ def assess(contract, receipt):
             "direct_write_qualified": False,
             "blocker": "no live native plaintext-assignment receipt was supplied",
         }
-    if receipt.get("schema") != 1 or receipt.get("evidence_kind") != "live_native":
-        raise ValueError("candidate receipt is not live native schema 1 evidence")
+    if receipt.get("schema") != 2 or receipt.get("evidence_kind") != "live_native":
+        raise ValueError("candidate receipt is not live native schema 2 evidence")
     if receipt.get("contract_schema") != contract["schema"]:
         raise ValueError("candidate receipt targets a different contract schema")
     if not isinstance(receipt.get("codex_version"), str) or not receipt["codex_version"]:
@@ -97,6 +161,23 @@ def assess(contract, receipt):
     source_commit = receipt.get("source_commit")
     if not isinstance(source_commit, str) or GIT_OID.fullmatch(source_commit) is None:
         raise ValueError("candidate receipt has an invalid source commit")
+
+    runtime = receipt.get("runtime")
+    if not isinstance(runtime, dict) or set(REQUIRED_RUNTIME_FIELDS) - set(runtime):
+        raise ValueError("candidate receipt is missing runtime provenance")
+    for key in ("candidate_binary_sha256", "candidate_patch_sha256"):
+        if not isinstance(runtime.get(key), str) or SHA256.fullmatch(runtime[key]) is None:
+            raise ValueError(f"candidate runtime {key} is invalid")
+    selected_executable = runtime.get("selected_executable")
+    if (
+        not isinstance(selected_executable, str)
+        or ABSOLUTE_EXECUTABLE.match(selected_executable) is None
+    ):
+        raise ValueError("candidate selected executable is not absolute")
+    if runtime.get("selection_mechanism") not in {"direct_executable", "CODEX_CLI_PATH"}:
+        raise ValueError("candidate selection mechanism is invalid")
+    if runtime.get("signed_app_resource_replaced") is not False:
+        raise ValueError("candidate receipt replaced the signed Codex app resource")
 
     config = receipt.get("configuration")
     if not isinstance(config, dict):
@@ -107,6 +188,8 @@ def assess(contract, receipt):
         "explicit_opt_in": True,
         "parent_provider": "openai",
         "parent_auth_unchanged": True,
+        "parent_base_url_unchanged": True,
+        "live_config_modified": False,
         "native_multi_agent_v2": True,
     }
     if any(config.get(key) != expected for key, expected in expected_config.items()):
@@ -125,29 +208,64 @@ def assess(contract, receipt):
     for operation_id, operation in by_id.items():
         if operation.get("hook_tool_name") != hook_names[operation_id]:
             raise ValueError(f"{operation_id} Hook tool identity is not exact")
-        if operation.get("schema_message_encrypted") is not False:
+        if set(operation) - {"id", "hook_tool_name", "delivery_case", "deny_case"}:
+            raise ValueError(f"{operation_id} contains ambiguous unpaired evidence")
+        if set(REQUIRED_CASES) - set(operation):
+            raise ValueError(f"{operation_id} is missing a delivery or deny case")
+
+        delivery = operation["delivery_case"]
+        deny = operation["deny_case"]
+        if not isinstance(delivery, dict) or not isinstance(deny, dict):
+            raise ValueError(f"{operation_id} paired cases are invalid")
+        delivery_identity = _call_identity(
+            delivery.get("call_identity"), f"{operation_id} delivery", delivery=True
+        )
+        deny_identity = _call_identity(
+            deny.get("call_identity"), f"{operation_id} deny", delivery=False
+        )
+        if delivery_identity["tool_use_id"] == deny_identity["tool_use_id"]:
+            raise ValueError(f"{operation_id} delivery and deny must be distinct calls")
+        if operation_id == "spawn_agent":
+            task_name = delivery_identity.get("requested_task_name")
+            if not isinstance(task_name, str) or TASK_NAME.fullmatch(task_name) is None:
+                raise ValueError("spawn_agent delivery requested task name is invalid")
+            if deny_identity.get("requested_task_name") != task_name:
+                raise ValueError("spawn_agent paired task names are not exact")
+
+        if delivery.get("schema_message_encrypted") is not False:
             raise ValueError(f"{operation_id} message schema is still encrypted")
-        if operation.get("function_call_encrypted_function_args") != []:
+        if delivery.get("function_call_encrypted_function_args") != []:
             raise ValueError(f"{operation_id} did not select the plaintext response branch")
-        pretool = _fingerprint(operation.get("pretool_plaintext"), f"{operation_id} PreToolUse")
-        handler = _fingerprint(operation.get("handler_plaintext"), f"{operation_id} handler")
+        pretool = _fingerprint(
+            delivery.get("pretool_plaintext"), f"{operation_id} delivery PreToolUse"
+        )
+        handler = _fingerprint(delivery.get("handler_plaintext"), f"{operation_id} handler")
         delivered = _fingerprint(
-            operation.get("delivered_plaintext"), f"{operation_id} delivery"
+            delivery.get("delivered_plaintext"), f"{operation_id} recipient"
         )
         if not (pretool == handler == delivered):
             raise ValueError(f"{operation_id} plaintext bytes are not end-to-end identical")
-        if operation.get("encrypted_content_present") is not False:
+        if delivery.get("encrypted_content_present") is not False:
             raise ValueError(f"{operation_id} delivery retained encrypted content")
-        if operation.get("hook_before_handler") is not True:
+        if delivery.get("hook_before_handler") is not True:
             raise ValueError(f"{operation_id} Hook ordering is not proven")
-        if operation.get("native_multi_agent_v2") is not True:
+        if delivery.get("native_multi_agent_v2") is not True:
             raise ValueError(f"{operation_id} bypassed native Multi-Agent V2")
-        canonical_path = operation.get("canonical_agent_path")
-        if not isinstance(canonical_path, str) or not canonical_path.startswith("/"):
-            raise ValueError(f"{operation_id} canonical AgentPath is invalid")
-        deny = operation.get("deny_control")
-        if not isinstance(deny, dict) or deny.get("blocked_before_handler") is not True:
+        deny_pretool = _fingerprint(
+            deny.get("pretool_plaintext"), f"{operation_id} deny PreToolUse"
+        )
+        if deny_pretool != pretool:
+            raise ValueError(f"{operation_id} paired calls did not use exact message bytes")
+        if deny.get("schema_message_encrypted") is not False:
+            raise ValueError(f"{operation_id} deny message schema is still encrypted")
+        if deny.get("function_call_encrypted_function_args") != []:
+            raise ValueError(f"{operation_id} deny call did not select the plaintext branch")
+        if deny.get("native_multi_agent_v2") is not True:
+            raise ValueError(f"{operation_id} deny call bypassed native Multi-Agent V2")
+        if deny.get("blocked_before_handler") is not True:
             raise ValueError(f"{operation_id} deny control did not block before dispatch")
+        if deny.get("handler_started") is not False:
+            raise ValueError(f"{operation_id} deny control allowed handler dispatch")
         if deny.get("recipient_started") is not False:
             raise ValueError(f"{operation_id} deny control allowed recipient execution")
 

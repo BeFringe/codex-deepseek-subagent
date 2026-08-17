@@ -1279,12 +1279,16 @@ The machine-checkable prerequisite is now frozen in
 `probes/native-plaintext-assignment-seam-contract.json` and
 `probes/check_plaintext_assignment_candidate.py`. It covers native V2
 `spawn_agent`, `send_message`, and `followup_task`, requires opt-in plaintext
-schema selection, exact PreToolUse→handler→recipient byte equality, a
-pre-dispatch deny control, native AgentPath/control preservation, encrypted-mode
-regression, and redacted evidence. The opt-in is assignment transport only and
-cannot grant mutation authority. No live receipt exists, so the checker is
-valid but `--require-qualified` exits 2. The complete provider-free suite now
-runs 259 tests and passed in 37.376 seconds, including agent-template checks.
+schema selection, exact PreToolUse→handler→recipient byte equality, a distinct
+same-message pre-dispatch deny call, native AgentPath/control preservation,
+encrypted-mode regression, and redacted evidence. Schema 2 deliberately keeps
+the successful delivery and deny-before-handler cases under different
+tool-use identities: the prior schema accidentally required a recipient to
+both receive and not receive the same call, which no live runtime could satisfy.
+The checker also binds runtime-binary provenance and exact parent/turn/tool/target
+identity. The opt-in is assignment transport only and cannot grant mutation
+authority. No live receipt exists, so the checker is valid but
+`--require-qualified` exits 2.
 
 An isolated Codex source candidate now makes that prerequisite executable
 without replacing the pinned audit tree or installing a live binary. Against
@@ -1318,6 +1322,11 @@ candidate-receipt gate each remained structurally valid and returned exit 2
 for their documented qualification gaps. The mutation source replay still had
 zero anchor failures. This confirms the candidate did not silently promote any
 later authority.
+
+The paired-call contract repair was then replayed across the complete
+provider-free suite: 267 tests passed in 130.653 seconds, including the agent
+template checks. The live checker remains valid and exits 2 without a schema-2
+receipt; no status flag was promoted by repairing the impossible fixture.
 
 A separate exact-root, five-minute, tamper-evident diagnostic arm observed one
 real `SubagentStart` without changing the trusted Hook command. The event shape

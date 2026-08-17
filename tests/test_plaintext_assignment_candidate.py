@@ -25,39 +25,73 @@ def fingerprint(value):
 
 def valid_receipt(contract):
     operations = []
-    for operation_id in contract["required_operations"]:
+    for index, operation_id in enumerate(contract["required_operations"], start=1):
         value = f"exact-{operation_id}"
+        delivery_identity = {
+            "parent_session_id": "01a00147-39cb-7b50-b78d-7baed910eb45",
+            "parent_agent_path": "/root",
+            "parent_turn_id": f"00000000-0000-0000-0000-{index:012d}",
+            "tool_use_id": f"delivery-{operation_id}",
+            "target_session_id": f"10000000-0000-0000-0000-{index:012d}",
+            "canonical_agent_path": f"/root/{operation_id}",
+        }
+        deny_identity = {
+            "parent_session_id": "01a00147-39cb-7b50-b78d-7baed910eb45",
+            "parent_agent_path": "/root",
+            "parent_turn_id": f"20000000-0000-0000-0000-{index:012d}",
+            "tool_use_id": f"deny-{operation_id}",
+        }
+        if operation_id == "spawn_agent":
+            delivery_identity["requested_task_name"] = "g4_plaintext_pair"
+            deny_identity["requested_task_name"] = "g4_plaintext_pair"
         operations.append(
             {
                 "id": operation_id,
                 "hook_tool_name": contract["required_hook_tool_names"][operation_id],
-                "schema_message_encrypted": False,
-                "function_call_encrypted_function_args": [],
-                "pretool_plaintext": fingerprint(value),
-                "handler_plaintext": fingerprint(value),
-                "delivered_plaintext": fingerprint(value),
-                "encrypted_content_present": False,
-                "hook_before_handler": True,
-                "native_multi_agent_v2": True,
-                "canonical_agent_path": f"/root/{operation_id}",
-                "deny_control": {
+                "delivery_case": {
+                    "call_identity": delivery_identity,
+                    "schema_message_encrypted": False,
+                    "function_call_encrypted_function_args": [],
+                    "pretool_plaintext": fingerprint(value),
+                    "handler_plaintext": fingerprint(value),
+                    "delivered_plaintext": fingerprint(value),
+                    "encrypted_content_present": False,
+                    "hook_before_handler": True,
+                    "native_multi_agent_v2": True,
+                },
+                "deny_case": {
+                    "call_identity": deny_identity,
+                    "schema_message_encrypted": False,
+                    "function_call_encrypted_function_args": [],
+                    "pretool_plaintext": fingerprint(value),
+                    "native_multi_agent_v2": True,
                     "blocked_before_handler": True,
+                    "handler_started": False,
                     "recipient_started": False,
                 },
             }
         )
     return {
-        "schema": 1,
-        "contract_schema": 1,
+        "schema": 2,
+        "contract_schema": 2,
         "evidence_kind": "live_native",
         "codex_version": "candidate",
         "source_commit": "b" * 40,
+        "runtime": {
+            "candidate_binary_sha256": "c" * 64,
+            "candidate_patch_sha256": "d" * 64,
+            "selected_executable": "/tmp/codex-candidate",
+            "selection_mechanism": "CODEX_CLI_PATH",
+            "signed_app_resource_replaced": False,
+        },
         "configuration": {
             "default_message_delivery": "encrypted",
             "active_message_delivery": "plaintext",
             "explicit_opt_in": True,
             "parent_provider": "openai",
             "parent_auth_unchanged": True,
+            "parent_base_url_unchanged": True,
+            "live_config_modified": False,
             "native_multi_agent_v2": True,
         },
         "operations": operations,
@@ -96,9 +130,53 @@ class PlaintextAssignmentCandidateTests(unittest.TestCase):
     def test_end_to_end_plaintext_mismatch_is_rejected(self):
         contract = check_candidate.load_contract(CONTRACT)
         receipt = valid_receipt(contract)
-        receipt["operations"][0]["delivered_plaintext"]["sha256"] = "c" * 64
+        receipt["operations"][0]["delivery_case"]["delivered_plaintext"][
+            "sha256"
+        ] = "c" * 64
 
         with self.assertRaisesRegex(ValueError, "not end-to-end identical"):
+            check_candidate.assess(contract, receipt)
+
+    def test_delivery_and_deny_must_be_distinct_calls(self):
+        contract = check_candidate.load_contract(CONTRACT)
+        receipt = valid_receipt(contract)
+        operation = receipt["operations"][0]
+        operation["deny_case"]["call_identity"]["tool_use_id"] = operation[
+            "delivery_case"
+        ]["call_identity"]["tool_use_id"]
+
+        with self.assertRaisesRegex(ValueError, "must be distinct calls"):
+            check_candidate.assess(contract, receipt)
+
+    def test_delivery_and_deny_must_use_exact_message_bytes(self):
+        contract = check_candidate.load_contract(CONTRACT)
+        receipt = valid_receipt(contract)
+        receipt["operations"][0]["deny_case"]["pretool_plaintext"]["sha256"] = (
+            "e" * 64
+        )
+
+        with self.assertRaisesRegex(ValueError, "exact message bytes"):
+            check_candidate.assess(contract, receipt)
+
+    def test_root_target_and_windows_candidate_path_remain_valid(self):
+        contract = check_candidate.load_contract(CONTRACT)
+        receipt = valid_receipt(contract)
+        receipt["runtime"]["selected_executable"] = r"C:\\Codex\\codex.exe"
+        receipt["operations"][1]["delivery_case"]["call_identity"][
+            "canonical_agent_path"
+        ] = "/root"
+
+        result = check_candidate.assess(contract, receipt)
+        self.assertTrue(result["plaintext_assignment_seam_qualified"])
+
+    def test_agent_path_prefix_collision_is_rejected(self):
+        contract = check_candidate.load_contract(CONTRACT)
+        receipt = valid_receipt(contract)
+        receipt["operations"][0]["delivery_case"]["call_identity"][
+            "parent_agent_path"
+        ] = "/rooted"
+
+        with self.assertRaisesRegex(ValueError, "parent AgentPath is invalid"):
             check_candidate.assess(contract, receipt)
 
     def test_transport_opt_in_cannot_grant_mutation_authority(self):

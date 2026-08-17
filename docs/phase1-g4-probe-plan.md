@@ -110,17 +110,21 @@ For `spawn_agent`, `send_message`, and `followup_task`, the receipt must prove:
 
 1. the message schema selected the plaintext Responses branch and the function
    call carried exact `encrypted_function_args: []`;
-2. blocking PreToolUse observed the exact plaintext before handler dispatch,
-   and a deny control prevented both handler and recipient execution;
-3. PreToolUse, handler, and recipient fingerprints were byte-identical, with no
-   `encrypted_content` fallback;
+2. one permitted delivery call had byte-identical PreToolUse, handler, and
+   recipient fingerprints, with no `encrypted_content` fallback;
+3. a **distinct paired call with the same message bytes** was observed by
+   blocking PreToolUse and denied before both handler dispatch and recipient
+   execution; one call may never be counted as both the delivery and deny case;
 4. canonical AgentPath plus native V2 identity/lifecycle remained intact;
 5. missing/private response metadata failed closed, while the default encrypted
    mode and V1 behavior remained unchanged;
 6. evidence stored only lengths/hashes and never plaintext or credential values.
 
-The checker qualifies only this assignment seam. It always leaves Phase 1 and
-direct write false; the remaining P2–P7 gates still require their own evidence.
+The schema-2 checker qualifies only this assignment seam. It rejects receipts
+that conflate successful delivery with pre-dispatch denial, require both from
+one tool-use id, or omit exact runtime-binary and call identity. It always
+leaves Phase 1 and direct write false; the remaining P2–P7 gates still require
+their own evidence.
 Without a live receipt, `--require-qualified` exits 2.
 
 The reusable source candidate is pinned by

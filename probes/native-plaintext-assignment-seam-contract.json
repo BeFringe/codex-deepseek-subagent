@@ -1,5 +1,5 @@
 {
-  "schema": 1,
+  "schema": 2,
   "name": "native-multi-agent-v2-plaintext-assignment-seam",
   "scope": "Phase 1 P1 assignment transport only",
   "default_mode": "encrypted",
@@ -14,10 +14,21 @@
     "send_message": "collaborationsend_message",
     "followup_task": "collaborationfollowup_task"
   },
+  "required_cases_per_operation": [
+    "delivery_case",
+    "deny_case"
+  ],
+  "case_semantics": {
+    "delivery_case": "a permitted call reaches the native handler and recipient",
+    "deny_case": "a distinct paired call is blocked by PreToolUse before handler dispatch",
+    "same_message_bytes_across_cases": true,
+    "one_call_may_satisfy_both_cases": false
+  },
   "required_invariants": [
     "explicit_opt_in_default_encrypted",
     "plaintext_schema_signal",
     "exact_pretool_plaintext",
+    "separate_delivery_and_deny_calls",
     "deny_before_dispatch",
     "exact_delivered_bytes",
     "native_multi_agent_v2_preserved",
@@ -29,6 +40,19 @@
   "fingerprint_fields": [
     "length",
     "sha256"
+  ],
+  "required_runtime_fields": [
+    "candidate_binary_sha256",
+    "candidate_patch_sha256",
+    "selected_executable",
+    "selection_mechanism",
+    "signed_app_resource_replaced"
+  ],
+  "required_call_identity_fields": [
+    "parent_session_id",
+    "parent_agent_path",
+    "parent_turn_id",
+    "tool_use_id"
   ],
   "boundaries": {
     "opt_in_is_assignment_transport_only": true,
