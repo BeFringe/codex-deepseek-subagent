@@ -17,6 +17,20 @@
     "changed_source_files": 12,
     "cargo_lock_changed": false
   },
+  "binary_build": {
+    "command": "cargo build --release -p codex-cli --bin codex",
+    "exit_code": 0,
+    "duration": "30m19s",
+    "profile": "release (thin LTO, codegen-units 4, line-table debug, unstripped)",
+    "path": "/private/tmp/codex-plaintext-seam-candidate-20260817/codex-rs/target/release/codex",
+    "sha256": "e2874bda15552fac7b677b2553978a452c8c7beb5cae536ec95aead4d8b174d6",
+    "bytes": 293620392,
+    "format": "Mach-O 64-bit arm64",
+    "signature": "ad-hoc linker signature; no TeamIdentifier",
+    "version_output": "codex-cli 0.148.0-alpha.9",
+    "source_tree_after_generated_lock_normalization": "only the 12 candidate source files are modified",
+    "installed_or_selected_live": false
+  },
   "interface": {
     "config_key": "features.multi_agent_v2.message_delivery",
     "default": "encrypted",
@@ -91,6 +105,15 @@
       "failed": 0,
       "duration_seconds": 37.723,
       "agent_template_checks": "pass"
+    },
+    {
+      "id": "schema2_and_live_selection_preflight_regression",
+      "command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPYCACHEPREFIX=/private/tmp/codex-pycache-20260817 python3 -m unittest discover -s tests -p 'test_*.py' -v",
+      "exit_code": 0,
+      "passed": 276,
+      "failed": 0,
+      "duration_seconds": 50.375,
+      "agent_template_checks": "pass"
     }
   ],
   "environment_observations": {
@@ -116,6 +139,6 @@
     "direct_write_qualified": false,
     "phase2_open": false,
     "phase3_open": false,
-    "blocker": "source tests prove a minimal opt-in schema route is viable, but no live native receipt yet proves encrypted_function_args: [], exact PreToolUse plaintext, deny-before-dispatch, or byte-identical recipient delivery"
+    "blocker": "source tests and a reversible selection preflight prove a minimal opt-in schema route is viable, but no live native schema-2 receipt yet proves encrypted_function_args: [], exact PreToolUse plaintext, a distinct same-message deny-before-dispatch call, or byte-identical permitted recipient delivery"
   }
 }

@@ -1328,6 +1328,24 @@ provider-free suite: 267 tests passed in 130.653 seconds, including the agent
 template checks. The live checker remains valid and exits 2 without a schema-2
 receipt; no status flag was promoted by repairing the impossible fixture.
 
+The same isolated source then produced a release binary with the repository's
+thin-LTO profile in 30m19s. The Apple-arm64 binary is 293,620,392 bytes with
+SHA-256 `e2874bda15552fac7b677b2553978a452c8c7beb5cae536ec95aead4d8b174d6`;
+it is ad-hoc linker-signed and remains outside the signed Codex App. App build
+6662 exposes a `CODEX_CLI_PATH` selection seam. The checked-in wrapper pins the
+candidate hash and injects only the two Multi-Agent V2 transport settings, so a
+future live probe need not replace `/Applications/Codex.app` resources or edit
+live config. Its marker is only an accidental-execution guard, never trusted
+user consent or mutation authority. Version, feature, and stdio EOF startup
+smokes passed without a model invocation. The machine preflight is frozen in
+`probes/codex-0.148.0-alpha.9-plaintext-live-selection-preflight.json`.
+The complete provider-free suite then passed 276 tests in 50.375 seconds,
+including agent-template checks.
+
+No App process was restarted and no candidate was selected live. Fresh-process
+selection and rollback both interrupt this task and remain behind explicit
+user authorization; P1, Phase 1, and direct write therefore remain false.
+
 A separate exact-root, five-minute, tamper-evident diagnostic arm observed one
 real `SubagentStart` without changing the trusted Hook command. The event shape
 contained `agent_id`, `agent_type`, `cwd`, `hook_event_name`, `model`,

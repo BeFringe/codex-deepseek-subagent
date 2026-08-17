@@ -17,7 +17,9 @@
           "probes/native-plaintext-assignment-seam-contract.json",
           "probes/check_plaintext_assignment_candidate.py",
           "probes/codex-0.148.0-alpha.9-plaintext-assignment-seam-candidate.json",
-          "probes/codex-0.148.0-alpha.9-plaintext-assignment-seam-candidate.patch"
+          "probes/codex-0.148.0-alpha.9-plaintext-assignment-seam-candidate.patch",
+          "probes/codex-0.148.0-alpha.9-plaintext-live-selection-preflight.json",
+          "probes/codex_plaintext_candidate_wrapper.sh"
         ],
         "blocker": "current live Multi-Agent V2 marks spawn_agent.message encrypted, so collaborationspawn_agent PreToolUse receives opaque private arguments and SubagentStart has no assignment field. An isolated encrypted-default/plaintext-opt-in source candidate compiles and passes focused regressions, but it is not selected live and no schema-2 receipt proves encrypted_function_args: [], exact PreToolUse plaintext, a distinct same-message deny-before-dispatch call, or byte-identical permitted recipient delivery"
       },

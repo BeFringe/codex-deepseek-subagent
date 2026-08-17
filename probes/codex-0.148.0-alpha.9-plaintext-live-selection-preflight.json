@@ -1,0 +1,111 @@
+{
+  "schema": 1,
+  "evidence_kind": "pre_live_selection_preflight",
+  "observed_at": "2026-08-17T14:28:48+08:00",
+  "scope": "reversible candidate selection readiness only; no live Codex process was replaced or restarted",
+  "repository": {
+    "root": "/Users/pearly/文档/CAT/codex-deepseek-subagent",
+    "branch": "main",
+    "head_before_preflight_artifacts": "df77102ad8cca23b4e540a12e04b73220a93bc30"
+  },
+  "candidate": {
+    "codex_version": "0.148.0-alpha.9",
+    "source_commit": "9392c3fa5bcda342b5b96a1a04d67b2f781617c2",
+    "patch_sha256": "2a233b9583dc1708307fe2fa0e5bf0ca69b550e07b3a160507c42fe434ae0037",
+    "release_binary_path": "/private/tmp/codex-plaintext-seam-candidate-20260817/codex-rs/target/release/codex",
+    "release_binary_sha256": "e2874bda15552fac7b677b2553978a452c8c7beb5cae536ec95aead4d8b174d6",
+    "release_binary_bytes": 293620392,
+    "release_binary_format": "Mach-O 64-bit arm64",
+    "release_binary_signature": "ad-hoc linker signature; no TeamIdentifier",
+    "release_build_exit_code": 0,
+    "release_build_duration": "30m19s",
+    "cargo_lock_changed": false,
+    "selected_live": false
+  },
+  "current_app_baseline": {
+    "bundle_path": "/Applications/Codex.app",
+    "bundle_version": "26.810.52044",
+    "bundle_build": "6662",
+    "app_asar_sha256": "6e7e8791b8bf69a586ff994721fff518af391d9efdc66cd2e620dd2a4aedc90f",
+    "resource_binary_path": "/Applications/Codex.app/Contents/Resources/codex",
+    "resource_binary_sha256": "6170ff5578170ee9b74ad92bfcff96e6186f41d02b60815a7c2b01ad424c754f",
+    "resource_binary_version": "codex-cli 0.148.0-alpha.9",
+    "resource_binary_team_identifier": "2DC432GLL2",
+    "resource_binary_signature_valid": true,
+    "bundle_deep_strict_signature_valid": true,
+    "observed_process_pid": 42205,
+    "observed_process_executable": "/Applications/Codex.app/Contents/Resources/codex",
+    "observed_process_arguments": [
+      "-c",
+      "features.code_mode_host=true",
+      "app-server",
+      "--analytics-default-enabled"
+    ],
+    "signed_resource_replaced": false,
+    "live_config_modified": false,
+    "live_hook_modified": false
+  },
+  "selection_seam": {
+    "mechanism": "CODEX_CLI_PATH",
+    "app_asar_internal_source": ".vite/build/src-DhHWkTcG.js",
+    "app_asar_internal_source_sha256": "900cdfac91e16091a1bb0a4d5f9f79af0e0447fc3824c11a28bf98c6f21d9554",
+    "codex_cli_path_anchor_count": 4,
+    "path_resolution_anchor": "function fV reads and trims process.env.CODEX_CLI_PATH before resource fallback",
+    "wrapper_path": "probes/codex_plaintext_candidate_wrapper.sh",
+    "wrapper_sha256": "031aac697ec6e63f6dd4c27d20b213b53b50bfde20e74f93fae5e7e943d68155",
+    "wrapper_mode": "0755",
+    "wrapper_injected_config": [
+      "features.multi_agent_v2.enabled=true",
+      "features.multi_agent_v2.message_delivery=plaintext"
+    ],
+    "candidate_version_smoke_exit_code": 0,
+    "candidate_feature_smoke_exit_code": 0,
+    "candidate_multi_agent_v2_enabled_in_smoke": true,
+    "candidate_app_server_eof_smoke_exit_code": 0,
+    "model_invocation_performed": false,
+    "signed_app_resource_replacement_required": false,
+    "live_config_edit_required": false,
+    "app_restart_required": true,
+    "current_task_restart_or_resume_required": true
+  },
+  "operational_guard": {
+    "environment_name": "CODEX_G4_LIVE_SELECTION_AUTHORIZED",
+    "required_marker": "schema2-paired-probe",
+    "prevents_accidental_wrapper_execution": true,
+    "is_trusted_user_consent_signal": false,
+    "grants_mutation_authority": false,
+    "qualifies_direct_write": false
+  },
+  "rollback_plan": {
+    "candidate_selection_performed": false,
+    "signed_resource_backup_needed": false,
+    "procedure": "terminate the candidate-backed App process, launch the App without CODEX_CLI_PATH or wrapper variables, and verify the official resource hash and fresh process executable",
+    "required_fresh_observations": [
+      "candidate process and descendants exited",
+      "fresh app-server executable equals the official resource path",
+      "official resource SHA-256 is restored by selection removal alone",
+      "trusted Hook config and v4 Hook hashes are unchanged",
+      "no post-termination candidate disk activity crosses the barrier"
+    ],
+    "performed": false,
+    "qualifies_exit_receipt": false
+  },
+  "privacy": {
+    "credential_value_read_or_stored": false,
+    "raw_assignment_stored": false,
+    "provider_or_base_url_changed": false
+  },
+  "authorization": {
+    "live_candidate_selection_authorized": false,
+    "next_live_step_requires_explicit_user_approval": true
+  },
+  "verdict": {
+    "preflight_valid": true,
+    "ready_after_explicit_restart_authorization": true,
+    "live_plaintext_receipt_present": false,
+    "phase1_complete": false,
+    "direct_write_qualified": false,
+    "phase2_open": false,
+    "phase3_open": false
+  }
+}

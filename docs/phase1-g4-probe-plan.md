@@ -135,6 +135,25 @@ fixtures. Do not treat that as a live receipt. Installing or selecting the
 candidate in the Codex App remains a separate user-authorized, rollback-bound
 step; until then the identity matrix stays non-qualifying/read-only.
 
+The prepared Apple-arm64 release candidate is selected through the App's
+observed `CODEX_CLI_PATH` seam, not by overwriting its Developer-ID-signed
+resource binary. `probes/codex_plaintext_candidate_wrapper.sh` verifies the
+exact candidate SHA-256 and prepends only
+`features.multi_agent_v2.enabled=true` plus
+`features.multi_agent_v2.message_delivery="plaintext"`. Its environment marker
+is an operational typo/accident guard, not a security-grade user-consent signal
+and not a write ceiling. The preflight receipt pins the current App/resource,
+candidate, wrapper, and internal App-source hashes.
+
+Live selection requires a fresh App process. Before that restart, freeze the
+current task/Hook chain and obtain explicit user authorization. After launch,
+first verify the process executable and config mode, then run the schema-2
+paired delivery/deny calls. Roll back by terminating the candidate process and
+launching without `CODEX_CLI_PATH`; qualification requires a fresh official
+resource process, unchanged Hook/v4 hashes, no candidate descendants, and a
+post-termination disk barrier. Merely unsetting an environment variable in the
+old process is not rollback evidence.
+
 ## 0. Parent intent ceiling and trusted-host consent gate
 
 Run these before any mutation-surface probe. They test only whether write mode

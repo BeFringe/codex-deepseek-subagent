@@ -61,6 +61,19 @@ class NativePlaintextSeamSourceCandidateTests(unittest.TestCase):
         self.assertTrue(interface["transport_only"])
         self.assertFalse(interface["grants_mutation_authority"])
 
+    def test_release_binary_is_frozen_but_not_live_selected(self) -> None:
+        build = self.receipt["binary_build"]
+        self.assertEqual(build["exit_code"], 0)
+        self.assertEqual(
+            build["sha256"],
+            "e2874bda15552fac7b677b2553978a452c8c7beb5cae536ec95aead4d8b174d6",
+        )
+        self.assertEqual(build["bytes"], 293620392)
+        self.assertEqual(build["version_output"], "codex-cli 0.148.0-alpha.9")
+        self.assertIn("arm64", build["format"])
+        self.assertIn("ad-hoc", build["signature"])
+        self.assertFalse(build["installed_or_selected_live"])
+
     def test_source_success_is_not_promoted_to_live_qualification(self) -> None:
         source = self.receipt["source_result"]
         verdict = self.receipt["verdict"]
