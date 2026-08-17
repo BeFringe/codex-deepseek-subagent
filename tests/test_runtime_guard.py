@@ -699,6 +699,21 @@ class RuntimeGuardTests(unittest.TestCase):
         self.assertEqual(result["decision"], "block")
         self.assertIn("fields are not exact", result["reason"])
 
+    def test_final_attestation_field_error_names_only_schema_drift(self):
+        message = self.attestation()
+        attestation = json.loads(message.split("\n", 1)[1].rsplit("\n", 1)[0])
+        attestation["schema"] = 1
+
+        with self.assertRaisesRegex(
+            runtime_guard.GuardError,
+            r'fields are not exact: missing=\[\] unexpected=\["schema"\]',
+        ):
+            runtime_guard.parse_attestation(
+                "BEGIN CODEX WORKER ATTESTATION\n"
+                + json.dumps(attestation)
+                + "\nEND CODEX WORKER ATTESTATION"
+            )
+
     def test_subagent_stop_blocks_complete_claim_using_test_only_provenance(self):
         message = self.attestation()
         parsed = json.loads(message.split("\n", 1)[1].rsplit("\n", 1)[0])

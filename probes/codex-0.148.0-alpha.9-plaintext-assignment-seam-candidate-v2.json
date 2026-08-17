@@ -16,6 +16,10 @@
     "sha256": "0d6a185f7e0b12097056fbd826c46e0f7457b933a5d7f295195e0a9381475967",
     "bytes": 535257624,
     "version_output": "codex-cli 0.148.0-alpha.9",
+    "preserved_path_class": "isolated_private_tmp_standalone_binary",
+    "cargo_target_deleted_after_live_root_receipt": true,
+    "deleted_cargo_target_size": "36G",
+    "remaining_candidate_source_tree_size": "74M",
     "gui_selected": false,
     "live_config_modified": false
   },

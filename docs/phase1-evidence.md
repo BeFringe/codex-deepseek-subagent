@@ -1410,22 +1410,30 @@ the affected session could not execute its own rollback, this is an exact
 emergency recovery receipt but not the rollback exit receipt required by G4.
 
 The wrapper was replaced in place with a headless-only guard. It now rejects all
-GUI/server entry points, requires ephemeral/config/rules isolation for `exec`,
-and forces `g4_assignment`, read-only, never-approve, and no code-mode host. Its
-new SHA-256 is
-`a99352311c8516f6b33b5dbaa44fa42ec69d59a166cef17300323f0456089e34`;
+GUI/server entry points, requires config/rules isolation for `exec`, and permits
+stateful SessionMeta probes only behind a separate exact-root/clean-Git/JSON/
+Hook-trust guard. It forces `g4_assignment`, read-only, never-approve, and no
+code-mode host. Its current SHA-256 is
+`43f2181f8d49b03bfb2ba077dd2b1cacf40ecd6f7812dcbdbc368a7292940fed`;
 the incident receipt separately preserves the historical unsafe wrapper hash.
 A candidate `codex exec` no-tool smoke under the non-reserved namespace returned
 exactly `READY` through the current ChatGPT login without HTTP 400 and exited.
 That proves server schema acceptance only, not spawn, identity, assignment
 equality, or deny-before-dispatch.
 
-The 27 GiB temporary build is reproducibly bound by
+The temporary build is reproducibly bound by
 `probes/codex-0.148.0-alpha.9-plaintext-candidate-archive-20260817.json`:
 base commit, twelve-path diff, byte-identical checked-in patch, release SHA/size,
 and all thirteen candidate-root writer receipts are frozen without raw payload
-or credential values. The build target may be deleted after the isolated P1
-probe; the evidence does not depend on `/private/tmp` surviving. The full
+or credential values. After the successful isolated root lifecycle probe, the
+Cargo target had grown to 36 GiB. The exact 535,257,624-byte debug binary was
+preserved separately at SHA-256
+`0d6a185f7e0b12097056fbd826c46e0f7457b933a5d7f295195e0a9381475967`,
+then only `codex-rs/target` was deleted. The remaining source tree is 74 MiB and
+its 20-path diff still hashes to
+`0de474cbc2f917e5198c62c4b2e79a169805dd0a45959621af271d0423b26574`.
+The deleted target is rebuildable from the pinned source and patch but is not
+directly recoverable. The full
 incident is recorded in
 `docs/incident-2026-08-17-candidate-live-selection.md` and
 `probes/g4-candidate-live-selection-incident-20260817.json`.
@@ -1501,3 +1509,54 @@ Windows/DeepSeek, and functional rollback remain open. Consequently
 `phase1_complete=false`, `direct_write_qualified=false`, and Phases 2/3 remain
 closed. The privacy-minimized raw summary is
 `probes/g4-live-plaintext-lifecycle-20260817.json`.
+
+### Root read-only reported-to-consumed chain
+
+After installing only the exact closed alias
+`g4_assignmentlist_agents -> list_agents`, attempt 5 passed the child tool
+boundary and durably recorded the first Git attestation. It then exposed a
+separate interface defect: the final-attestation seed is schema-versioned, but
+the final report has a different exact top-level shape, while the old stop
+feedback named no missing or unexpected fields. The child repeatedly copied
+the seed `schema` field and remained active until the bounded parent process was
+interrupted. Disk and Git remained unchanged. The repair reports sorted missing
+and unexpected field names without echoing values and the probe prompt now
+states that the seed object is not the final report object. Forty-one focused
+runtime/prompt tests passed.
+
+Attempt 6 then completed the first live product-independent root chain. Parent
+`01a00f59-a291-7502-b4af-c97ceec1cadb` spawned child
+`01a00f5a-0f8b-7e22-b8bc-e997946babdb` at the exact path
+`/root/g4_cli_lifecycle_6`. Hook-event sequence 606--611 joins the exact spawn
+PreToolUse, SubagentStart, qualified `g4_assignmentlist_agents` PreToolUse, and
+three SubagentStop observations. The child received a successful native
+`list_agents` result, corrected one missing top-level field and one nested
+provenance-shape error from field-only feedback, and returned an exact complete
+attestation. The Hook moved assignment
+`726eeea3-b88e-4e85-bd5b-cdab0f2095f0` to `reported`.
+
+A fresh parent process then verified the exact root/branch/full HEAD, empty
+status/index, successful host function output, accepted final report, absent
+candidate processes, and a post-termination disk barrier. The five independent
+parent integrity dimensions all passed against adjudication-input SHA-256
+`1e170afdaa09b22d40fc545833c89eb0acfd3130a5883d0c68319db6f71fb76d`,
+and the state transition atomically advanced `reported -> consumed`. The
+consumed envelope SHA-256 is
+`8ea05c504453b37de78bca0c8c23cdb7701095e9bedc2775ff2892cf057d64c9`.
+The privacy-minimized input and result receipts are
+`probes/g4-live-root-lifecycle-adjudication-input-20260817.json` and
+`probes/g4-live-root-lifecycle-adjudication-result-20260817.json`.
+
+This closes one real root read-only invocation through P1/P2/P3/P4/P5b/P6
+sub-boundaries; it does not close any whole P-gate. The distinct paired
+deny-before-handler calls, nested/serial/concurrent identity cohort,
+compact/resume, full mutation and sandbox negative space, global
+termination/quiescence, representative P6a/P6b/P6c live workload, Windows,
+DeepSeek, and functional rollback remain open. Phase 1 and direct write remain
+false, and Phases 2/3 remain closed.
+
+After freezing these receipts, the complete provider-free suite passed 294
+tests in 48.497 seconds, including agent-template checks. The executable G4
+gate remained valid with every P-gate partial, `phase1_complete=false`, and
+`direct_write_qualified=false`; the pinned mutation matrix retained zero source
+anchor failures and the same-UID probe remained an explicit trust failure.

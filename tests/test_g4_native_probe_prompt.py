@@ -63,6 +63,8 @@ class G4NativeProbePromptTests(unittest.TestCase):
         self.assertIn("agent_type=g4_qualification_probe_worker", prompt)
         self.assertIn("task_name=g4_root_1", prompt)
         self.assertIn("/root/g4_root_1", prompt)
+        self.assertIn("final attestation JSON is not the seed object", prompt)
+        self.assertIn("do not copy the seed's schema", prompt)
         self.assertEqual(declaration["assignment_mutation_mode"], "read_only")
         self.assertEqual(declaration["parent_recorded_user_write_intent"], "deny")
         self.assertEqual(declaration["owned_paths"], [])

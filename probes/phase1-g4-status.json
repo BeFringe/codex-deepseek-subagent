@@ -25,9 +25,11 @@
           "probes/codex-0.148.0-alpha.9-plaintext-candidate-archive-20260817.json",
           "probes/codex-0.148.0-alpha.9-plaintext-assignment-seam-candidate-v2.json",
           "probes/codex-0.148.0-alpha.9-plaintext-assignment-seam-candidate-v2.patch",
-          "probes/g4-live-plaintext-lifecycle-20260817.json"
+          "probes/g4-live-plaintext-lifecycle-20260817.json",
+          "probes/g4-live-root-lifecycle-adjudication-input-20260817.json",
+          "probes/g4-live-root-lifecycle-adjudication-result-20260817.json"
         ],
-        "blocker": "an isolated root chain now proves exact plaintext PreToolUse capture, real SubagentStart capsule activation, and ordinary user-message delivery to the exact child; the requested MCP-list tool was unavailable and the subsequent list_agents call was denied by an exact namespace-alias false negative, so no successful child read-only call plus complete attestation or distinct live deny-before-handler pair exists yet"
+        "blocker": "one isolated root chain now proves exact plaintext PreToolUse capture, real SubagentStart binding, ordinary user-message delivery, a successful qualified list_agents call, exact final attestation, and fresh parent consumption; the distinct same-message deny-before-handler pair and broader live cohort are still missing"
       },
       {
         "id": "P2",
@@ -39,10 +41,11 @@
           "tests/test_sessionmeta_identity.py",
           "probes/g4-live-native-hook-schema-20260817.json",
           "probes/g4-live-plaintext-lifecycle-20260817.json",
+          "probes/g4-live-root-lifecycle-adjudication-result-20260817.json",
           "hooks/runtime_guard.py",
           "tests/test_runtime_guard.py"
         ],
-        "blocker": "one real root child now has exact assignment-to-SessionMeta/canonical-AgentPath binding and two older real concurrent records remain partial; complete nested/serial/concurrent identity joins and cohort scale are missing"
+        "blocker": "one real root child now has an exact assignment-to-SessionMeta/canonical-AgentPath join through consumed state and two older real concurrent records remain partial; complete nested, serial, and concurrent identity joins plus cohort scale are missing"
       },
       {
         "id": "P3",
@@ -54,9 +57,10 @@
           "probes/check_hook_event_chain.py",
           "tests/test_hook_event_receipts.py",
           "probes/g4-live-native-hook-schema-20260817.json",
-          "probes/g4-live-plaintext-lifecycle-20260817.json"
+          "probes/g4-live-plaintext-lifecycle-20260817.json",
+          "probes/g4-live-root-lifecycle-adjudication-result-20260817.json"
         ],
-        "blocker": "active keyed assignment lifecycle and an incomplete SubagentStop-to-unresolved path are now observed; a namespace denial also reproduced repeated stop continuation until host interrupt, while crash recovery, durable resume, successful final report, and parent adjudication remain missing"
+        "blocker": "one real root assignment now traverses pending, claimed, active, reported, and consumed with exact keyed identity; incomplete stop and repeated-continuation negatives also exist, while crash recovery, durable resume, cancel, and cohort replay remain missing"
       },
       {
         "id": "P4",
@@ -70,9 +74,10 @@
           "hooks/writer_lease_guard.py",
           "tests/test_assignment_transport.py",
           "probes/g4-live-callback-receipts-20260817.json",
-          "probes/g4-live-plaintext-lifecycle-20260817.json"
+          "probes/g4-live-plaintext-lifecycle-20260817.json",
+          "probes/g4-live-root-lifecycle-adjudication-result-20260817.json"
         ],
-        "blocker": "custom exec/code-mode and the exact namespaced list_agents call were visibly blocked before execution, but complete live mutation visibility/mediation, correct closed read-only alias handling, and independent sandbox denial are missing"
+        "blocker": "custom exec/code-mode was visibly blocked and the exact namespaced list_agents alias is now positively mediated without generic prefix stripping; complete live mutation visibility/mediation and independent sandbox denial remain missing"
       },
       {
         "id": "P5",
@@ -98,30 +103,41 @@
           "probes/recover_writer_claim.py",
           "tests/test_assignment_transport.py",
           "tests/test_hook_event_receipts.py",
-          "probes/g4-live-callback-receipts-20260817.json"
+          "probes/g4-live-callback-receipts-20260817.json",
+          "probes/g4-live-root-lifecycle-adjudication-result-20260817.json"
         ],
-        "blocker": "all-surface writer serialization plus strong termination/quiescence handover is missing"
+        "blocker": "one successful read-only invocation has a post-termination clean disk barrier, but all-surface writer serialization and strong global quiescence across success, cancel, crash, and late-write space are missing"
       },
       {
         "id": "P6",
         "state": "partial",
         "provider_free": "pass",
-        "evidence": ["docs/phase1-evidence.md"],
-        "blocker": "real incomplete SubagentStop-to-unresolved handling is observed, but successful report consumption and fresh parent adjudication are missing"
+        "evidence": [
+          "docs/phase1-evidence.md",
+          "probes/g4-live-root-lifecycle-adjudication-input-20260817.json",
+          "probes/g4-live-root-lifecycle-adjudication-result-20260817.json"
+        ],
+        "blocker": "one real exact SubagentStop report is consumed after fresh five-dimension parent adjudication and incomplete-final negatives remain visible; compact/resume, context-loss, mixed-frontier, and broader cohort adjudication are missing"
       },
       {
         "id": "P6a",
         "state": "partial",
         "provider_free": "pass",
-        "evidence": ["docs/phase1-evidence.md"],
-        "blocker": "live owner-bound causal provenance adjudication is missing"
+        "evidence": [
+          "docs/phase1-evidence.md",
+          "probes/g4-live-root-lifecycle-adjudication-result-20260817.json"
+        ],
+        "blocker": "one live owner-internal read-only observation passes fresh provenance adjudication; live mutation contribution causality, cross-owner derivation, and mixed-frontier provenance remain missing"
       },
       {
         "id": "P6b",
         "state": "partial",
         "provider_free": "pass",
-        "evidence": ["docs/phase1-evidence.md"],
-        "blocker": "live feasibility/domain/scale/equivalence adjudication is missing"
+        "evidence": [
+          "docs/phase1-evidence.md",
+          "probes/g4-live-root-lifecycle-adjudication-result-20260817.json"
+        ],
+        "blocker": "the strict read-only null-feasibility contract passes one live parent adjudication, but domain, scale, equivalence, and mutation-capable live feasibility evidence are missing"
       },
       {
         "id": "P6c",
@@ -172,7 +188,8 @@
           "docs/phase1-g4-probe-plan.md#iv-resume-callback-and-termination-probes",
           "probes/g4-live-install-20260817.json",
           "probes/g4-live-callback-receipts-20260817.json",
-          "probes/check_hook_event_chain.py"
+          "probes/check_hook_event_chain.py",
+          "probes/g4-live-root-lifecycle-adjudication-result-20260817.json"
         ]
       },
       {
@@ -180,7 +197,8 @@
         "state": "partial",
         "evidence": [
           "docs/phase1-g4-probe-plan.md#iv-resume-callback-and-termination-probes",
-          "probes/g4-live-plaintext-lifecycle-20260817.json"
+          "probes/g4-live-plaintext-lifecycle-20260817.json",
+          "probes/g4-live-root-lifecycle-adjudication-result-20260817.json"
         ]
       },
       {
@@ -188,7 +206,8 @@
         "state": "partial",
         "evidence": [
           "docs/phase1-g4-probe-plan.md#vi-platform-and-regression-exit-sequence",
-          "probes/g4-live-plaintext-lifecycle-20260817.json"
+          "probes/g4-live-plaintext-lifecycle-20260817.json",
+          "probes/g4-live-root-lifecycle-adjudication-result-20260817.json"
         ]
       },
       {

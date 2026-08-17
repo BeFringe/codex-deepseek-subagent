@@ -480,8 +480,15 @@ def parse_attestation(message: object) -> dict:
         "assigned_slice_complete",
         "inventory_summaries",
     }
-    if set(value) != required:
-        raise GuardError("final attestation fields are not exact")
+    observed = set(value)
+    if observed != required:
+        missing = sorted(required - observed)
+        unexpected = sorted(observed - required)
+        raise GuardError(
+            "final attestation fields are not exact: "
+            f"missing={json.dumps(missing, separators=(',', ':'))} "
+            f"unexpected={json.dumps(unexpected, separators=(',', ':'))}"
+        )
     if type(value["recovery_count"]) is not int or value["recovery_count"] < 0:
         raise GuardError("recovery_count must be a non-negative integer")
     for field in (
