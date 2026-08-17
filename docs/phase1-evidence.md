@@ -1275,6 +1275,17 @@ all have paired PreToolUse/PostToolUse events; the global require-complete audit
 still exits 2 only for the previously recorded pending callback owned by the
 foreign runtime session, which this task does not recover.
 
+The machine-checkable prerequisite is now frozen in
+`probes/native-plaintext-assignment-seam-contract.json` and
+`probes/check_plaintext_assignment_candidate.py`. It covers native V2
+`spawn_agent`, `send_message`, and `followup_task`, requires opt-in plaintext
+schema selection, exact PreToolUse→handler→recipient byte equality, a
+pre-dispatch deny control, native AgentPath/control preservation, encrypted-mode
+regression, and redacted evidence. The opt-in is assignment transport only and
+cannot grant mutation authority. No live receipt exists, so the checker is
+valid but `--require-qualified` exits 2. The complete provider-free suite now
+runs 259 tests and passed in 37.376 seconds, including agent-template checks.
+
 A separate exact-root, five-minute, tamper-evident diagnostic arm observed one
 real `SubagentStart` without changing the trusted Hook command. The event shape
 contained `agent_id`, `agent_type`, `cwd`, `hook_event_name`, `model`,

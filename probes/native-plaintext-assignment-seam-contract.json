@@ -1,0 +1,48 @@
+{
+  "schema": 1,
+  "name": "native-multi-agent-v2-plaintext-assignment-seam",
+  "scope": "Phase 1 P1 assignment transport only",
+  "default_mode": "encrypted",
+  "qualification_mode": "plaintext",
+  "required_operations": [
+    "spawn_agent",
+    "send_message",
+    "followup_task"
+  ],
+  "required_hook_tool_names": {
+    "spawn_agent": "collaborationspawn_agent",
+    "send_message": "collaborationsend_message",
+    "followup_task": "collaborationfollowup_task"
+  },
+  "required_invariants": [
+    "explicit_opt_in_default_encrypted",
+    "plaintext_schema_signal",
+    "exact_pretool_plaintext",
+    "deny_before_dispatch",
+    "exact_delivered_bytes",
+    "native_multi_agent_v2_preserved",
+    "private_branch_fails_closed",
+    "encrypted_mode_regression",
+    "openai_parent_unchanged",
+    "evidence_redacted"
+  ],
+  "fingerprint_fields": [
+    "length",
+    "sha256"
+  ],
+  "boundaries": {
+    "opt_in_is_assignment_transport_only": true,
+    "opt_in_grants_mutation_authority": false,
+    "v1_fallback_allowed": false,
+    "parent_provider_change_allowed": false,
+    "credential_in_assignment_allowed": false,
+    "raw_plaintext_in_receipt_allowed": false,
+    "worker_narrative_is_integration_authority": false
+  },
+  "qualification": {
+    "requires_live_native_receipt": true,
+    "qualifies_only_plaintext_assignment_seam": true,
+    "completes_phase1": false,
+    "qualifies_direct_write": false
+  }
+}

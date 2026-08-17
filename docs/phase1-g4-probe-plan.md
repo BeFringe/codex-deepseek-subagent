@@ -96,6 +96,33 @@ Pinned anchors:
 - [V2 spawn canonical return](https://github.com/openai/codex/blob/9392c3fa5bcda342b5b96a1a04d67b2f781617c2/codex-rs/core/src/tools/handlers/multi_agents_v2/spawn.rs)
 - [rollout persist/flush distinction](https://github.com/openai/codex/blob/9392c3fa5bcda342b5b96a1a04d67b2f781617c2/codex-rs/rollout/src/recorder.rs)
 
+## P1 native plaintext assignment prerequisite
+
+Do not run the identity matrix as qualification evidence until a native V2
+runtime supplies a live receipt accepted by
+`probes/check_plaintext_assignment_candidate.py`. The candidate must default to
+encrypted communication and require an explicit session-level plaintext
+transport opt-in. That opt-in grants no mutation authority and may not change
+the OpenAI parent provider, auth path, native AgentControl, AgentPath,
+permissions, lifecycle, wait, callback, cancel, or Multi-Agent V2 behavior.
+
+For `spawn_agent`, `send_message`, and `followup_task`, the receipt must prove:
+
+1. the message schema selected the plaintext Responses branch and the function
+   call carried exact `encrypted_function_args: []`;
+2. blocking PreToolUse observed the exact plaintext before handler dispatch,
+   and a deny control prevented both handler and recipient execution;
+3. PreToolUse, handler, and recipient fingerprints were byte-identical, with no
+   `encrypted_content` fallback;
+4. canonical AgentPath plus native V2 identity/lifecycle remained intact;
+5. missing/private response metadata failed closed, while the default encrypted
+   mode and V1 behavior remained unchanged;
+6. evidence stored only lengths/hashes and never plaintext or credential values.
+
+The checker qualifies only this assignment seam. It always leaves Phase 1 and
+direct write false; the remaining P2–P7 gates still require their own evidence.
+Without a live receipt, `--require-qualified` exits 2.
+
 ## 0. Parent intent ceiling and trusted-host consent gate
 
 Run these before any mutation-surface probe. They test only whether write mode
