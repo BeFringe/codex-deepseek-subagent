@@ -108,19 +108,22 @@ permissions, lifecycle, wait, callback, cancel, or Multi-Agent V2 behavior.
 
 For `spawn_agent`, `send_message`, and `followup_task`, the receipt must prove:
 
-1. the message schema selected the plaintext Responses branch and the function
-   call carried exact `encrypted_function_args: []`;
+1. the message schema selected the plaintext branch through one closed route:
+   either an explicit `encrypted_function_args: []` marker, or a present `null`
+   marker interpreted as plaintext only when the exact session opt-in, exact
+   `g4_assignment` namespace, and exact operation all match;
 2. one permitted delivery call had byte-identical PreToolUse, handler, and
    recipient fingerprints, with no `encrypted_content` fallback;
 3. a **distinct paired call with the same message bytes** was observed by
    blocking PreToolUse and denied before both handler dispatch and recipient
    execution; one call may never be counted as both the delivery and deny case;
 4. canonical AgentPath plus native V2 identity/lifecycle remained intact;
-5. missing/private response metadata failed closed, while the default encrypted
-   mode and V1 behavior remained unchanged;
+5. an unconfigured `null`, wrong namespace/operation, nonempty private marker,
+   default encrypted mode, and V1 behavior all remained encrypted or failed
+   closed;
 6. evidence stored only lengths/hashes and never plaintext or credential values.
 
-The schema-2 checker qualifies only this assignment seam. It rejects receipts
+The schema-3 checker qualifies only this assignment seam. It rejects receipts
 that conflate successful delivery with pre-dispatch denial, require both from
 one tool-use id, or omit exact runtime-binary and call identity. It always
 leaves Phase 1 and direct write false; the remaining P2–P7 gates still require

@@ -51,7 +51,13 @@ def valid_receipt(contract):
                 "delivery_case": {
                     "call_identity": delivery_identity,
                     "schema_message_encrypted": False,
-                    "function_call_encrypted_function_args": [],
+                    "plaintext_route": {
+                        "mode": "exact_configured_null_marker",
+                        "server_encrypted_function_args": None,
+                        "configured_tool_namespace": contract["required_tool_namespace"],
+                        "configured_operation": operation_id,
+                        "exact_session_opt_in": True,
+                    },
                     "pretool_plaintext": fingerprint(value),
                     "handler_plaintext": fingerprint(value),
                     "delivered_plaintext": fingerprint(value),
@@ -62,7 +68,13 @@ def valid_receipt(contract):
                 "deny_case": {
                     "call_identity": deny_identity,
                     "schema_message_encrypted": False,
-                    "function_call_encrypted_function_args": [],
+                    "plaintext_route": {
+                        "mode": "exact_configured_null_marker",
+                        "server_encrypted_function_args": None,
+                        "configured_tool_namespace": contract["required_tool_namespace"],
+                        "configured_operation": operation_id,
+                        "exact_session_opt_in": True,
+                    },
                     "pretool_plaintext": fingerprint(value),
                     "native_multi_agent_v2": True,
                     "blocked_before_handler": True,
@@ -72,8 +84,8 @@ def valid_receipt(contract):
             }
         )
     return {
-        "schema": 2,
-        "contract_schema": 2,
+        "schema": contract["schema"],
+        "contract_schema": contract["schema"],
         "evidence_kind": "live_native",
         "codex_version": "candidate",
         "source_commit": "b" * 40,
@@ -81,8 +93,10 @@ def valid_receipt(contract):
             "candidate_binary_sha256": "c" * 64,
             "candidate_patch_sha256": "d" * 64,
             "selected_executable": "/tmp/codex-candidate",
-            "selection_mechanism": "CODEX_CLI_PATH",
+            "selection_mechanism": "direct_executable",
             "signed_app_resource_replaced": False,
+            "headless_only": True,
+            "gui_app_server_selected": False,
         },
         "configuration": {
             "default_message_delivery": "encrypted",
@@ -93,11 +107,18 @@ def valid_receipt(contract):
             "parent_base_url_unchanged": True,
             "live_config_modified": False,
             "native_multi_agent_v2": True,
+            "tool_namespace": contract["required_tool_namespace"],
+            "configured_plaintext_operations": sorted(
+                contract["required_operations"]
+            ),
+            "null_marker_plaintext_requires_exact_route": True,
+            "unconfigured_null_marker_remains_encrypted": True,
         },
         "operations": operations,
         "regressions": {
             "encrypted_mode_still_encrypted": True,
-            "private_marker_missing_fails_closed": True,
+            "unconfigured_null_marker_still_encrypted": True,
+            "nonempty_private_marker_fails_closed": True,
             "v1_fallback_used": False,
             "native_agent_control_preserved": True,
         },
@@ -137,6 +158,59 @@ class PlaintextAssignmentCandidateTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "not end-to-end identical"):
             check_candidate.assess(contract, receipt)
 
+    def test_explicit_empty_marker_route_remains_valid(self):
+        contract = check_candidate.load_contract(CONTRACT)
+        receipt = valid_receipt(contract)
+        for operation in receipt["operations"]:
+            for case_name in ("delivery_case", "deny_case"):
+                route = operation[case_name]["plaintext_route"]
+                route["mode"] = "explicit_empty_marker"
+                route["server_encrypted_function_args"] = []
+
+        result = check_candidate.assess(contract, receipt)
+
+        self.assertTrue(result["plaintext_assignment_seam_qualified"])
+
+    def test_null_marker_without_exact_route_fails_closed(self):
+        contract = check_candidate.load_contract(CONTRACT)
+        receipt = valid_receipt(contract)
+        receipt["operations"][0]["delivery_case"]["plaintext_route"][
+            "exact_session_opt_in"
+        ] = False
+
+        with self.assertRaisesRegex(ValueError, "lacks exact session opt-in"):
+            check_candidate.assess(contract, receipt)
+
+    def test_null_marker_wrong_namespace_fails_closed(self):
+        contract = check_candidate.load_contract(CONTRACT)
+        receipt = valid_receipt(contract)
+        receipt["operations"][0]["delivery_case"]["plaintext_route"][
+            "configured_tool_namespace"
+        ] = "g4_assignment_extra"
+
+        with self.assertRaisesRegex(ValueError, "namespace is not exact"):
+            check_candidate.assess(contract, receipt)
+
+    def test_null_marker_wrong_operation_fails_closed(self):
+        contract = check_candidate.load_contract(CONTRACT)
+        receipt = valid_receipt(contract)
+        receipt["operations"][0]["delivery_case"]["plaintext_route"][
+            "configured_operation"
+        ] = "send_message"
+
+        with self.assertRaisesRegex(ValueError, "operation is not exact"):
+            check_candidate.assess(contract, receipt)
+
+    def test_route_mode_and_marker_must_agree(self):
+        contract = check_candidate.load_contract(CONTRACT)
+        receipt = valid_receipt(contract)
+        receipt["operations"][0]["delivery_case"]["plaintext_route"][
+            "server_encrypted_function_args"
+        ] = []
+
+        with self.assertRaisesRegex(ValueError, "configured-null route marker is invalid"):
+            check_candidate.assess(contract, receipt)
+
     def test_delivery_and_deny_must_be_distinct_calls(self):
         contract = check_candidate.load_contract(CONTRACT)
         receipt = valid_receipt(contract)
@@ -168,6 +242,24 @@ class PlaintextAssignmentCandidateTests(unittest.TestCase):
 
         result = check_candidate.assess(contract, receipt)
         self.assertTrue(result["plaintext_assignment_seam_qualified"])
+
+    def test_gui_app_server_selection_is_rejected(self):
+        contract = check_candidate.load_contract(CONTRACT)
+        receipt = valid_receipt(contract)
+        receipt["runtime"]["selection_mechanism"] = "CODEX_CLI_PATH"
+        receipt["runtime"]["gui_app_server_selected"] = True
+
+        with self.assertRaisesRegex(ValueError, "selection mechanism is invalid"):
+            check_candidate.assess(contract, receipt)
+
+    def test_historical_schema_two_receipt_cannot_satisfy_schema_three(self):
+        contract = check_candidate.load_contract(CONTRACT)
+        receipt = valid_receipt(contract)
+        receipt["schema"] = 2
+        receipt["contract_schema"] = 2
+
+        with self.assertRaisesRegex(ValueError, "schema 3"):
+            check_candidate.assess(contract, receipt)
 
     def test_agent_path_prefix_collision_is_rejected(self):
         contract = check_candidate.load_contract(CONTRACT)

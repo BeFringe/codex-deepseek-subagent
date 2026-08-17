@@ -54,6 +54,14 @@
     "plaintext_child_model_input_role": "user",
     "encrypted_default_preserved": true
   },
+  "qualification_contract": {
+    "schema": 3,
+    "explicit_empty_marker_supported": true,
+    "configured_null_marker_requires_exact_namespace_operation_and_session_opt_in": true,
+    "unconfigured_null_marker_remains_encrypted": true,
+    "gui_app_server_selection_forbidden": true,
+    "all_three_operations_and_distinct_deny_pairs_complete": false
+  },
   "live_evidence": "probes/g4-live-plaintext-lifecycle-20260817.json",
   "phase1_complete": false,
   "direct_write_qualified": false,

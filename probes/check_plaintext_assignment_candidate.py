@@ -11,6 +11,9 @@ REQUIRED_OPERATIONS = {"spawn_agent", "send_message", "followup_task"}
 REQUIRED_INVARIANTS = {
     "explicit_opt_in_default_encrypted",
     "plaintext_schema_signal",
+    "exact_configured_null_marker_route",
+    "unconfigured_null_marker_regression",
+    "headless_candidate_selection",
     "exact_pretool_plaintext",
     "separate_delivery_and_deny_calls",
     "deny_before_dispatch",
@@ -28,6 +31,8 @@ REQUIRED_RUNTIME_FIELDS = {
     "selected_executable",
     "selection_mechanism",
     "signed_app_resource_replaced",
+    "headless_only",
+    "gui_app_server_selected",
 }
 REQUIRED_CALL_IDENTITY_FIELDS = {
     "parent_session_id",
@@ -43,11 +48,18 @@ SESSION_ID = re.compile(
 TASK_NAME = re.compile(r"^[a-z0-9_]+$")
 AGENT_PATH = re.compile(r"^/root(?:/[a-z0-9_]+)*$")
 ABSOLUTE_EXECUTABLE = re.compile(r"^(?:/|[A-Za-z]:[\\/])")
+PLAINTEXT_ROUTE_FIELDS = {
+    "mode",
+    "server_encrypted_function_args",
+    "configured_tool_namespace",
+    "configured_operation",
+    "exact_session_opt_in",
+}
 
 
 def load_contract(path):
     value = json.loads(path.read_text(encoding="utf-8"))
-    if value.get("schema") != 2:
+    if value.get("schema") != 3:
         raise ValueError("plaintext assignment contract has an invalid schema")
     if set(value.get("required_operations", [])) != REQUIRED_OPERATIONS:
         raise ValueError("plaintext assignment contract has incomplete operations")
@@ -60,6 +72,10 @@ def load_contract(path):
         not isinstance(case_semantics, dict)
         or case_semantics.get("same_message_bytes_across_cases") is not True
         or case_semantics.get("one_call_may_satisfy_both_cases") is not False
+        or case_semantics.get(
+            "null_marker_requires_exact_namespace_operation_and_session_opt_in"
+        )
+        is not True
     ):
         raise ValueError("plaintext assignment contract conflates delivery and deny cases")
     if set(value.get("required_runtime_fields", [])) != REQUIRED_RUNTIME_FIELDS:
@@ -70,6 +86,13 @@ def load_contract(path):
         raise ValueError("plaintext assignment transport must remain opt-in")
     if value.get("qualification_mode") != "plaintext":
         raise ValueError("plaintext assignment qualification mode is invalid")
+    if value.get("required_tool_namespace") != "g4_assignment":
+        raise ValueError("plaintext assignment contract has an invalid tool namespace")
+    if set(value.get("allowed_live_plaintext_route_modes", [])) != {
+        "explicit_empty_marker",
+        "exact_configured_null_marker",
+    }:
+        raise ValueError("plaintext assignment contract has invalid route modes")
 
     boundaries = value.get("boundaries")
     if not isinstance(boundaries, dict):
@@ -81,6 +104,8 @@ def load_contract(path):
         "credential_in_assignment_allowed",
         "raw_plaintext_in_receipt_allowed",
         "worker_narrative_is_integration_authority",
+        "null_marker_plaintext_without_exact_route_allowed",
+        "gui_app_server_selection_allowed",
     }
     if any(boundaries.get(key) is not False for key in required_false):
         raise ValueError("plaintext assignment contract expands a forbidden boundary")
@@ -143,6 +168,26 @@ def _call_identity(value, label, *, delivery):
     return value
 
 
+def _plaintext_route(value, operation_id, label, contract):
+    if not isinstance(value, dict) or set(value) != PLAINTEXT_ROUTE_FIELDS:
+        raise ValueError(f"{label} plaintext route fields are not exact")
+    mode = value["mode"]
+    if mode not in contract["allowed_live_plaintext_route_modes"]:
+        raise ValueError(f"{label} plaintext route mode is invalid")
+    if value["configured_tool_namespace"] != contract["required_tool_namespace"]:
+        raise ValueError(f"{label} plaintext route namespace is not exact")
+    if value["configured_operation"] != operation_id:
+        raise ValueError(f"{label} plaintext route operation is not exact")
+    if value["exact_session_opt_in"] is not True:
+        raise ValueError(f"{label} plaintext route lacks exact session opt-in")
+    marker = value["server_encrypted_function_args"]
+    if mode == "explicit_empty_marker" and marker != []:
+        raise ValueError(f"{label} explicit-empty route marker is invalid")
+    if mode == "exact_configured_null_marker" and marker is not None:
+        raise ValueError(f"{label} configured-null route marker is invalid")
+    return value
+
+
 def assess(contract, receipt):
     if receipt is None:
         return {
@@ -152,8 +197,8 @@ def assess(contract, receipt):
             "direct_write_qualified": False,
             "blocker": "no live native plaintext-assignment receipt was supplied",
         }
-    if receipt.get("schema") != 2 or receipt.get("evidence_kind") != "live_native":
-        raise ValueError("candidate receipt is not live native schema 2 evidence")
+    if receipt.get("schema") != 3 or receipt.get("evidence_kind") != "live_native":
+        raise ValueError("candidate receipt is not live native schema 3 evidence")
     if receipt.get("contract_schema") != contract["schema"]:
         raise ValueError("candidate receipt targets a different contract schema")
     if not isinstance(receipt.get("codex_version"), str) or not receipt["codex_version"]:
@@ -174,10 +219,14 @@ def assess(contract, receipt):
         or ABSOLUTE_EXECUTABLE.match(selected_executable) is None
     ):
         raise ValueError("candidate selected executable is not absolute")
-    if runtime.get("selection_mechanism") not in {"direct_executable", "CODEX_CLI_PATH"}:
+    if runtime.get("selection_mechanism") != "direct_executable":
         raise ValueError("candidate selection mechanism is invalid")
     if runtime.get("signed_app_resource_replaced") is not False:
         raise ValueError("candidate receipt replaced the signed Codex app resource")
+    if runtime.get("headless_only") is not True:
+        raise ValueError("candidate receipt is not headless-only")
+    if runtime.get("gui_app_server_selected") is not False:
+        raise ValueError("candidate receipt selected the GUI app server")
 
     config = receipt.get("configuration")
     if not isinstance(config, dict):
@@ -191,6 +240,10 @@ def assess(contract, receipt):
         "parent_base_url_unchanged": True,
         "live_config_modified": False,
         "native_multi_agent_v2": True,
+        "tool_namespace": contract["required_tool_namespace"],
+        "configured_plaintext_operations": sorted(REQUIRED_OPERATIONS),
+        "null_marker_plaintext_requires_exact_route": True,
+        "unconfigured_null_marker_remains_encrypted": True,
     }
     if any(config.get(key) != expected for key, expected in expected_config.items()):
         raise ValueError("candidate configuration violates the transport boundary")
@@ -234,8 +287,9 @@ def assess(contract, receipt):
 
         if delivery.get("schema_message_encrypted") is not False:
             raise ValueError(f"{operation_id} message schema is still encrypted")
-        if delivery.get("function_call_encrypted_function_args") != []:
-            raise ValueError(f"{operation_id} did not select the plaintext response branch")
+        _plaintext_route(
+            delivery.get("plaintext_route"), operation_id, f"{operation_id} delivery", contract
+        )
         pretool = _fingerprint(
             delivery.get("pretool_plaintext"), f"{operation_id} delivery PreToolUse"
         )
@@ -258,8 +312,9 @@ def assess(contract, receipt):
             raise ValueError(f"{operation_id} paired calls did not use exact message bytes")
         if deny.get("schema_message_encrypted") is not False:
             raise ValueError(f"{operation_id} deny message schema is still encrypted")
-        if deny.get("function_call_encrypted_function_args") != []:
-            raise ValueError(f"{operation_id} deny call did not select the plaintext branch")
+        _plaintext_route(
+            deny.get("plaintext_route"), operation_id, f"{operation_id} deny", contract
+        )
         if deny.get("native_multi_agent_v2") is not True:
             raise ValueError(f"{operation_id} deny call bypassed native Multi-Agent V2")
         if deny.get("blocked_before_handler") is not True:
@@ -272,7 +327,8 @@ def assess(contract, receipt):
     regressions = receipt.get("regressions")
     expected_regressions = {
         "encrypted_mode_still_encrypted": True,
-        "private_marker_missing_fails_closed": True,
+        "unconfigured_null_marker_still_encrypted": True,
+        "nonempty_private_marker_fails_closed": True,
         "v1_fallback_used": False,
         "native_agent_control_preserved": True,
     }

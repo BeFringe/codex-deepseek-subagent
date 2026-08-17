@@ -29,7 +29,7 @@
           "probes/g4-live-root-lifecycle-adjudication-input-20260817.json",
           "probes/g4-live-root-lifecycle-adjudication-result-20260817.json"
         ],
-        "blocker": "one isolated root chain now proves exact plaintext PreToolUse capture, real SubagentStart binding, ordinary user-message delivery, a successful qualified list_agents call, exact final attestation, and fresh parent consumption; the distinct same-message deny-before-handler pair and broader live cohort are still missing"
+        "blocker": "one isolated root spawn chain now proves the exact-configured null-marker route through plaintext delivery and fresh parent consumption; schema-3 still lacks distinct same-message deny-before-handler calls plus live send_message/followup_task delivery and the broader cohort"
       },
       {
         "id": "P2",

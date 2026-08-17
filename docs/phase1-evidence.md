@@ -1560,3 +1560,23 @@ tests in 48.497 seconds, including agent-template checks. The executable G4
 gate remained valid with every P-gate partial, `phase1_complete=false`, and
 `direct_write_qualified=false`; the pinned mutation matrix retained zero source
 anchor failures and the same-UID probe remained an explicit trust failure.
+
+### P1 live-oracle realignment
+
+The successful root chain also disproved one old oracle assumption. The current
+OpenAI response carries `encrypted_function_args=null`, not an empty array, even
+though the session is explicitly configured for plaintext delivery. Requiring
+only `[]` would reject the observed successful route and encourage repeated
+probes against an impossible server shape. Treating every `null` as plaintext
+would be an unsafe global bypass.
+
+The contract is therefore schema 3. It admits either the native explicit-empty
+marker or the exact-configured null-marker route, but the latter requires the
+session plaintext opt-in, exact `g4_assignment` namespace, and exact one of
+`spawn_agent`, `send_message`, or `followup_task`. Wrong namespace/operation,
+missing opt-in, unconfigured null, nonempty private marker, encrypted default,
+and V1 remain encrypted or fail closed. GUI `CODEX_CLI_PATH` selection is now
+rejected by the checker rather than retained as a nominal option. Sixteen
+focused oracle tests pass, including explicit-empty compatibility and null-route
+negative space. No live schema-3 receipt yet covers all three operations and
+their distinct same-message deny pairs, so P1 remains partial.
