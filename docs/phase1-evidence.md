@@ -1286,6 +1286,39 @@ cannot grant mutation authority. No live receipt exists, so the checker is
 valid but `--require-qualified` exits 2. The complete provider-free suite now
 runs 259 tests and passed in 37.376 seconds, including agent-template checks.
 
+An isolated Codex source candidate now makes that prerequisite executable
+without replacing the pinned audit tree or installing a live binary. Against
+source commit `9392c3fa5bcda342b5b96a1a04d67b2f781617c2`, it adds
+`features.multi_agent_v2.message_delivery = "plaintext"` while preserving
+`encrypted` as the default. The setting affects only the `message` schema for
+native V2 `spawn_agent`, `send_message`, and `followup_task`; it reuses the
+existing `DirectPlaintextMessage` branch and does not change the parent
+provider/auth path, AgentPath/control handlers, or V1.
+
+The exact 12-file patch and machine-readable build receipt are frozen in
+`probes/codex-0.148.0-alpha.9-plaintext-assignment-seam-candidate.patch` and
+`probes/codex-0.148.0-alpha.9-plaintext-assignment-seam-candidate.json`.
+On Apple arm64, repository-pinned Rust 1.95.0 passed format checks, 2/2 feature
+configuration tests, 2/2 encrypted/plaintext schema tests, 68/68 filtered V2
+unit regressions, 19/19 filtered V2 integration regressions, and three direct
+schema regressions. The first dependency fetch failed only at Cargo's default
+low-speed threshold and succeeded after a bounded low-speed/timeout retry. One
+existing async test overflowed the default macOS test-thread stack; the exact
+test and the complete filtered regression passed with a 16 MiB test stack.
+
+This is source feasibility, not qualification. No live call has yet exposed
+`encrypted_function_args: []`, exact PreToolUse plaintext, deny-before-handler
+behavior, or byte-identical recipient delivery through this switch. The
+candidate is not installed, so Phase 1, P1, and direct write remain false.
+
+After freezing the artifact, the complete provider-free suite passed 263 tests
+in 37.723 seconds and the agent-template checks passed. The Phase 1 gate,
+mutation-surface gate, same-UID trust gate, pinned native-seam gate, and live
+candidate-receipt gate each remained structurally valid and returned exit 2
+for their documented qualification gaps. The mutation source replay still had
+zero anchor failures. This confirms the candidate did not silently promote any
+later authority.
+
 A separate exact-root, five-minute, tamper-evident diagnostic arm observed one
 real `SubagentStart` without changing the trusted Hook command. The event shape
 contained `agent_id`, `agent_type`, `cwd`, `hook_event_name`, `model`,

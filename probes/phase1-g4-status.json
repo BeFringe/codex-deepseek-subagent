@@ -15,9 +15,11 @@
           "probes/codex-0.148.0-alpha.9-native-assignment-seam.json",
           "probes/check_native_assignment_seam.py",
           "probes/native-plaintext-assignment-seam-contract.json",
-          "probes/check_plaintext_assignment_candidate.py"
+          "probes/check_plaintext_assignment_candidate.py",
+          "probes/codex-0.148.0-alpha.9-plaintext-assignment-seam-candidate.json",
+          "probes/codex-0.148.0-alpha.9-plaintext-assignment-seam-candidate.patch"
         ],
-        "blocker": "Multi-Agent V2 marks spawn_agent.message encrypted; current native collaborationspawn_agent PreToolUse therefore receives the raw private function arguments before the host forwards the opaque message as encrypted_content, while SubagentStart exposes exact SessionMeta identity but no assignment field. An opt-in runtime plaintext schema/transport seam or separate trusted host staging API is required"
+        "blocker": "current live Multi-Agent V2 marks spawn_agent.message encrypted, so collaborationspawn_agent PreToolUse receives opaque private arguments and SubagentStart has no assignment field. An isolated encrypted-default/plaintext-opt-in source candidate compiles and passes focused regressions, but it is not installed and no live receipt proves encrypted_function_args: [], exact PreToolUse plaintext, deny-before-dispatch, or byte-identical recipient delivery"
       },
       {
         "id": "P2",

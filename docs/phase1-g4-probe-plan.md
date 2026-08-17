@@ -123,6 +123,14 @@ The checker qualifies only this assignment seam. It always leaves Phase 1 and
 direct write false; the remaining P2–P7 gates still require their own evidence.
 Without a live receipt, `--require-qualified` exits 2.
 
+The reusable source candidate is pinned by
+`probes/codex-0.148.0-alpha.9-plaintext-assignment-seam-candidate.json` and its
+adjacent patch. Its isolated Rust tests prove only that an encrypted-default,
+explicit-plaintext schema switch compiles and preserves current V2 regression
+fixtures. Do not treat that as a live receipt. Installing or selecting the
+candidate in the Codex App remains a separate user-authorized, rollback-bound
+step; until then the identity matrix stays non-qualifying/read-only.
+
 ## 0. Parent intent ceiling and trusted-host consent gate
 
 Run these before any mutation-surface probe. They test only whether write mode
