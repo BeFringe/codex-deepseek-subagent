@@ -42,6 +42,21 @@ READ_ONLY_TOOL_NAMES = {
     "tool_search",
     "view_image",
 }
+READ_ONLY_TOOL_NAME_ALIASES = {
+    # The isolated candidate exposes native Multi-Agent V2 tools under this
+    # exact non-reserved namespace. Codex flattens namespace + function name in
+    # Hook input, so retain a closed alias instead of stripping arbitrary
+    # prefixes (which could authorize an unknown tool by suffix).
+    "g4_assignmentlist_agents": "list_agents",
+}
+
+
+def qualified_read_only_tool_name(value: object) -> str | None:
+    if not isinstance(value, str):
+        return None
+    if value in READ_ONLY_TOOL_NAMES:
+        return value
+    return READ_ONLY_TOOL_NAME_ALIASES.get(value)
 
 
 class GuardError(StateError):
@@ -293,7 +308,8 @@ def pre_tool_use(
         identity = child_identity_from_hook(hook_input)
         assignment_id, envelope = store.find_active(identity)
         tool_name = hook_input.get("tool_name")
-        if tool_name not in READ_ONLY_TOOL_NAMES:
+        qualified_tool_name = qualified_read_only_tool_name(tool_name)
+        if qualified_tool_name is None:
             capsule = envelope["capsule"]
             observed_at = now or dt.datetime.now(dt.timezone.utc)
             snapshot = collect_git_snapshot(capsule["root"]["path"])

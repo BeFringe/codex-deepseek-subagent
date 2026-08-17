@@ -22,9 +22,12 @@
           "probes/codex_plaintext_candidate_wrapper.sh",
           "docs/incident-2026-08-17-candidate-live-selection.md",
           "probes/g4-candidate-live-selection-incident-20260817.json",
-          "probes/codex-0.148.0-alpha.9-plaintext-candidate-archive-20260817.json"
+          "probes/codex-0.148.0-alpha.9-plaintext-candidate-archive-20260817.json",
+          "probes/codex-0.148.0-alpha.9-plaintext-assignment-seam-candidate-v2.json",
+          "probes/codex-0.148.0-alpha.9-plaintext-assignment-seam-candidate-v2.patch",
+          "probes/g4-live-plaintext-lifecycle-20260817.json"
         ],
-        "blocker": "GUI CODEX_CLI_PATH selection is disqualified after the candidate changed a reserved collaboration.followup_task schema and caused App-wide HTTP 400. A headless ephemeral no-tool smoke proves that the same candidate's non-reserved g4_assignment schema is accepted, but no isolated native spawn receipt yet proves encrypted_function_args: [], exact PreToolUse plaintext, a distinct same-message deny-before-dispatch call, or byte-identical permitted recipient delivery"
+        "blocker": "an isolated root chain now proves exact plaintext PreToolUse capture, real SubagentStart capsule activation, and ordinary user-message delivery to the exact child; the requested MCP-list tool was unavailable and the subsequent list_agents call was denied by an exact namespace-alias false negative, so no successful child read-only call plus complete attestation or distinct live deny-before-handler pair exists yet"
       },
       {
         "id": "P2",
@@ -35,10 +38,11 @@
           "probes/check_sessionmeta_identity.py",
           "tests/test_sessionmeta_identity.py",
           "probes/g4-live-native-hook-schema-20260817.json",
+          "probes/g4-live-plaintext-lifecycle-20260817.json",
           "hooks/runtime_guard.py",
           "tests/test_runtime_guard.py"
         ],
-        "blocker": "one real root child and two real concurrent child SessionMeta records are partial; exact assignment-to-child binding is blocked by the opaque spawn seam and complete nested/serial/concurrent identity joins are missing"
+        "blocker": "one real root child now has exact assignment-to-SessionMeta/canonical-AgentPath binding and two older real concurrent records remain partial; complete nested/serial/concurrent identity joins and cohort scale are missing"
       },
       {
         "id": "P3",
@@ -49,9 +53,10 @@
           "hooks/hook_event_receipts.py",
           "probes/check_hook_event_chain.py",
           "tests/test_hook_event_receipts.py",
-          "probes/g4-live-native-hook-schema-20260817.json"
+          "probes/g4-live-native-hook-schema-20260817.json",
+          "probes/g4-live-plaintext-lifecycle-20260817.json"
         ],
-        "blocker": "one exact target-child SubagentStart/SubagentStop pair is observed without assignment capture; active keyed lifecycle, crash recovery, durable resume, and final parent adjudication receipts are missing"
+        "blocker": "active keyed assignment lifecycle and an incomplete SubagentStop-to-unresolved path are now observed; a namespace denial also reproduced repeated stop continuation until host interrupt, while crash recovery, durable resume, successful final report, and parent adjudication remain missing"
       },
       {
         "id": "P4",
@@ -64,9 +69,10 @@
           "agents/g4-qualification-probe-worker.toml",
           "hooks/writer_lease_guard.py",
           "tests/test_assignment_transport.py",
-          "probes/g4-live-callback-receipts-20260817.json"
+          "probes/g4-live-callback-receipts-20260817.json",
+          "probes/g4-live-plaintext-lifecycle-20260817.json"
         ],
-        "blocker": "complete live mutation visibility/mediation and independent sandbox denial are missing"
+        "blocker": "custom exec/code-mode and the exact namespaced list_agents call were visibly blocked before execution, but complete live mutation visibility/mediation, correct closed read-only alias handling, and independent sandbox denial are missing"
       },
       {
         "id": "P5",
@@ -101,7 +107,7 @@
         "state": "partial",
         "provider_free": "pass",
         "evidence": ["docs/phase1-evidence.md"],
-        "blocker": "real SubagentStop continuation and fresh parent adjudication are missing"
+        "blocker": "real incomplete SubagentStop-to-unresolved handling is observed, but successful report consumption and fresh parent adjudication are missing"
       },
       {
         "id": "P6a",
@@ -139,8 +145,11 @@
     "exit_receipts": [
       {
         "id": "sessionmeta_identity",
-        "state": "pending",
-        "evidence": ["docs/phase1-g4-probe-plan.md#ii-real-identity-and-sessionmeta-probe"]
+        "state": "partial",
+        "evidence": [
+          "docs/phase1-g4-probe-plan.md#ii-real-identity-and-sessionmeta-probe",
+          "probes/g4-live-plaintext-lifecycle-20260817.json"
+        ]
       },
       {
         "id": "mutation_visibility",
@@ -168,13 +177,19 @@
       },
       {
         "id": "termination_quiescence",
-        "state": "pending",
-        "evidence": ["docs/phase1-g4-probe-plan.md#iv-resume-callback-and-termination-probes"]
+        "state": "partial",
+        "evidence": [
+          "docs/phase1-g4-probe-plan.md#iv-resume-callback-and-termination-probes",
+          "probes/g4-live-plaintext-lifecycle-20260817.json"
+        ]
       },
       {
         "id": "posix_live",
-        "state": "pending",
-        "evidence": ["docs/phase1-g4-probe-plan.md#vi-platform-and-regression-exit-sequence"]
+        "state": "partial",
+        "evidence": [
+          "docs/phase1-g4-probe-plan.md#vi-platform-and-regression-exit-sequence",
+          "probes/g4-live-plaintext-lifecycle-20260817.json"
+        ]
       },
       {
         "id": "windows_live",

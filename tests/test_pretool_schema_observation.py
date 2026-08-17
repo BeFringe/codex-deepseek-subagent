@@ -105,6 +105,18 @@ class PreToolSchemaObservationTests(unittest.TestCase):
         self.assertEqual(len(fingerprint["sha256"]), 64)
         self.assertFalse(receipt["raw_payload_stored"])
 
+    def test_exact_plaintext_compatibility_name_is_fingerprinted_but_near_name_is_not(self):
+        exact = self.hook()
+        exact["tool_name"] = "g4_assignmentspawn_agent"
+        near = self.hook()
+        near["tool_name"] = "g4_assignment_evilspawn_agent"
+
+        exact_receipt = pretool_schema_observation.observation_from_hook(exact)
+        near_receipt = pretool_schema_observation.observation_from_hook(near)
+
+        self.assertEqual(len(exact_receipt["selected_string_fingerprints"]), 1)
+        self.assertEqual(near_receipt["selected_string_fingerprints"], [])
+
     def test_existing_schema_one_receipt_remains_replayable(self):
         receipt = pretool_schema_observation.observation_from_hook(self.hook())
         receipt.pop("selected_string_fingerprints")

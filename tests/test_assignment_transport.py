@@ -430,6 +430,27 @@ class AssignmentTransportTests(unittest.TestCase):
             envelope["capsule"]["spawn_tool_use_id"], "collaboration-spawn"
         )
 
+    def test_parent_capture_accepts_exact_plaintext_compatibility_hook_name(self):
+        hook = self.spawn_hook(
+            tool_name=assignment_transport.PLAINTEXT_COMPAT_SPAWN_TOOL_NAME,
+            tool_use_id="plaintext-compat-spawn",
+        )
+
+        result = self.capture(hook)
+
+        self.assertNotIn("permissionDecision", result["hookSpecificOutput"])
+        envelope = json.loads(
+            next((self.store.root / "pending").glob("*.json")).read_text(
+                encoding="utf-8"
+            )
+        )
+        self.assertEqual(
+            envelope["capsule"]["spawn_tool_use_id"], "plaintext-compat-spawn"
+        )
+        self.assertNotIn(
+            "g4_assignment_evilspawn_agent", assignment_transport.SPAWN_TOOL_NAMES
+        )
+
     def test_write_spawn_requires_parent_recorded_explicit_user_intent(self):
         authority = json.loads(
             self.message().split("BEGIN CODEX WORKER AUTHORITY\n", 1)[1].split(

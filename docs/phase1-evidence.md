@@ -1432,3 +1432,72 @@ incident is recorded in
 
 This live negative invalidates GUI app-server selection as a qualification seam.
 It does not authorize Phase 2/3 and does not promote Phase 1, P1, or direct write.
+
+## Headless plaintext lifecycle boundary (2026-08-17)
+
+Three isolated stateful `codex exec` attempts used the headless-only wrapper,
+the current ChatGPT login/provider, a clean disposable Git root, read-only
+sandbox, never-approve posture, and an exact candidate binary hash. None
+selected the GUI app-server, edited live config, or changed the signed App
+resource. The App resource and installed Hook hashes remained
+`6170ff5578170ee9b74ad92bfcff96e6186f41d02b60815a7c2b01ad424c754f`
+and `ffaad5c3533a2016253af148c96721818807823f779845a35c5d7dad2c676c2b`.
+
+The first attempt crossed the previous assignment-capture blocker. Real parent
+`PreToolUse` captured the exact 3343-byte assignment and staged a capsule; real
+`SubagentStart` bound child
+`01a00f36-b0d7-7aa2-9705-fd4c5126b996` to
+`/root/g4_cli_lifecycle_2` and moved that capsule to active. The child still
+failed before a function call because the service returned
+`encrypted_function_args=null` and the candidate treated only an explicit
+empty array as plaintext. Its rollout therefore contained the plaintext bytes
+inside `agent_message.encrypted_content`, which the server rejected. No
+`SubagentStop` followed, so the active record remains fail-closed evidence.
+
+The source candidate now derives direct plaintext from the exact configured
+Multi-Agent V2 namespace and plaintext delivery mode when the server marker is
+absent, while a nonempty marker remains encrypted. Plaintext inter-agent input
+is serialized to a supported `role=user` message; encrypted mode remains the
+default. Custom-role reload also preserves the CLI/session Hook-trust bypass.
+The live-shaped router regression and the five-case spawn-wire matrix passed.
+The exact 20-path patch and debug binary are frozen in
+`probes/codex-0.148.0-alpha.9-plaintext-assignment-seam-candidate-v2.patch`
+and its JSON manifest.
+
+The second attempt proved that repair at the live server boundary. Child
+`01a00f41-655f-7ce0-8eb5-92f8fd46413d` received one ordinary user message,
+not encrypted agent content, with the exact active capsule and canonical path
+`/root/g4_cli_lifecycle_3`. It returned an identity-exact final attestation and
+real `SubagentStop` moved the incomplete report to unresolved. The requested
+`list_mcp_resources` tool was unavailable under the isolated no-user-config
+surface; the model attempted custom `exec`, which the disabled code-mode host
+blocked before execution. Verification was truthfully nonzero,
+`assigned_slice_complete=false`, and the worktree stayed clean.
+
+The third attempt selected native `list_agents`, but Hook input flattened the
+custom namespace to `g4_assignmentlist_agents`. The runtime allowlist recognized
+only the unqualified name and denied it before execution, with `disk_changed=false`.
+Fifteen truthful `SubagentStop` observations then repeated because active
+authority had already moved to unresolved; the host interrupted the bounded
+probe with exit 130 and confirmed the candidate process absent and Git frontier
+unchanged. This is both an exact read-only alias false negative and a negative
+termination/stop-continuation witness. The provider-free repair uses one closed
+alias only; it does not strip arbitrary prefixes or authorize spawn/send/
+follow-up tools.
+
+After adding the closed alias fixture, the fresh provider-free suite passed
+290 tests in 34.944 seconds, including agent-template checks. The executable
+G4 gate remained structurally valid with every P-gate partial,
+`phase1_complete=false`, and `direct_write_qualified=false`.
+
+These attempts provide the first live
+`exact parent capture -> exact SessionMeta/AgentPath -> active capsule ->
+plaintext child model input -> SubagentStop visibility` chain. P1 and P2 are
+therefore materially advanced but remain partial until a permitted child
+read-only call and complete attestation succeed, a distinct deny-before-handler
+pair is joined, and the larger identity cohort closes. Strong quiescence,
+post-termination disk barrier, compact/resume, full mutation mediation,
+Windows/DeepSeek, and functional rollback remain open. Consequently
+`phase1_complete=false`, `direct_write_qualified=false`, and Phases 2/3 remain
+closed. The privacy-minimized raw summary is
+`probes/g4-live-plaintext-lifecycle-20260817.json`.

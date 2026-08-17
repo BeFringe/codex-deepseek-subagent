@@ -15,6 +15,31 @@ import sys
 AGENT_TYPE = "g4_qualification_probe_worker"
 TASK_NAME_RE = re.compile(r"^[a-z0-9_]+$")
 VERIFICATION_COMMAND = "native list_agents read-only probe"
+CHILD_TOOL_CONTRACTS = {
+    "list_agents": {
+        "instruction": "Call native list_agents exactly once and call no other tool.",
+        "stop_condition": (
+            "call native list_agents exactly once, call no other tool, then return "
+            "only the exact final attestation for this root read-only identity probe"
+        ),
+        "verification": VERIFICATION_COMMAND,
+        "required_invariant": "one read-only list_agents call and no mutation",
+        "observation": "your own list_agents observation",
+    },
+    "list_mcp_resources": {
+        "instruction": (
+            "Call native list_mcp_resources exactly once with no cursor or server filter and "
+            "call no other tool."
+        ),
+        "stop_condition": (
+            "call native list_mcp_resources exactly once without filters, call no other tool, "
+            "then return only the exact final attestation for this root read-only lifecycle probe"
+        ),
+        "verification": "native list_mcp_resources read-only lifecycle probe",
+        "required_invariant": "one read-only list_mcp_resources call and no mutation",
+        "observation": "your own list_mcp_resources observation",
+    },
+}
 
 
 class ProbePromptError(RuntimeError):
@@ -56,7 +81,15 @@ def clean_git_location(root_value: Path) -> dict[str, object]:
     return {"root": str(resolved), "branch": branch, "head": head}
 
 
-def authority_declaration(location: dict[str, object]) -> dict[str, object]:
+def authority_declaration(
+    location: dict[str, object],
+    *,
+    child_tool: str = "list_agents",
+) -> dict[str, object]:
+    try:
+        contract = CHILD_TOOL_CONTRACTS[child_tool]
+    except KeyError as error:
+        raise ProbePromptError("unsupported child tool contract") from error
     root = str(location["root"])
     branch = str(location["branch"])
     head = str(location["head"])
@@ -72,11 +105,8 @@ def authority_declaration(location: dict[str, object]) -> dict[str, object]:
             "branch": False,
             "push": False,
         },
-        "stop_condition": (
-            "call native list_agents exactly once, call no other tool, then return "
-            "only the exact final attestation for this root read-only identity probe"
-        ),
-        "verification": [VERIFICATION_COMMAND],
+        "stop_condition": contract["stop_condition"],
+        "verification": [contract["verification"]],
         "authority_provenance": {
             "authoritative_input_owners": ["phase1.parent"],
             "authoritative_input_roots": ["docs/phase1-evidence.md"],
@@ -92,7 +122,7 @@ def authority_declaration(location: dict[str, object]) -> dict[str, object]:
             "review_range": {"base_oid": head, "head_oid": head},
             "required_invariants": [
                 "exact SessionMeta and canonical AgentPath binding",
-                "one read-only list_agents call and no mutation",
+                contract["required_invariant"],
             ],
             "diagnostics": {
                 "stable_failure_codes": [],
@@ -127,24 +157,29 @@ def build_prompt(
     task_name: str,
     *,
     pretool_schema_control: bool = False,
+    child_tool: str = "list_agents",
 ) -> str:
     if not TASK_NAME_RE.fullmatch(task_name):
         raise ProbePromptError(
             "task name must contain only lowercase letters, digits, and underscores"
         )
     location = clean_git_location(root)
-    authority = authority_declaration(location)
+    try:
+        contract = CHILD_TOOL_CONTRACTS[child_tool]
+    except KeyError as error:
+        raise ProbePromptError("unsupported child tool contract") from error
+    authority = authority_declaration(location, child_tool=child_tool)
     canonical_agent_path = f"/root/{task_name}"
     parent_control = ""
     if pretool_schema_control:
         parent_control = f"""Before spawning, call exec_command exactly once with cmd `/bin/pwd`, workdir `{location['root']}`, and no shell composition. This is the read-only positive control for PreToolUse observation. Require exit code 0 and stdout exactly `{location['root']}`; if it fails or differs, report the non-secret result and stop without spawning.
 
 """
-    child_assignment = f"""You are the target G4 read-only qualification child. Treat the Hook-delivered capsule, compact invariant, and final-attestation seed as the only authority. Call native list_agents exactly once and call no other tool. If that call succeeds and the immutable clean Git facts remain consistent, return only an exact BEGIN/END CODEX WORKER ATTESTATION envelope.
+    child_assignment = f"""You are the target G4 read-only qualification child. Treat the Hook-delivered capsule, compact invariant, and final-attestation seed as the only authority. {contract['instruction']} If that call succeeds and the immutable clean Git facts remain consistent, return only an exact BEGIN/END CODEX WORKER ATTESTATION envelope.
 
 Use the mechanically supplied seed for assignment_id, handoff_id, capsule_sha256, compact_invariant_sha256, authority_provenance.policy_sha256, canonical_agent_path, recovery_count, and the verification command name. The expected canonical AgentPath is {canonical_agent_path}. For this clean read-only probe, the capsule baseline is root {location['root']}, branch {location['branch']}, head {location['head']}, index_changed false, empty git_status_short, and empty changed_paths.
 
-Set verification to one record whose command is {VERIFICATION_COMMAND} and whose exit_code is 0 only if the call succeeded. Set authority_provenance.worker_claimed_origin to owner_internal only for your own list_agents observation, test_only_injection_used false, derivation_receipt_sha256 null, inventory_summaries empty, context_lost false, authority_violation false, and assigned_slice_complete true only if all exact facts remain available. Otherwise fail closed using the final-attestation contract; do not invent hashes or expand scope.
+Set verification to one record whose command is {contract['verification']} and whose exit_code is 0 only if the call succeeded. Set authority_provenance.worker_claimed_origin to owner_internal only for {contract['observation']}, test_only_injection_used false, derivation_receipt_sha256 null, inventory_summaries empty, context_lost false, authority_violation false, and assigned_slice_complete true only if all exact facts remain available. Otherwise fail closed using the final-attestation contract; do not invent hashes or expand scope.
 
 BEGIN CODEX WORKER AUTHORITY
 {json.dumps(authority, ensure_ascii=False, separators=(',', ':'), sort_keys=True)}
@@ -164,12 +199,18 @@ def main() -> int:
     parser.add_argument("--root", type=Path, required=True)
     parser.add_argument("--task-name", default="g4_cli_root_identity_1")
     parser.add_argument("--pretool-schema-control", action="store_true")
+    parser.add_argument(
+        "--child-tool",
+        choices=sorted(CHILD_TOOL_CONTRACTS),
+        default="list_agents",
+    )
     arguments = parser.parse_args()
     try:
         prompt = build_prompt(
             arguments.root,
             arguments.task_name,
             pretool_schema_control=arguments.pretool_schema_control,
+            child_tool=arguments.child_tool,
         )
     except (OSError, ProbePromptError) as error:
         print(f"G4 native probe prompt denied: {error}", file=sys.stderr)

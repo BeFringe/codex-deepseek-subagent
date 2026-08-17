@@ -32,7 +32,16 @@ mode=
 saw_ephemeral=false
 saw_ignore_user_config=false
 saw_ignore_rules=false
+saw_json=false
+saw_hook_trust_bypass=false
+requested_cd=
+expect_cd=false
 for argument in "$@"; do
+  if [ "$expect_cd" = true ]; then
+    requested_cd=$argument
+    expect_cd=false
+    continue
+  fi
   case "$argument" in
     app-server|app|remote-control|mcp-server)
       fail "GUI and server entry points are forbidden"
@@ -54,6 +63,18 @@ for argument in "$@"; do
     --ignore-rules)
       saw_ignore_rules=true
       ;;
+    --json)
+      saw_json=true
+      ;;
+    --dangerously-bypass-hook-trust)
+      saw_hook_trust_bypass=true
+      ;;
+    -C|--cd)
+      expect_cd=true
+      ;;
+    --cd=*)
+      requested_cd=${argument#--cd=}
+      ;;
     --dangerously-bypass-approvals-and-sandbox|--approve-for-me|--add-dir|-s|--sandbox|-a|--ask-for-approval)
       fail "caller may not widen the probe permission posture"
       ;;
@@ -66,9 +87,26 @@ case "$mode" in
       fail "only login status is allowed"
     ;;
   exec)
-    [ "$saw_ephemeral" = true ] || fail "exec requires --ephemeral"
     [ "$saw_ignore_user_config" = true ] || fail "exec requires --ignore-user-config"
     [ "$saw_ignore_rules" = true ] || fail "exec requires --ignore-rules"
+    if [ "$saw_ephemeral" != true ]; then
+      [ "${CODEX_G4_SESSIONMETA_PROBE_AUTHORIZED-}" = "schema1-headless-stateful" ] ||
+        fail "stateful exec requires the SessionMeta probe guard"
+      stateful_root=${CODEX_G4_SESSIONMETA_PROBE_ROOT-}
+      case "$stateful_root" in
+        /*) ;;
+        *) fail "stateful probe root must be absolute" ;;
+      esac
+      [ -d "$stateful_root" ] || fail "stateful probe root is missing"
+      [ "$requested_cd" = "$stateful_root" ] || fail "stateful exec requires the exact guarded root"
+      [ "$saw_json" = true ] || fail "stateful exec requires JSON event output"
+      [ "$saw_hook_trust_bypass" = true ] || fail "stateful exec requires the vetted Hook trust bypass"
+      git_root=$(/usr/bin/git -C "$stateful_root" rev-parse --show-toplevel 2>/dev/null) ||
+        fail "stateful probe root is not a Git worktree"
+      [ "$git_root" = "$stateful_root" ] || fail "stateful probe root is not the exact Git top level"
+      [ -z "$(/usr/bin/git -C "$stateful_root" status --short --untracked-files=all)" ] ||
+        fail "stateful probe root is not clean"
+    fi
     ;;
   *)
     fail "only headless exec or login status is allowed"

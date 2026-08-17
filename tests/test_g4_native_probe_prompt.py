@@ -92,6 +92,23 @@ class G4NativeProbePromptTests(unittest.TestCase):
         self.assertIn(str(self.root.resolve()), controlled)
         self.assertIn("task_name=g4_root_2", controlled)
 
+        lifecycle = probe_prompt.build_prompt(
+            self.root,
+            "g4_root_3",
+            child_tool="list_mcp_resources",
+        )
+        lifecycle_declaration = json.loads(
+            lifecycle.split("BEGIN CODEX WORKER AUTHORITY\n", 1)[1].split(
+                "\nEND CODEX WORKER AUTHORITY", 1
+            )[0]
+        )
+        self.assertIn("Call native list_mcp_resources exactly once", lifecycle)
+        self.assertEqual(
+            lifecycle_declaration["verification"],
+            ["native list_mcp_resources read-only lifecycle probe"],
+        )
+        self.assertNotIn("Call native list_agents exactly once", lifecycle)
+
     def test_dirty_worktree_and_noncanonical_task_name_fail_closed(self):
         (self.root / "dirty.txt").write_text("dirty\n", encoding="utf-8")
 

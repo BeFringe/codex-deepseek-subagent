@@ -116,6 +116,84 @@ class PlaintextCandidateWrapperTests(unittest.TestCase):
                     self.assertEqual(result.returncode, 78)
                     self.assertFalse(arg_log.exists())
 
+    def test_stateful_sessionmeta_probe_requires_separate_guard_and_exact_clean_root(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            directory = Path(temp_dir)
+            candidate, digest = self._fake_candidate(directory)
+            root = directory / "worktree"
+            root.mkdir()
+            root = root.resolve()
+            subprocess.run(["git", "init", "-b", "main", str(root)], check=True, stdout=subprocess.PIPE)
+            subprocess.run(
+                [
+                    "git",
+                    "-C",
+                    str(root),
+                    "-c",
+                    "user.name=Phase1 Probe",
+                    "-c",
+                    "user.email=phase1-probe@invalid",
+                    "commit",
+                    "--allow-empty",
+                    "-m",
+                    "initial",
+                ],
+                check=True,
+                stdout=subprocess.PIPE,
+            )
+            arg_log = directory / "stateful-args.txt"
+            environment = self._environment(candidate, digest, arg_log)
+            environment.update(
+                {
+                    "CODEX_G4_SESSIONMETA_PROBE_AUTHORIZED": "schema1-headless-stateful",
+                    "CODEX_G4_SESSIONMETA_PROBE_ROOT": str(root),
+                }
+            )
+
+            accepted = subprocess.run(
+                [
+                    str(WRAPPER),
+                    "exec",
+                    "--ignore-user-config",
+                    "--ignore-rules",
+                    "--dangerously-bypass-hook-trust",
+                    "--json",
+                    "-C",
+                    str(root),
+                    "Return READY.",
+                ],
+                env=environment,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            self.assertEqual(accepted.returncode, 0, accepted.stderr)
+            self.assertTrue(arg_log.exists())
+
+            denied_log = directory / "unguarded-args.txt"
+            denied_environment = self._environment(candidate, digest, denied_log)
+            denied = subprocess.run(
+                [
+                    str(WRAPPER),
+                    "exec",
+                    "--ignore-user-config",
+                    "--ignore-rules",
+                    "--dangerously-bypass-hook-trust",
+                    "--json",
+                    "-C",
+                    str(root),
+                ],
+                env=denied_environment,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            self.assertEqual(denied.returncode, 78)
+            self.assertFalse(denied_log.exists())
+
     def test_login_allows_status_only(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             directory = Path(temp_dir)

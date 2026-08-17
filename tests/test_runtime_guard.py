@@ -587,6 +587,41 @@ class RuntimeGuardTests(unittest.TestCase):
             "apply_patch",
         )
 
+    def test_exact_candidate_namespace_list_agents_alias_is_read_only(self):
+        result = runtime_guard.pre_tool_use(
+            self.store,
+            self.child_hook(
+                "PreToolUse",
+                tool_name="g4_assignmentlist_agents",
+                tool_input={},
+            ),
+        )
+
+        self.assertIn("additionalContext", result["hookSpecificOutput"])
+        self.assertTrue(self.store.path("active", self.capsule["assignment_id"]).exists())
+
+    def test_candidate_namespace_alias_does_not_strip_arbitrary_prefixes(self):
+        result = runtime_guard.pre_tool_use(
+            self.store,
+            self.child_hook(
+                "PreToolUse",
+                tool_name="g4_assignmentlist_agents_extra",
+                tool_input={},
+            ),
+        )
+
+        self.assertEqual(result["hookSpecificOutput"]["permissionDecision"], "deny")
+        self.assertFalse(self.store.path("active", self.capsule["assignment_id"]).exists())
+        unresolved = json.loads(
+            self.store.path("unresolved", self.capsule["assignment_id"]).read_text(
+                encoding="utf-8"
+            )
+        )
+        self.assertEqual(
+            unresolved["termination_evidence"]["attempted_tool_name"],
+            "g4_assignmentlist_agents_extra",
+        )
+
     def test_ambiguous_active_capsules_fail_closed(self):
         second = self.make_capsule()
         self.store.stage(second, self.assignment)

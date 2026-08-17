@@ -39,10 +39,17 @@
   },
   "hardened_wrapper": {
     "path": "probes/codex_plaintext_candidate_wrapper.sh",
-    "sha256": "a99352311c8516f6b33b5dbaa44fa42ec69d59a166cef17300323f0456089e34",
+    "sha256": "43f2181f8d49b03bfb2ba077dd2b1cacf40ecd6f7812dcbdbc368a7292940fed",
     "historical_wrapper_disabled_by_replacement": true,
     "allowed_entry_points": ["login status", "exec"],
-    "required_exec_flags": ["--ephemeral", "--ignore-user-config", "--ignore-rules"],
+    "required_exec_flags": ["--ignore-user-config", "--ignore-rules"],
+    "stateful_exec_guard": {
+      "authorization": "CODEX_G4_SESSIONMETA_PROBE_AUTHORIZED=schema1-headless-stateful",
+      "exact_root_required": true,
+      "clean_git_top_level_required": true,
+      "json_output_required": true,
+      "hook_trust_bypass_required": true
+    },
     "forced_posture": {
       "tool_namespace": "g4_assignment",
       "sandbox": "read-only",

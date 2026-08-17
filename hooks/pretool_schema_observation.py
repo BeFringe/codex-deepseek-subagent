@@ -13,6 +13,7 @@ from typing import Mapping
 import uuid
 
 from compatibility_state import CorruptState, StateStore, canonical_json, sha256_bytes
+from assignment_transport import SPAWN_TOOL_NAMES
 from writer_lease_guard import actor_identity_from_hook
 
 
@@ -54,7 +55,7 @@ FINGERPRINT_FIELDS = {
     "authority_begin_count",
     "authority_end_count",
 }
-FINGERPRINTED_TOOL_NAMES = {"spawn_agent", "Agent", "collaborationspawn_agent"}
+FINGERPRINTED_TOOL_NAMES = SPAWN_TOOL_NAMES
 JSON_TYPES = {"null", "boolean", "integer", "number", "string", "array", "object"}
 
 
