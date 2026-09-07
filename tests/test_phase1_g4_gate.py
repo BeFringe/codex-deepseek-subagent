@@ -102,6 +102,18 @@ class Phase1G4GateTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "goal contract drifted"):
                 check_phase1_g4.load_status(path)
 
+    def test_role_sandbox_declaration_cannot_replace_trusted_host_receipt(self):
+        value = json.loads(STATUS.read_text(encoding="utf-8"))
+        proofs = value["goal_contract"]["app_server_source_adjustment"][
+            "required_proofs"
+        ]
+        proofs.remove("trusted_parent_or_host_sandbox_receipt")
+
+        with tempfile.TemporaryDirectory(dir=REPO / "probes") as directory:
+            path = self.write_status(value, directory)
+            with self.assertRaisesRegex(ValueError, "goal contract drifted"):
+                check_phase1_g4.load_status(path)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -382,6 +382,13 @@ an independent OS boundary confines the entire resulting process tree and
 filesystem. Command-name matching and `apply_patch` writer leases are
 insufficient: neither mediates later client RPCs or detached descendants.
 
+The current bounded role projection also preserves the parent permission
+profile and does not project a role-file `sandbox_mode`. Consequently the
+`sandbox_mode="read-only"` line in a compatibility agent TOML is only a
+requested posture on this runtime, not a sandbox receipt. Run any live negative
+cohort from an independently read-only parent/host boundary and record that
+effective boundary; do not infer it from the child role file.
+
 Do not treat App Server EOF/exit as a process-tree quiescence receipt. The
 isolated detached-descendant negative starts a new process session,
 publishes readiness before EOF, ignores `SIGTERM`, and writes only after the

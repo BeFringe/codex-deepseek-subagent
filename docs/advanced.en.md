@@ -126,7 +126,10 @@ provider stays unchanged. When the user trusts the Hook, Codex may write a
 task. `model_context_window = 1000000` describes provider capacity; it neither
 forces 1M-token requests nor guarantees unchanged performance near a full
 window. `sandbox_mode = "read-only"` is a mutation default, not a disclosure
-boundary.
+boundary. Under the current bounded agent-role projection, that role-file field
+also does not override the child's permission profile: the child preserves the
+parent permissions. It therefore cannot serve as current per-child sandbox
+evidence without a separate effective parent/host boundary and receipt.
 
 ## Optional macOS Keychain authentication
 

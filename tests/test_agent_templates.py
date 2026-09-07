@@ -80,6 +80,9 @@ assert g4_probe["sandbox_mode"] == "read-only"
 assert "model" not in g4_probe
 assert "model_provider" not in g4_probe
 assert "external provider credentials" in g4_probe["developer_instructions"]
+assert "requested compatibility posture" in g4_probe["developer_instructions"]
+assert "preserves the parent permission profile" in g4_probe["developer_instructions"]
+assert "trusted host sandbox receipt" in g4_probe["developer_instructions"]
 assert "parent, disk, and fresh-owner verification" in g4_probe["developer_instructions"]
 
 installer = (ROOT / "prompts/install-with-codex.md").read_text(encoding="utf-8")

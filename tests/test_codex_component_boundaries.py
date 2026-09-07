@@ -34,6 +34,7 @@ class CodexComponentBoundaryTests(unittest.TestCase):
         self.assertFalse(result["native_heterogeneous_child_restored"])
         self.assertFalse(result["pretool_plaintext_assignment_visible"])
         self.assertFalse(result["per_child_provider_override_available"])
+        self.assertFalse(result["per_child_sandbox_override_available"])
         self.assertFalse(result["app_server_thread_is_native_child_equivalent"])
         self.assertFalse(result["phase1_complete"])
         self.assertFalse(result["direct_write_qualified"])
@@ -80,6 +81,15 @@ class CodexComponentBoundaryTests(unittest.TestCase):
     def test_promoted_verdict_is_rejected(self):
         contract = json.loads(CONTRACT.read_text(encoding="utf-8"))
         contract["verdict"]["native_heterogeneous_child_restored"] = True
+        with tempfile.TemporaryDirectory() as temp_dir:
+            path = Path(temp_dir) / "contract.json"
+            path.write_text(json.dumps(contract), encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "cannot promote"):
+                check_codex_component_boundaries.load_contract(path)
+
+    def test_role_file_sandbox_downgrade_cannot_be_promoted(self):
+        contract = json.loads(CONTRACT.read_text(encoding="utf-8"))
+        contract["verdict"]["per_child_sandbox_override_available"] = True
         with tempfile.TemporaryDirectory() as temp_dir:
             path = Path(temp_dir) / "contract.json"
             path.write_text(json.dumps(contract), encoding="utf-8")

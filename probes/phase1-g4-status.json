@@ -11,6 +11,7 @@
         "client_connection_authority",
         "native_child_reachability_or_separation",
         "sandbox_and_mutation_mediation",
+        "trusted_parent_or_host_sandbox_receipt",
         "external_worker_bootstrap_denial_or_os_confinement",
         "process_tree_quiescence_barrier"
       ],
@@ -100,6 +101,9 @@
         "provider_free": "partial",
         "evidence": [
           "probes/codex-0.153.4-mutation-surfaces.json",
+          "probes/codex-0.153.4-component-boundaries.json",
+          "probes/check_codex_component_boundaries.py",
+          "tests/test_codex_component_boundaries.py",
           "probes/codex-0.153.4-appserver-host-control.json",
           "probes/check_appserver_host_control.py",
           "probes/run_appserver_host_control_probe.py",
@@ -118,7 +122,7 @@
           "probes/g4-live-plaintext-lifecycle-20260817.json",
           "probes/g4-live-root-lifecycle-adjudication-result-20260817.json"
         ],
-        "blocker": "the current signed runtime's exact native-tool catalog remains fail closed; an isolated disposable client proved that connection possession alone can invoke sandbox-none filesystem and unsandboxed process host-control RPCs without thread identity or client auth. The mutation schema now makes independent App Server startup, daemon bootstrap, and proxy/connection acquisition an explicit cross-surface escape that external workers must be denied unless an OS boundary independently confines it. A detached descendant also wrote after App Server EOF/exit, so server termination is not a host-control process-tree barrier. Native-child reachability to that control plane remains unproven and cannot count as PreToolUse mediation, while complete live child mutation visibility/mediation and independent sandbox denial remain missing"
+        "blocker": "the current signed runtime's exact native-tool catalog remains fail closed; bounded child-role projection preserves the parent permission profile, so sandbox_mode in the worker role is only a requested posture and cannot prove an effective per-child read-only sandbox. An isolated disposable client proved that connection possession alone can invoke sandbox-none filesystem and unsandboxed process host-control RPCs without thread identity or client auth. The mutation schema makes independent App Server startup, daemon bootstrap, and proxy/connection acquisition an explicit cross-surface escape that external workers must be denied unless an OS boundary independently confines it. A detached descendant also wrote after App Server EOF/exit, so server termination is not a host-control process-tree barrier. Native-child reachability to that control plane remains unproven and cannot count as PreToolUse mediation, while complete live child mutation visibility/mediation and a trusted parent-or-host sandbox receipt remain missing"
       },
       {
         "id": "P5",
@@ -235,7 +239,11 @@
       {
         "id": "sandbox_block",
         "state": "pending",
-        "evidence": ["probes/check_state_trust.py"]
+        "evidence": [
+          "probes/check_state_trust.py",
+          "probes/codex-0.153.4-component-boundaries.json",
+          "probes/check_codex_component_boundaries.py"
+        ]
       },
       {
         "id": "callback_continuity",

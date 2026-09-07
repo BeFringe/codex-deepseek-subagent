@@ -1,5 +1,5 @@
 {
-  "schema": 1,
+  "schema": 2,
   "as_of": "2026-09-07",
   "codex_version": "0.153.4",
   "source_commit": "3d2ee51ca2d5db578f328aa75e20aa22c0197c9a",
@@ -10,7 +10,8 @@
       "v2_message_schema": "encrypted",
       "plaintext_branch_trigger": "a collaboration function call whose encrypted_function_args field is present as an empty array",
       "plaintext_branch_authority": "upstream ResponseItem metadata, not a public Hook, SDK, or App Server client parameter",
-      "child_role_provider_policy": "inherit the parent provider"
+      "child_role_provider_policy": "inherit the parent provider",
+      "child_role_sandbox_policy": "inherit the parent permission profile; role-file sandbox_mode is not projected"
     },
     "typescript_sdk": {
       "driver": "codex exec --experimental-json",
@@ -42,6 +43,22 @@
       "id": "parent_provider_preserved",
       "path": "codex-rs/core/src/agent/role_tests.rs",
       "contains": "assert_eq!(config.model_provider_id, parent.model_provider_id);"
+    },
+    {
+      "id": "bounded_role_overrides_omit_sandbox_mode",
+      "path": "codex-rs/core/src/agent/role.rs",
+      "contains": "struct AgentRoleOverrides",
+      "not_contains": "sandbox_mode: Option<SandboxMode>"
+    },
+    {
+      "id": "parent_sandbox_permissions_preserved",
+      "path": "codex-rs/core/src/agent/role_tests.rs",
+      "contains": "async fn apply_role_preserves_parent_sandbox_permissions()"
+    },
+    {
+      "id": "hostile_role_sandbox_key_is_not_projected",
+      "path": "codex-rs/core/src/agent/role_tests.rs",
+      "contains": "\"role must not control {key}\""
     },
     {
       "id": "v2_message_schema_encrypted",
@@ -101,11 +118,12 @@
     "native_heterogeneous_child_restored": false,
     "pretool_plaintext_assignment_visible": false,
     "per_child_provider_override_available": false,
+    "per_child_sandbox_override_available": false,
     "app_server_thread_is_native_child_equivalent": false,
     "phase1_complete": false,
     "direct_write_qualified": false,
     "phase2_state": "closed",
     "phase3_state": "closed",
-    "blocker": "Codex 0.153.4 can consume a plaintext collaboration function call only when the upstream ResponseItem already carries the empty encrypted_function_args discriminator, while the advertised V2 message schema still requests encryption. App Server and both SDKs can drive or observe independent threads, but they do not expose a native spawn RPC or create the parent-owned AgentPath/wait/callback/cancel relationship required by this project."
+    "blocker": "Codex 0.153.4 can consume a plaintext collaboration function call only when the upstream ResponseItem already carries the empty encrypted_function_args discriminator, while the advertised V2 message schema still requests encryption. Bounded child-role projection preserves the parent provider and permission profile, so a role-file sandbox_mode cannot prove a per-child read-only downgrade. App Server and both SDKs can drive or observe independent threads, but they do not expose a native spawn RPC or create the parent-owned AgentPath/wait/callback/cancel relationship required by this project."
   }
 }

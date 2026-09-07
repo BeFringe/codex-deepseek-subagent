@@ -1985,3 +1985,27 @@ G4 status all returned `valid=true`. Their mutation qualification,
 child-mediated host-control, Phase 1 completion, and same-UID protection modes
 each exited 2 as required; the same-UID receipt still reports both rollout and
 state protection as false.
+
+## Child-role sandbox inheritance boundary
+
+Exact current source inspection invalidated an earlier operational assumption:
+the bounded `AgentRoleOverrides` projection does not include `sandbox_mode`,
+and its source test explicitly preserves the parent permission profile. The
+hostile-role regression also verifies that a role-file `sandbox_mode` key is not
+projected. Therefore `sandbox_mode="read-only"` in
+`g4-qualification-probe-worker.toml` remains a requested compatibility posture,
+not proof that a child spawned from a write-capable parent is effectively
+read-only.
+
+The current component-boundary oracle is schema 2. It pins the sandbox omission
+and preservation tests, reports `per_child_sandbox_override_available=false`,
+and makes a `trusted_parent_or_host_sandbox_receipt` an explicit P4 proof. The
+G4 worker template now tells the worker not to treat its role declaration as
+effective authority. This is a source-backed fail-closed correction; no live
+Hook, App Server, GUI selection, or product repository was changed.
+
+The fresh complete provider-free suite passed 353 tests in 39.334 seconds,
+including agent-template checks. The schema-2 component oracle matched the
+exact current source and returned
+`per_child_sandbox_override_available=false`; G4 remains incomplete and direct
+write remains unqualified.

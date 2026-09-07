@@ -25,6 +25,9 @@ REQUIRED_COMPONENTS = {"cli_core", "typescript_sdk", "python_sdk", "app_server"}
 REQUIRED_ANCHORS = {
     "bounded_role_overrides",
     "parent_provider_preserved",
+    "bounded_role_overrides_omit_sandbox_mode",
+    "parent_sandbox_permissions_preserved",
+    "hostile_role_sandbox_key_is_not_projected",
     "v2_message_schema_encrypted",
     "plaintext_response_item_discriminator",
     "plaintext_child_message_branch",
@@ -42,6 +45,7 @@ REQUIRED_VERDICT = {
     "native_heterogeneous_child_restored": False,
     "pretool_plaintext_assignment_visible": False,
     "per_child_provider_override_available": False,
+    "per_child_sandbox_override_available": False,
     "app_server_thread_is_native_child_equivalent": False,
     "phase1_complete": False,
     "direct_write_qualified": False,
@@ -52,7 +56,7 @@ REQUIRED_VERDICT = {
 
 def load_contract(path):
     value = json.loads(path.read_text(encoding="utf-8"))
-    if value.get("schema") != 1:
+    if value.get("schema") != 2:
         raise ValueError("component boundary contract has an invalid schema")
     if not isinstance(value.get("codex_version"), str) or not value["codex_version"]:
         raise ValueError("component boundary contract has no exact Codex version")
@@ -62,6 +66,10 @@ def load_contract(path):
     components = value.get("components")
     if not isinstance(components, dict) or set(components) != REQUIRED_COMPONENTS:
         raise ValueError("component boundary contract has an incomplete component set")
+    if components["cli_core"].get("child_role_sandbox_policy") != (
+        "inherit the parent permission profile; role-file sandbox_mode is not projected"
+    ):
+        raise ValueError("component boundary child-role sandbox policy drifted")
 
     anchors = value.get("anchors")
     if not isinstance(anchors, list) or any(not isinstance(item, dict) for item in anchors):

@@ -105,7 +105,9 @@ Agent 文件。顶层配置不增加 `[agents.v4_flash_worker]` 或
 有意不设置 `model_reasoning_effort`，使父 Agent 能按任务选择。声明
 `model_context_window = 1000000` 只描述 provider 容量，不要求每次发送 1M tokens，
 也不保证接近满窗口时性能不变。`sandbox_mode = "read-only"` 是 mutation 默认值，
-不是防泄漏边界。
+不是防泄漏边界。并且在当前 bounded agent-role projection 中，该 role-file 字段不会
+覆盖 child 的 permission profile；child 继承 parent 权限。故它也不能作为当前版本的
+per-child sandbox 证明，必须另有 parent/host 生效边界与 receipt。
 
 ## macOS Keychain 可选认证
 
