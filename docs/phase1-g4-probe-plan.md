@@ -6,7 +6,7 @@ authorization, a qualification-only live candidate may be installed and trusted
 for the probes below; that installation does not enable Phase 2, alter the
 parent provider, or let an external worker adjudicate its own behavior.
 
-## Current pinned baseline
+## Historical handoff baseline
 
 - Continuation input began at local
   `main@dcdc6207503af8117e48b3f6178137f07f5b0523`; the current installed G4
@@ -31,6 +31,36 @@ They were normalized only after a fresh remote fetch proved every content blob
 and `origin/main` identical. The SSH config's GitHub host alias did not match the
 repository remote; the fetch therefore required the migrated GitHub identity as
 a one-command override. No key content was read or recorded.
+
+### Installed baseline refresh (2026-09-07)
+
+The `current_signed_runtime` role resolves through
+`probes/codex-runtime-evidence-index.json`. Its standalone CLI and the signed
+Codex App's bundled App Server report the same semantic version. The live App
+Server command selects
+`/Applications/Codex.app/Contents/Resources/codex` directly; neither launchd
+nor this task has `CODEX_CLI_PATH` set. Exact paths, hashes, bundle signature,
+and Hook hash are frozen in
+`probes/codex-0.153.4-installed-baseline-20260907.json`.
+
+This removes the installed semantic-version split for newly created tasks, but
+does not rewrite rollout identity. This long-lived root's immutable SessionMeta
+still says `0.148.0-alpha.9`, and recently created roots predate the update and
+say `0.150.0-alpha.8`. Run the next live root/nested/serial/concurrent cohort
+only from a fresh root whose first record matches the exact
+`current_signed_runtime` identity; parent and child must match exactly. The two
+installed binaries have different package hashes, so
+version convergence is not treated as binary identity or qualification.
+
+### Goal adjustment after App Server source visibility
+
+The terminal Phase 1 goal is unchanged. App Server source adds one P4
+host-control sub-boundary: prove client-connection authority, prove native-child
+reachability or exact separation, and prove sandbox plus mutation mediation.
+An independently driven App Server thread cannot substitute for canonical
+AgentPath, wait, callback, cancel, or Multi-Agent V2 lifecycle authority. The
+machine-checked form of this addendum is `goal_contract` in
+`probes/phase1-g4-status.json`.
 
 ## Re-pinned Codex contract and its limit
 
@@ -129,6 +159,22 @@ one tool-use id, or omit exact runtime-binary and call identity. It always
 leaves Phase 1 and direct write false; the remaining P2–P7 gates still require
 their own evidence.
 Without a live receipt, `--require-qualified` exits 2.
+
+Codex `0.153.4` does not change that prerequisite. Its core can render a
+plaintext child message only when the upstream collaboration `ResponseItem`
+already identifies the call with `encrypted_function_args=[]`; the public V2
+tool schema still requests encryption, and App Server exposes no RPC for a
+client to submit that native spawn call. `thread/start(modelProvider=...)`
+creates an independent thread, not a parent-owned child, even if a client sets
+descriptive `threadSource` metadata. Do not count such a thread as AgentPath or
+callback evidence.
+
+The supported new use of the open components is a disposable observation
+harness: drive an isolated, version-pinned stdio App Server with the Python SDK,
+freeze `thread/started`, `collabToolCall`, `parentThreadId`, status, interrupt,
+and `turn/completed` events, then correlate them with SessionMeta and a final
+disk barrier. This may advance P2/P5b without rebuilding Codex or selecting the
+GUI App Server, but it cannot close P1 or P7 by itself.
 
 The reusable source candidate is pinned by
 `probes/codex-0.148.0-alpha.9-plaintext-assignment-seam-candidate.json` and its
@@ -278,7 +324,7 @@ before changing P2/G2 status.
 
 ## III. Full mutation negative space
 
-The pinned schema-2 matrix is the closed starting catalog. For every
+The pinned schema-3 matrix is the closed native-tool starting catalog. For every
 mutation-capable row, run an allowed read control and a denied mutation using an
 exact capsule and a fresh owner disk check.
 
@@ -304,6 +350,26 @@ files, so Hook visibility without an OS sandbox is insufficient.
 Success requires both mediation visibility and an independent sandbox denial.
 If an operation is invisible to the Hook, the result is `block-session` or
 read-only downgrade, never a newly inferred matcher.
+
+### App Server host-control trust boundary
+
+Do not merge App Server client RPCs into the native-child tool catalog. In the
+exact `current_signed_runtime` source, `fs/writeFile`, `fs/createDirectory`, `fs/remove`, and
+`fs/copy` are concurrent host-control requests; the write implementation passes
+`sandbox=None`. `command/exec` uses the server sandbox, while the experimental
+`process/spawn` family explicitly runs without a Codex sandbox. These requests
+carry no thread identity and are not evidence that a parent-owned child can
+invoke them.
+
+The current source contract is resolved from
+`probes/codex-runtime-evidence-index.json`. First run its checker against
+an exact clean source checkout. Then, only in a disposable stdio App Server and
+disposable filesystem root, determine whether an untrusted same-UID client or a
+native child can acquire a client connection. Never send mutation RPCs to the
+GUI App Server. Record connection provenance, peer/process identity, requested
+method, sandbox selection, before/after hashes, and process quiescence. Until
+both reachability and mediation are proven, this plane remains
+`host-control-only-unqualified` and contributes no child mutation evidence.
 
 ### Parent/child single-writer negative space
 

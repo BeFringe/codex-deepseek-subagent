@@ -19,6 +19,16 @@ directly satisfies the Responses semantics Codex needs. If so, select
 translation semantics can be proven should Phase 3 provide an optional local
 Responses bridge for this child alone:
 
+The current official ZHIPU Coding Plan instructions for Codex now specify a
+direct Responses configuration: `base_url = "https://open.bigmodel.cn/api/v1"`
+and `wire_api = "responses"`. This removes “a protocol bridge is necessarily
+required” as a default assumption, but establishes only a candidate wire. The
+official manual configuration switches the global `model_provider`, which does
+not satisfy this project's unchanged-OpenAI-parent boundary. Codex `0.149.0+`
+also prevents a child role from overriding its inherited parent provider. The
+native `zhipu_plan_worker` provider entry seam therefore remains unavailable,
+and Phase 3 stays closed.
+
 ```text
 OpenAI parent ─────────────────────────────→ native OpenAI
                                              unchanged
@@ -51,13 +61,15 @@ lifecycle unchanged.
 
 ## Endpoint and configuration boundary
 
-The original candidate endpoint is:
+The current official Codex candidate endpoint is:
 
 ```text
-https://open.bigmodel.cn/api/coding/paas/v4
+https://open.bigmodel.cn/api/v1
 ```
 
-Before implementation, re-check current official ZHIPU Coding Plan docs,
+This value comes from the
+[ZHIPU Coding Plan instructions for Codex](https://docs.bigmodel.cn/cn/coding-plan/tool/codex).
+Before implementation, still re-check current official ZHIPU Coding Plan docs,
 account/region differences, and live behavior. Differences such as
 `open.bigmodel.cn`, `api.z.ai`, or a future endpoint belong in Phase 2 provider
 profile/config/environment selection, never in the assignment-transport core.
@@ -133,6 +145,8 @@ The matrix includes at least:
 
 - Phase 2 has independently passed and the profile abstraction contains no
   ZHIPU-specific assignment-transport branch.
+- A native per-child provider seam exists while the parent provider, auth, and
+  base URL remain unchanged.
 - Current official material and live evidence establish endpoint, model, and
   request normalization.
 - Real end-to-end tests qualify protocol, tool/callback/cancel/error semantics.

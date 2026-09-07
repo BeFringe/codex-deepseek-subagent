@@ -1580,3 +1580,344 @@ rejected by the checker rather than retained as a nominal option. Sixteen
 focused oracle tests pass, including explicit-empty compatibility and null-route
 negative space. No live schema-3 receipt yet covers all three operations and
 their distinct same-message deny pairs, so P1 remains partial.
+
+## Alpha.15 exact-source evidence hardening (2026-09-07)
+
+The interrupted migration work was resumed without replacing the dirty
+worktree. The source-oracle checkers now bind their claimed Codex version to
+the exact Git top level and full source commit instead of accepting any checkout
+whose sampled strings happen to match. The pinned `0.148.0-alpha.15` commit is
+`ffe1de5cec9c0cd02629eb246534e4622da0ff41`. Against a fresh checkout of that
+exact tag, both the mutation-surface checker and the native-assignment-seam
+checker returned `valid=true` with no source-identity, anchor, or order
+failures.
+
+The schema-3 mutation inventory adds two source-observed negative surfaces:
+the implicit plugin-metrics sidecar attached after shell PreToolUse, and
+accepted MCP/node-repl result evidence retained after PostToolUse acceptance.
+Neither is promoted to a mediated path. The checker still returns
+`direct_write_qualified=false` and lists both surfaces among its blockers.
+
+The fresh provider-free suite then ran 307 tests in 39.547 seconds and passed,
+including agent-template checks. The same-UID trust probe again reported both
+rollout and state protection false; its `--require-protected` mode exited 2.
+The executable G4 status remained structurally valid with every P-gate partial,
+`phase1_complete=false`, `direct_write_qualified=false`, and Phase 2/3 closed;
+`--require-phase1-complete` exited 2. This slice hardens evidence identity and
+negative-space enumeration only. It is not live qualification.
+
+## Current provider-inheritance boundary (2026-09-07)
+
+The post-migration baseline was reconstructed again before changing the Phase 1
+decision. The local branch was `main` at full HEAD
+`56314fbae6af2ad29e27ff60c9d5645939055e27` before this slice. The configured
+`origin` and `upstream` remain SSH URLs, but the migrated SSH identity cannot
+currently authenticate: `git ls-remote origin main` returned public-key denial.
+No remote or key was changed. Read-only public HTTPS resolution independently
+found BeFringe `main` at
+`076ee0df9aca11fbc0c19a6ccd7cd8befc0051f7` and the current Utopia redirect/main
+at `4117c7c40d0c1f0056860716af7478d7734694ee`.
+
+At that checkpoint, the running Codex App was not the user-observed standalone
+`0.153.4` release. Its
+bundled CLI reports `0.150.0-alpha.8` and hashes to
+`4ff5e75f028e913cfeb53bd7319f87573cdce6538c1b1ccc44ce62d5ce51ca1d`.
+The live process selects the signed App resource directly for `app-server`; no
+candidate or wrapper path appears in its command line. The installed Hook
+configuration remains unchanged at SHA-256
+`ffaad5c3533a2016253af148c96721818807823f779845a35c5d7dad2c676c2b`.
+The old candidate directory and the earlier large Cargo target directories are
+absent, so this slice neither retains nor recreates the former 27--36 GiB build.
+
+Three exact, clean source checkouts were used only as read-only oracles:
+
+- OpenAI Codex `0.150.0-alpha.8` at
+  `fcbdb57851be70192fd0c21faa9e529146e93ff1`;
+- OpenAI Codex `0.153.4` at
+  `3d2ee51ca2d5db578f328aa75e20aa22c0197c9a`;
+- Utopia MixAgents `main` at
+  `4117c7c40d0c1f0056860716af7478d7734694ee`.
+
+Both OpenAI versions apply bounded role configuration at native spawn and test
+that the child retains the parent's provider configuration. The current Utopia
+package still contains the legacy standalone agent's
+`model_provider = "deepseek"`, but documents that route for Codex `0.148.x` and
+earlier only and points current users to an independent App Server worker via
+MixAgents Broker. The executable provider-inheritance oracle verified every
+source top level, full HEAD, positive anchor, and negative anchor. It returned
+`valid=true`,
+`legacy_role_provider_override_qualified=false`,
+`broker_satisfies_native_agentpath_lifecycle_contract=false`, and
+`p7_deepseek_regression="blocked-upstream"`; requiring the legacy native route
+exited 2.
+
+This is a new P7 hard blocker, not a reinterpretation of the encrypted
+assignment failure. Assignment transport, provider selection, wire transport,
+and request normalization remain orthogonal. A plaintext Hook may repair an
+opaque assignment but cannot grant a provider override that native spawn now
+forbids. Likewise, ZHIPU's current official direct Responses endpoint
+`https://open.bigmodel.cn/api/v1` can eliminate a protocol bridge only after
+qualification; its documented global provider switch does not preserve the
+OpenAI parent and cannot supply the missing per-child provider seam.
+
+Consequently P1--P6 product-independent G4 work remains feasible and should
+continue, while P7 cannot pass on Codex `0.149.0+` under the unchanged native
+AgentPath/wait/callback/cancel/Multi-Agent V2 contract. MixAgents Broker is a
+different lifecycle architecture and is not substituted as evidence. Phase 1
+and direct write remain false, and Phases 2/3 remain closed.
+
+After pinning the current mutation/assignment source oracles, provider boundary,
+and stage contracts, the fresh provider-free suite passed 311 tests in 39.730
+seconds, including agent-template checks. The then-current `0.150.0-alpha.8`
+mutation and assignment checkers both returned `valid=true` against the exact
+source commit. The same-UID trust probe still found rollout and state protection
+false and exited 2 when protection was required. The G4 gate remained valid
+with all P-gates unresolved, `phase1_complete=false`, and
+`direct_write_qualified=false`; requiring completion exited 2.
+
+### Historical App Server lifecycle source oracle
+
+The newly open App Server and core sources removed several schema guesses from
+the next identity cohort at the then-bundled `0.150.0-alpha.8` source. This
+artifact is now prior-runtime replay evidence rather than the current default:
+
+- the App Server protocol enumerates PreToolUse, PostToolUse, PreCompact,
+  SubagentStart, and SubagentStop;
+- only the supported event set, including SubagentStart but excluding
+  PreCompact and SubagentStop, can emit `additionalContext`;
+- SubagentStart exposes session, turn, transcript, cwd, agent id, and agent type,
+  while SubagentStop additionally exposes the child transcript path;
+- the requested task-name segment is joined to the parent's AgentPath and the
+  spawn result returns that canonical path, including the tested
+  `/root/parent/child` nested case;
+- rollout persistence writes SessionMeta before pending items and flushes the
+  file; and the resume regression test preserves the previous AgentPath.
+
+The lifecycle source checker verified the exact Git top level, full source HEAD,
+and all eleven anchors with no failures. It reports all four source contracts as
+verified, but keeps live SessionMeta identity and termination/quiescence false;
+`--require-live-identity` exited 2. Source behavior is an oracle for the next
+root/nested/serial/concurrent live cohort, not a replacement for its receipts.
+The complete post-oracle provider-free suite passed 314 tests in 38.673 seconds,
+including agent-template checks; the G4 gate remained valid and fail closed.
+
+## Signed prior-runtime encrypted spawn negative (2026-09-07)
+
+A clean, root-level native spawn was attempted with the explicitly approved
+`g4_qualification_probe_worker`, `fork_turns="none"`, task name
+`g4_current_root_1`, and one mechanically generated read-only authority
+declaration. The parent supplied exactly one BEGIN marker and one END marker,
+no paths or Git authority, and a clean `main` review range at full HEAD
+`e45119614242841da24d6d043db8373a56e59ca3`.
+
+The then-signed App runtime encrypted the assignment before PreToolUse. Rollout tool
+call `call_aXgF6vga72i2GP1ZF9mY6NrK` retained the expected argument keys and
+identity fields, but its message was a 4964-character string beginning
+`gAAAAAB`; both authority-marker counts were zero. The raw encrypted value was
+not copied into evidence. Hook receipt sequence 746 observed the namespaced
+`collaborationspawn_agent` target and denied it before the handler with
+`TASK.HANDOFF_BLOCKED: spawn message must contain exactly one authority
+declaration`.
+
+No child, SubagentStart, SubagentStop, or callback followed. A native agent-list
+snapshot contained only `/root`. The post-attempt branch and full HEAD were
+unchanged and the worktree remained clean. No approval was requested, no
+credential value was touched, and the GUI remained on its signed App Server.
+
+This historical live behavior aligns with the prior signed runtime source
+oracle: encryption precedes PreToolUse for this spawn route. It is not an
+authority-text parser defect and repeating the same probe cannot reach
+SubagentStart. P1
+therefore remains partial and current-runtime plaintext qualification remains
+false. The privacy-minimized receipt is
+`probes/g4-prior-signed-runtime-encrypted-spawn-negative-20260907.json`.
+The post-receipt provider-free suite passed 316 tests in 37.108 seconds,
+including agent-template checks.
+
+## Codex 0.153.4 CLI / SDK / App Server boundary oracle (2026-09-07)
+
+The newly published SDK and App Server sources improve inspection and isolated
+probe construction, but do not restore the heterogeneous native-child seam.
+The exact `rust-v0.153.4` source at
+`3d2ee51ca2d5db578f328aa75e20aa22c0197c9a` establishes four distinct facts:
+
+- core still advertises Multi-Agent V2 `message` fields as encrypted;
+- core has an internal plaintext branch when an upstream collaboration
+  `ResponseItem` already carries `encrypted_function_args=[]`, but neither Hook,
+  SDK, nor App Server exposes a client parameter that selects that branch;
+- the TypeScript SDK launches `codex exec`, while the Python SDK launches a
+  separate `codex app-server --listen stdio://` process;
+- App Server `thread/start` can choose a provider for an independent thread and
+  can observe genuine native children through parent/thread/collaboration
+  metadata, but it exposes no native spawn RPC. A separately started thread is
+  therefore not a parent-owned child and cannot substitute for canonical
+  AgentPath, wait, callback, cancel, or Multi-Agent V2 graph authority.
+
+The executable component-boundary oracle verified the exact source top level,
+full HEAD, twelve positive/negative anchors, and the provider-inheritance
+restriction. It returned `source_visibility_improved=true`,
+`isolated_probe_harness_feasible=true`,
+`native_heterogeneous_child_restored=false`, and
+`pretool_plaintext_assignment_visible=false`. Requiring a native heterogeneous
+child exits 2.
+
+The assignment-seam and App Server lifecycle contracts were also re-anchored to
+the same `current_signed_runtime` identity. All ten causal assignment anchors,
+three ordering checks, and eleven lifecycle anchors match the exact current
+source commit. Their checker defaults now resolve through
+`probes/codex-runtime-evidence-index.json`; the intermediate alpha8 contracts
+remain immutable historical replay inputs and no longer define “current”.
+
+This is useful progress at the observation layer: a version-pinned Python SDK
+client can drive a disposable stdio App Server for provider-free lifecycle and
+termination probes without selecting the GUI App Server. It is not a transport
+or provider qualification. Utopia's current package independently reaches the
+same compatibility conclusion: the standalone agent TOML is now explicitly
+legacy for Codex `0.148.x` and earlier, and its replacement Broker owns a
+separate App Server lifecycle. ZHIPU's direct Responses endpoint removes a
+possible Phase 3 protocol bridge, not the missing per-child provider or P1
+assignment seam. P1 and P7 remain partial, Phase 1 and direct write remain
+false, and Phases 2/3 remain closed.
+
+After adding this oracle, the complete provider-free suite passed 319 tests in
+38.787 seconds, including agent-template checks. The exact 0.153.4 component
+oracle, the two-version provider-inheritance oracle, and the G4 status checker
+all returned `valid=true` while preserving their fail-closed verdicts.
+
+## Exact live-runtime version binding
+
+The runtime guard previously accepted only the historical isolated
+`0.148.0-alpha.9` SessionMeta even though the then-signed App baseline was
+`0.150.0-alpha.8`. Replacing that constant with the then-current version would have
+made the earlier live receipt unreplayable; accepting arbitrary versions would
+have weakened resume identity.
+
+The guard now accepts the closed live-evidence set containing those two exact
+versions and adds the observed `codex_version` to the child runtime identity
+captured at SubagentStart. The existing active-binding equality therefore
+rechecks the same exact version at every later tool/compact/stop boundary. A
+change from one otherwise accepted version to the other no longer matches the
+active capsule, and SubagentStop independently rejects parent/child SessionMeta
+with different versions. At that checkpoint, Codex `0.153.4` remained
+source-only and was deliberately absent from the live runtime set; the later
+installed-baseline section records the signed update before admitting it.
+
+The focused runtime-guard suite passed 42 tests, including current-version
+acceptance, historical replay, unsupported-version rejection, accepted-version
+drift denial, and mixed parent/child stop denial. This fixes a provider-free P2
+guard defect; it does not supply the missing P1 plaintext call or qualify any
+live child.
+
+The complete post-change provider-free suite passed 322 tests in 37.639
+seconds, including agent-template checks. The 0.153.4 component oracle and G4
+gate both returned `valid=true`; every P-gate remains partial and all promotion
+flags remain false.
+
+## Installed Codex 0.153.4 convergence and immutable SessionMeta (2026-09-07)
+
+The standalone entrypoint now resolves to the packaged arm64 `0.153.4` binary,
+and the signed Codex App bundle was updated to `26.901.51231` (`8109`). Its
+bundled CLI/App Server also reports `0.153.4`. The running App Server selects
+that bundle resource directly, both launchd and this task have
+`CODEX_CLI_PATH` unset, and the App signature validates to OpenAI team
+`2DC432GLL2`. The exact paths and SHA-256 values are recorded in
+`probes/codex-0.153.4-installed-baseline-20260907.json`; the standalone and App
+binary hashes differ, so the evidence claims semantic-version convergence, not
+byte identity.
+
+The current long-lived task remains an intentional historical replay: its first
+rollout record says `0.148.0-alpha.9`. The recent roots inspected after the App
+update still began under `0.150.0-alpha.8`; no fresh `0.153.4` SessionMeta had
+yet been created. Those immutable facts are not rewritten. The runtime guard
+now admits exact `0.153.4` SessionMeta so a future fresh root and child can bind
+without a stale-version false denial, while still rejecting `0.153.5`,
+parent/child version mismatch, and a supported-version change after activation.
+
+This is a P2 precondition repair, not live identity evidence. The next native
+cohort must start in a fresh `0.153.4` root and independently prove its child's
+SessionMeta, canonical AgentPath, callback, and termination chain. It also does
+not change the source-proven P1/P7 blockers: native V2 still advertises an
+encrypted assignment and bounded child-role overrides still preserve the
+parent provider. Phase 1 and direct write remain false; Phases 2/3 remain
+closed.
+
+The independent SessionMeta matrix now also pins `0.153.4` to exact source
+commit `3d2ee51ca2d5db578f328aa75e20aa22c0197c9a`, while replaying the three
+previous runtime/source pairs. The provider-free root/nested/serial/concurrent
+fixture therefore exercises the currently installed version, but retains
+`evidence_origin=provider_free_fixture`, `adjudication_authority=none`, and
+`p2_live_qualified=false`.
+
+## Codex 0.153.4 mutation and App Server host-control boundary
+
+The native-tool schema-3 mutation catalog was re-pinned to the exact `0.153.4`
+source. All existing anchors remain present and the checker reports
+`valid=true` with twelve mutation-capable blockers; requiring direct-write
+qualification still exits 2. The earlier `0.150.0-alpha.8` and alpha matrices
+remain replayable.
+
+Source inspection also exposed a separate control plane that must not be
+misclassified as a child tool. App Server accepts concurrent `fs/writeFile`,
+`fs/createDirectory`, `fs/remove`, and `fs/copy` client RPCs; the filesystem
+write processor passes `sandbox=None`. Its `command/exec` family uses the
+server sandbox, whereas experimental `process/spawn` explicitly runs without a
+Codex sandbox. These parameter schemas contain no thread identity. The exact
+contract and checker are
+`probes/codex-0.153.4-appserver-host-control.json` and
+`probes/check_appserver_host_control.py`.
+
+The source checker passed all positive and negative anchors and deliberately
+returned `native_child_reachability_proven=false`,
+`pretooluse_child_mediation_proven=false`, and
+`same_uid_client_trust_proven=false`; `--require-child-mediated` exited 2. This
+is positive visibility progress for P4, not a capability grant. The live GUI
+App Server must not receive mutation requests. The same-UID state probe
+independently remained negative for both rollout and G4 state protection.
+
+The complete provider-free suite after these changes passed 333 tests in
+49.235 seconds, including agent-template checks. The exact 0.153.4 component,
+native mutation, and App Server host-control source checkers returned
+`valid=true`; their qualification-required modes returned 2 as designed. The
+executable G4 status remained valid with every P-gate partial,
+`phase1_complete=false`, `direct_write_qualified=false`, and Phases 2/3 closed.
+
+## Semantic current-runtime cutover and isolated host-control probe
+
+The recent G4 checkers and tests no longer embed one release number as the
+meaning of “current”. `probes/codex-runtime-evidence-index.json` assigns exact
+version/source pairs to semantic roles and resolves the current assignment,
+lifecycle, mutation, component, App Server, and installed-baseline artifacts.
+The exact values remain immutable evidence; tests now assert role resolution,
+cross-artifact identity, capabilities, and fail-closed relations. The alpha8
+artifacts remain historical replay and provider-inheritance transition
+evidence, but no current checker defaults to them.
+
+The lifecycle oracle was freshly evaluated against the exact
+`current_signed_runtime` source. All eleven Hook/SessionMeta/AgentPath/resume
+anchors passed. This corrects the stale “Current App Server lifecycle” label;
+it does not promote source behavior into a live SessionMeta receipt.
+
+The reusable disposable App Server probe then launched only the signed bundle
+binary selected by the semantic installed baseline. It supplied a fresh empty
+`CODEX_HOME`, a five-key noncredential environment, no auth, no thread, and no
+thread identity. `initialize`, `fs/writeFile`, and experimental
+`process/spawn` succeeded; both sentinels existed before stdin EOF, the server
+exited zero, and their exact hashes were unchanged at the bounded 0.2-second
+post-exit disk observation. Temporary roots were removed. The privacy-minimized
+receipt is `probes/g4-isolated-appserver-host-control-20260907.json`.
+
+This proves that possession of this disposable client connection is sufficient
+for the observed host-control mutations without thread identity or client auth.
+It does not prove that a native child can acquire the connection, that
+PreToolUse mediates the plane, or that global quiescence is strong. Accordingly
+P4 remains partial and both promotion booleans remain false.
+
+App Server source changes the active goal only by adding that host-control trust
+boundary to P4. It does not replace canonical AgentPath, wait, callback, cancel,
+or Multi-Agent V2 lifecycle requirements. The executable `goal_contract` in
+`probes/phase1-g4-status.json` rejects such a substitution.
+
+The complete provider-free regression then passed 344 tests in 41.605 seconds,
+including agent-template checks. The semantic index and every current exact-source
+oracle returned `valid=true`; G4 remained fail closed with all future phases
+closed.

@@ -15,6 +15,13 @@ ZHIPU 当前 endpoint 是否已直接满足 Codex 所需 Responses 语义；若�
 `responses-direct` 并不部署 bridge。只有 direct 不满足且转换语义可证明时，才提供只服务
 该 child 的 optional local Responses bridge：
 
+当前 ZHIPU Coding Plan 官方 Codex 文档已给出 Responses direct 配置：
+`base_url = "https://open.bigmodel.cn/api/v1"` 与 `wire_api = "responses"`。这使
+“必须建 protocol bridge”不再是默认假设，但只证明 wire 候选。官方手动配置是
+全局切换 `model_provider`，不满足本项目 OpenAI parent 保持不变的边界；同时
+Codex `0.149.0+` 的 child role 无法覆盖继承的 parent provider。因此 native
+`zhipu_plan_worker` 的 provider 入口仍然不可用，Phase 3 继续关闭。
+
 ```text
 OpenAI parent ─────────────────────────────→ native OpenAI
                                              完全不变
@@ -44,13 +51,14 @@ Realtime/images/background turns，或把本项目变成全局 router。DeepSeek
 
 ## Endpoint 与配置边界
 
-原始候选 endpoint 是：
+当前官方 Codex 候选 endpoint 是：
 
 ```text
-https://open.bigmodel.cn/api/coding/paas/v4
+https://open.bigmodel.cn/api/v1
 ```
 
-实施前必须重新核对 ZHIPU Coding Plan 官方文档、账户/地区差异与 live behavior。
+该值来自 [ZHIPU Coding Plan 的 Codex 文档](https://docs.bigmodel.cn/cn/coding-plan/tool/codex)。
+实施前仍必须重新核对官方文档、账户/地区差异与 live behavior。
 `open.bigmodel.cn`、`api.z.ai` 或未来 endpoint 的差异应通过 Phase 2 provider profile/
 config/env 选择，不得硬编码到 assignment transport core。本文记录候选，不宣称当前
 endpoint、模型名或账户权限已经资格认证。
@@ -115,6 +123,7 @@ OpenAI parent
 ## Phase 3 退出条件
 
 - Phase 2 已独立通过，profile 抽象没有为 ZHIPU 特判 assignment transport；
+- native per-child provider 入口已可用，且 parent provider/auth/base URL 保持不变；
 - endpoint/model/request normalization 均有当前官方资料与 live evidence；
 - bridge 的 protocol、tool/callback/cancel/error semantics 通过真实端到端矩阵；
 - credentials、loopback 与 parent isolation 有独立 host 证据；

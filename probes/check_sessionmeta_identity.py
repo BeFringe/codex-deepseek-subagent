@@ -14,8 +14,24 @@ import sys
 import uuid
 
 
-PINNED_CODEX_VERSION = "0.148.0-alpha.9"
-PINNED_SOURCE_COMMIT = "9392c3fa5bcda342b5b96a1a04d67b2f781617c2"
+PROBE_DIRECTORY = Path(__file__).resolve().parent
+if str(PROBE_DIRECTORY) not in sys.path:
+    sys.path.insert(0, str(PROBE_DIRECTORY))
+
+from check_runtime_evidence_index import (  # noqa: E402
+    load_index,
+    runtime_identity,
+    runtime_pairs,
+)
+
+
+RUNTIME_EVIDENCE_INDEX = load_index()
+SUPPORTED_RUNTIME_PAIRS = runtime_pairs(
+    RUNTIME_EVIDENCE_INDEX, "sessionmeta_evidence_roles"
+)
+CURRENT_SIGNED_RUNTIME = runtime_identity(RUNTIME_EVIDENCE_INDEX)
+PINNED_CODEX_VERSION = CURRENT_SIGNED_RUNTIME["codex_version"]
+PINNED_SOURCE_COMMIT = CURRENT_SIGNED_RUNTIME["source_commit"]
 MAX_SESSION_META_LINE = 1024 * 1024
 TASK_NAME_RE = re.compile(r"[A-Za-z0-9_][A-Za-z0-9_-]{0,63}")
 CASE_KINDS = {
@@ -121,7 +137,9 @@ def _timestamp(value, label: str) -> dt.datetime:
     return parsed
 
 
-def _session_meta(rollout, label: str) -> tuple[str, dict, str]:
+def _session_meta(
+    rollout, label: str, *, codex_version: str
+) -> tuple[str, dict, str]:
     rollout = _object(rollout, label)
     _exact_fields(rollout, {"path", "session_meta_line"}, set(), label)
     path = _string(rollout["path"], f"{label}.path")
@@ -152,7 +170,7 @@ def _session_meta(rollout, label: str) -> tuple[str, dict, str]:
     if "ordinal" in item and item["ordinal"] != 0:
         raise IdentityEvidenceError(f"{label} first SessionMeta ordinal is not zero")
     payload = _object(item["payload"], f"{label} SessionMeta payload")
-    if payload.get("cli_version") != PINNED_CODEX_VERSION:
+    if payload.get("cli_version") != codex_version:
         raise IdentityEvidenceError(f"{label} SessionMeta cli_version is not pinned")
     _string(payload.get("cwd"), f"{label} SessionMeta cwd")
     created_timestamp = _timestamp(
@@ -200,7 +218,7 @@ def _root_parent(meta: dict, label: str) -> None:
         raise IdentityEvidenceError(f"{label} root parent source is not a root source")
 
 
-def _observation(value: dict) -> dict:
+def _observation(value: dict, *, codex_version: str) -> dict:
     value = _object(value, "observation")
     _exact_fields(
         value,
@@ -276,10 +294,14 @@ def _observation(value: dict) -> dict:
         raise IdentityEvidenceError(f"{case_id} start role does not match spawn role")
 
     parent_path, parent_meta, parent_line_sha256 = _session_meta(
-        value["parent_rollout"], f"{case_id}.parent_rollout"
+        value["parent_rollout"],
+        f"{case_id}.parent_rollout",
+        codex_version=codex_version,
     )
     child_path, child_meta, child_line_sha256 = _session_meta(
-        value["child_rollout"], f"{case_id}.child_rollout"
+        value["child_rollout"],
+        f"{case_id}.child_rollout",
+        codex_version=codex_version,
     )
     if capture["transcript_path"] != parent_path:
         raise IdentityEvidenceError(f"{case_id} capture transcript path is not the parent rollout")
@@ -387,10 +409,12 @@ def validate_bundle(value, *, minimum_per_case: int = 2) -> dict:
     )
     if value["schema"] != 1:
         raise IdentityEvidenceError("identity evidence bundle has an invalid schema")
-    if value["codex_version"] != PINNED_CODEX_VERSION:
-        raise IdentityEvidenceError("identity evidence bundle has an unpinned Codex version")
-    if value["source_commit"] != PINNED_SOURCE_COMMIT:
-        raise IdentityEvidenceError("identity evidence bundle has an unpinned source commit")
+    codex_version = value["codex_version"]
+    source_commit = value["source_commit"]
+    if SUPPORTED_RUNTIME_PAIRS.get(codex_version) != source_commit:
+        raise IdentityEvidenceError(
+            "identity evidence bundle has an unpinned runtime/source pair"
+        )
     if value["evidence_origin"] not in ORIGINS:
         raise IdentityEvidenceError("identity evidence bundle has an invalid origin")
     if type(minimum_per_case) is not int or minimum_per_case < 1:
@@ -399,7 +423,10 @@ def validate_bundle(value, *, minimum_per_case: int = 2) -> dict:
     if not isinstance(observations, list) or not observations:
         raise IdentityEvidenceError("identity evidence bundle has no observations")
 
-    receipts = [_observation(observation) for observation in observations]
+    receipts = [
+        _observation(observation, codex_version=codex_version)
+        for observation in observations
+    ]
     for field in (
         "case_id",
         "child_thread_id",
@@ -429,8 +456,8 @@ def validate_bundle(value, *, minimum_per_case: int = 2) -> dict:
 
     normalized = {
         "schema": 1,
-        "codex_version": PINNED_CODEX_VERSION,
-        "source_commit": PINNED_SOURCE_COMMIT,
+        "codex_version": codex_version,
+        "source_commit": source_commit,
         "evidence_origin": value["evidence_origin"],
         "minimum_per_case": minimum_per_case,
         "case_counts": counts,

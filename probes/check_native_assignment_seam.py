@@ -7,6 +7,18 @@ import subprocess
 import sys
 
 
+PROBE_DIRECTORY = Path(__file__).resolve().parent
+if str(PROBE_DIRECTORY) not in sys.path:
+    sys.path.insert(0, str(PROBE_DIRECTORY))
+
+from check_runtime_evidence_index import (  # noqa: E402
+    DEFAULT_INDEX,
+    evidence_path,
+    load_index,
+    runtime_identity,
+)
+
+
 REQUIRED_ANCHORS = {
     "function_call_private_metadata",
     "v2_spawn_message_schema_encrypted",
@@ -136,16 +148,21 @@ def main():
     parser.add_argument(
         "--contract",
         type=Path,
-        default=Path(__file__).with_name(
-            "codex-0.148.0-alpha.9-native-assignment-seam.json"
-        ),
     )
+    parser.add_argument("--release-index", type=Path, default=DEFAULT_INDEX)
     parser.add_argument("--codex-source", type=Path, required=True)
     parser.add_argument("--require-plaintext-seam", action="store_true")
     args = parser.parse_args()
 
     try:
-        contract = load_contract(args.contract)
+        index = load_index(args.release_index)
+        identity = runtime_identity(index)
+        contract_path = args.contract or evidence_path(index, "native_assignment_seam")
+        contract = load_contract(contract_path)
+        if any(contract[key] != identity[key] for key in ("codex_version", "source_commit")):
+            raise ValueError(
+                "assignment seam identity disagrees with the current runtime role"
+            )
         observed_head, failures = verify_source(contract, args.codex_source.resolve())
     except (OSError, UnicodeDecodeError, json.JSONDecodeError, ValueError) as exc:
         print(json.dumps({"valid": False, "error": str(exc)}, separators=(",", ":")))
@@ -155,6 +172,7 @@ def main():
     result.update(
         {
             "valid": not failures,
+            "runtime_role": index["current_runtime_role"],
             "codex_version": contract["codex_version"],
             "source_commit": contract["source_commit"],
             "observed_source_head": observed_head,

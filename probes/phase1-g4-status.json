@@ -1,6 +1,27 @@
 {
   "schema": 1,
-  "as_of": "2026-08-17",
+  "as_of": "2026-09-07",
+  "goal_contract": {
+    "state": "active_fail_closed",
+    "terminal_acceptance_unchanged": true,
+    "app_server_source_adjustment": {
+      "gate": "P4",
+      "surface": "host_control_plane",
+      "required_proofs": [
+        "client_connection_authority",
+        "native_child_reachability_or_separation",
+        "sandbox_and_mutation_mediation"
+      ],
+      "may_substitute_native_child_lifecycle": false
+    },
+    "unchanged_native_lifecycle_requirements": [
+      "canonical_agentpath",
+      "wait",
+      "callback",
+      "cancel",
+      "multi_agent_v2"
+    ]
+  },
   "phase1": {
     "declared_complete": false,
     "declared_direct_write_qualified": false,
@@ -12,6 +33,10 @@
         "evidence": [
           "docs/phase1-evidence.md",
           "probes/g4-live-native-hook-schema-20260817.json",
+          "probes/codex-0.153.4-native-assignment-seam.json",
+          "probes/codex-0.153.4-component-boundaries.json",
+          "probes/codex-runtime-evidence-index.json",
+          "probes/check_codex_component_boundaries.py",
           "probes/codex-0.148.0-alpha.9-native-assignment-seam.json",
           "probes/check_native_assignment_seam.py",
           "probes/native-plaintext-assignment-seam-contract.json",
@@ -27,9 +52,10 @@
           "probes/codex-0.148.0-alpha.9-plaintext-assignment-seam-candidate-v2.patch",
           "probes/g4-live-plaintext-lifecycle-20260817.json",
           "probes/g4-live-root-lifecycle-adjudication-input-20260817.json",
-          "probes/g4-live-root-lifecycle-adjudication-result-20260817.json"
+          "probes/g4-live-root-lifecycle-adjudication-result-20260817.json",
+          "probes/g4-prior-signed-runtime-encrypted-spawn-negative-20260907.json"
         ],
-        "blocker": "one isolated root spawn chain now proves the exact-configured null-marker route through plaintext delivery and fresh parent consumption; schema-3 still lacks distinct same-message deny-before-handler calls plus live send_message/followup_task delivery and the broader cohort"
+        "blocker": "the last signed live negative on the prior signed runtime encrypted the spawn message before PreToolUse, so the Hook denied it and SubagentStart could not consume a capsule; the current signed runtime retains an internal plaintext branch only when the upstream ResponseItem already supplies encrypted_function_args=[], while neither SDK nor App Server exposes that choice as a native spawn API; one isolated migration-runtime candidate root chain proved the exact-configured null-marker route, but no supported current-runtime plaintext seam, live send_message/followup_task delivery, distinct same-message deny pairs, or broader cohort is qualified"
       },
       {
         "id": "P2",
@@ -37,15 +63,19 @@
         "provider_free": "pass",
         "evidence": [
           "docs/phase1-g4-probe-plan.md#ii-real-identity-and-sessionmeta-probe",
+          "probes/codex-0.153.4-lifecycle-sources.json",
+          "probes/check_codex_lifecycle_sources.py",
+          "tests/test_codex_lifecycle_sources.py",
           "probes/check_sessionmeta_identity.py",
           "tests/test_sessionmeta_identity.py",
           "probes/g4-live-native-hook-schema-20260817.json",
           "probes/g4-live-plaintext-lifecycle-20260817.json",
           "probes/g4-live-root-lifecycle-adjudication-result-20260817.json",
           "hooks/runtime_guard.py",
-          "tests/test_runtime_guard.py"
+          "tests/test_runtime_guard.py",
+          "probes/codex-0.153.4-installed-baseline-20260907.json"
         ],
-        "blocker": "one real root child now has an exact assignment-to-SessionMeta/canonical-AgentPath join through consumed state and two older real concurrent records remain partial; complete nested, serial, and concurrent identity joins plus cohort scale are missing"
+        "blocker": "one historical real root child has an exact assignment-to-SessionMeta/canonical-AgentPath join through consumed state and two older real concurrent records remain partial; the installed CLI and App Server now converge on the current signed runtime, but no fresh current-runtime root/child SessionMeta exists yet, and complete nested, serial, concurrent identity joins plus cohort scale remain missing"
       },
       {
         "id": "P3",
@@ -67,6 +97,13 @@
         "state": "partial",
         "provider_free": "partial",
         "evidence": [
+          "probes/codex-0.153.4-mutation-surfaces.json",
+          "probes/codex-0.153.4-appserver-host-control.json",
+          "probes/check_appserver_host_control.py",
+          "probes/run_appserver_host_control_probe.py",
+          "probes/g4-isolated-appserver-host-control-20260907.json",
+          "tests/test_appserver_host_control.py",
+          "probes/codex-0.150.0-alpha.8-mutation-surfaces.json",
           "probes/codex-0.148.0-alpha.9-mutation-surfaces.json",
           "hooks/compatibility_hook.py",
           "hooks/hooks.g4-qualification.posix.example.json",
@@ -77,13 +114,17 @@
           "probes/g4-live-plaintext-lifecycle-20260817.json",
           "probes/g4-live-root-lifecycle-adjudication-result-20260817.json"
         ],
-        "blocker": "custom exec/code-mode was visibly blocked and the exact namespaced list_agents alias is now positively mediated without generic prefix stripping; complete live mutation visibility/mediation and independent sandbox denial remain missing"
+        "blocker": "the current signed runtime's exact native-tool catalog remains fail closed; an isolated disposable client proved that connection possession alone can invoke sandbox-none filesystem and unsandboxed process host-control RPCs without thread identity or client auth. Native-child reachability to that control plane remains unproven and cannot count as PreToolUse mediation, while complete live child mutation visibility/mediation and independent sandbox denial remain missing"
       },
       {
         "id": "P5",
         "state": "partial",
         "provider_free": "pass",
-        "evidence": ["docs/phase1-evidence.md"],
+        "evidence": [
+          "docs/phase1-evidence.md",
+          "probes/codex-0.153.4-lifecycle-sources.json",
+          "probes/check_codex_lifecycle_sources.py"
+        ],
         "blocker": "live compaction/resume re-attestation and scope-expansion denial are missing"
       },
       {
@@ -153,9 +194,14 @@
         "evidence": [
           "docs/phase1-g4-probe-plan.md#vi-platform-and-regression-exit-sequence",
           "docs/phase1-evidence.md#qualification-only-live-install-2026-08-17",
-          "probes/g4-live-install-20260817.json"
+          "probes/g4-live-install-20260817.json",
+          "probes/provider-inheritance-boundary-20260907.json",
+          "probes/check_provider_inheritance_boundary.py",
+          "tests/test_provider_inheritance_boundary.py",
+          "probes/codex-0.153.4-component-boundaries.json",
+          "tests/test_codex_component_boundaries.py"
         ],
-        "blocker": "Windows parity, DeepSeek regression, and trusted-process rollback/reload evidence are missing"
+        "blocker": "Windows parity and trusted-process rollback/reload evidence are missing; independently, Codex 0.149.0+ preserves the parent provider for child roles, so the legacy Utopia native DeepSeek route is blocked upstream and its independent App Server Broker replacement cannot satisfy this project's native AgentPath lifecycle contract"
       }
     ],
     "exit_receipts": [
@@ -171,6 +217,11 @@
         "id": "mutation_visibility",
         "state": "partial",
         "evidence": [
+          "probes/codex-0.153.4-mutation-surfaces.json",
+          "probes/codex-0.153.4-appserver-host-control.json",
+          "probes/check_appserver_host_control.py",
+          "probes/g4-isolated-appserver-host-control-20260907.json",
+          "probes/codex-0.150.0-alpha.8-mutation-surfaces.json",
           "probes/codex-0.148.0-alpha.9-mutation-surfaces.json",
           "probes/g4-live-install-20260817.json",
           "probes/g4-live-callback-receipts-20260817.json"
@@ -217,8 +268,12 @@
       },
       {
         "id": "deepseek_regression",
-        "state": "pending",
-        "evidence": ["docs/phase1-g4-probe-plan.md#vi-platform-and-regression-exit-sequence"]
+        "state": "partial",
+        "evidence": [
+          "docs/phase1-g4-probe-plan.md#vi-platform-and-regression-exit-sequence",
+          "probes/provider-inheritance-boundary-20260907.json",
+          "probes/check_provider_inheritance_boundary.py"
+        ]
       },
       {
         "id": "install_rollback",

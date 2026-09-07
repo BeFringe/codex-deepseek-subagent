@@ -1,0 +1,98 @@
+{
+  "schema": 1,
+  "observed_at": "2026-09-07T02:52:16.797513+00:00",
+  "classification": "prior_signed_runtime_encrypted_assignment_before_pretool",
+  "codex": {
+    "runtime_role": "prior_signed_runtime",
+    "cli_version": "0.150.0-alpha.8",
+    "binary_path": "/Applications/Codex.app/Contents/Resources/codex",
+    "binary_sha256": "4ff5e75f028e913cfeb53bd7319f87573cdce6538c1b1ccc44ce62d5ce51ca1d",
+    "source_commit": "fcbdb57851be70192fd0c21faa9e529146e93ff1",
+    "gui_candidate_selected": false
+  },
+  "hook": {
+    "config_path": "/Users/pearly/.codex/hooks.json",
+    "config_sha256": "ffaad5c3533a2016253af148c96721818807823f779845a35c5d7dad2c676c2b",
+    "trusted_by_user": true
+  },
+  "parent": {
+    "runtime_session_id": "01a00147-39cb-7b50-b78d-7baed910eb45",
+    "canonical_agent_path": "/root",
+    "turn_id": "01a079ac-9b6a-7490-9672-41403a73d32e"
+  },
+  "invocation": {
+    "tool": "collaboration.spawn_agent",
+    "rollout_tool_name": "spawn_agent",
+    "rollout_namespace": "collaboration",
+    "hook_tool_name": "collaborationspawn_agent",
+    "tool_use_id": "call_aXgF6vga72i2GP1ZF9mY6NrK",
+    "argument_keys": [
+      "agent_type",
+      "fork_turns",
+      "message",
+      "task_name"
+    ],
+    "agent_type": "g4_qualification_probe_worker",
+    "fork_turns": "none",
+    "task_name": "g4_current_root_1",
+    "caller_plaintext_authority_begin_count": 1,
+    "caller_plaintext_authority_end_count": 1,
+    "rollout_message": {
+      "value_type": "string",
+      "byte_or_character_length": 4964,
+      "prefix": "gAAAAAB",
+      "authority_begin_count": 0,
+      "authority_end_count": 0,
+      "raw_value_stored": false
+    }
+  },
+  "pretool_receipt": {
+    "sequence": 746,
+    "receipt_id": "0dbe4fac-aa5d-425f-9e44-bc9628a65ed0",
+    "receipt_sha256": "3459a60db07388bc222ee525e195d50c2a1124d27d2af8325cc4496219dd44b7",
+    "hook_event_name": "PreToolUse",
+    "event_stage": "observed",
+    "scope": "target_spawn",
+    "raw_payload_stored": false
+  },
+  "result": {
+    "blocked_before_handler": true,
+    "reason": "TASK.HANDOFF_BLOCKED: spawn message must contain exactly one authority declaration",
+    "child_started": false,
+    "subagent_start_observed": false,
+    "subagent_stop_observed": false,
+    "callback_observed": false,
+    "post_attempt_agent_paths": [
+      "/root"
+    ]
+  },
+  "git_barrier": {
+    "root": "/Users/pearly/文档/CAT/codex-deepseek-subagent",
+    "branch_before": "main",
+    "branch_after": "main",
+    "head_before": "e45119614242841da24d6d043db8373a56e59ca3",
+    "head_after": "e45119614242841da24d6d043db8373a56e59ca3",
+    "status_before": "",
+    "status_after": "",
+    "disk_changed": false
+  },
+  "security": {
+    "credential_values_read_or_recorded": false,
+    "encrypted_message_value_recorded": false,
+    "raw_hook_payload_recorded": false
+  },
+  "verdict": {
+    "pretool_plaintext_assignment_visible": false,
+    "subagentstart_capsule_consumption_reachable": false,
+    "native_cross_provider_spawn_qualified": false,
+    "p1_state": "partial",
+    "phase1_complete": false,
+    "direct_write_qualified": false,
+    "phase2_state": "closed",
+    "phase3_state": "closed"
+  },
+  "limitations": [
+    "This is one root spawn attempt on the then-signed App runtime, now classified as prior_signed_runtime; it is not a version-wide live cohort.",
+    "The evidence proves that this invocation was encrypted before PreToolUse and denied before child creation; it does not qualify the isolated 0.148.0-alpha.9 plaintext candidate or any future upstream plaintext seam."
+  ]
+}

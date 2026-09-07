@@ -7,19 +7,26 @@
 
 ## 组合边界
 
-主任务继续使用现有 OpenAI 模型、provider 和 ChatGPT 登录。DeepSeek 只存在于
-独立的 `v4_flash_worker` child session 配置中。Codex 仍然原生管理 child 的创建、
-身份、权限、生命周期、取消、等待和 callback；仓库只用一个受信任的
-`SubagentStart` Hook 替换当前不可靠的跨 provider 任务载体。
+原路径的目标是：主任务保持现有 OpenAI 模型、provider 和 ChatGPT 登录，
+DeepSeek 只存在于独立 `v4_flash_worker` child session，Codex 原生管理 child 的
+创建、身份、权限、生命周期、取消、等待和 callback；本仓库只修复 assignment
+transport。
 
-它不是插件、MCP Server、wrapper、daemon、独立 Agent 应用或另一个 Codex CLI，
-也不要求 CC Switch 一类全局 provider 切换工具。
+这条 standalone custom-agent 路径只对 Codex `0.148.x` 及更早版本保留历史证据。
+OpenAI Codex 从 `0.149.0` 起限制 agent role 的配置覆盖：child 保留 parent 的
+model provider，不能再通过 role 内的 `model_provider = "deepseek"` 形成 OpenAI parent →
+DeepSeek child。`SubagentStart` plaintext Hook 只能修复 assignment 表示，不能穿过这个
+provider 继承边界。因此当前版本上该组合保持 fail closed，不得安装或宣称
+live 兼容。
+
+Utopia 当前用 MixAgents Broker 启动独立 Codex App Server worker。这是另一种架构，
+它不是本 Phase 1 固定的 native AgentPath/wait/callback/cancel/Multi-Agent V2 路径，
+不能被当作 P7 证据。
 
 ## 适配其他 provider/model
 
-“主任务与 child 使用不同 provider/model”是 Codex 的通用组合能力，不是 DeepSeek
-特例。Codex 将每个独立 custom-agent TOML 作为 spawned session 的配置层，因此它
-可以覆盖普通 session 支持的模型与 provider 设置。当前
+“主任务与 child 使用不同 provider/model”仍是希望的通用组合能力，但不是
+Codex `0.149.0+` custom-agent role 已提供的能力。当前
 [Codex config reference](https://learn.chatgpt.com/docs/config-file/config-reference#model_providersidwire_api)
 把 custom model provider 的 `wire_api` 唯一支持值定义为 `responses`；新的资格认证必须
 按项目锁定的 Codex baseline 重新核对，不能再把 Chat Completions 写成 Codex 可直连的
@@ -55,6 +62,10 @@ Hook matcher、脚本中的 role、skill、`AGENTS.md` 索引与 smoke oracle �
 | DeepSeek 模型别名 | `deepseek-v4-flash` |
 | DeepSeek 文档标注版本 | `DeepSeek-V4-Flash-0731` |
 | 日期 | Windows live 基线 `2026-08-05`；Windows/POSIX 加固 `2026-08-08`；Windows `env_key` 对照 `2026-08-12` |
+
+上表是 `0.148.x` 之前原路径的历史基线，不是当前 Codex 的安装兼容承诺。
+`0.150.0-alpha.8` 与 `0.153.4` 的 exact-source oracle 均证明 child role 继承 parent
+provider；Utopia 也已将这个 package 标记为 `0.148.x` 及更早版本的 legacy route。
 
 Windows Desktop 路径已有 OpenAI parent → DeepSeek child → native callback 基线；
 当前 PowerShell 加固实现通过本地协议、并发与恢复测试，尚待更新后的 live smoke。
@@ -236,10 +247,15 @@ V1 不走受影响的 V2 encrypted collaboration path，因此可作为显式 wo
 
 ## 上游迁移条件
 
-当 Codex 能在调用外部 child provider 前，把 OpenAI parent 的 spawn assignment
-和必要 follow-up 可靠表示为 provider-neutral plaintext，并保持真实的 child 身份、
-权限、取消与 callback 语义，本仓库会恢复原生 collaboration message 为首选。
-Hook 只在明确的旧版本窗口保留，并在最低支持版本覆盖该语义后移除。
+恢复这条 native cross-provider 路径需要两个独立条件：
+
+1. Codex 提供受边界约束的 per-child provider/profile 选择，同时保持 OpenAI parent
+   provider 不变；
+2. spawn assignment 和必要 follow-up 在调用 external child provider 前能被可靠表示为
+   provider-neutral plaintext，并保持真实身份、权限、取消与 callback 语义。
+
+两者任一缺失都必须 fail closed。Hook 只能处理第 2 层；无法补出第 1 层的
+provider authority。
 
 ## 外部资料
 
@@ -251,5 +267,7 @@ Tool Calls 与 Responses API。其 Responses 实现无状态，并只部分实�
 - [Codex：其他模型与 provider](https://learn.chatgpt.com/docs/models#other-models)
 - [Codex：配置参考](https://learn.chatgpt.com/docs/config-file/config-reference#configtoml)
 - [Codex 0.145.0 release](https://github.com/openai/codex/releases/tag/rust-v0.145.0)
+- [Codex PR #39299：限制 agent role 配置覆盖](https://github.com/openai/codex/pull/39299)
+- [Utopia 当前 package 边界](https://github.com/Utopia-V/mixagents/tree/main/packages/codex-deepseek-subagent)
 - [DeepSeek：Responses API](https://api-docs.deepseek.com/zh-cn/guides/responses_api)
 - [DeepSeek：模型与价格](https://api-docs.deepseek.com/zh-cn/quick_start/pricing)

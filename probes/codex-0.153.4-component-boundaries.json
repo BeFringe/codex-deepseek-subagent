@@ -1,0 +1,111 @@
+{
+  "schema": 1,
+  "as_of": "2026-09-07",
+  "codex_version": "0.153.4",
+  "source_commit": "3d2ee51ca2d5db578f328aa75e20aa22c0197c9a",
+  "source_repository": "https://github.com/openai/codex",
+  "components": {
+    "cli_core": {
+      "owns_native_spawn": true,
+      "v2_message_schema": "encrypted",
+      "plaintext_branch_trigger": "a collaboration function call whose encrypted_function_args field is present as an empty array",
+      "plaintext_branch_authority": "upstream ResponseItem metadata, not a public Hook, SDK, or App Server client parameter",
+      "child_role_provider_policy": "inherit the parent provider"
+    },
+    "typescript_sdk": {
+      "driver": "codex exec --experimental-json",
+      "creates_native_child": false
+    },
+    "python_sdk": {
+      "driver": "codex app-server --listen stdio://",
+      "creates_native_child": false,
+      "probe_use": "isolated version-pinned App Server client"
+    },
+    "app_server": {
+      "thread_start_model_provider_override": true,
+      "thread_start_result": "independent thread under the App Server session source",
+      "native_spawn_rpc": false,
+      "observes_native_parent_thread_id": true,
+      "observes_collaboration_items": true,
+      "parent_owned_v2_child_rejects_direct_turns": true,
+      "thread_source_label_is_native_identity": false
+    }
+  },
+  "anchors": [
+    {
+      "id": "bounded_role_overrides",
+      "path": "codex-rs/core/src/agent/role.rs",
+      "contains": "struct AgentRoleOverrides",
+      "not_contains": "model_provider: Option<String>"
+    },
+    {
+      "id": "parent_provider_preserved",
+      "path": "codex-rs/core/src/agent/role_tests.rs",
+      "contains": "assert_eq!(config.model_provider_id, parent.model_provider_id);"
+    },
+    {
+      "id": "v2_message_schema_encrypted",
+      "path": "codex-rs/core/src/tools/spec_plan_tests.rs",
+      "contains": "async fn multi_agent_v2_message_schemas_are_encrypted()"
+    },
+    {
+      "id": "plaintext_response_item_discriminator",
+      "path": "codex-rs/core/src/tools/router.rs",
+      "contains": ".is_some_and(Vec::is_empty)"
+    },
+    {
+      "id": "plaintext_child_message_branch",
+      "path": "codex-rs/core/src/tools/handlers/multi_agents_v2.rs",
+      "contains": "ToolCallSource::DirectPlaintextMessage"
+    },
+    {
+      "id": "typescript_sdk_exec_driver",
+      "path": "sdk/typescript/src/exec.ts",
+      "contains": "const commandArgs: string[] = [\"exec\", \"--experimental-json\"];"
+    },
+    {
+      "id": "python_sdk_app_server_driver",
+      "path": "sdk/python/src/openai_codex/client.py",
+      "contains": "args.extend([\"app-server\", \"--listen\", \"stdio://\"])"
+    },
+    {
+      "id": "app_server_thread_provider_parameter",
+      "path": "codex-rs/app-server-protocol/src/protocol/v2/thread.rs",
+      "contains": "pub model_provider: Option<String>"
+    },
+    {
+      "id": "app_server_thread_source_separate_from_session_source",
+      "path": "codex-rs/core/src/thread_manager.rs",
+      "contains": "pub thread_source: Option<ThreadSource>"
+    },
+    {
+      "id": "app_server_root_start_has_no_parent",
+      "path": "codex-rs/app-server-protocol/src/protocol/v2/tests.rs",
+      "contains": "assert_eq!(start.thread.parent_thread_id, None);"
+    },
+    {
+      "id": "app_server_child_direct_input_rejected",
+      "path": "codex-rs/app-server/README.md",
+      "contains": "Parent-owned Multi-Agent V2 subagents reject direct turns."
+    },
+    {
+      "id": "app_server_has_no_native_spawn_rpc",
+      "path": "codex-rs/app-server-protocol/src/protocol/common.rs",
+      "contains": "ThreadStart => \"thread/start\"",
+      "not_contains": "collaboration/spawn"
+    }
+  ],
+  "verdict": {
+    "source_visibility_improved": true,
+    "isolated_probe_harness_feasible": true,
+    "native_heterogeneous_child_restored": false,
+    "pretool_plaintext_assignment_visible": false,
+    "per_child_provider_override_available": false,
+    "app_server_thread_is_native_child_equivalent": false,
+    "phase1_complete": false,
+    "direct_write_qualified": false,
+    "phase2_state": "closed",
+    "phase3_state": "closed",
+    "blocker": "Codex 0.153.4 can consume a plaintext collaboration function call only when the upstream ResponseItem already carries the empty encrypted_function_args discriminator, while the advertised V2 message schema still requests encryption. App Server and both SDKs can drive or observe independent threads, but they do not expose a native spawn RPC or create the parent-owned AgentPath/wait/callback/cancel relationship required by this project."
+  }
+}

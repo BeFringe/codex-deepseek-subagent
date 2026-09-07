@@ -32,6 +32,18 @@ Worker Profile
 ZHIPU 是 provider，GLM 是 model family，因此候选名称使用 `glm-thinking`，不得把两者
 混成一个含混的 profile 名称。
 
+## 当前上游入口阻断
+
+Codex `0.149.0+` 的 agent role 只允许受边界约束的模型行为覆盖与能力缩减，
+child 保留 parent 的 model provider。`0.150.0-alpha.8` 和 `0.153.4` 的 exact-source
+oracle 均证明这一点。因此本 profile 模型不得假定 standalone agent TOML 中的
+`model_provider` 仍能为 native child 切换 provider。
+
+Phase 2 除了要求 Phase 1 完整通过，还需要新的上游入口：受边界约束的 native
+per-child provider/profile 选择，或用户明确批准修改本项目“Codex native lifecycle
+始终保持权威”的架构合同。Utopia 当前的 MixAgents Broker 使用独立 App Server
+lifecycle，是可参考的替代架构，但不是现有 Phase 2 入口或 P7 通过证据。
+
 ## 不可变边界
 
 - OpenAI parent 始终使用当前 Codex native OpenAI provider、模型与 ChatGPT 登录；profile
@@ -91,10 +103,11 @@ handoff 中不能继续硬编码 `AGENT_TYPE = "v4_flash_worker"`，但也不能
 2. 定义最小 profile schema、validation、unknown-value fail-closed 和稳定 canonical hash。
 3. 让 installer、Hook matcher、Skill、Agent template 与 smoke oracle 从同一 profile
    合同派生或受其一致性测试约束。
-4. 保持 `$use-v4-flash-worker` 为向后兼容 wrapper/alias，不能让现有 DeepSeek 用户突然
-   改用新命令或新数据边界。
-5. 先把现有 DeepSeek 路径无行为变化地迁入 profile，再验证 `native` control；不得在同一
-   步引入 ZHIPU bridge 或真实 ZHIPU credential。
+4. 先验证 upstream native per-child provider 入口；若入口仍不存在，Phase 2 停止于
+   schema 研究，不安装或迁移 worker。
+5. 入口可用后，保持 `$use-v4-flash-worker` 为向后兼容 wrapper/alias，再把 legacy
+   DeepSeek 路径按明确的版本边界迁入 profile；不得同步引入 ZHIPU bridge 或真实
+   ZHIPU credential。
 6. 完成 POSIX/Windows provider-free tests、DeepSeek live regression 与完整回滚后，才可
    独立裁决 Phase 2 complete。
 
@@ -127,7 +140,8 @@ integration authority。
 
 - profile schema、installer、matcher、Skill、Agent template 与 smoke 工件一致；
 - 核心 assignment transport 无 DeepSeek/ZHIPU 产品硬编码；
-- v4 wrapper 向后兼容，现有 DeepSeek direct Responses route 全绿；
+- native per-child provider 入口有当前源码与 live 证据，不修改 parent provider；
+- v4 wrapper 在明确的版本边界内向后兼容，DeepSeek direct Responses route 全绿；
 - native worker control 不经过 plaintext Hook 或 bridge；
 - credentials 与 parent provider isolation 经静态和 live 证据证明；
 - POSIX/Windows parity、callback/cancel/termination、concurrency 与 rollback 全绿；

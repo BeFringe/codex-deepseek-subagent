@@ -28,6 +28,16 @@ compatibility_state = load_module(
 )
 runtime_guard = load_module("runtime_guard", REPO / "hooks" / "runtime_guard.py")
 
+MIGRATION_HANDOFF_VERSION = runtime_guard.LIVE_HOOK_SCHEMA_RUNTIME_ROLES[
+    "migration_handoff_runtime"
+]
+PRIOR_SIGNED_VERSION = runtime_guard.LIVE_HOOK_SCHEMA_RUNTIME_ROLES[
+    "prior_signed_runtime"
+]
+CURRENT_SIGNED_VERSION = runtime_guard.LIVE_HOOK_SCHEMA_RUNTIME_ROLES[
+    "current_signed_runtime"
+]
+
 
 StateStore = compatibility_state.StateStore
 capsule_sha256 = compatibility_state.capsule_sha256
@@ -79,7 +89,7 @@ class RuntimeGuardTests(unittest.TestCase):
             "timestamp": "2026-08-12T00:00:00Z",
             "cwd": str(self.repository),
             "originator": "fixture",
-            "cli_version": "0.148.0-alpha.9",
+            "cli_version": MIGRATION_HANDOFF_VERSION,
             "source": {
                 "subagent": {
                     "thread_spawn": {
@@ -122,7 +132,7 @@ class RuntimeGuardTests(unittest.TestCase):
             "timestamp": "2026-08-12T00:00:00Z",
             "cwd": str(self.repository),
             "originator": "fixture",
-            "cli_version": "0.148.0-alpha.9",
+            "cli_version": MIGRATION_HANDOFF_VERSION,
             "source": "vscode",
             "model_provider": "fixture-provider",
         }
@@ -328,6 +338,55 @@ class RuntimeGuardTests(unittest.TestCase):
         self.assertEqual(identity["parent_thread_id"], "runtime-session")
         self.assertEqual(identity["agent_type"], "fixture_worker")
         self.assertEqual(identity["canonical_agent_path"], "/root/bounded_task")
+        self.assertEqual(identity["codex_version"], MIGRATION_HANDOFF_VERSION)
+
+    def test_previous_signed_codex_version_is_accepted_and_bound(self):
+        self.write_session_meta(cli_version=PRIOR_SIGNED_VERSION)
+        child_identity = runtime_guard.child_identity_from_hook(
+            self.child_hook("SubagentStart")
+        )
+        self.write_parent_session_meta(cli_version=PRIOR_SIGNED_VERSION)
+        stop_identity = runtime_guard.child_identity_from_stop(
+            self.stop_hook(self.attestation())
+        )
+
+        self.assertEqual(child_identity["codex_version"], PRIOR_SIGNED_VERSION)
+        self.assertEqual(stop_identity["codex_version"], PRIOR_SIGNED_VERSION)
+
+    def test_current_signed_codex_version_is_accepted_and_bound(self):
+        self.write_session_meta(cli_version=CURRENT_SIGNED_VERSION)
+        child_identity = runtime_guard.child_identity_from_hook(
+            self.child_hook("SubagentStart")
+        )
+        self.write_parent_session_meta(cli_version=CURRENT_SIGNED_VERSION)
+        stop_identity = runtime_guard.child_identity_from_stop(
+            self.stop_hook(self.attestation())
+        )
+
+        self.assertEqual(child_identity["codex_version"], CURRENT_SIGNED_VERSION)
+        self.assertEqual(stop_identity["codex_version"], CURRENT_SIGNED_VERSION)
+
+    def test_live_hook_schema_versions_match_semantic_evidence_roles(self):
+        index = json.loads(
+            (REPO / "probes" / "codex-runtime-evidence-index.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        expected = {
+            role: index["runtime_roles"][role]["codex_version"]
+            for role in index["live_hook_schema_roles"]
+        }
+
+        self.assertEqual(runtime_guard.LIVE_HOOK_SCHEMA_RUNTIME_ROLES, expected)
+
+    def test_stop_rejects_parent_child_codex_version_mismatch(self):
+        self.write_session_meta(cli_version=PRIOR_SIGNED_VERSION)
+
+        with self.assertRaisesRegex(
+            compatibility_state.IdentityMismatch,
+            "parent and child Codex versions do not match",
+        ):
+            runtime_guard.child_identity_from_stop(self.stop_hook(self.attestation()))
 
     def test_root_parent_meta_needs_no_child_role_or_agent_path(self):
         identity = runtime_guard.child_identity_from_stop(
@@ -356,9 +415,33 @@ class RuntimeGuardTests(unittest.TestCase):
 
         with self.assertRaisesRegex(
             compatibility_state.IdentityMismatch,
-            "cli_version is not pinned",
+            "cli_version is not in the pinned live set",
         ):
             runtime_guard.read_session_meta(str(self.child_transcript))
+
+    def test_runtime_parser_rejects_unpinned_stable_version(self):
+        item = json.loads(self.child_transcript.read_text(encoding="utf-8"))
+        item["payload"]["cli_version"] = "0.153.5"
+        self.child_transcript.write_text(json.dumps(item) + "\n", encoding="utf-8")
+
+        with self.assertRaisesRegex(
+            compatibility_state.IdentityMismatch,
+            "cli_version is not in the pinned live set",
+        ):
+            runtime_guard.read_session_meta(str(self.child_transcript))
+
+    def test_supported_codex_version_drift_does_not_match_active_binding(self):
+        self.write_session_meta(cli_version=PRIOR_SIGNED_VERSION)
+
+        result = runtime_guard.pre_tool_use(
+            self.store, self.child_hook("PreToolUse", tool_name="view_image")
+        )
+
+        self.assertEqual(result["hookSpecificOutput"]["permissionDecision"], "deny")
+        self.assertIn(
+            "expected one active authority capsule, found 0",
+            result["hookSpecificOutput"]["permissionDecisionReason"],
+        )
 
     def test_runtime_parser_rejects_payload_time_after_record(self):
         item = json.loads(self.child_transcript.read_text(encoding="utf-8"))

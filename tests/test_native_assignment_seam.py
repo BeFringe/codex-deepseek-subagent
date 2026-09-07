@@ -8,8 +8,9 @@ from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "probes" / "check_native_assignment_seam.py"
-CONTRACT = (
-    ROOT / "probes" / "codex-0.148.0-alpha.9-native-assignment-seam.json"
+PRIOR_CONTRACT = ROOT / "probes" / "codex-0.150.0-alpha.8-native-assignment-seam.json"
+PREVIOUS_CONTRACT = (
+    ROOT / "probes" / "codex-0.148.0-alpha.15-native-assignment-seam.json"
 )
 
 SPEC = importlib.util.spec_from_file_location("check_native_assignment_seam", SCRIPT)
@@ -17,17 +18,20 @@ check_native_assignment_seam = importlib.util.module_from_spec(SPEC)
 assert SPEC.loader is not None
 SPEC.loader.exec_module(check_native_assignment_seam)
 
+RELEASE_INDEX = check_native_assignment_seam.load_index()
+CURRENT_RUNTIME = check_native_assignment_seam.runtime_identity(RELEASE_INDEX)
+CONTRACT = check_native_assignment_seam.evidence_path(
+    RELEASE_INDEX, "native_assignment_seam"
+)
+
 
 class NativeAssignmentSeamTests(unittest.TestCase):
-    def test_contract_is_pinned_and_fail_closed(self):
+    def test_current_runtime_contract_is_exact_and_fail_closed(self):
         contract = check_native_assignment_seam.load_contract(CONTRACT)
         result = check_native_assignment_seam.qualification(contract)
 
-        self.assertEqual(contract["codex_version"], "0.148.0-alpha.9")
-        self.assertEqual(
-            contract["source_commit"],
-            "9392c3fa5bcda342b5b96a1a04d67b2f781617c2",
-        )
+        self.assertEqual(contract["codex_version"], CURRENT_RUNTIME["codex_version"])
+        self.assertEqual(contract["source_commit"], CURRENT_RUNTIME["source_commit"])
         self.assertIn(
             "encrypted Responses parameter", contract["behavior"]["schema_policy"]
         )
@@ -37,7 +41,19 @@ class NativeAssignmentSeamTests(unittest.TestCase):
         self.assertFalse(result["plaintext_assignment_seam_qualified"])
         self.assertFalse(result["phase1_complete"])
         self.assertFalse(result["direct_write_qualified"])
-        self.assertIn("opaque", result["blocker"])
+        self.assertIn("public Hook, SDK, or App Server selector", result["blocker"])
+
+    def test_historical_contracts_remain_replayable(self):
+        contracts = (PRIOR_CONTRACT, PREVIOUS_CONTRACT)
+
+        for path in contracts:
+            with self.subTest(path=path.name):
+                contract = check_native_assignment_seam.load_contract(path)
+                self.assertFalse(
+                    check_native_assignment_seam.qualification(contract)[
+                        "plaintext_assignment_seam_qualified"
+                    ]
+                )
 
     def test_source_anchors_and_causal_order_are_checked(self):
         contract = check_native_assignment_seam.load_contract(CONTRACT)
@@ -70,7 +86,7 @@ class NativeAssignmentSeamTests(unittest.TestCase):
             registry = source_root / "codex-rs/core/src/tools/registry.rs"
             registry.write_text(
                 registry.read_text(encoding="utf-8").replace(
-                    "handle_any_tool(tool.as_ref(), invocation_for_tool).await", ""
+                    "|| handle_any_tool(tool.as_ref(), invocation.clone()),", ""
                 ),
                 encoding="utf-8",
             )

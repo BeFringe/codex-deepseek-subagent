@@ -1,0 +1,58 @@
+{
+  "schema": 1,
+  "observed_at": "2026-09-07T11:34:19+08:00",
+  "host": {
+    "platform": "darwin-arm64",
+    "timezone": "Asia/Shanghai"
+  },
+  "repository": {
+    "branch": "main",
+    "full_head_before_record": "67b01106f81a437532a59a88e92458677e4627c2"
+  },
+  "standalone_cli": {
+    "entrypoint": "/Users/pearly/.local/bin/codex",
+    "resolved_path": "/Users/pearly/.codex/packages/standalone/releases/0.153.4-aarch64-apple-darwin/bin/codex",
+    "reported_version": "0.153.4",
+    "sha256": "b973d440acac501fd2594a43e7ca9ce41e0a65b9dfb28d0d7a7837c99e1261e3"
+  },
+  "codex_app": {
+    "bundle_path": "/Applications/Codex.app",
+    "bundle_short_version": "26.901.51231",
+    "bundle_version": "8109",
+    "bundle_signature_valid": true,
+    "bundle_identifier": "com.openai.codex",
+    "team_identifier": "2DC432GLL2",
+    "app_server_binary": "/Applications/Codex.app/Contents/Resources/codex",
+    "app_server_reported_version": "0.153.4",
+    "app_server_sha256": "a30ec314bbd0e3721632234d07db7c99855db3b9f1e32dbe8c791947f07e7629",
+    "running_app_server_uses_bundle_binary": true,
+    "candidate_or_wrapper_selected": false
+  },
+  "selection_environment": {
+    "launchd_CODEX_CLI_PATH_set": false,
+    "task_process_CODEX_CLI_PATH_set": false
+  },
+  "hooks": {
+    "path": "/Users/pearly/.codex/hooks.json",
+    "sha256": "ffaad5c3533a2016253af148c96721818807823f779845a35c5d7dad2c676c2b"
+  },
+  "sessionmeta": {
+    "current_long_lived_thread_id": "01a00147-39cb-7b50-b78d-7baed910eb45",
+    "current_long_lived_thread_cli_version": "0.148.0-alpha.9",
+    "current_thread_is_historical_provenance": true,
+    "recent_fresh_current_signed_root_observed": false,
+    "fresh_current_signed_identity_cohort_required": true
+  },
+  "verdict": {
+    "installed_cli_and_app_server_semver_converged": true,
+    "installed_binary_hashes_equal": false,
+    "runtime_guard_may_accept_current_signed_sessionmeta": true,
+    "current_thread_may_be_relabelled_as_current_signed": false,
+    "live_current_signed_child_identity_qualified": false,
+    "native_heterogeneous_child_restored": false,
+    "phase1_complete": false,
+    "direct_write_qualified": false,
+    "phase2_state": "closed",
+    "phase3_state": "closed"
+  }
+}

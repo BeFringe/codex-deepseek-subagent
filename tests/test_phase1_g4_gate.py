@@ -79,6 +79,17 @@ class Phase1G4GateTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "declared Phase 1 completion"):
                 check_phase1_g4.load_status(path)
 
+    def test_app_server_host_control_cannot_replace_native_lifecycle(self):
+        value = json.loads(STATUS.read_text(encoding="utf-8"))
+        value["goal_contract"]["app_server_source_adjustment"][
+            "may_substitute_native_child_lifecycle"
+        ] = True
+
+        with tempfile.TemporaryDirectory(dir=REPO / "probes") as directory:
+            path = self.write_status(value, directory)
+            with self.assertRaisesRegex(ValueError, "goal contract drifted"):
+                check_phase1_g4.load_status(path)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -2,19 +2,25 @@
 
 # Codex DeepSeek Subagent
 
+> **Current compatibility warning:** this standalone native-child route retains
+> historical evidence only for Codex `0.148.x` and earlier. Codex `0.149.0+` no
+> longer allows an agent role to change its inherited parent provider, so the
+> current OpenAI-parent → DeepSeek-child configuration must fail closed.
+> **Do not run the installation steps below on current Codex.** See the
+> [current provider-inheritance boundary](docs/advanced.en.md#composition-boundary).
+
 Keep the Codex main task on GPT / OpenAI while using the inexpensive, fast
 `deepseek-v4-flash` as a native subagent for search, enumeration, logs, and
 high-volume text work.
 
-DeepSeek is the ready-to-use implementation shipped by this repository, not a
+DeepSeek is the legacy implementation retained by this repository, not a
 limit of the composition. Any provider/model pair that Codex can call through a
 supported API and that satisfies the task's capability and data boundaries can
-be adapted into an independent subagent in the same way. The current installer
-still installs only the verified DeepSeek configuration. See
+be evaluated as an independent subagent with the same layered model. Current
+versions have no qualified cross-provider native-child installation route. See
 [Adapting another provider/model](docs/advanced.en.md#adapting-another-providermodel).
 
-This installation does not require CC Switch, MCP, a plugin, another Codex CLI,
-or a global switch to DeepSeek. Complete the three steps below.
+The three-step installation below is retained as legacy documentation only.
 
 ## Three-step install
 

@@ -1,0 +1,55 @@
+{
+  "schema": 1,
+  "observed_at": "2026-09-07T04:12:01.592738+00:00",
+  "platform": "darwin-arm64",
+  "runtime_role": "current_signed_runtime",
+  "codex_version": "0.153.4",
+  "source_commit": "3d2ee51ca2d5db578f328aa75e20aa22c0197c9a",
+  "binary_path": "/Applications/Codex.app/Contents/Resources/codex",
+  "binary_sha256": "a30ec314bbd0e3721632234d07db7c99855db3b9f1e32dbe8c791947f07e7629",
+  "transport": "disposable-stdio",
+  "explicit_environment_keys": [
+    "CODEX_HOME",
+    "LANG",
+    "PATH",
+    "RUST_LOG",
+    "TMPDIR"
+  ],
+  "credential_environment_inherited": false,
+  "client_auth_supplied": false,
+  "thread_started": false,
+  "thread_identity_supplied": false,
+  "initialize_ok": true,
+  "fs_write_response_ok": true,
+  "process_spawn_response_ok": true,
+  "process_exit_code": 0,
+  "app_server_exit_code_after_stdin_eof": 0,
+  "app_server_stderr_line_count": 0,
+  "before_server_eof": {
+    "fs_write": {
+      "exists": true,
+      "sha256": "c23d6baed3022fe33e5f339be8e5000476342a7581b34d300eafb48aefe2bc3d"
+    },
+    "process_spawn": {
+      "exists": true,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "bounded_post_termination_disk_observation": {
+    "fs_write": {
+      "exists": true,
+      "sha256": "c23d6baed3022fe33e5f339be8e5000476342a7581b34d300eafb48aefe2bc3d"
+    },
+    "process_spawn": {
+      "exists": true,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "temporary_roots_removed_after_probe": true,
+  "client_connection_sufficient_for_observed_host_control": true,
+  "native_child_reachability_proven": false,
+  "pretooluse_child_mediation_proven": false,
+  "strong_global_quiescence_proven": false,
+  "phase1_complete": false,
+  "direct_write_qualified": false
+}

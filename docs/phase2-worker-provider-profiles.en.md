@@ -35,6 +35,21 @@ The three transport dimensions remain orthogonal:
 ZHIPU is a provider and GLM is a model family. The candidate profile name is
 therefore `glm-thinking`; it must not conflate those concepts.
 
+## Current upstream entry blocker
+
+Codex `0.149.0+` agent roles permit bounded model-behavior overrides and
+capability reductions only; the child retains the parent's model provider.
+Exact-source oracles for `0.150.0-alpha.8` and `0.153.4` both establish this
+boundary. The profile model must therefore not assume that `model_provider` in
+a standalone agent TOML can still switch a native child's provider.
+
+In addition to complete Phase 1 evidence, entering Phase 2 now requires a new
+upstream seam: bounded native per-child provider/profile selection, or explicit
+user approval to change this project's architectural contract that Codex-native
+lifecycle remains authoritative. Utopia's current MixAgents Broker uses an
+independent App Server lifecycle. It is a relevant alternative architecture,
+but not an entry seam for this Phase 2 or evidence that P7 passes.
+
 ## Invariants
 
 - The OpenAI parent always remains on its current Codex-native OpenAI provider,
@@ -102,11 +117,13 @@ as `plaintext_handoff_deepseek` and `plaintext_handoff_zhipu`.
    behavior, and stable canonical hash.
 3. Derive the installer, Hook matcher, Skill, Agent template, and smoke oracle
    from one profile contract or enforce their consistency with tests.
-4. Preserve `$use-v4-flash-worker` as a backward-compatible wrapper/alias so
-   existing DeepSeek users do not abruptly change commands or data boundaries.
-5. Move the existing DeepSeek route into the profile without behavioral change,
-   then qualify a `native` control. Do not add the ZHIPU bridge or a real ZHIPU
-   credential in the same step.
+4. First validate the upstream native per-child provider seam. If the seam is
+   still absent, stop Phase 2 at schema research; do not install or migrate a
+   worker.
+5. Once the seam exists, preserve `$use-v4-flash-worker` as a backward-compatible
+   wrapper/alias and migrate the legacy DeepSeek route under an explicit version
+   boundary. Do not add the ZHIPU bridge or a real ZHIPU credential in the same
+   step.
 6. Complete POSIX/Windows provider-free tests, the DeepSeek live regression,
    and full rollback before separately adjudicating Phase 2 complete.
 
@@ -144,8 +161,10 @@ authority.
 - The profile schema, installer, matcher, Skill, Agent template, and smoke
   artifacts agree.
 - The assignment-transport core contains no DeepSeek/ZHIPU product hard-code.
-- The v4 wrapper remains compatible and the existing DeepSeek direct Responses
-  route is green.
+- Current source and live evidence establish a native per-child provider seam
+  without changing the parent provider.
+- The v4 wrapper remains compatible within an explicit version boundary and the
+  DeepSeek direct Responses route is green.
 - A native-worker control bypasses both the plaintext Hook and bridge.
 - Static and live evidence prove credential and parent-provider isolation.
 - POSIX/Windows parity, callback/cancel/termination, concurrency, and rollback

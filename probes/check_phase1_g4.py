@@ -35,6 +35,27 @@ PROGRESS_STATES = {"pending", "partial", "qualified"}
 PROVIDER_FREE_STATES = {"pending", "partial", "pass"}
 PHASE_STATES = {"closed", "open", "complete"}
 REPO_ROOT = Path(__file__).resolve().parents[1]
+EXPECTED_GOAL_CONTRACT = {
+    "state": "active_fail_closed",
+    "terminal_acceptance_unchanged": True,
+    "app_server_source_adjustment": {
+        "gate": "P4",
+        "surface": "host_control_plane",
+        "required_proofs": [
+            "client_connection_authority",
+            "native_child_reachability_or_separation",
+            "sandbox_and_mutation_mediation",
+        ],
+        "may_substitute_native_child_lifecycle": False,
+    },
+    "unchanged_native_lifecycle_requirements": [
+        "canonical_agentpath",
+        "wait",
+        "callback",
+        "cancel",
+        "multi_agent_v2",
+    ],
+}
 
 
 def _index_exact(values, required, label):
@@ -67,6 +88,8 @@ def load_status(path):
     value = json.loads(path.read_text(encoding="utf-8"))
     if value.get("schema") != 1:
         raise ValueError("phase gate has an invalid schema")
+    if value.get("goal_contract") != EXPECTED_GOAL_CONTRACT:
+        raise ValueError("Phase 1 goal contract drifted or substituted App Server authority")
 
     phase1 = value.get("phase1")
     phase2 = value.get("phase2")

@@ -27,7 +27,12 @@ from compatibility_state import (
 
 
 MAX_SESSION_META_LINE = 1024 * 1024
-PINNED_CODEX_VERSION = "0.148.0-alpha.9"
+LIVE_HOOK_SCHEMA_RUNTIME_ROLES = {
+    "migration_handoff_runtime": "0.148.0-alpha.9",
+    "prior_signed_runtime": "0.150.0-alpha.8",
+    "current_signed_runtime": "0.153.4",
+}
+SUPPORTED_LIVE_CODEX_VERSIONS = frozenset(LIVE_HOOK_SCHEMA_RUNTIME_ROLES.values())
 ATTESTATION_RE = re.compile(
     r"\ABEGIN CODEX WORKER ATTESTATION\n(\{.*\})\nEND CODEX WORKER ATTESTATION\Z",
     re.DOTALL,
@@ -199,8 +204,9 @@ def read_session_meta(transcript_path: str, *, require_child_fields: bool = True
     for field in ("session_id", "id", "cwd"):
         if not isinstance(payload.get(field), str) or not payload[field]:
             raise IdentityMismatch(f"SessionMeta {field} is invalid")
-    if payload.get("cli_version") != PINNED_CODEX_VERSION:
-        raise IdentityMismatch("SessionMeta cli_version is not pinned")
+    cli_version = payload.get("cli_version")
+    if cli_version not in SUPPORTED_LIVE_CODEX_VERSIONS:
+        raise IdentityMismatch("SessionMeta cli_version is not in the pinned live set")
     created_timestamp = _session_meta_timestamp(
         payload.get("timestamp"), "SessionMeta payload timestamp"
     )
@@ -255,6 +261,7 @@ def child_identity_from_hook(hook_input: Mapping[str, object]) -> dict[str, str]
         "parent_thread_id": meta["parent_thread_id"],
         "agent_type": str(agent_type),
         "canonical_agent_path": meta["agent_path"],
+        "codex_version": meta["cli_version"],
     }
 
 
@@ -286,6 +293,8 @@ def child_identity_from_stop(hook_input: Mapping[str, object]) -> dict[str, str]
         raise IdentityMismatch("stopping thread is not the direct parent")
     if parent_meta.get("parent_thread_id") is None and parent_meta["id"] != runtime_session_id:
         raise IdentityMismatch("root parent does not match Hook runtime session")
+    if parent_meta["cli_version"] != meta["cli_version"]:
+        raise IdentityMismatch("parent and child Codex versions do not match")
     return {
         "runtime_session_id": meta["session_id"],
         "child_thread_id": meta["id"],
@@ -293,6 +302,7 @@ def child_identity_from_stop(hook_input: Mapping[str, object]) -> dict[str, str]
         "parent_thread_id": meta["parent_thread_id"],
         "agent_type": meta["agent_role"],
         "canonical_agent_path": meta["agent_path"],
+        "codex_version": meta["cli_version"],
     }
 
 

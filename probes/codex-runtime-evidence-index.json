@@ -1,0 +1,41 @@
+{
+  "schema": 1,
+  "current_runtime_role": "current_signed_runtime",
+  "runtime_roles": {
+    "migration_handoff_runtime": {
+      "codex_version": "0.148.0-alpha.9",
+      "source_commit": "9392c3fa5bcda342b5b96a1a04d67b2f781617c2"
+    },
+    "schema_replay_runtime": {
+      "codex_version": "0.148.0-alpha.15",
+      "source_commit": "ffe1de5cec9c0cd02629eb246534e4622da0ff41"
+    },
+    "prior_signed_runtime": {
+      "codex_version": "0.150.0-alpha.8",
+      "source_commit": "fcbdb57851be70192fd0c21faa9e529146e93ff1"
+    },
+    "current_signed_runtime": {
+      "codex_version": "0.153.4",
+      "source_commit": "3d2ee51ca2d5db578f328aa75e20aa22c0197c9a"
+    }
+  },
+  "sessionmeta_evidence_roles": [
+    "migration_handoff_runtime",
+    "schema_replay_runtime",
+    "prior_signed_runtime",
+    "current_signed_runtime"
+  ],
+  "live_hook_schema_roles": [
+    "migration_handoff_runtime",
+    "prior_signed_runtime",
+    "current_signed_runtime"
+  ],
+  "current_evidence": {
+    "component_boundaries": "probes/codex-0.153.4-component-boundaries.json",
+    "native_assignment_seam": "probes/codex-0.153.4-native-assignment-seam.json",
+    "lifecycle_sources": "probes/codex-0.153.4-lifecycle-sources.json",
+    "mutation_surfaces": "probes/codex-0.153.4-mutation-surfaces.json",
+    "appserver_host_control": "probes/codex-0.153.4-appserver-host-control.json",
+    "installed_baseline": "probes/codex-0.153.4-installed-baseline-20260907.json"
+  }
+}

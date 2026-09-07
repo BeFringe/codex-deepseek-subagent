@@ -246,6 +246,42 @@ class SessionMetaIdentityTests(unittest.TestCase):
 
         self.assert_invalid(bundle, "cli_version is not pinned")
 
+    def test_previous_runtime_pairs_remain_replayable(self):
+        for runtime_role in (
+            "migration_handoff_runtime",
+            "schema_replay_runtime",
+            "prior_signed_runtime",
+        ):
+            with self.subTest(runtime_role=runtime_role):
+                previous_version = identity_probe.runtime_identity(
+                    identity_probe.RUNTIME_EVIDENCE_INDEX, runtime_role
+                )["codex_version"]
+                bundle = copy.deepcopy(self.bundle)
+                bundle["codex_version"] = previous_version
+                bundle["source_commit"] = identity_probe.SUPPORTED_RUNTIME_PAIRS[
+                    previous_version
+                ]
+                for observation_value in bundle["observations"]:
+                    for rollout_name in ("parent_rollout", "child_rollout"):
+                        rollout = observation_value[rollout_name]
+                        line = json.loads(rollout["session_meta_line"])
+                        line["payload"]["cli_version"] = previous_version
+                        rollout["session_meta_line"] = json.dumps(line) + "\n"
+
+                result = identity_probe.validate_bundle(bundle)
+
+                self.assertTrue(result["mechanically_exact"])
+                self.assertTrue(result["matrix_complete"])
+
+    def test_runtime_version_cannot_pair_with_another_source_commit(self):
+        bundle = copy.deepcopy(self.bundle)
+        migration = identity_probe.runtime_identity(
+            identity_probe.RUNTIME_EVIDENCE_INDEX, "migration_handoff_runtime"
+        )
+        bundle["source_commit"] = migration["source_commit"]
+
+        self.assert_invalid(bundle, "unpinned runtime/source pair")
+
     def test_sessionmeta_payload_timestamp_after_record_fails(self):
         bundle = copy.deepcopy(self.bundle)
         item = bundle["observations"][0]
