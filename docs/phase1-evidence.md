@@ -2049,3 +2049,26 @@ This closes the current-source port and its source tests only. No current live
 PreToolUse plaintext, SubagentStart capsule consumption, send/followup delivery,
 paired denial, or broader identity cohort has been observed. P1 remains
 partial; Phase 1 and direct write remain false, and Phase 2/3 remain closed.
+
+## Current signed-runtime headless candidate build preflight
+
+The source-qualified plaintext seam was compiled into a standalone arm64 CLI
+without selecting it for the Codex App. A direct `codex-cli` build completed in
+4 minutes 3 seconds and produced a 505,850,112-byte Mach-O binary with SHA-256
+`aef151f72a66b06a57b0f75f172fcd4efae3bcb927ece8ad262165c560501f21`.
+Its `--version` result matches the semantic `current_signed_runtime` entry. The
+binary is ad-hoc linker-signed with no team identifier, so it is an isolated
+candidate rather than a replacement for the signed App resource.
+
+The compact build target occupied 4.2 GB, not the earlier projected 27 GB. It
+was deleted after copying only the 482 MB executable into the disposable source
+workspace. The source worktree remains 85 MB. No GUI process was restarted, no
+`CODEX_CLI_PATH` or live config was changed, no credential value was read, and
+no agent turn was started. The receipt is
+`probes/current-signed-runtime-plaintext-assignment-seam-headless-preflight.json`.
+
+This is positive build and storage-cleanup evidence only. It does not prove
+live plaintext delivery, SessionMeta/AgentPath binding, Hook mediation,
+callback, termination, sandbox confinement, or direct-write qualification.
+P1 and Phase 1 therefore remain partial, both promotion booleans remain false,
+and Phase 2/3 remain closed.

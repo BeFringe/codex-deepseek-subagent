@@ -42,6 +42,8 @@
           "probes/current-signed-runtime-plaintext-assignment-seam-source-candidate.json",
           "probes/current-signed-runtime-plaintext-assignment-seam-source-candidate.patch",
           "tests/test_current_plaintext_assignment_source_candidate.py",
+          "probes/current-signed-runtime-plaintext-assignment-seam-headless-preflight.json",
+          "tests/test_current_plaintext_assignment_headless_preflight.py",
           "probes/check_codex_component_boundaries.py",
           "probes/codex-0.148.0-alpha.9-native-assignment-seam.json",
           "probes/check_native_assignment_seam.py",
@@ -61,7 +63,7 @@
           "probes/g4-live-root-lifecycle-adjudication-result-20260817.json",
           "probes/g4-prior-signed-runtime-encrypted-spawn-negative-20260907.json"
         ],
-        "blocker": "the last signed live negative on the prior signed runtime encrypted the spawn message before PreToolUse, so the Hook denied it and SubagentStart could not consume a capsule; an exact-current-source opt-in candidate now passes default-encrypted, explicit-empty, configured-null, exact-namespace, user-message-wire, queue/trigger, and five-case spawn tests, but it has no built or headless live current-runtime receipt; neither upstream SDK nor App Server exposes this as a supported native spawn choice, and live PreToolUse/SubagentStart consumption, send_message/followup_task delivery, distinct same-message deny pairs, and the broader cohort remain unqualified"
+        "blocker": "the last signed live negative on the prior signed runtime encrypted the spawn message before PreToolUse, so the Hook denied it and SubagentStart could not consume a capsule; an exact-current-source opt-in candidate now passes default-encrypted, explicit-empty, configured-null, exact-namespace, user-message-wire, queue/trigger, and five-case spawn tests and builds as a standalone headless binary, but it has no headless live current-runtime receipt; neither upstream SDK nor App Server exposes this as a supported native spawn choice, and live PreToolUse/SubagentStart consumption, send_message/followup_task delivery, distinct same-message deny pairs, and the broader cohort remain unqualified"
       },
       {
         "id": "P2",
