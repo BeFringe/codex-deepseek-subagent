@@ -2072,3 +2072,98 @@ live plaintext delivery, SessionMeta/AgentPath binding, Hook mediation,
 callback, termination, sandbox confinement, or direct-write qualification.
 P1 and Phase 1 therefore remain partial, both promotion booleans remain false,
 and Phase 2/3 remain closed.
+
+## Current-runtime live root plaintext lifecycle and parent adjudication
+
+The installed G4 overlay had one migration drift before the live probe: every
+directly imported handler dependency matched the repository except
+`runtime_guard.py`, whose installed copy admitted only the migration runtime.
+With no pending or claimed G4 assignment, that one file was compiled and
+atomically replaced after preserving the previous bytes under
+`~/.codex/hooks/backups/codex-deepseek-subagent-g4-20260907T063224Z/`.
+The installed hash now matches the repository at
+`719f57d2caa9c1cc833c0113f166385a2eda8380fea98967643daa4aa754595a`.
+The v4 Hook, hooks registry, G4 role, App resource, and GUI App Server selection
+were unchanged. No credential value was observed.
+
+The absolute-path headless candidate first completed a no-tool `READY` control
+under the current ChatGPT login. A stateful root then used only the candidate's
+semantic plaintext opt-in and native collaboration namespace. Root thread
+`01a07a93-c36e-73a0-b699-21e88de9e3d0` spawned child
+`01a07a94-2bb9-7441-b25e-bd4734ef5482`, requested name
+`g4_current_headless_root_2`, and received canonical AgentPath
+`/root/g4_current_headless_root_2`. Both immutable SessionMeta records report
+the current signed runtime, the same runtime session, root, branch, and full
+Git HEAD; the child's source also binds depth one, the exact parent thread, and
+`g4_qualification_probe_worker`.
+
+PreToolUse sequence 1052 observed the exact 3,495-byte plaintext assignment at
+tool call `call_9wOZO4Zcq3LwvVc4BHUwv7Ho`; SubagentStart sequence 1053 consumed
+the same assignment hash and bound the child identity. The child performed one
+native read-only `list_agents` control. Its first final used the wrong shape, so
+SubagentStop sequence 1055 returned
+`TASK.FINAL_INVALID_FINAL_WITHOUT_CONTRIBUTION`; the child emitted an exact
+corrected attestation and sequence 1056 accepted it. The parent rollout contains
+an exact child-completed activity and a non-timed-out wait. The wait event's
+`receiver_thread_ids` projection is empty, so this evidence does not overclaim
+per-target wait identity.
+
+Two post-termination observations found the candidate process absent and the
+root clean at the same HEAD, tree, write-tree, and index hash. The final report
+moved from `reported` to `consumed` only after fresh five-dimension parent
+adjudication against the immutable input hash
+`e0009a9b402299701b3e957efef838435eede7c9ce3bf1c29490a10d32b94f77`.
+The minimized receipts and executable assertions are:
+
+- `probes/g4-current-headless-root-lifecycle-adjudication-input-20260907.json`;
+- `probes/g4-current-headless-root-lifecycle-adjudication-result-20260907.json`;
+- `tests/test_g4_current_headless_root_lifecycle_adjudication.py`.
+
+This is the first current-runtime live proof that the candidate plaintext spawn
+reaches PreToolUse, is consumed by SubagentStart, binds exact native identity,
+survives an invalid-final continuation, produces a parent-visible completion,
+and reaches consumed state. It advances P1, P2, P3, P5b, P6, P6a, and P6b.
+It is one root read-only sample: distinct same-message deny pairs,
+send/followup, nested/serial/concurrent cohorts, compact/resume, cancel,
+mutation, trusted sandbox, and strong global quiescence remain open. Phase 1
+and direct write remain false.
+
+## Live missing-PostToolUse writer-lease recovery
+
+A two-file documentation patch acquired writer claim
+`df2bebbb-4214-46e3-abe4-b84c37c32f04`, then failed apply-patch context
+verification before changing either target. The runtime emitted no PostToolUse
+callback for that tool failure. The next overlapping patch was denied, proving
+the residual lease failed closed. The exact recovery command first rejected a
+noncanonical explicit root `agent_type`, then accepted the root identity derived
+from immutable SessionMeta. It released the claim only because the before and
+after path snapshot hashes were identical and persisted an abort receipt.
+
+`probes/g4-live-missing-posttooluse-recovery-20260907.json` and
+`tests/test_g4_live_missing_posttooluse_recovery.py` freeze the event without raw
+tool payload. This is not multi-agent competition or child misbehavior; it is a
+real missing-failure-callback lifecycle gap. Explicit unchanged recovery is
+reproducible, but automatic failure-callback completeness and all-surface writer
+serialization remain unqualified under P5b.
+
+## Isolated ZHIPU direct-Responses feasibility
+
+The current official ZHIPU Codex page directly specifies
+`https://open.bigmodel.cn/api/v1`, `wire_api=responses`, and `glm-5.3`. Under
+the user's explicit approval, three small direct HTTP invocations used the host
+credential through curl configuration stdin. The value was never placed in
+argv, printed, hashed, retained, or committed. The first 32-output-token control
+returned HTTP 200 with a standard `response` object and `status=incomplete`.
+The final 384-output-token control completed in 4.164160 seconds with separate
+`reasoning` and `message` items and an exact 21-byte marker. Only response
+structure, timing, counts, and request/response hashes were retained.
+
+The receipt is `probes/zhipu-responses-direct-feasibility-20260907.json`, with
+assertions in `tests/test_zhipu_responses_direct_feasibility.py`. It proves live
+wire feasibility, not a native ZHIPU child: no Codex client, tool result,
+streaming, continuation, callback, wait, cancel, SessionMeta, or AgentPath was
+qualified. Current bounded agent-role projection still preserves the parent's
+provider, so the missing per-child provider seam remains the critical join.
+The three exploratory calls define neither a representative cohort nor p95.
+Phase 3 remains closed and no bridge or live provider configuration was
+installed.

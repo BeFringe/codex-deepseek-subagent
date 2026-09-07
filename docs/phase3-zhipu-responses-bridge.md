@@ -4,9 +4,10 @@
 [Phase 2](phase2-worker-provider-profiles.md) ·
 [Phase 1 / G4 probe plan](phase1-g4-probe-plan.md)
 
-状态：**关闭，未获准设计实现或安装**。Phase 1 G4 通过还不够；只有 Phase 2 profile
-稳定、回归与回滚证据闭合并被独立裁决完成后，才能开始本阶段。本文不包含 credential、
-live endpoint 承诺或可运行 bridge 配置。
+状态：**关闭，未获准设计实现或安装**。用户只批准了一个隔离的 direct-Responses
+feasibility probe；这不等于打开 Phase 3。Phase 1 G4 通过还不够；只有 Phase 2 profile
+稳定、回归与回滚证据闭合并被独立裁决完成后，才能开始本阶段。本文不包含 credential
+或可运行 bridge 配置。
 
 ## 目标拓扑
 
@@ -62,6 +63,23 @@ https://open.bigmodel.cn/api/v1
 `open.bigmodel.cn`、`api.z.ai` 或未来 endpoint 的差异应通过 Phase 2 provider profile/
 config/env 选择，不得硬编码到 assignment transport core。本文记录候选，不宣称当前
 endpoint、模型名或账户权限已经资格认证。
+
+### 2026-09-07 隔离 wire feasibility
+
+当前官方 Codex 页面可直接取得，但没有出现在同日 `llms.txt` 索引中；页面内容 SHA-256、
+三次独立 invocation、latency、request/response hash 与只保留结构化摘要的结果固定在
+[`../probes/zhipu-responses-direct-feasibility-20260907.json`](../probes/zhipu-responses-direct-feasibility-20260907.json)。
+官方示例已使用 `glm-5.3`。第一次 32 output-token 请求取得标准 `response` JSON 并以
+`status=incomplete` 结束；最终 384 output-token control 取得 HTTP 200、
+`status=completed`、独立 `reasoning`/`message` items 和精确 21 字节 marker。
+
+这把“endpoint 是否真实支持 Responses”从纯文档候选推进为 live wire feasibility，仍然
+没有证明 Codex client、streaming、tool call/result、continuation、normalization、callback、
+cancel 或 native child。尤其 Codex 的 bounded role projection 仍不允许 child role 选择
+不同于 parent 的 provider；所以不能把这次 direct HTTP 正证据写成
+`OpenAI parent → native ZHIPU child`。credential 只以 host 环境变量的存在性参与调用，
+值未进入 argv、输出、hash、响应留存或 Git。三次 exploratory 调用不是 representative
+latency cohort，也没有定义 p95。
 
 ## Bridge 与 normalization 职责
 

@@ -4,11 +4,12 @@
 [Phase 2](phase2-worker-provider-profiles.en.md) ·
 [Phase 1 / G4 probe plan](phase1-g4-probe-plan.md)
 
-Status: **closed and not approved for implementation or installation**. Passing
-Phase 1 G4 is not sufficient. Work may start only after the Phase 2 profile is
-stable, its regression and rollback evidence closes, and a separate
-adjudication marks it complete. This file contains no credential, live-endpoint
-promise, or runnable bridge configuration.
+Status: **closed and not approved for implementation or installation**. The user
+approved one isolated direct-Responses feasibility probe only; that does not
+open Phase 3. Passing Phase 1 G4 is not sufficient. Work may start only after
+the Phase 2 profile is stable, its regression and rollback evidence closes, and
+a separate adjudication marks it complete. This file contains no credential or
+runnable bridge configuration.
 
 ## Target topology
 
@@ -75,6 +76,29 @@ account/region differences, and live behavior. Differences such as
 profile/config/environment selection, never in the assignment-transport core.
 This file records a candidate; it does not claim that an endpoint, model name,
 or account permission is currently qualified.
+
+### 2026-09-07 isolated wire feasibility
+
+The current official Codex page was directly retrievable but was absent from
+the same-day `llms.txt` index. Its SHA-256 and the exact request/response hashes,
+latencies, and structure-only summaries for three independent invocations are
+frozen in
+[`../probes/zhipu-responses-direct-feasibility-20260907.json`](../probes/zhipu-responses-direct-feasibility-20260907.json).
+The official example now uses `glm-5.3`. A first 32-output-token request returned
+a standard `response` object with `status=incomplete`. The final
+384-output-token control returned HTTP 200, `status=completed`, separate
+`reasoning` and `message` items, and the exact 21-byte marker.
+
+This advances “does the endpoint actually speak Responses?” from a documented
+candidate to live wire feasibility. It does not qualify the Codex client,
+streaming, tool calls/results, continuation, normalization, callbacks,
+cancellation, or a native child. In particular, Codex's bounded role projection
+still prevents a child role from selecting a provider different from the
+parent's provider, so this direct HTTP result is not evidence for
+`OpenAI parent -> native ZHIPU child`. The host credential participated only by
+presence and never entered argv, output, a hash, retained response data, or Git.
+The three exploratory calls are not a representative latency cohort and define
+no p95.
 
 ## Bridge and normalization responsibilities
 

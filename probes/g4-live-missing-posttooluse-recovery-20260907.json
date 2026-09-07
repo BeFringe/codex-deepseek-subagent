@@ -1,0 +1,55 @@
+{
+  "schema": 1,
+  "evidence_kind": "live_apply_patch_missing_posttooluse_writer_claim_recovery",
+  "observed_at": "2026-09-07T06:58:05.887861+00:00",
+  "runtime_session_id": "01a00147-39cb-7b50-b78d-7baed910eb45",
+  "actor": {
+    "thread_id": "01a00147-39cb-7b50-b78d-7baed910eb45",
+    "agent_type": "root",
+    "canonical_agent_path": "/root"
+  },
+  "root": "/Users/pearly/文档/CAT/codex-deepseek-subagent",
+  "trigger": {
+    "tool_name": "apply_patch",
+    "tool_use_id": "exec-dd7ac421-023c-4d60-9c3a-82c16d007874",
+    "paths": [
+      "docs/phase3-zhipu-responses-bridge.md",
+      "docs/phase3-zhipu-responses-bridge.en.md"
+    ],
+    "failure_stage": "apply_patch_context_verification",
+    "posttooluse_callback_observed": false,
+    "target_bytes_changed": false
+  },
+  "claim": {
+    "claim_id": "df2bebbb-4214-46e3-abe4-b84c37c32f04",
+    "claim_sha256": "e7d5238c307845b9086f263c9d3cc427d07a5b57f77e7e2f5bf9f0a6c800360f",
+    "created_at": "2026-09-07T06:56:36.600232+00:00",
+    "blocked_next_overlapping_patch": true,
+    "absent_after_recovery": true
+  },
+  "recovery": {
+    "tool": "probes/recover_writer_claim.py",
+    "reason": "missing_posttooluse_after_tool_failure",
+    "first_noncanonical_root_agent_type_attempt_denied": true,
+    "exact_sessionmeta_root_identity_required": true,
+    "classification": "aborted_unchanged_after_missing_callback",
+    "before_path_snapshot_sha256": "ffb39b6e18bb80cfbfe13d36b3e86d274ef92787a4672013933c09a72dbf7f80",
+    "after_path_snapshot_sha256": "ffb39b6e18bb80cfbfe13d36b3e86d274ef92787a4672013933c09a72dbf7f80",
+    "abort_sha256": "f29e260292babe1e8de1caaa655047dbc26170859f68f736ebc96171fd074b77",
+    "abort_envelope_sha256": "276237d11eb61ffcbd063c10544bdcc80258d3fe42b26b62e44d8bc19a7073be",
+    "abort_present_after_recovery": true,
+    "raw_payload_stored": false
+  },
+  "scope_verdict": {
+    "multi_agent_competition_involved": false,
+    "child_writer_involved": false,
+    "multi_file_patch_context_mismatch_triggered": true,
+    "lease_fail_closed_after_missing_callback": true,
+    "unchanged_recovery_reproducible": true,
+    "automatic_failed_tool_callback_complete": false,
+    "all_surface_writer_serialization_qualified": false,
+    "p5b_complete": false,
+    "phase1_complete": false,
+    "direct_write_qualified": false
+  }
+}
