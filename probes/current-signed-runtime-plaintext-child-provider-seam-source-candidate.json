@@ -1,0 +1,75 @@
+{
+  "schema": 1,
+  "observed_at": "2026-09-07T08:20:00Z",
+  "status": "source_and_headless_binary_qualified_live_unproven",
+  "runtime_role": "current_signed_runtime",
+  "base_source_commit": "3d2ee51ca2d5db578f328aa75e20aa22c0197c9a",
+  "source_patch": {
+    "path": "probes/current-signed-runtime-plaintext-child-provider-seam-source-candidate.patch",
+    "sha256": "9255c8e82021d4358f4583962982dcc1761ce97754298ef52850226fcdcf0b1d",
+    "bytes": 52855,
+    "lines": 1328,
+    "changed_path_count": 22,
+    "cargo_lock_included": false,
+    "reverse_apply_check_on_candidate_tree": "pass"
+  },
+  "provider_authority_seam": {
+    "config_key": "features.multi_agent_v2.child_model_providers",
+    "authority_shape": "exact agent role to existing provider id map",
+    "default": "empty map; inherit parent provider",
+    "role_file_can_self_authorize_provider": false,
+    "unknown_authorized_provider": "deny",
+    "cross_provider_requires_openai_auth": "deny",
+    "resume_stored_provider_mismatch": "deny",
+    "changes_parent_provider": false,
+    "changes_assignment_transport": false,
+    "grants_mutation_authority": false,
+    "credential_values_read_or_stored": false
+  },
+  "source_results": {
+    "format": "pass",
+    "diff_check": "pass",
+    "features_config_parse": "1 passed",
+    "role_authority_tests": "18 passed",
+    "runtime_config_resolution": "1 passed"
+  },
+  "headless_binary": {
+    "reported_version": "0.153.4",
+    "path": "/private/tmp/codex-current-plaintext.aTU9C2/candidate-provider-seam/codex",
+    "sha256": "d73f8396033a24bfe4219e1772694c5bf0212cd460951060811b7498dc4d5862",
+    "bytes": 294064344,
+    "signature_kind": "adhoc-linker-signed",
+    "team_identifier_present": false,
+    "build_command": "cargo build --release -p codex-cli",
+    "build_elapsed": "29m 34s"
+  },
+  "probe_role_fixture": {
+    "path": "fixtures/g4-zhipu-responses-readonly-role.toml",
+    "model": "glm-5.3",
+    "contains_provider_definition": false,
+    "contains_credential_value": false,
+    "requested_posture": "read_only"
+  },
+  "storage": {
+    "cargo_target_after_build": "17G",
+    "cargo_target_deleted_after_validation": false,
+    "cleanup_pending": true,
+    "candidate_binary_preserved": true
+  },
+  "live_boundaries": {
+    "candidate_installed_or_selected": false,
+    "gui_app_server_selected": false,
+    "live_config_modified": false,
+    "native_zhipu_child_observed": false,
+    "credential_values_read_or_stored": false
+  },
+  "verdict": {
+    "source_candidate_qualified": true,
+    "headless_binary_build_qualified": true,
+    "native_external_child_qualified": false,
+    "phase1_complete": false,
+    "direct_write_qualified": false,
+    "phase2_state": "closed",
+    "phase3_state": "closed"
+  }
+}

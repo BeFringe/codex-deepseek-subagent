@@ -2167,3 +2167,36 @@ provider, so the missing per-child provider seam remains the critical join.
 The three exploratory calls define neither a representative cohort nor p95.
 Phase 3 remains closed and no bridge or live provider configuration was
 installed.
+
+## Exact child-provider authority seam candidate
+
+The direct ZHIPU wire probe did not make the earlier G4 child provider-free: that
+child performed real native inference through the inherited OpenAI parent
+provider. Current source deliberately omits `model_provider` from bounded role
+overrides, so neither the v4 Hook nor a child role file can select an external
+Responses endpoint. Assignment transport and provider selection are separate
+joins.
+
+An isolated current-source candidate now adds only an exact parent-owned
+`features.multi_agent_v2.child_model_providers` map. Its default is empty. A
+role keeps the parent provider unless its exact agent type maps to an existing
+provider id; a role file cannot authorize itself, an unknown provider fails
+closed, and a different provider that requires inherited OpenAI authentication
+is rejected. A resumed role child also fails if its stored provider differs
+from the current exact mapping. This does not grant mutation authority or
+change the parent provider.
+
+The combined plaintext-plus-provider patch and machine-readable pre-live receipt
+are `probes/current-signed-runtime-plaintext-child-provider-seam-source-candidate.patch`
+and
+`probes/current-signed-runtime-plaintext-child-provider-seam-source-candidate.json`.
+Formatting, reverse-apply, one feature parse test, eighteen role/authority tests,
+and one runtime config test passed. A standalone ad-hoc-signed CLI was built;
+it has not been installed or selected by the GUI. The read-only GLM role fixture
+contains a model name but neither a provider definition nor a credential value.
+
+This is a Phase 1/P7 prerequisite candidate, not the generalized Worker /
+Provider Profile abstraction of Phase 2 and not the optional bridge of Phase 3.
+Until a native external child binds SessionMeta/AgentPath, Hook mediation,
+callback, and termination evidence, `native_external_child_qualified`, Phase 1,
+and direct write remain false.
