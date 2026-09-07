@@ -371,6 +371,14 @@ method, sandbox selection, before/after hashes, and process quiescence. Until
 both reachability and mediation are proven, this plane remains
 `host-control-only-unqualified` and contributes no child mutation evidence.
 
+Do not treat App Server EOF/exit as a process-tree quiescence receipt. The
+isolated detached-descendant negative starts a new process session,
+publishes readiness before EOF, ignores `SIGTERM`, and writes only after the
+App Server has exited. The observed late mutation proves that an external
+process-tree barrier is required before any host-control disk barrier can be
+strong. This remains separate from the still-missing native-child termination
+receipt.
+
 ### Parent/child single-writer negative space
 
 Treat the parent as a mutation participant in the same P5b ownership domain,

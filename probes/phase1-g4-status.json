@@ -10,7 +10,8 @@
       "required_proofs": [
         "client_connection_authority",
         "native_child_reachability_or_separation",
-        "sandbox_and_mutation_mediation"
+        "sandbox_and_mutation_mediation",
+        "process_tree_quiescence_barrier"
       ],
       "may_substitute_native_child_lifecycle": false
     },
@@ -102,6 +103,8 @@
           "probes/check_appserver_host_control.py",
           "probes/run_appserver_host_control_probe.py",
           "probes/g4-isolated-appserver-host-control-20260907.json",
+          "probes/run_appserver_quiescence_negative_probe.py",
+          "probes/g4-isolated-appserver-quiescence-negative-20260907.json",
           "tests/test_appserver_host_control.py",
           "probes/codex-0.150.0-alpha.8-mutation-surfaces.json",
           "probes/codex-0.148.0-alpha.9-mutation-surfaces.json",
@@ -114,7 +117,7 @@
           "probes/g4-live-plaintext-lifecycle-20260817.json",
           "probes/g4-live-root-lifecycle-adjudication-result-20260817.json"
         ],
-        "blocker": "the current signed runtime's exact native-tool catalog remains fail closed; an isolated disposable client proved that connection possession alone can invoke sandbox-none filesystem and unsandboxed process host-control RPCs without thread identity or client auth. Native-child reachability to that control plane remains unproven and cannot count as PreToolUse mediation, while complete live child mutation visibility/mediation and independent sandbox denial remain missing"
+        "blocker": "the current signed runtime's exact native-tool catalog remains fail closed; an isolated disposable client proved that connection possession alone can invoke sandbox-none filesystem and unsandboxed process host-control RPCs without thread identity or client auth. A detached descendant also wrote after App Server EOF/exit, so server termination is not a host-control process-tree barrier. Native-child reachability to that control plane remains unproven and cannot count as PreToolUse mediation, while complete live child mutation visibility/mediation and independent sandbox denial remain missing"
       },
       {
         "id": "P5",
@@ -145,9 +148,10 @@
           "tests/test_assignment_transport.py",
           "tests/test_hook_event_receipts.py",
           "probes/g4-live-callback-receipts-20260817.json",
-          "probes/g4-live-root-lifecycle-adjudication-result-20260817.json"
+          "probes/g4-live-root-lifecycle-adjudication-result-20260817.json",
+          "probes/g4-isolated-appserver-quiescence-negative-20260907.json"
         ],
-        "blocker": "one successful read-only invocation has a post-termination clean disk barrier, but all-surface writer serialization and strong global quiescence across success, cancel, crash, and late-write space are missing"
+        "blocker": "one successful read-only invocation has a post-termination clean disk barrier, but all-surface writer serialization and strong global quiescence across success, cancel, crash, and late-write space are missing. The isolated host-control negative proves App Server exit alone cannot serve as the required process-tree barrier because a detached descendant mutated disk afterward"
       },
       {
         "id": "P6",
@@ -249,7 +253,8 @@
         "evidence": [
           "docs/phase1-g4-probe-plan.md#iv-resume-callback-and-termination-probes",
           "probes/g4-live-plaintext-lifecycle-20260817.json",
-          "probes/g4-live-root-lifecycle-adjudication-result-20260817.json"
+          "probes/g4-live-root-lifecycle-adjudication-result-20260817.json",
+          "probes/g4-isolated-appserver-quiescence-negative-20260907.json"
         ]
       },
       {

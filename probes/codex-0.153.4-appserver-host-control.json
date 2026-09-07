@@ -11,6 +11,12 @@
     "pretooluse_child_mediation_qualified": false,
     "same_uid_client_reachability": "unproven"
   },
+  "termination_boundary": {
+    "spawn_runner_tracking": "detached_tokio_task",
+    "connection_close_action": "send_kill_without_exit_acknowledgement",
+    "server_exit_process_tree_barrier": "not-qualified",
+    "detached_descendant_late_write_probe": "required"
+  },
   "families": {
     "filesystem": {
       "methods": [
@@ -125,6 +131,16 @@
       "path": "codex-rs/app-server-protocol/src/protocol/v2/command_exec.rs",
       "contains": "pub struct CommandExecParams",
       "not_contains": "thread_id"
+    },
+    {
+      "id": "process_runner_is_detached_tokio_task",
+      "path": "codex-rs/app-server/src/request_processors/process_exec_processor.rs",
+      "contains": "let sessions = Arc::clone(&self.sessions);\n        tokio::spawn(async move {\n            run_process(RunProcessParams {"
+    },
+    {
+      "id": "connection_close_kill_has_no_exit_acknowledgement",
+      "path": "codex-rs/app-server/src/request_processors/process_exec_processor.rs",
+      "contains": "control: ProcessControl::Kill,\n                    response_tx: None,"
     }
   ],
   "verdict": {

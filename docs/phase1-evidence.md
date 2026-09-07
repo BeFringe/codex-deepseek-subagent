@@ -1921,3 +1921,35 @@ The complete provider-free regression then passed 344 tests in 41.605 seconds,
 including agent-template checks. The semantic index and every current exact-source
 oracle returned `valid=true`; G4 remained fail closed with all future phases
 closed.
+
+## App Server process-tree quiescence negative
+
+The P4 validation target was explicit: if App Server EOF/exit were a strong
+host-control termination barrier, no process descendant created through that
+connection could mutate the disposable root afterward. Current source instead
+starts `run_process` in an unretained Tokio task, and connection cleanup sends a
+kill control message with no exit acknowledgement. The source contract now
+pins both anchors without claiming native-child reachability.
+
+The isolated negative used the same signed bundle binary, empty temporary
+`CODEX_HOME`, closed noncredential environment, no thread, and no client auth.
+An unsandboxed `process/spawn` child forked a descendant, started a new process
+session, ignored `SIGTERM`, and wrote a readiness marker before client EOF. The
+App Server exited zero 3.817 ms after EOF; the late-write file was absent both
+before EOF and at server exit, then appeared during the 1.2-second bounded
+post-exit observation with SHA-256
+`f152945b358aa26a9e72e25381deff94e254c547089bd690dccd218e9414d148`.
+Temporary roots were removed after the descendant completed.
+
+The reusable probe and frozen receipt are
+`probes/run_appserver_quiescence_negative_probe.py` and
+`probes/g4-isolated-appserver-quiescence-negative-20260907.json`. This is an
+auditable P4/P5b negative: App Server exit cannot serve as the required strong
+process-tree or post-termination disk barrier. It does not prove any native
+child can reach the connection, and it does not replace the missing native
+SubagentStop/cancel/quiescence receipt. Phase 1 and direct write remain false.
+
+After freezing this negative, the complete provider-free suite passed 349 tests
+in 38.078 seconds, including agent-template checks. The current host-control
+source oracle and G4 status checker returned `valid=true`; qualification remains
+fail closed.

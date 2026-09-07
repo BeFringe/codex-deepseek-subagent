@@ -45,6 +45,7 @@ EXPECTED_GOAL_CONTRACT = {
             "client_connection_authority",
             "native_child_reachability_or_separation",
             "sandbox_and_mutation_mediation",
+            "process_tree_quiescence_barrier",
         ],
         "may_substitute_native_child_lifecycle": False,
     },

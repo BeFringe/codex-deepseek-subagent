@@ -98,6 +98,17 @@ class AppServerHostControlTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "confinement drifted"):
                 host_control.load_contract(path)
 
+    def test_server_exit_cannot_be_promoted_to_process_tree_barrier(self):
+        contract = json.loads(CONTRACT.read_text(encoding="utf-8"))
+        contract["termination_boundary"]["server_exit_process_tree_barrier"] = (
+            "qualified"
+        )
+        with tempfile.TemporaryDirectory() as temp_dir:
+            path = Path(temp_dir) / "contract.json"
+            path.write_text(json.dumps(contract), encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "termination boundary drifted"):
+                host_control.load_contract(path)
+
 
 if __name__ == "__main__":
     unittest.main()

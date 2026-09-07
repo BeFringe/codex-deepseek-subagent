@@ -43,6 +43,12 @@ EXPECTED_BOUNDARY = {
     "pretooluse_child_mediation_qualified": False,
     "same_uid_client_reachability": "unproven",
 }
+EXPECTED_TERMINATION_BOUNDARY = {
+    "spawn_runner_tracking": "detached_tokio_task",
+    "connection_close_action": "send_kill_without_exit_acknowledgement",
+    "server_exit_process_tree_barrier": "not-qualified",
+    "detached_descendant_late_write_probe": "required",
+}
 EXPECTED_VERDICT = {
     "host_control_mutation_surface_visible": True,
     "native_child_reachability_proven": False,
@@ -69,6 +75,8 @@ EXPECTED_ANCHORS = {
     "filesystem_params_have_no_thread_identity",
     "process_params_have_no_thread_identity",
     "command_params_have_no_thread_identity",
+    "process_runner_is_detached_tokio_task",
+    "connection_close_kill_has_no_exit_acknowledgement",
 }
 
 
@@ -82,6 +90,8 @@ def load_contract(path: Path) -> dict:
         raise ValueError("App Server host-control source commit is invalid")
     if value.get("boundary") != EXPECTED_BOUNDARY:
         raise ValueError("App Server host-control boundary drifted or was promoted")
+    if value.get("termination_boundary") != EXPECTED_TERMINATION_BOUNDARY:
+        raise ValueError("App Server host-control termination boundary drifted")
 
     families = value.get("families")
     if not isinstance(families, dict) or set(families) != set(EXPECTED_FAMILIES):
