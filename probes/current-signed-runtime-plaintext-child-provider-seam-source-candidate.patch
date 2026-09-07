@@ -833,7 +833,7 @@ index 1d6b1d3..894321e 100644
  async fn build_custom_tool_call_uses_namespace_for_registry_name() -> anyhow::Result<()> {
      let tool_name = "exec".to_string();
 diff --git a/codex-rs/core/src/tools/spec_plan.rs b/codex-rs/core/src/tools/spec_plan.rs
-index 908bb14..d84a95b 100644
+index 908bb14..68260fd 100644
 --- a/codex-rs/core/src/tools/spec_plan.rs
 +++ b/codex-rs/core/src/tools/spec_plan.rs
 @@ -62,6 +62,7 @@ use crate::tools::router::ToolRouter;
@@ -844,7 +844,36 @@ index 908bb14..d84a95b 100644
  use codex_features::SleepToolMode;
  use codex_login::AuthManager;
  use codex_protocol::DEFAULT_FUNCTION_NAMESPACE;
-@@ -1282,6 +1283,10 @@ fn add_collaboration_tools(context: &CoreToolPlanContext<'_>, registry: &mut Too
+@@ -654,10 +655,27 @@ fn collab_tools_enabled(turn_context: &TurnContext, model_info: &ModelInfo) -> b
+         MultiAgentVersion::V2 => {
+             turn_context.session_source.get_agent_path().is_none()
+                 || model_info.multi_agent_version == Some(MultiAgentVersion::V2)
++                || exact_child_provider_mapping_authorizes_v2_tools(turn_context)
+         }
+     }
+ }
+-
++
++/// An explicitly mapped custom-provider role may use the standard local V2 management tools even
++/// when its model is absent from the OpenAI model catalog. The exact role and the provider applied
++/// to this child must both match the parent-owned mapping; the default empty map preserves the
++/// catalog-only behavior.
++fn exact_child_provider_mapping_authorizes_v2_tools(turn_context: &TurnContext) -> bool {
++    let Some(agent_role) = turn_context.session_source.get_agent_role() else {
++        return false;
++    };
++    turn_context
++        .config
++        .multi_agent_v2
++        .child_model_providers
++        .get(&agent_role)
++        == Some(&turn_context.config.model_provider_id)
++}
++
+ fn required_child_management_tool_names(
+     turn_context: &TurnContext,
+     model_info: &ModelInfo,
+@@ -1282,6 +1300,10 @@ fn add_collaboration_tools(context: &CoreToolPlanContext<'_>, registry: &mut Too
                  agent_type_description(turn_context, context.default_agent_type_description);
              let hide_spawn_agent_metadata =
                  turn_context.config.multi_agent_v2.hide_spawn_agent_metadata;
@@ -855,7 +884,7 @@ index 908bb14..d84a95b 100644
              registry.register_trusted_with_exposure(
                  multi_agent_v2_handler(
                      SpawnAgentHandlerV2::new(SpawnAgentToolOptions {
-@@ -1295,17 +1300,21 @@ fn add_collaboration_tools(context: &CoreToolPlanContext<'_>, registry: &mut Too
+@@ -1295,17 +1317,21 @@ fn add_collaboration_tools(context: &CoreToolPlanContext<'_>, registry: &mut Too
                              .expose_spawn_agent_model_overrides,
                          multi_agent_version: turn_context.multi_agent_version,
                          usage_hint_text: turn_context.config.multi_agent_v2.usage_hint_text.clone(),
@@ -879,7 +908,7 @@ index 908bb14..d84a95b 100644
                  exposure,
              );
              if turn_context.config.multi_agent_v2.wait_agent_enabled {
-@@ -1342,6 +1351,7 @@ fn add_collaboration_tools(context: &CoreToolPlanContext<'_>, registry: &mut Too
+@@ -1342,6 +1368,7 @@ fn add_collaboration_tools(context: &CoreToolPlanContext<'_>, registry: &mut Too
                      expose_spawn_agent_model_overrides: true,
                      multi_agent_version: turn_context.multi_agent_version,
                      usage_hint_text: turn_context.config.multi_agent_v2.usage_hint_text.clone(),
@@ -888,7 +917,7 @@ index 908bb14..d84a95b 100644
                  exposure,
              );
 diff --git a/codex-rs/core/src/tools/spec_plan_tests.rs b/codex-rs/core/src/tools/spec_plan_tests.rs
-index c77936f..2f31103 100644
+index c77936f..5df0faf 100644
 --- a/codex-rs/core/src/tools/spec_plan_tests.rs
 +++ b/codex-rs/core/src/tools/spec_plan_tests.rs
 @@ -3,6 +3,7 @@ use std::collections::BTreeMap;
@@ -902,7 +931,8 @@ index c77936f..2f31103 100644
 @@ -2840,6 +2841,41 @@ async fn multi_agent_v2_message_schemas_are_encrypted() {
      }
  }
- 
+-
++
 +#[tokio::test]
 +async fn multi_agent_v2_message_schemas_can_be_explicit_plaintext() {
 +    let plan = probe(|turn| {
@@ -940,6 +970,87 @@ index c77936f..2f31103 100644
 +
  #[tokio::test]
  async fn multi_agent_v2_can_disable_wait_agent() {
+     let plan = probe(|turn| {
+@@ -3056,6 +3092,79 @@ async fn multi_agent_v2_bedrock_workers_only_delegate_when_model_supports_v2() {
+     }
+ }
+-
++
++#[tokio::test]
++async fn exact_child_provider_mapping_exposes_v2_tools_for_unknown_external_model() {
++    let plan = probe(|turn| {
++        set_feature(turn, Feature::MultiAgentV2, /*enabled*/ true);
++        update_config(turn, |config| {
++            config.multi_agent_v2.child_model_providers.insert(
++                "external_probe".to_string(),
++                config.model_provider_id.clone(),
++            );
++        });
++        update_turn_settings_for_test(turn, |settings| {
++            Arc::make_mut(&mut settings.model_info).slug = "unknown-external-model".to_string();
++            Arc::make_mut(&mut settings.model_info).multi_agent_version = None;
++        });
++        turn.session_source = SessionSource::SubAgent(SubAgentSource::ThreadSpawn {
++            parent_thread_id: ThreadId::new(),
++            depth: 1,
++            agent_path: Some(
++                AgentPath::try_from("/root/external_probe").expect("valid agent path"),
++            ),
++            agent_nickname: None,
++            agent_role: Some("external_probe".to_string()),
++        });
++    })
++    .await;
++
++    assert!(plan.can_manage_children);
++    plan.assert_visible_contains(&[MULTI_AGENT_V2_NAMESPACE]);
++    plan.assert_registered_contains(&[
++        &ToolName::namespaced(MULTI_AGENT_V2_NAMESPACE, "list_agents").to_string(),
++        &ToolName::namespaced(MULTI_AGENT_V2_NAMESPACE, "followup_task").to_string(),
++    ]);
++}
++
++#[tokio::test]
++async fn child_provider_mapping_must_match_exact_role_and_applied_provider() {
++    for (agent_role, mapped_provider) in [
++        ("other_role", "openai"),
++        ("external_probe", "different_provider"),
++    ] {
++        let plan = probe(|turn| {
++            set_feature(turn, Feature::MultiAgentV2, /*enabled*/ true);
++            update_config(turn, |config| {
++                config
++                    .multi_agent_v2
++                    .child_model_providers
++                    .insert("external_probe".to_string(), mapped_provider.to_string());
++            });
++            update_turn_settings_for_test(turn, |settings| {
++                Arc::make_mut(&mut settings.model_info).slug = "unknown-external-model".to_string();
++                Arc::make_mut(&mut settings.model_info).multi_agent_version = None;
++            });
++            turn.session_source = SessionSource::SubAgent(SubAgentSource::ThreadSpawn {
++                parent_thread_id: ThreadId::new(),
++                depth: 1,
++                agent_path: Some(
++                    AgentPath::try_from("/root/external_probe").expect("valid agent path"),
++                ),
++                agent_nickname: None,
++                agent_role: Some(agent_role.to_string()),
++            });
++        })
++        .await;
++
++        assert!(!plan.can_manage_children);
++        plan.assert_visible_lacks(&[MULTI_AGENT_V2_NAMESPACE, "list_agents"]);
++        plan.assert_registered_lacks(&[
++            &ToolName::namespaced(MULTI_AGENT_V2_NAMESPACE, "list_agents").to_string(),
++            &ToolName::plain("list_agents").to_string(),
++        ]);
++    }
++}
++
+ #[tokio::test]
+ async fn code_mode_only_can_expose_namespaced_multi_agent_v2_as_normal_tools() {
      let plan = probe(|turn| {
 diff --git a/codex-rs/core/tests/suite/subagent_notifications.rs b/codex-rs/core/tests/suite/subagent_notifications.rs
 index 4adf018..162d61c 100644

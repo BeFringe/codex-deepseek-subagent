@@ -64,9 +64,14 @@
           "probes/g4-prior-signed-runtime-encrypted-spawn-negative-20260907.json",
           "probes/g4-current-headless-root-lifecycle-adjudication-input-20260907.json",
           "probes/g4-current-headless-root-lifecycle-adjudication-result-20260907.json",
-          "tests/test_g4_current_headless_root_lifecycle_adjudication.py"
+          "tests/test_g4_current_headless_root_lifecycle_adjudication.py",
+          "probes/current-signed-runtime-plaintext-child-provider-seam-source-candidate.json",
+          "probes/current-signed-runtime-plaintext-child-provider-seam-source-candidate.patch",
+          "tests/test_current_child_provider_seam_source_candidate.py",
+          "probes/g4-zhipu-native-child-tool-loop-20260907.json",
+          "tests/test_g4_zhipu_native_child_tool_loop.py"
         ],
-        "blocker": "the prior signed runtime encrypted the spawn message before PreToolUse, while the current signed runtime opt-in candidate now has one live headless root receipt in which PreToolUse observed the exact plaintext assignment hash and SubagentStart consumed and identity-bound the capsule. Upstream SDK and App Server still expose no supported plaintext spawn choice; send_message/followup_task delivery, distinct same-message deny pairs, nested/serial/concurrent delivery, and the broader cohort remain unqualified"
+        "blocker": "the prior signed runtime encrypted the spawn message before PreToolUse, while the current signed runtime opt-in candidate now has a live inherited-OpenAI root receipt and a live external-ZHIPU child receipt in which PreToolUse observed the exact plaintext assignment hash and SubagentStart consumed and identity-bound the capsule. The ZHIPU child also completed one native read-only tool round trip. Upstream SDK and App Server still expose no supported plaintext spawn choice; send_message/followup_task delivery, distinct same-message deny pairs, nested/serial/concurrent delivery, and the broader cohort remain unqualified"
       },
       {
         "id": "P2",
@@ -83,11 +88,13 @@
           "probes/g4-live-plaintext-lifecycle-20260817.json",
           "probes/g4-live-root-lifecycle-adjudication-result-20260817.json",
           "probes/g4-current-headless-root-lifecycle-adjudication-result-20260907.json",
+          "probes/g4-zhipu-native-child-tool-loop-20260907.json",
+          "tests/test_g4_zhipu_native_child_tool_loop.py",
           "hooks/runtime_guard.py",
           "tests/test_runtime_guard.py",
           "probes/codex-0.153.4-installed-baseline-20260907.json"
         ],
-        "blocker": "the current signed runtime now has one fresh exact assignment-to-SessionMeta/canonical-AgentPath join through consumed state, in addition to one historical root and two older partial concurrent records. Complete nested, serial, concurrent identity joins and cohort scale remain missing"
+        "blocker": "the current signed runtime now has one fresh inherited-OpenAI assignment-to-SessionMeta/canonical-AgentPath join through consumed state and one exact external-ZHIPU child join through reported state, in addition to one historical root and two older partial concurrent records. Fresh parent consumption of the external-child record, complete nested, serial, concurrent identity joins, and cohort scale remain missing"
       },
       {
         "id": "P3",
@@ -101,9 +108,11 @@
           "probes/g4-live-native-hook-schema-20260817.json",
           "probes/g4-live-plaintext-lifecycle-20260817.json",
           "probes/g4-live-root-lifecycle-adjudication-result-20260817.json",
-          "probes/g4-current-headless-root-lifecycle-adjudication-result-20260907.json"
+          "probes/g4-current-headless-root-lifecycle-adjudication-result-20260907.json",
+          "probes/g4-zhipu-native-child-tool-loop-20260907.json",
+          "tests/test_g4_zhipu_native_child_tool_loop.py"
         ],
-        "blocker": "a current-runtime root assignment now traverses pending, claimed, active, reported, and consumed with exact keyed identity; its first invalid SubagentStop final was continued and its corrected final accepted. Historical lifecycle evidence remains available, while crash recovery, durable resume, cancel, and cohort replay remain missing"
+        "blocker": "a current-runtime inherited-OpenAI assignment traverses pending, claimed, active, reported, and consumed with exact keyed identity; its first invalid SubagentStop final was continued and its corrected final accepted. A separate external-ZHIPU child traverses spawn, SubagentStart, active native tool use, SubagentStop, reported final, and parent callback with exact identity, but has not received a fresh five-dimension parent consume adjudication. Crash recovery, durable resume, cancel, and cohort replay remain missing"
       },
       {
         "id": "P4",
@@ -131,9 +140,14 @@
           "probes/g4-live-callback-receipts-20260817.json",
           "probes/g4-live-plaintext-lifecycle-20260817.json",
           "probes/g4-live-root-lifecycle-adjudication-result-20260817.json",
-          "probes/g4-current-headless-root-lifecycle-adjudication-result-20260907.json"
+          "probes/g4-current-headless-root-lifecycle-adjudication-result-20260907.json",
+          "probes/current-signed-runtime-plaintext-child-provider-seam-source-candidate.json",
+          "probes/current-signed-runtime-plaintext-child-provider-seam-source-candidate.patch",
+          "tests/test_current_child_provider_seam_source_candidate.py",
+          "probes/g4-zhipu-native-child-tool-loop-20260907.json",
+          "tests/test_g4_zhipu_native_child_tool_loop.py"
         ],
-        "blocker": "the current signed runtime's exact native-tool catalog remains fail closed; bounded child-role projection preserves the parent permission profile, so sandbox_mode in the worker role is only a requested posture and cannot prove an effective per-child read-only sandbox. An isolated disposable client proved that connection possession alone can invoke sandbox-none filesystem and unsandboxed process host-control RPCs without thread identity or client auth. The mutation schema makes independent App Server startup, daemon bootstrap, and proxy/connection acquisition an explicit cross-surface escape that external workers must be denied unless an OS boundary independently confines it. A detached descendant also wrote after App Server EOF/exit, so server termination is not a host-control process-tree barrier. Native-child reachability to that control plane remains unproven and cannot count as PreToolUse mediation, while complete live child mutation visibility/mediation and a trusted parent-or-host sandbox receipt remain missing"
+        "blocker": "an exact role-to-applied-provider capability projection now exposes and mediates one native read-only list_agents call for an external ZHIPU child without changing the default unknown-model catalog or granting mutation authority. Bounded child-role projection still preserves the parent permission profile, so sandbox_mode in the worker role is only a requested posture and cannot prove an effective per-child read-only sandbox. An isolated disposable client proved that connection possession alone can invoke sandbox-none filesystem and unsandboxed process host-control RPCs without thread identity or client auth. The mutation schema makes independent App Server startup, daemon bootstrap, and proxy/connection acquisition an explicit cross-surface escape that external workers must be denied unless an OS boundary independently confines it. A detached descendant also wrote after App Server EOF/exit, so server termination is not a host-control process-tree barrier. Native-child reachability to that control plane remains unproven and cannot count as PreToolUse mediation, while complete live child mutation visibility/mediation and a trusted parent-or-host sandbox receipt remain missing"
       },
       {
         "id": "P5",
@@ -168,9 +182,10 @@
           "probes/g4-current-headless-root-lifecycle-adjudication-result-20260907.json",
           "probes/g4-live-missing-posttooluse-recovery-20260907.json",
           "tests/test_g4_live_missing_posttooluse_recovery.py",
-          "probes/g4-isolated-appserver-quiescence-negative-20260907.json"
+          "probes/g4-isolated-appserver-quiescence-negative-20260907.json",
+          "probes/g4-zhipu-native-child-tool-loop-20260907.json"
         ],
-        "blocker": "the current-runtime read-only root has a repeated clean post-termination disk barrier and a fresh consumed-state transition. A live failed multi-file apply_patch also proves that a missing PostToolUse callback leaves its lease fail closed and that exact-identity, unchanged-snapshot recovery works; automatic failure-callback completeness is therefore still false. All-surface writer serialization and strong global quiescence across success, cancel, crash, and late-write space remain missing. The isolated host-control negative additionally proves App Server exit alone is not a process-tree barrier"
+        "blocker": "the current-runtime read-only root has a repeated clean post-termination disk barrier and a fresh consumed-state transition. The external-ZHIPU child also reached SubagentStop/callback, left the repository clean, and its candidate process was absent after the run, but that is not a strong global quiescence receipt. A live failed multi-file apply_patch proves that a missing PostToolUse callback leaves its lease fail closed and that exact-identity, unchanged-snapshot recovery works; automatic failure-callback completeness is therefore still false. All-surface writer serialization and strong global quiescence across success, cancel, crash, and late-write space remain missing. The isolated host-control negative additionally proves App Server exit alone is not a process-tree barrier"
       },
       {
         "id": "P6",
@@ -181,9 +196,10 @@
           "probes/g4-live-root-lifecycle-adjudication-input-20260817.json",
           "probes/g4-live-root-lifecycle-adjudication-result-20260817.json",
           "probes/g4-current-headless-root-lifecycle-adjudication-input-20260907.json",
-          "probes/g4-current-headless-root-lifecycle-adjudication-result-20260907.json"
+          "probes/g4-current-headless-root-lifecycle-adjudication-result-20260907.json",
+          "probes/g4-zhipu-native-child-tool-loop-20260907.json"
         ],
-        "blocker": "the current signed runtime now has one exact SubagentStop report consumed after fresh five-dimension parent adjudication, including a real invalid-final continuation and correction; compact/resume, context-loss, mixed-frontier, mutation-capable contribution, and broader cohort adjudication remain missing"
+        "blocker": "the current signed runtime has one exact inherited-OpenAI SubagentStop report consumed after fresh five-dimension parent adjudication, including a real invalid-final continuation and correction. The external-ZHIPU read-only final and callback are identity-bound but not freshly consumed by the same parent adjudication path. Compact/resume, context-loss, mixed-frontier, mutation-capable contribution, and broader cohort adjudication remain missing"
       },
       {
         "id": "P6a",
@@ -192,9 +208,10 @@
         "evidence": [
           "docs/phase1-evidence.md",
           "probes/g4-live-root-lifecycle-adjudication-result-20260817.json",
-          "probes/g4-current-headless-root-lifecycle-adjudication-result-20260907.json"
+          "probes/g4-current-headless-root-lifecycle-adjudication-result-20260907.json",
+          "probes/g4-zhipu-native-child-tool-loop-20260907.json"
         ],
-        "blocker": "a current-runtime owner-internal read-only observation passes fresh provenance adjudication; live mutation contribution causality, cross-owner derivation, and mixed-frontier provenance remain missing"
+        "blocker": "a current-runtime owner-internal read-only observation passes fresh provenance adjudication, and an external-ZHIPU child adds an identity-bound read-only native-tool contribution/callback sample that still awaits fresh parent consumption. Live mutation contribution causality, cross-owner derivation, and mixed-frontier provenance remain missing"
       },
       {
         "id": "P6b",
@@ -203,9 +220,10 @@
         "evidence": [
           "docs/phase1-evidence.md",
           "probes/g4-live-root-lifecycle-adjudication-result-20260817.json",
-          "probes/g4-current-headless-root-lifecycle-adjudication-result-20260907.json"
+          "probes/g4-current-headless-root-lifecycle-adjudication-result-20260907.json",
+          "probes/g4-zhipu-native-child-tool-loop-20260907.json"
         ],
-        "blocker": "the strict read-only null-feasibility contract passes a fresh current-runtime parent adjudication, but domain, scale, equivalence, and mutation-capable live feasibility evidence are missing"
+        "blocker": "the strict read-only null-feasibility contract passes a fresh current-runtime parent adjudication, and a separate external-ZHIPU read-only native-tool loop is feasible end to end. Domain, scale, equivalence, fresh external-child parent consumption, and mutation-capable live feasibility evidence remain missing"
       },
       {
         "id": "P6c",
@@ -226,9 +244,14 @@
           "probes/check_provider_inheritance_boundary.py",
           "tests/test_provider_inheritance_boundary.py",
           "probes/codex-0.153.4-component-boundaries.json",
-          "tests/test_codex_component_boundaries.py"
+          "tests/test_codex_component_boundaries.py",
+          "probes/current-signed-runtime-plaintext-child-provider-seam-source-candidate.json",
+          "probes/current-signed-runtime-plaintext-child-provider-seam-source-candidate.patch",
+          "tests/test_current_child_provider_seam_source_candidate.py",
+          "probes/g4-zhipu-native-child-tool-loop-20260907.json",
+          "tests/test_g4_zhipu_native_child_tool_loop.py"
         ],
-        "blocker": "Windows parity and trusted-process rollback/reload evidence are missing; independently, Codex 0.149.0+ preserves the parent provider for child roles, so the legacy Utopia native DeepSeek route is blocked upstream and its independent App Server Broker replacement cannot satisfy this project's native AgentPath lifecycle contract"
+        "blocker": "a narrow exact child-role/provider source seam and one live OpenAI-parent to ZHIPU-child read-only native-tool loop now prove that the current provider-inheritance boundary can be crossed without replacing the parent provider or App Server. This does not qualify the legacy Utopia DeepSeek route. Windows parity, DeepSeek regression, broader external-child lifecycle cohorts, and trusted-process rollback/reload evidence remain missing; the independent App Server Broker replacement still cannot satisfy this project's native AgentPath lifecycle contract"
       }
     ],
     "exit_receipts": [
@@ -238,7 +261,8 @@
         "evidence": [
           "docs/phase1-g4-probe-plan.md#ii-real-identity-and-sessionmeta-probe",
           "probes/g4-live-plaintext-lifecycle-20260817.json",
-          "probes/g4-current-headless-root-lifecycle-adjudication-result-20260907.json"
+          "probes/g4-current-headless-root-lifecycle-adjudication-result-20260907.json",
+          "probes/g4-zhipu-native-child-tool-loop-20260907.json"
         ]
       },
       {
@@ -273,7 +297,8 @@
           "probes/g4-live-callback-receipts-20260817.json",
           "probes/check_hook_event_chain.py",
           "probes/g4-live-root-lifecycle-adjudication-result-20260817.json",
-          "probes/g4-current-headless-root-lifecycle-adjudication-result-20260907.json"
+          "probes/g4-current-headless-root-lifecycle-adjudication-result-20260907.json",
+          "probes/g4-zhipu-native-child-tool-loop-20260907.json"
         ]
       },
       {
@@ -284,6 +309,7 @@
           "probes/g4-live-plaintext-lifecycle-20260817.json",
           "probes/g4-live-root-lifecycle-adjudication-result-20260817.json",
           "probes/g4-current-headless-root-lifecycle-adjudication-result-20260907.json",
+          "probes/g4-zhipu-native-child-tool-loop-20260907.json",
           "probes/g4-live-missing-posttooluse-recovery-20260907.json",
           "probes/g4-isolated-appserver-quiescence-negative-20260907.json"
         ]
@@ -295,7 +321,8 @@
           "docs/phase1-g4-probe-plan.md#vi-platform-and-regression-exit-sequence",
           "probes/g4-live-plaintext-lifecycle-20260817.json",
           "probes/g4-live-root-lifecycle-adjudication-result-20260817.json",
-          "probes/g4-current-headless-root-lifecycle-adjudication-result-20260907.json"
+          "probes/g4-current-headless-root-lifecycle-adjudication-result-20260907.json",
+          "probes/g4-zhipu-native-child-tool-loop-20260907.json"
         ]
       },
       {
@@ -333,7 +360,9 @@
     "contract": "docs/phase3-zhipu-responses-bridge.md",
     "isolated_feasibility_evidence": [
       "probes/zhipu-responses-direct-feasibility-20260907.json",
-      "tests/test_zhipu_responses_direct_feasibility.py"
+      "tests/test_zhipu_responses_direct_feasibility.py",
+      "probes/g4-zhipu-native-child-tool-loop-20260907.json",
+      "tests/test_g4_zhipu_native_child_tool_loop.py"
     ],
     "implementation_opened": false
   }

@@ -1,0 +1,213 @@
+{
+  "schema": 1,
+  "evidence_kind": "live_native_openai_parent_to_zhipu_child_readonly_tool_loop",
+  "observed_at": "2026-09-07T09:04:37Z",
+  "runtime": {
+    "semantic_role": "current_signed_runtime",
+    "codex_version": "0.153.4",
+    "source_commit": "3d2ee51ca2d5db578f328aa75e20aa22c0197c9a",
+    "candidate_binary_sha256": "60f7c933064d330c0d73444315172873d6158d2d060580891a746de34684fafd",
+    "candidate_binary_bytes": 294080440,
+    "candidate_installed_or_selected_by_gui": false,
+    "gui_app_server_selected": false,
+    "live_config_modified": false,
+    "code_mode_host": {
+      "source": "current signed Codex App resource used by isolated CLI only",
+      "sha256": "fdd977821def000939dd48da48b39d581845470671135bd4642584eeb0762a6b",
+      "bytes": 62768576,
+      "team_identifier": "2DC432GLL2"
+    }
+  },
+  "credential_boundary": {
+    "credential_name": "ZHIPU_API_KEY",
+    "credential_present": true,
+    "value_in_argv": false,
+    "value_printed": false,
+    "value_hashed": false,
+    "value_retained": false,
+    "value_committed": false
+  },
+  "direct_responses_function_control": {
+    "endpoint": "https://open.bigmodel.cn/api/v1/responses",
+    "model": "glm-5.3",
+    "request_sha256": "073bb6440cf3932dab318d2a40bd364690368047f6aaeb0f9593361f6dcf010c",
+    "request_bytes": 450,
+    "http_status": 200,
+    "elapsed_ms": 7428,
+    "response_sha256": "d5faa20f470f5500ea1ee4639b4218e400afa40d380bdd6799a440e107e8dd5a",
+    "response_bytes": 1015,
+    "output_types": [
+      "reasoning",
+      "function_call"
+    ],
+    "function_call": {
+      "name": "probe_marker",
+      "arguments_sha256": "d2067a9a72f7a4b512c7e5b419cb1fdf1b9cc9cdce145e8fb565c6ae22a2e4d8",
+      "arguments_bytes": 28,
+      "call_id_present": true
+    },
+    "raw_response_retained": false
+  },
+  "predecessor_negatives": [
+    {
+      "root_thread_id": "01a07af8-873f-72c2-8451-864d527f7445",
+      "child_created": false,
+      "classification": "global model_catalog_json replaced parent catalog and triggered reserved OpenAI tool-schema rejection"
+    },
+    {
+      "root_thread_id": "01a07b12-239e-7c43-861f-9d92ce183772",
+      "child_created": false,
+      "classification": "plaintext schema used reserved collaboration namespace and triggered reserved OpenAI tool-schema rejection"
+    },
+    {
+      "root_thread_id": "01a07b12-bc04-7e21-b585-0cb99ca7b2fa",
+      "child_thread_id": "01a07b13-5452-7c23-b855-7f8609fb6d64",
+      "canonical_agent_path": "/root/g4_zhipu_native_tools_1",
+      "child_created": true,
+      "classification": "installed native G4 role inherited parent model because the CLI-only GLM role fixture was omitted; ZHIPU rejected gpt-5.6-sol as an unknown modelCode"
+    }
+  ],
+  "live_probe": {
+    "prompt_sha256": "71c142979695f26f25085a7eee3a6ebf89e3cfeef4ed843bb79b93b213571ba6",
+    "prompt_bytes": 4602,
+    "root": {
+      "thread_id": "01a07b17-5b15-7e70-8d2d-278718a705f6",
+      "model_provider": "openai",
+      "agent_path": null,
+      "agent_role": null,
+      "cwd": "/Users/pearly/文档/CAT/codex-deepseek-subagent",
+      "multi_agent_version": "v2"
+    },
+    "child": {
+      "thread_id": "01a07b17-f863-7ef3-a17f-773af4df6808",
+      "runtime_session_id": "01a07b17-5b15-7e70-8d2d-278718a705f6",
+      "model_provider": "zhipu",
+      "model": "glm-5.3",
+      "agent_role": "g4_qualification_probe_worker",
+      "requested_task_name": "g4_zhipu_native_tools_2",
+      "canonical_agent_path": "/root/g4_zhipu_native_tools_2",
+      "cwd": "/Users/pearly/文档/CAT/codex-deepseek-subagent",
+      "multi_agent_version": "v2",
+      "sandbox_policy": "read-only",
+      "permission_profile": "managed restricted root-read",
+      "rollout_sha256": "98396e4cd990e223f216271dc96eb77b9e2e53181b06717eb25b196e0f855b92",
+      "rollout_bytes": 128022
+    },
+    "git_baseline": {
+      "root": "/Users/pearly/文档/CAT/codex-deepseek-subagent",
+      "branch": "main",
+      "full_head": "62580ec681f8042c19a803328da27abc0793a103",
+      "index_changed": false,
+      "git_status_short": "",
+      "changed_paths": []
+    },
+    "tool_loop": {
+      "request_ordinal": 13,
+      "response_ordinal": 16,
+      "namespace": "g4_assignment",
+      "name": "list_agents",
+      "call_id": "call_13176ecc4c2c4d16940a64f3",
+      "arguments": {},
+      "output_sha256": "662f8b48a82ea19f5b838f21d468c7682da7ff6e73ebd1c8f81f2b0252381667",
+      "output_bytes": 132,
+      "exit_code": 0
+    },
+    "hook_chain": [
+      {
+        "sequence": 1158,
+        "event": "PreToolUse",
+        "stage": "observed",
+        "scope": "target_spawn",
+        "receipt_sha256": "ee90f42ffb5ceaab15c13211c21bfe2a206c1ca690b0e833119228d5bcbd39c4"
+      },
+      {
+        "sequence": 1159,
+        "event": "SubagentStart",
+        "stage": "observed",
+        "scope": "target_child",
+        "receipt_sha256": "86b817d72a4271bf0365ec98c0d4ab60e7ea941f2a130e385b5ae1090299a5eb"
+      },
+      {
+        "sequence": 1160,
+        "event": "PreToolUse",
+        "stage": "observed",
+        "scope": "target_child",
+        "tool_name": "g4_assignmentlist_agents",
+        "tool_use_id": "call_13176ecc4c2c4d16940a64f3",
+        "receipt_sha256": "02c869aa64d3fd31ccb5da03c268b974c7131fccca8c7375515b2b574d2e043b"
+      },
+      {
+        "sequence": 1161,
+        "event": "SubagentStop",
+        "stage": "observed",
+        "scope": "target_child",
+        "receipt_sha256": "00e75cb16637c477a1b3b786ab41caa9f2b428749778e8d84951ec9a0d9f3332"
+      },
+      {
+        "sequence": 1162,
+        "event": "SubagentStop",
+        "stage": "observed",
+        "scope": "target_child",
+        "receipt_sha256": "b9513c069c0a1c806e03e27b83b82f1ebf0e1c451dc418245258ca582470f2b1"
+      },
+      {
+        "sequence": 1163,
+        "event": "SubagentStop",
+        "stage": "observed",
+        "scope": "target_child",
+        "receipt_sha256": "06305af634f81e3deb4700a6db8adf8b8deafc5bd824eee56914082239072896"
+      }
+    ],
+    "final_attestation": {
+      "reported_receipt_sha256": "f55dcd951e3ace97fedaddc974ee5790303436a17ce1fe5cab44b4b87c6fda68",
+      "assignment_id": "b72d952e-f117-46b5-83cf-6d59f2b437b5",
+      "handoff_id": "fac162dc-9e05-450a-96e3-ba60f5922c7d",
+      "capsule_sha256": "cf4c9c7d65f2efd08e994c3588864aa7cd67144f064fc54e575551ffd4fc78e7",
+      "compact_invariant_sha256": "32aa2a702b0c7be04665f6209cc55f1f76cd8a68ddf6befbe23ed7007f6d939a",
+      "authority_policy_sha256": "adde5392c2d7252c581ce596a996a7bbc7096ea5def04e1efd3147e0abea2eb0",
+      "recovery_count": 0,
+      "context_lost": false,
+      "authority_violation": false,
+      "assigned_slice_complete": true,
+      "verification_exit_code": 0,
+      "callback_received_by_openai_parent": true
+    },
+    "post_callback_observation": {
+      "candidate_process_absent": true,
+      "root_branch_head_unchanged": true,
+      "repository_clean_before_evidence_integration": true,
+      "strong_global_quiescence_qualified": false
+    }
+  },
+  "capability_projection": {
+    "problem": "unknown external model fallback metadata omitted multi_agent_version and therefore hid child management tools before request construction",
+    "solution": "allow standard local V2 management tools only when the child role and actually applied provider id exactly match the parent-owned child_model_providers map",
+    "default_empty_map_preserved": true,
+    "wrong_role_denied": true,
+    "wrong_applied_provider_denied": true,
+    "grants_mutation_authority": false
+  },
+  "verdict": {
+    "direct_zhipu_responses_function_call_observed": true,
+    "native_openai_parent_spawned_zhipu_child": true,
+    "real_sessionmeta_identity_bound": true,
+    "native_child_list_agents_call_observed": true,
+    "native_child_tool_result_observed": true,
+    "subagentstop_and_parent_callback_observed": true,
+    "native_external_child_readonly_tool_loop_qualified": true,
+    "native_external_child_broadly_qualified": false,
+    "mutation_qualified": false,
+    "phase1_complete": false,
+    "direct_write_qualified": false,
+    "phase2_state": "closed",
+    "phase3_state": "closed"
+  },
+  "remaining_limits": [
+    "single root/depth-one/read-only sample only",
+    "no nested, serial, concurrent, resume, compaction, cancel, or failure-isolation cohort",
+    "no mutation mediation, exact-path writer lease, or post-mutation adjudication proof",
+    "no strong termination/quiescence or detached-descendant barrier",
+    "no POSIX/Windows/DeepSeek regression or live install rollback evidence",
+    "direct function control and one native call do not define representative latency or p95"
+  ]
+}

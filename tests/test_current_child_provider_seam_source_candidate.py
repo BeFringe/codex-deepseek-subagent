@@ -63,18 +63,40 @@ class CurrentChildProviderSeamSourceCandidateTest(unittest.TestCase):
             self.patch_text,
         )
 
+    def test_unknown_model_tools_require_exact_role_and_applied_provider(self) -> None:
+        seam = self.receipt["provider_authority_seam"]
+        self.assertIn("exact child role", seam["unknown_model_v2_tool_projection"])
+        self.assertEqual(seam["wrong_role_or_applied_provider"], "deny")
+        self.assertIn(
+            "exact_child_provider_mapping_authorizes_v2_tools",
+            self.patch_text,
+        )
+        self.assertIn(
+            "child_provider_mapping_must_match_exact_role_and_applied_provider",
+            self.patch_text,
+        )
+
     def test_live_qualification_remains_closed(self) -> None:
         live = self.receipt["live_boundaries"]
         verdict = self.receipt["verdict"]
         self.assertFalse(live["candidate_installed_or_selected"])
         self.assertFalse(live["gui_app_server_selected"])
         self.assertFalse(live["live_config_modified"])
-        self.assertFalse(live["native_zhipu_child_observed"])
+        self.assertTrue(live["native_zhipu_child_observed"])
+        self.assertTrue(live["native_zhipu_list_agents_call_observed"])
+        self.assertTrue(live["subagentstop_parent_callback_observed"])
+        self.assertTrue(verdict["native_external_child_readonly_tool_loop_qualified"])
         self.assertFalse(verdict["native_external_child_qualified"])
         self.assertFalse(verdict["phase1_complete"])
         self.assertFalse(verdict["direct_write_qualified"])
         self.assertEqual(verdict["phase2_state"], "closed")
         self.assertEqual(verdict["phase3_state"], "closed")
+
+    def test_build_cache_was_removed_but_candidate_was_preserved(self) -> None:
+        storage = self.receipt["storage"]
+        self.assertTrue(storage["cargo_target_deleted_after_validation"])
+        self.assertFalse(storage["cleanup_pending"])
+        self.assertTrue(storage["candidate_binary_preserved"])
 
 
 if __name__ == "__main__":

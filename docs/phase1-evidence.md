@@ -2197,6 +2197,62 @@ contains a model name but neither a provider definition nor a credential value.
 
 This is a Phase 1/P7 prerequisite candidate, not the generalized Worker /
 Provider Profile abstraction of Phase 2 and not the optional bridge of Phase 3.
-Until a native external child binds SessionMeta/AgentPath, Hook mediation,
-callback, and termination evidence, `native_external_child_qualified`, Phase 1,
-and direct write remain false.
+At this checkpoint no native external child had yet bound SessionMeta/AgentPath,
+Hook mediation, callback, and termination evidence, so
+`native_external_child_qualified`, Phase 1, and direct write remained false.
+
+## Native OpenAI parent to ZHIPU child read-only tool loop
+
+The first native external-provider run moved the blocker downstream. Root
+spawn, exact ZHIPU SessionMeta, canonical AgentPath, SubagentStart capsule
+injection, multi-turn Responses continuation, SubagentStop correction, and the
+callback all worked, but the child reported that `list_agents` was unavailable.
+Current source inspection found the exact cause: an unknown model receives
+fallback metadata with no `multi_agent_version`, and child management tools are
+removed before request construction. A direct ZHIPU Responses control then
+returned HTTP 200 with a real forced function call, ruling out a general
+function-calling absence.
+
+The isolated source candidate now keeps the catalog gate and adds one narrow
+exception: an unknown external child may see the standard local V2 management
+tools only when its exact role and the provider id actually applied to that
+child both match the parent-owned `child_model_providers` map. The default empty
+map, a different role, and a different applied provider remain closed. This
+exception grants no filesystem, Git, sandbox, or integration authority. Two
+source tests cover the positive exact match and both mismatch cases.
+
+One global `model_catalog_json` experiment was rejected before child creation
+because it replaced the OpenAI parent's catalog and violated a server-reserved
+tool schema. A second root run demonstrated the same reserved-schema guard when
+plaintext tools used the `collaboration` namespace. A third run created an
+exact child but intentionally exposed a missing CLI role override: the
+installed native G4 role inherited `gpt-5.6-sol`, which ZHIPU rejected as an
+unknown model. These failures caused no App selection or repository mutation.
+The successful run restored the isolated `g4_assignment` namespace and the
+CLI-only GLM role fixture.
+
+Root thread `01a07b17-5b15-7e70-8d2d-278718a705f6` remained on the native
+OpenAI provider and current ChatGPT login. It spawned child
+`01a07b17-f863-7ef3-a17f-773af4df6808` as
+`/root/g4_zhipu_native_tools_2`. The child's immutable SessionMeta reports the
+same runtime session, `model_provider=zhipu`, the exact G4 role, V2, and the
+expected root. Its matching TurnContext reports `model=glm-5.3`, a read-only
+sandbox policy, and the managed restricted root-read permission profile.
+PreToolUse sequence 1158 captured spawn, SubagentStart sequence 1159 bound the
+capsule, and sequence 1160 observed the child's real
+`g4_assignment.list_agents` call at tool-use id
+`call_13176ecc4c2c4d16940a64f3`. The rollout contains the matching function
+output. After three SubagentStop observations, the accepted attestation kept
+the exact root, branch, full HEAD, empty changed-path set, and exit code zero;
+the OpenAI parent received it through the native callback. A later bounded
+process check found the candidate absent.
+
+The frozen receipt and executable assertions are
+`probes/g4-zhipu-native-child-tool-loop-20260907.json` and
+`tests/test_g4_zhipu_native_child_tool_loop.py`. This qualifies one real
+depth-one read-only external-provider tool loop and closes the earlier
+"external child never calls a native tool" feasibility question. It does not
+qualify mutation, strong global quiescence, resume/compaction, cancellation,
+nested/serial/concurrent cohorts, POSIX/Windows parity, DeepSeek regression, or
+live install rollback. `native_external_child_qualified`, Phase 1, and direct
+write therefore remain false; Phase 2 and Phase 3 remain closed.

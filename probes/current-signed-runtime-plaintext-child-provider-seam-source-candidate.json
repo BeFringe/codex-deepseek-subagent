@@ -1,14 +1,14 @@
 {
   "schema": 1,
-  "observed_at": "2026-09-07T08:20:00Z",
-  "status": "source_and_headless_binary_qualified_live_unproven",
+  "observed_at": "2026-09-07T09:04:37Z",
+  "status": "source_headless_and_single_live_readonly_tool_loop_qualified",
   "runtime_role": "current_signed_runtime",
   "base_source_commit": "3d2ee51ca2d5db578f328aa75e20aa22c0197c9a",
   "source_patch": {
     "path": "probes/current-signed-runtime-plaintext-child-provider-seam-source-candidate.patch",
-    "sha256": "9255c8e82021d4358f4583962982dcc1761ce97754298ef52850226fcdcf0b1d",
-    "bytes": 52855,
-    "lines": 1328,
+    "sha256": "5744a932d2b5a99437d4fa746dea09438e59d9b7089cb00cb03dbb3dbe918b91",
+    "bytes": 57416,
+    "lines": 1439,
     "changed_path_count": 22,
     "cargo_lock_included": false,
     "reverse_apply_check_on_candidate_tree": "pass"
@@ -21,6 +21,8 @@
     "unknown_authorized_provider": "deny",
     "cross_provider_requires_openai_auth": "deny",
     "resume_stored_provider_mismatch": "deny",
+    "unknown_model_v2_tool_projection": "allow only when exact child role and actually applied provider id both match the parent-owned map",
+    "wrong_role_or_applied_provider": "deny",
     "changes_parent_provider": false,
     "changes_assignment_transport": false,
     "grants_mutation_authority": false,
@@ -31,17 +33,20 @@
     "diff_check": "pass",
     "features_config_parse": "1 passed",
     "role_authority_tests": "18 passed",
-    "runtime_config_resolution": "1 passed"
+    "runtime_config_resolution": "1 passed",
+    "exact_unknown_model_tool_projection": "1 passed",
+    "role_and_provider_mismatch_negatives": "1 passed with 2 cases"
   },
   "headless_binary": {
     "reported_version": "0.153.4",
     "path": "/private/tmp/codex-current-plaintext.aTU9C2/candidate-provider-seam/codex",
-    "sha256": "d73f8396033a24bfe4219e1772694c5bf0212cd460951060811b7498dc4d5862",
-    "bytes": 294064344,
+    "sha256": "60f7c933064d330c0d73444315172873d6158d2d060580891a746de34684fafd",
+    "bytes": 294080440,
     "signature_kind": "adhoc-linker-signed",
     "team_identifier_present": false,
     "build_command": "cargo build --release -p codex-cli",
-    "build_elapsed": "29m 34s"
+    "initial_build_elapsed": "29m 34s",
+    "tool_projection_incremental_build_elapsed": "22m 27s"
   },
   "probe_role_fixture": {
     "path": "fixtures/g4-zhipu-responses-readonly-role.toml",
@@ -51,21 +56,28 @@
     "requested_posture": "read_only"
   },
   "storage": {
-    "cargo_target_after_build": "17G",
-    "cargo_target_deleted_after_validation": false,
-    "cleanup_pending": true,
+    "cargo_target_after_build": "20G",
+    "cargo_target_deleted_after_validation": true,
+    "cleanup_pending": false,
+    "cleanup_scope": "/private/tmp/codex-current-plaintext.aTU9C2/source/codex-rs/target only",
+    "source_size_after_cleanup": "85M",
+    "candidate_directory_size_after_cleanup": "280M",
     "candidate_binary_preserved": true
   },
   "live_boundaries": {
     "candidate_installed_or_selected": false,
     "gui_app_server_selected": false,
     "live_config_modified": false,
-    "native_zhipu_child_observed": false,
+    "native_zhipu_child_observed": true,
+    "native_zhipu_list_agents_call_observed": true,
+    "subagentstop_parent_callback_observed": true,
+    "live_receipt": "probes/g4-zhipu-native-child-tool-loop-20260907.json",
     "credential_values_read_or_stored": false
   },
   "verdict": {
     "source_candidate_qualified": true,
     "headless_binary_build_qualified": true,
+    "native_external_child_readonly_tool_loop_qualified": true,
     "native_external_child_qualified": false,
     "phase1_complete": false,
     "direct_write_qualified": false,
