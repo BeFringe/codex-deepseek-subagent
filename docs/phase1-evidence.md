@@ -1953,3 +1953,35 @@ After freezing this negative, the complete provider-free suite passed 349 tests
 in 38.078 seconds, including agent-template checks. The current host-control
 source oracle and G4 status checker returned `valid=true`; qualification remains
 fail closed.
+
+## Cross-surface App Server bootstrap closure
+
+The schema-3 mutation matrix exposed App Server host-control separately but did
+not enumerate how an external worker could acquire that plane. This was an
+incomplete negative space: a shell, code-mode, MCP, extension, or equivalent
+process/connection surface can start `codex app-server`, bootstrap or start its
+managed daemon, or proxy/connect to its socket. Once the client owns that
+connection, later filesystem and process RPCs have no native child
+SessionMeta/AgentPath join and no per-RPC child PreToolUse event.
+
+The current mutation catalog is therefore schema 4 and adds
+`appserver_host_control_bootstrap`. Exact source anchors bind the direct App
+Server runner, managed-daemon bootstrap, socket proxy, sandbox-none filesystem
+write, and unsandboxed process-spawn capability. Its decision is
+`block-from-external-worker-or-os-confine`. It is deliberately not a list of
+native child RPC tools: it is a composition/bootstrapping escape across already
+enumerated outer surfaces. A writer lease cannot qualify it, and a bounded
+post-exit wait cannot contain the detached-descendant negative.
+
+The executable goal contract now requires
+`external_worker_bootstrap_denial_or_os_confinement` under P4. Dropping that
+proof, omitting the new surface, or promoting it to `candidate-covered` makes
+the provider-free contracts fail. Phase 1 and direct write remain false.
+
+The fresh complete provider-free suite passed 351 tests in 36.995 seconds,
+including agent-template checks. The semantic runtime index, schema-4 mutation
+matrix with exact current-source anchors, App Server host-control contract, and
+G4 status all returned `valid=true`. Their mutation qualification,
+child-mediated host-control, Phase 1 completion, and same-UID protection modes
+each exited 2 as required; the same-UID receipt still reports both rollout and
+state protection as false.

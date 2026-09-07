@@ -1,5 +1,5 @@
 {
-  "schema": 3,
+  "schema": 4,
   "codex_version": "0.153.4",
   "source_commit": "3d2ee51ca2d5db578f328aa75e20aa22c0197c9a",
   "qualification_policy": "Every mutation-capable or authority-expanding surface must be exactly intercepted and semantically constrainable; every enumerated non-mutating surface remains closed against capability drift; unknown surfaces fail closed.",
@@ -305,6 +305,38 @@
         {
           "path": "codex-rs/core/src/tools/handlers/mcp.rs",
           "contains": ".get_or_init(NodeReplReviewEvidence::default)"
+        }
+      ]
+    },
+    {
+      "id": "appserver_host_control_bootstrap",
+      "class": "cross-surface startup of or connection to an independent App Server host-control plane",
+      "mutation_capable": true,
+      "pre_tool_use": "outer-surface-only-no-per-rpc-child-hook",
+      "canonical_hook_name": null,
+      "semantically_constrainable": false,
+      "decision": "block-from-external-worker-or-os-confine",
+      "negative_space": "A worker with shell, code-mode, MCP, extension, or equivalent process/connection authority can start `codex app-server`, bootstrap a managed daemon, or proxy/connect to an existing socket. Connection possession then reaches sandbox-none filesystem and unsandboxed process RPCs without native child SessionMeta/AgentPath binding or a PreToolUse event for each RPC; App Server exit is not a process-tree quiescence barrier. Writer leases cannot mediate this plane.",
+      "anchors": [
+        {
+          "path": "codex-rs/cli/src/main.rs",
+          "contains": "codex_app_server::run_main_with_transport_options("
+        },
+        {
+          "path": "codex-rs/cli/src/main.rs",
+          "contains": "codex_app_server_daemon::bootstrap(AppServerBootstrapOptions {"
+        },
+        {
+          "path": "codex-rs/cli/src/main.rs",
+          "contains": "codex_stdio_to_uds::run(socket_path.as_path()).await?;"
+        },
+        {
+          "path": "codex-rs/app-server/src/request_processors/fs_processor.rs",
+          "contains": ".write_file(&path, bytes, Default::default(), /*sandbox*/ None)"
+        },
+        {
+          "path": "codex-rs/app-server-protocol/src/protocol/common.rs",
+          "contains": "Spawn a standalone process (argv vector) without a Codex sandbox."
         }
       ]
     }

@@ -41,10 +41,14 @@ SCHEMA_3_REQUIRED_SURFACES = SCHEMA_2_REQUIRED_SURFACES | {
     "plugin_metrics_sidecar",
     "accepted_result_evidence",
 }
+SCHEMA_4_REQUIRED_SURFACES = SCHEMA_3_REQUIRED_SURFACES | {
+    "appserver_host_control_bootstrap",
+}
 REQUIRED_SURFACES_BY_SCHEMA = {
     1: SCHEMA_1_REQUIRED_SURFACES,
     2: SCHEMA_2_REQUIRED_SURFACES,
     3: SCHEMA_3_REQUIRED_SURFACES,
+    4: SCHEMA_4_REQUIRED_SURFACES,
 }
 QUALIFIED_DECISIONS = {"candidate-covered"}
 GIT_OID = re.compile(r"^(?:[0-9a-f]{40}|[0-9a-f]{64})$")

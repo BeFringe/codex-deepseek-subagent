@@ -33,17 +33,16 @@ class AppServerHostControlTests(unittest.TestCase):
         self.assertFalse(result["phase1_complete"])
         self.assertFalse(result["direct_write_qualified"])
 
-    def test_host_control_plane_is_not_inserted_as_a_native_child_tool(self):
+    def test_host_control_rpcs_are_not_misclassified_as_native_child_tools(self):
         contract = host_control.load_contract(CONTRACT)
         matrix = json.loads(MUTATION_MATRIX.read_text(encoding="utf-8"))
+        surface_ids = {surface["id"] for surface in matrix["surfaces"]}
 
         self.assertFalse(contract["boundary"]["native_child_tool_surface"])
-        self.assertTrue(
-            all(
-                not surface["id"].startswith("appserver_host_control")
-                for surface in matrix["surfaces"]
-            )
-        )
+        self.assertIn("appserver_host_control_bootstrap", surface_ids)
+        self.assertNotIn("appserver_host_control_filesystem_rpc", surface_ids)
+        self.assertNotIn("appserver_host_control_process_rpc", surface_ids)
+        self.assertNotIn("appserver_host_control_command_rpc", surface_ids)
 
     def test_source_anchors_and_negative_anchors_are_checked(self):
         contract = host_control.load_contract(CONTRACT)

@@ -39,6 +39,26 @@ class MutationSurfaceMatrixTests(unittest.TestCase):
         self.assertIn("authority_escalation", blocker_ids)
         self.assertIn("plugin_metrics_sidecar", blocker_ids)
         self.assertIn("accepted_result_evidence", blocker_ids)
+        self.assertIn("appserver_host_control_bootstrap", blocker_ids)
+
+    def test_appserver_bootstrap_is_a_cross_surface_escape_not_a_native_tool(self):
+        matrix = check_mutation_surfaces.load_matrix(MATRIX)
+        surface = next(
+            item
+            for item in matrix["surfaces"]
+            if item["id"] == "appserver_host_control_bootstrap"
+        )
+
+        self.assertEqual(matrix["schema"], 4)
+        self.assertTrue(surface["mutation_capable"])
+        self.assertEqual(
+            surface["pre_tool_use"], "outer-surface-only-no-per-rpc-child-hook"
+        )
+        self.assertIsNone(surface["canonical_hook_name"])
+        self.assertFalse(surface["semantically_constrainable"])
+        self.assertEqual(
+            surface["decision"], "block-from-external-worker-or-os-confine"
+        )
 
     def test_historical_schema_one_matrix_remains_replayable(self):
         matrix = check_mutation_surfaces.load_matrix(HISTORICAL_MATRIX)

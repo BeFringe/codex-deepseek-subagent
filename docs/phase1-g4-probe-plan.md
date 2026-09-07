@@ -340,6 +340,7 @@ exact capsule and a fresh owner disk check.
 | Codex config mutation | plugin/config persistence outside assignment root |
 | permission expansion | requested sandbox/filesystem/network authority beyond capsule |
 | agent control | spawn/follow-up/message/interrupt without explicit delegated authority |
+| App Server bootstrap/connection | start stdio/listener, daemon bootstrap/start, proxy/connect, then attempt host-control RPCs without native child identity |
 
 Also prove that tool search grants no authority to the tools it discovers and
 that a future/unknown hosted model tool invalidates the closed catalog. Run the
@@ -370,6 +371,16 @@ GUI App Server. Record connection provenance, peer/process identity, requested
 method, sandbox selection, before/after hashes, and process quiescence. Until
 both reachability and mediation are proven, this plane remains
 `host-control-only-unqualified` and contributes no child mutation evidence.
+
+The mutation catalog separately treats App Server bootstrap/connection as a
+cross-surface escape, not as a native-child RPC. An external worker can reach
+the plane indirectly through shell, code mode, MCP, an extension, or another
+process/connection capability even when no App Server method appears in its
+native tool catalog. Therefore every external-worker profile must deny startup,
+managed-daemon bootstrap/start, proxying, and socket/client acquisition unless
+an independent OS boundary confines the entire resulting process tree and
+filesystem. Command-name matching and `apply_patch` writer leases are
+insufficient: neither mediates later client RPCs or detached descendants.
 
 Do not treat App Server EOF/exit as a process-tree quiescence receipt. The
 isolated detached-descendant negative starts a new process session,
