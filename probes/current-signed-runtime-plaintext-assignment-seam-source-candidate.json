@@ -1,0 +1,115 @@
+{
+  "schema": 1,
+  "observed_at": "2026-09-07T05:46:24Z",
+  "status": "source_qualified_live_unproven",
+  "runtime_role": "current_signed_runtime",
+  "codex_version": "0.153.4",
+  "base_source_commit": "3d2ee51ca2d5db578f328aa75e20aa22c0197c9a",
+  "source_patch": {
+    "path": "probes/current-signed-runtime-plaintext-assignment-seam-source-candidate.patch",
+    "sha256": "25548e1fa53063157e0635e0907a45bd61099ac3be8dda2c1e6ff8c44ca5ff7d",
+    "bytes": 45043,
+    "lines": 1105,
+    "changed_path_count": 19,
+    "cargo_lock_included": false,
+    "git_apply_check": "pass"
+  },
+  "changed_paths": [
+    "codex-rs/core/src/config/config_tests.rs",
+    "codex-rs/core/src/config/mod.rs",
+    "codex-rs/core/src/stream_events_utils.rs",
+    "codex-rs/core/src/tools/handlers/multi_agents_spec.rs",
+    "codex-rs/core/src/tools/handlers/multi_agents_spec_tests.rs",
+    "codex-rs/core/src/tools/handlers/multi_agents_tests.rs",
+    "codex-rs/core/src/tools/handlers/multi_agents_v2.rs",
+    "codex-rs/core/src/tools/handlers/multi_agents_v2/followup_task.rs",
+    "codex-rs/core/src/tools/handlers/multi_agents_v2/send_message.rs",
+    "codex-rs/core/src/tools/parallel.rs",
+    "codex-rs/core/src/tools/router.rs",
+    "codex-rs/core/src/tools/router_tests.rs",
+    "codex-rs/core/src/tools/spec_plan.rs",
+    "codex-rs/core/src/tools/spec_plan_tests.rs",
+    "codex-rs/core/tests/suite/subagent_notifications.rs",
+    "codex-rs/features/src/feature_configs.rs",
+    "codex-rs/features/src/lib.rs",
+    "codex-rs/features/src/tests.rs",
+    "codex-rs/protocol/src/protocol.rs"
+  ],
+  "interface": {
+    "config_key": "features.multi_agent_v2.message_delivery",
+    "default": "encrypted",
+    "explicit_opt_in": "plaintext",
+    "operations": [
+      "spawn_agent",
+      "send_message",
+      "followup_task"
+    ],
+    "configured_namespace_must_match_exactly": true,
+    "explicit_empty_marker_plaintext": true,
+    "configured_null_marker_plaintext": true,
+    "unconfigured_null_marker_encrypted": true,
+    "nonempty_marker_encrypted": true,
+    "plaintext_model_input_type": "message",
+    "plaintext_model_input_role": "user",
+    "encrypted_model_input_type": "agent_message",
+    "transport_only": true,
+    "grants_mutation_authority": false,
+    "changes_parent_provider_or_auth": false,
+    "uses_multi_agent_v1_fallback": false
+  },
+  "source_results": {
+    "format": "pass",
+    "diff_check": "pass",
+    "candidate_compiles": true,
+    "feature_config_parse": "1 passed",
+    "protocol_plaintext_user_wire": "1 passed",
+    "schema_default_and_opt_in": "2 passed",
+    "router_and_log_redaction": "5 passed",
+    "runtime_config_resolution": "1 passed",
+    "shared_queue_and_trigger_transport": "2 passed",
+    "spawn_wire_matrix": "5 passed",
+    "spawn_wire_cases": [
+      "encrypted",
+      "explicit-empty-marker plaintext",
+      "configured plaintext custom namespace with null marker",
+      "luna encrypted leaf",
+      "legacy encrypted leaf"
+    ]
+  },
+  "test_environment": {
+    "os": "macOS 26.2 (25C56)",
+    "architecture": "arm64",
+    "source_pinned_rustc": "rustc 1.95.0 (59807616e 2026-04-14)",
+    "source_pinned_cargo": "cargo 1.95.0 (f2d3ce0bd 2026-03-21)",
+    "integration_test_stack_bytes": 16777216,
+    "default_stack_upstream_control": "stack_overflow",
+    "expanded_stack_upstream_control": "1 passed",
+    "interpretation": "the stack override is a current upstream macOS libtest harness requirement, not a runtime or candidate authority grant"
+  },
+  "storage": {
+    "peak_cargo_target": "15G",
+    "cargo_target_deleted_after_tests": true,
+    "candidate_binary_built": false,
+    "source_worktree_preserved": true,
+    "source_worktree_size": "85M"
+  },
+  "live_boundaries": {
+    "candidate_installed_or_selected": false,
+    "gui_app_server_selected": false,
+    "live_config_modified": false,
+    "live_pretool_plaintext_observed": false,
+    "live_subagentstart_capsule_consumption_observed": false,
+    "live_send_message_delivery_observed": false,
+    "live_followup_task_delivery_observed": false,
+    "distinct_delivery_and_deny_pairs_observed": false,
+    "credential_values_read_or_stored": false
+  },
+  "verdict": {
+    "source_candidate_qualified": true,
+    "plaintext_assignment_seam_qualified": false,
+    "phase1_complete": false,
+    "direct_write_qualified": false,
+    "phase2_state": "closed",
+    "phase3_state": "closed"
+  }
+}

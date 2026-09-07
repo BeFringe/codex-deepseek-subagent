@@ -2009,3 +2009,43 @@ including agent-template checks. The schema-2 component oracle matched the
 exact current source and returned
 `per_child_sandbox_override_available=false`; G4 remains incomplete and direct
 write remains unqualified.
+
+## Current signed-runtime plaintext seam source candidate
+
+The assignment-transport candidate was ported onto the exact
+`current_signed_runtime` source at full HEAD
+`3d2ee51ca2d5db578f328aa75e20aa22c0197c9a`. It adds one explicit
+`features.multi_agent_v2.message_delivery="plaintext"` opt-in while retaining
+`encrypted` as the default. The change covers `spawn_agent`, `send_message`,
+and `followup_task`; requires the exact configured namespace and operation;
+accepts either the upstream explicit empty encryption marker or a missing
+marker only under the configured opt-in; and keeps a nonempty marker encrypted.
+Plaintext durable envelopes enter the model through the supported user-message
+wire, while encrypted traffic retains the native agent-message wire. Parent
+provider, auth, base URL, credentials, native lifecycle, and mutation authority
+are untouched.
+
+The 19-path, Cargo.lock-free patch applies cleanly to the pinned source. Source
+verification passed formatting and diff checks, one feature-config test, one
+protocol wire test, two schema-default/opt-in tests, five router/redaction
+tests, one runtime-config test, two shared queue/trigger transport tests, and a
+five-case spawn matrix: encrypted, explicit-empty plaintext, configured-null
+plaintext under a custom namespace, Luna encrypted leaf, and legacy encrypted
+leaf.
+
+On this macOS arm64 host, the current upstream integration binary also stack
+overflows in an unchanged adjacent subagent test under libtest's default stack;
+that control and the candidate matrix pass with
+`RUST_MIN_STACK=16777216`. This is recorded as a test-harness constraint, not a
+runtime permission or qualification shortcut. The isolated Cargo target peaked
+at 15 GB and was deleted after testing; no CLI/App candidate was built,
+installed, or selected, and the 85 MB source worktree remains available.
+
+The frozen artifacts are
+`probes/current-signed-runtime-plaintext-assignment-seam-source-candidate.json`
+and
+`probes/current-signed-runtime-plaintext-assignment-seam-source-candidate.patch`.
+This closes the current-source port and its source tests only. No current live
+PreToolUse plaintext, SubagentStart capsule consumption, send/followup delivery,
+paired denial, or broader identity cohort has been observed. P1 remains
+partial; Phase 1 and direct write remain false, and Phase 2/3 remain closed.
