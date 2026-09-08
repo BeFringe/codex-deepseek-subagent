@@ -2604,6 +2604,80 @@ P6c cost/latency, candidate exit-code gap, or strong global quiescence.
 `phase1_complete=false`, `direct_write_qualified=false`, and Phases 2/3 remain
 closed.
 
+## Exact G4 closed tool catalog and live apply-patch denial
+
+The current-source candidate now closes the callable catalog for the exact
+`g4_qualification_probe_worker` role using the role carried by real
+`TurnContext.session_source`. The role is forced to direct tool mode before
+request construction. After core, MCP, extension, dynamic, discovery, and
+code-mode contributors have registered, the registry retains only
+`apply_patch`, the bounded read-only observation tools, and
+`<configured-v2-namespace>.list_agents`; hosted specs are removed. The role
+cannot manage children and does not require or receive a code-mode worker.
+This is a visibility boundary, not a write grant.
+
+The focused source test enabled shell, request-permissions, Code Mode,
+CodeModeOnly, Multi-Agent V2, tool suggestion, apps, plugins, standalone web,
+MCP, extension, and dynamic tools at the same time. It passed with no callable
+surface outside the closed allowlist. The entire spec-plan module then passed
+59 tests, including encrypted/plaintext V2 schemas, exact external-provider
+mapping, Bedrock, code-mode, namespace, discovery, and collision behavior.
+The combined reconstructable patch is
+`probes/current-signed-runtime-g4-closed-tool-catalog-source-candidate.patch`;
+its source/build record is
+`probes/current-signed-runtime-g4-closed-tool-catalog-source-candidate.json`.
+The new headless binary is Codex 0.153.4 from pinned OpenAI source commit
+`3d2ee51ca2d5db578f328aa75e20aa22c0197c9a`, has SHA-256
+`90dbd98a2eb12328f6febf4eb52e1cf67ec10cda049841d16dcf7f25abb3420d`,
+and was neither installed nor selected as the GUI App Server.
+
+The live read-only negative used native OpenAI parent
+`01a0806c-901d-7f33-8a68-535cfe717b4f`. Real SessionMeta bound child
+`01a0806d-2e34-7eb1-9f73-2475727b668a` to exact role
+`g4_qualification_probe_worker`, the same runtime session, and canonical
+AgentPath `/root/g4_closed_catalog_apply_patch_deny_1`. The child made one
+native `apply_patch` call with tool-use id
+`call_FDNi1fDLz7Cv1DceZ7Qpeeb7`. PreToolUse sequence 1686 joined that exact
+identity and rejected it before execution with `TASK.AUTHORITY_BLOCKED` because
+the capsule was read-only. No shell or code-mode fallback occurred, no writer
+claim was acquired, and the requested `/private/tmp` file remained absent.
+SubagentStop sequence 1687 and the native wait/callback returned the exact
+attestation to the OpenAI parent; the candidate exited zero.
+
+After source and live verification, `cargo clean` removed 69,761 build files
+and 23.8 GiB from the exact temporary target directory. The 590 MB standalone
+candidate and 82 KB reconstruction patch remain; the source tree itself is
+about 85 MB. No GUI resource or global executable points to that candidate.
+
+A fresh post-termination observation found zero matching candidate processes,
+zero open candidate executable files, the target absent, and the exact clean
+HEAD/tree/index/diff frontier unchanged. The authority record correctly remains
+`unresolved_terminal` with classification
+`read_only_child_mutation_attempt`; neither the child's narrative nor process
+absence was promoted to integration or ownership-handover authority. The
+minimized live receipt and executable checks are
+`probes/g4-live-closed-tool-catalog-apply-patch-denial-20260908.json`,
+`tests/test_current_g4_closed_tool_catalog_source_candidate.py`, and
+`tests/test_g4_live_closed_tool_catalog_apply_patch_denial.py`.
+
+This advances P4 from an open-ended child tool surface to one source-qualified
+closed catalog plus one live visible-and-mediated mutation surface. It also
+reduces P5b's process-bootstrap problem for this exact role because shell,
+code-mode, MCP, extension, dynamic, and agent-control launch surfaces do not
+enter the candidate catalog. It does not yet prove full live absence for every
+optional contributor, a successful exact-path child write, all Hook-mediated
+mutation negative space, zero in-flight writer claims at handover, tracked and
+detached process-tree exit, or strong global quiescence. P4 and P5b therefore
+remain partial; `phase1_complete=false`, `direct_write_qualified=false`, and
+Phases 2/3 remain closed.
+
+Fresh provider-free verification passed 548 tests in 58.286 seconds with agent
+template checks. The normal Phase 1, current mutation-surface, and same-UID
+checks returned zero. Their promotion-required forms returned 2; the mutation
+matrix retained thirteen blockers and same-UID rollout/state remained
+unprotected. These expected fail-closed results keep the new catalog receipt
+below direct-write qualification.
+
 ## Live native V2 session-close boundary
 
 An isolated current-source candidate at OpenAI Codex commit
