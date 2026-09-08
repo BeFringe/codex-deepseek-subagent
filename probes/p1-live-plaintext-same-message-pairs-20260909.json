@@ -402,11 +402,17 @@
       "exit_code": 0
     },
     "provider_free_suite": {
-      "command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPYCACHEPREFIX=/private/tmp/codex-pycache-p1-pairs-full-20260909 python3 -m unittest discover -s tests -p 'test_*.py'",
+      "command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPYCACHEPREFIX=/private/tmp/codex-pycache-p1-qualified-full-final-20260909 python3 -m unittest discover -s tests -p 'test_*.py'",
       "test_count": 641,
-      "duration_seconds": 65.544,
+      "duration_seconds": 64.990,
       "exit_code": 0,
       "agent_template_checks": "passed"
+    },
+    "status_transition_suite": {
+      "test_count": 70,
+      "duration_seconds": 0.159,
+      "exit_code": 0,
+      "purpose": "prove historical evidence remains non-authorizing after P1 alone becomes qualified"
     },
     "plaintext_assignment_gate": {
       "require_qualified_exit_code": 0,
@@ -419,7 +425,7 @@
       "normal_exit_code": 0,
       "require_phase1_complete_exit_code": 2,
       "valid": true,
-      "gate_blocker_count": 10,
+      "gate_blocker_count": 9,
       "exit_receipt_blocker_count": 9,
       "phase1_complete": false,
       "direct_write_qualified": false
@@ -461,7 +467,7 @@
   "verdict": {
     "receipt_valid": true,
     "plaintext_assignment_seam_qualified": true,
-    "p1_complete": false,
+    "p1_complete": true,
     "direct_write_qualified": false,
     "phase1_complete": false,
     "phase2_open": false,

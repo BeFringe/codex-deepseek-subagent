@@ -48,7 +48,11 @@ class PriorSignedRuntimeEncryptedSpawnNegativeTests(unittest.TestCase):
             "probes/g4-prior-signed-runtime-encrypted-spawn-negative-20260907.json",
             p1["evidence"],
         )
-        self.assertEqual(p1["state"], "partial")
+        self.assertEqual(p1["state"], "qualified")
+        self.assertIn(
+            "probes/p1-live-plaintext-same-message-pairs-20260909.json",
+            p1["evidence"],
+        )
         self.assertFalse(status["phase1"]["declared_complete"])
 
 

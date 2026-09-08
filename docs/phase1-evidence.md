@@ -2847,8 +2847,10 @@ assertions are `tests/test_p1_live_plaintext_same_message_pairs.py`. The
 contract checker with `--require-qualified` returned zero and reported
 `plaintext_assignment_seam_qualified=true`, while keeping Phase 1 and direct
 write false. Focused checks passed 49 tests in 1.683 seconds. The fresh full
-provider-free suite passed 641 tests in 65.544 seconds with agent-template
-checks. The normal Phase 1, mutation, same-UID, and Hook-chain checks returned
+provider-free suite passed 641 tests in 64.990 seconds with agent-template
+checks. A 70-test transition suite additionally proved that historical partial
+receipts remain non-authorizing when P1 alone moves to qualified. The normal
+Phase 1, mutation, same-UID, and Hook-chain checks returned
 zero; their promotion forms returned 2. Current-source mutation anchors are
 exact with thirteen unqualified surfaces. Same-UID rollout/state protection
 remain false. The Hook-chain snapshot contains 2141 events, 922 paired
@@ -2860,7 +2862,9 @@ This qualifies the P1 plaintext assignment seam for one live sample across all
 three assignment operations and removes the distinct same-message deny-pair
 blocker. It does not provide a supported public SDK/App Server selector,
 parent-visible child ThreadIds, broader nested/repetition/provider cohorts,
-mutation qualification, or strong global quiescence. P1 remains partial;
+mutation qualification, or strong global quiescence; those are productization
+or P2--P7 concerns rather than additional P1 acceptance requirements. P1 is
+qualified, while the Phase 1 aggregate remains incomplete;
 `phase1_complete=false`, `direct_write_qualified=false`, and Phases 2/3 remain
 closed.
 

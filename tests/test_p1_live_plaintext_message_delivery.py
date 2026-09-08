@@ -145,9 +145,9 @@ class P1LivePlaintextMessageDeliveryTests(unittest.TestCase):
         status = json.loads(STATUS_PATH.read_text(encoding="utf-8"))
         gates = {gate["id"]: gate for gate in status["phase1"]["gates"]}
         evidence_path = "probes/p1-live-plaintext-message-delivery-20260908.json"
-        self.assertEqual(gates["P1"]["state"], "partial")
+        self.assertEqual(gates["P1"]["state"], "qualified")
         self.assertIn(evidence_path, gates["P1"]["evidence"])
-        self.assertNotIn("send_message/followup_task delivery", gates["P1"]["blocker"])
+        self.assertNotIn("blocker", gates["P1"])
         for gate_id in ("P2", "P3", "P7"):
             self.assertEqual(gates[gate_id]["state"], "partial")
             self.assertIn(evidence_path, gates[gate_id]["evidence"])

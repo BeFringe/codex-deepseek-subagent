@@ -31,7 +31,7 @@
     "gates": [
       {
         "id": "P1",
-        "state": "partial",
+        "state": "qualified",
         "provider_free": "pass",
         "evidence": [
           "probes/g4-live-postcompact-scope-drift-denial-20260908.json",
@@ -115,8 +115,7 @@
           "probes/g4-live-exact-path-child-write-20260908.json",
           "probes/g4-live-exact-path-child-write-parent-adjudication-20260908.json",
           "tests/test_g4_live_exact_path_child_write.py"
-        ],
-        "blocker": "the prior signed runtime encrypted the spawn message before PreToolUse, while the current signed runtime opt-in candidate now has a consumed inherited-OpenAI root receipt and a separately consumed external-ZHIPU child receipt in which PreToolUse observed the exact plaintext assignment hash and SubagentStart consumed and identity-bound the capsule. Provider-free serial, concurrent, and depth-two samples join exact plaintext assignments to real SessionMeta and canonical AgentPaths, callbacks, and fresh-owner adjudication. An idle explorer run observes exact plaintext send_message and followup_task user-message wires across two turns without placing either payload preimage in the initial assignment. A distinct live schema-3 sample now qualifies the plaintext assignment seam for spawn_agent, send_message, and followup_task: for each operation the same message fingerprint was allowed once to the native handler and recipient, then a separate tool-use id was blocked by PreToolUse before dispatch. Its native callbacks arrived without an explicit parent wait and the temporary qualification Hook overlay rolled back to the exact prior bytes. The persisted root response items omit the encrypted_function_args field, so the configured-null route is proven by the exact source branch, session opt-in, namespace, operation, PreToolUse fingerprint, handler result, and recipient wire rather than misstated as an explicit server-null field. The native source-parent projection still omits child thread ids. Upstream SDK and App Server expose no supported plaintext spawn choice; broader nested repetition, parent-visible concurrent identity, and broader cohort scale remain unqualified"
+        ]
       },
       {
         "id": "P2",

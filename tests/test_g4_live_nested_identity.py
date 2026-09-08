@@ -213,7 +213,9 @@ class LiveNestedIdentityEvidenceTests(unittest.TestCase):
             "probes/"
             "g4-live-nested-identity-parent-adjudication-result-20260908.json"
         )
-        for gate_id in ("P1", "P2", "P3", "P6", "P6a", "P6b", "P7"):
+        self.assertEqual(gates["P1"]["state"], "qualified")
+        self.assertIn(result_path, gates["P1"]["evidence"])
+        for gate_id in ("P2", "P3", "P6", "P6a", "P6b", "P7"):
             self.assertEqual(gates[gate_id]["state"], "partial")
             self.assertIn(result_path, gates[gate_id]["evidence"])
         self.assertFalse(status["phase1"]["declared_complete"])

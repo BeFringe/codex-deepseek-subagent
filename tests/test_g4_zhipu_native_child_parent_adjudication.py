@@ -152,7 +152,9 @@ class G4ZhipuNativeChildParentAdjudicationTests(unittest.TestCase):
         self.assertFalse(verdict["strong_global_quiescence_complete"])
         self.assertFalse(verdict["phase1_complete"])
         self.assertFalse(verdict["direct_write_qualified"])
-        for gate_id in ("P1", "P2", "P3", "P4", "P5b", "P6", "P6a", "P6b", "P7"):
+        self.assertIn(result_path, gates["P1"]["evidence"])
+        self.assertEqual(gates["P1"]["state"], "qualified")
+        for gate_id in ("P2", "P3", "P4", "P5b", "P6", "P6a", "P6b", "P7"):
             self.assertIn(result_path, gates[gate_id]["evidence"])
             self.assertEqual(gates[gate_id]["state"], "partial")
         self.assertFalse(self.status["phase1"]["declared_complete"])

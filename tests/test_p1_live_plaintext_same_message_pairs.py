@@ -131,10 +131,10 @@ class P1LivePlaintextSameMessagePairTests(unittest.TestCase):
         gates = {gate["id"]: gate for gate in status["phase1"]["gates"]}
         evidence_path = "probes/p1-live-plaintext-same-message-pairs-20260909.json"
         tests_path = "tests/test_p1_live_plaintext_same_message_pairs.py"
-        self.assertEqual(gates["P1"]["state"], "partial")
+        self.assertEqual(gates["P1"]["state"], "qualified")
         self.assertIn(evidence_path, gates["P1"]["evidence"])
         self.assertIn(tests_path, gates["P1"]["evidence"])
-        self.assertNotIn("distinct same-message deny pairs", gates["P1"]["blocker"])
+        self.assertNotIn("blocker", gates["P1"])
         self.assertFalse(status["phase1"]["declared_complete"])
         self.assertFalse(status["phase1"]["declared_direct_write_qualified"])
 

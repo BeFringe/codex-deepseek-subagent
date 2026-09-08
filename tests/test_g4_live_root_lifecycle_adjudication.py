@@ -51,7 +51,9 @@ class G4LiveRootLifecycleAdjudicationTests(unittest.TestCase):
         gates = {item["id"]: item for item in status["phase1"]["gates"]}
         result_path = "probes/g4-live-root-lifecycle-adjudication-result-20260817.json"
 
-        for gate_id in ("P1", "P2", "P3", "P4", "P5b", "P6", "P6a", "P6b"):
+        self.assertIn(result_path, gates["P1"]["evidence"])
+        self.assertEqual(gates["P1"]["state"], "qualified")
+        for gate_id in ("P2", "P3", "P4", "P5b", "P6", "P6a", "P6b"):
             self.assertIn(result_path, gates[gate_id]["evidence"])
             self.assertEqual(gates[gate_id]["state"], "partial")
         self.assertFalse(status["phase1"]["declared_complete"])
