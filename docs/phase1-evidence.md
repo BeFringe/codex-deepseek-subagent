@@ -2638,6 +2638,67 @@ P6c cost/latency, candidate exit-code gap, or strong global quiescence.
 `phase1_complete=false`, `direct_write_qualified=false`, and Phases 2/3 remain
 closed.
 
+## Live failed-apply-patch callback and unchanged-lease release
+
+The installed 0.153.4 runtime exposes a concrete P5b failure boundary. Its
+tool registry emits PostToolUse only after a successful handler result, while
+an `apply_patch` context-verification error returns from the handler as an
+error. PreToolUse can therefore admit and lease the exact paths without a
+matching PostToolUse callback. The earlier live receipt required an exact
+identity plus unchanged-snapshot recovery; it remained a fail-closed safety
+path, not automatic callback continuity.
+
+A narrow current-source candidate changes only that boundary. After an
+accepted PreToolUse, an `apply_patch` handler error now produces PostToolUse
+with the original invocation id and tool input plus the handler error as the
+response. Other unsuccessful tools preserve their current no-PostToolUse
+behavior. The reconstruction-only patch is
+`probes/current-signed-runtime-failed-apply-patch-posttool-source-candidate.patch`,
+SHA-256
+`65bd5117fa205f2014a0e07578e7e48daa73f2f985a8e74269db4a1759532d7a`,
+against current signed source commit
+`3d2ee51ca2d5db578f328aa75e20aa22c0197c9a`. Reverse application and formatting
+checks passed. The existing successful-apply-patch Hook test and new
+`post_tool_use_runs_after_apply_patch_handler_failure` regression both passed
+with an explicit 32 MiB test-thread stack. The default-stack abort occurred
+before assertions and is recorded as a runner-resource control, not as source
+qualification evidence.
+
+The candidate was built headlessly and copied to an isolated path with SHA-256
+`abe80df563067cf9ebb856cbb85fe5f55d2624523eb0ae9700ef39f0e5e70b20`.
+It was selected only through the digest-pinned repository wrapper under a new
+exact guard for `/private/tmp/codex-g4-write-posttool-*`; code-mode host remains
+disabled by default. Neither the GUI App Server, `CODEX_CLI_PATH`, the OpenAI
+parent provider, nor live Hook bytes changed. Two timing controls deliberately
+reached no tool call when code mode or its adjacent host was unavailable.
+
+The positive live run used clean disposable Git root
+`/private/tmp/codex-g4-write-posttool-mrKOqx`, branch `main`, and full HEAD
+`1fc808ef15c4926f55167f8299ca3fa41ea79ba1`. Root session
+`01a08139-203e-73b3-b297-1fe0af398f57` invoked exactly one `apply_patch` with
+tool-use id `exec-1ea08bc9-97b9-4614-9e8d-5d5e14b97eb9` against absent expected
+context. PreToolUse sequence 1998 acquired claim
+`12f6080b-9c25-42a1-94de-7dbf0da6a91f`; PostToolUse sequence 1999 joined the
+same id. The before and after path snapshots were identical, the claim was
+absent after callback, and no manual recovery ran. `baseline.txt`, Git index,
+status, branch, and HEAD were unchanged. A post-barrier observation found zero
+candidate or code-mode-host processes and unchanged live Hook SHA-256
+`82c8aa0bc4d739628646864578de6c078884c21413855ed3db448d4365a8668e`.
+
+The minimized receipt and executable assertions are
+`probes/g4-live-failed-apply-patch-posttool-callback-20260908.json` and
+`tests/test_g4_live_failed_apply_patch_posttool_callback.py`. This closes the
+known handler-failed `apply_patch` callback/release subcase for the candidate.
+It does not qualify the baseline signed runtime, other failed or partially
+executed mutation surfaces, strong global quiescence, P5b, Phase 1, or direct
+write. Fresh verification passed all 595 provider-free tests in 49.068
+seconds, including agent-template checks. The Phase 1 gate returned zero in
+normal mode and 2 under promotion; the pristine current-source mutation check
+returned zero in normal mode and 2 under qualification with thirteen blockers;
+the same-UID check likewise returned zero normally and 2 when protection was
+required, with rollout and state protection both false. Phases 2/3 remain
+closed.
+
 ## Live PreCompact and post-compact authority re-attestation
 
 Checkpoint `023f8386fd1a7b136121dbd086ec24b41a18e812` changed the

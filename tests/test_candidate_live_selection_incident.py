@@ -75,6 +75,21 @@ class CandidateLiveSelectionIncidentTests(unittest.TestCase):
             hardened["forced_posture"]["guarded_auto_compact_limit"],
             20000,
         )
+        self.assertEqual(
+            hardened["forced_posture"][
+                "guarded_failed_apply_patch_callback_authorization"
+            ],
+            "CODEX_G4_FAILED_PATCH_CALLBACK_PROBE_AUTHORIZED="
+            "schema1-root-failed-apply-patch",
+        )
+        self.assertEqual(
+            hardened["forced_posture"]["guarded_failed_apply_patch_root_namespace"],
+            "/private/tmp/codex-g4-write-posttool-*",
+        )
+        self.assertTrue(
+            hardened["forced_posture"]["guarded_failed_apply_patch_code_mode_host"]
+        )
+        self.assertFalse(hardened["forced_posture"]["code_mode_host"])
         self.assertEqual(hardened["forced_posture"]["caller_config_override"], "deny")
 
     def test_non_reserved_smoke_is_server_acceptance_only(self) -> None:

@@ -233,6 +233,56 @@ class PlaintextCandidateWrapperTests(unittest.TestCase):
             arguments = arg_log.read_text(encoding="utf-8").splitlines()
             self.assertEqual(arguments[arguments.index("-s") + 1], "workspace-write")
 
+    def test_failed_patch_callback_guard_narrowly_enables_code_mode_host(self):
+        with tempfile.TemporaryDirectory() as candidate_dir, tempfile.TemporaryDirectory(
+            prefix="codex-g4-write-posttool-", dir="/private/tmp"
+        ) as root_dir:
+            directory = Path(candidate_dir)
+            root = Path(root_dir).resolve()
+            candidate, digest = self._fake_candidate(directory)
+            subprocess.run(
+                ["git", "-C", str(root), "init", "-b", "main"],
+                check=True,
+                capture_output=True,
+            )
+            subprocess.run(
+                [
+                    "git", "-C", str(root), "-c", "user.name=Phase1 Probe",
+                    "-c", "user.email=phase1-probe@invalid", "commit", "--allow-empty",
+                    "-m", "initial",
+                ],
+                check=True,
+                capture_output=True,
+            )
+            arg_log = directory / "failed-patch-args.txt"
+            environment = self._environment(candidate, digest, arg_log)
+            environment.update(
+                {
+                    "CODEX_G4_SESSIONMETA_PROBE_AUTHORIZED": "schema1-headless-stateful",
+                    "CODEX_G4_SESSIONMETA_PROBE_ROOT": str(root),
+                    "CODEX_G4_EXACT_WRITE_PROBE_AUTHORIZED": "schema1-exact-temporary-git-root",
+                    "CODEX_G4_FAILED_PATCH_CALLBACK_PROBE_AUTHORIZED": (
+                        "schema1-root-failed-apply-patch"
+                    ),
+                }
+            )
+            result = subprocess.run(
+                [
+                    str(WRAPPER), "exec", "--ignore-user-config", "--ignore-rules",
+                    "--dangerously-bypass-hook-trust", "--json", "-C", str(root),
+                    "Return READY.",
+                ],
+                env=environment,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            arguments = arg_log.read_text(encoding="utf-8").splitlines()
+            self.assertIn("features.code_mode_host=true", arguments)
+            self.assertEqual(arguments[arguments.index("-s") + 1], "workspace-write")
+
     def test_auto_compact_guard_injects_fixed_limit_into_stateful_read_only_probe(self):
         with tempfile.TemporaryDirectory() as candidate_dir, tempfile.TemporaryDirectory(
             prefix="codex-g4-compact-wrapper-", dir="/private/tmp"

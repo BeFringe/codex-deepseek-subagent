@@ -271,9 +271,14 @@
           "tests/test_g4_live_closed_tool_catalog_apply_patch_denial.py",
           "probes/g4-live-exact-path-child-write-20260908.json",
           "probes/g4-live-exact-path-child-write-parent-adjudication-20260908.json",
-          "tests/test_g4_live_exact_path_child_write.py"
+          "tests/test_g4_live_exact_path_child_write.py",
+          "probes/current-signed-runtime-failed-apply-patch-posttool-source-candidate.patch",
+          "probes/g4-live-failed-apply-patch-posttool-callback-20260908.json",
+          "probes/codex_plaintext_candidate_wrapper.sh",
+          "tests/test_plaintext_candidate_wrapper.py",
+          "tests/test_g4_live_failed_apply_patch_posttool_callback.py"
         ],
-        "blocker": "an exact role-to-applied-provider capability projection now exposes and mediates one native read-only list_agents call for an external ZHIPU child without changing the default unknown-model catalog or granting mutation authority. One fresh current signed OpenAI root also proved a trusted PreToolUse/PostToolUse apply_patch round trip under an explicit parent-only /private/tmp ceiling, with exact identity, file bytes, released lease, and no child or Git authority. Two inherited-OpenAI read-only children reached real nested mutation surfaces that PreToolUse denied before execution. A third exact inherited-OpenAI child used a one-shot qualification grant: the Hook consumed authority before dispatch, macOS Seatbelt independently denied the exact /private/tmp touch with operation_not_permitted, and two post-termination observations found no target or Git change. A fourth exact inherited-OpenAI child exercised the positive path: the Hook consumed an exact task/path ceiling, bound real SessionMeta and AgentPath, acquired and released the owned-path lease around one native apply_patch, and a fresh owner consumed the resulting contribution. These are narrow surface receipts, not full shell or mutation-surface qualification. Bounded child-role projection still preserves the parent permission profile, so a role-file sandbox_mode remains only a requested posture. An isolated disposable client proved that connection possession alone can invoke sandbox-none filesystem and unsandboxed process host-control RPCs without thread identity or client auth. Independent App Server startup, daemon bootstrap, proxy/connection acquisition, the remaining live mutation negative space, and broad sandbox confinement therefore remain unqualified. A detached descendant also wrote after App Server EOF/exit, so server termination is not a host-control process-tree barrier"
+        "blocker": "an exact role-to-applied-provider capability projection now exposes and mediates one native read-only list_agents call for an external ZHIPU child without changing the default unknown-model catalog or granting mutation authority. One fresh current signed OpenAI root also proved a trusted PreToolUse/PostToolUse apply_patch round trip under an explicit parent-only /private/tmp ceiling, with exact identity, file bytes, released lease, and no child or Git authority. Two inherited-OpenAI read-only children reached real nested mutation surfaces that PreToolUse denied before execution. A third exact inherited-OpenAI child used a one-shot qualification grant: the Hook consumed authority before dispatch, macOS Seatbelt independently denied the exact /private/tmp touch with operation_not_permitted, and two post-termination observations found no target or Git change. A fourth exact inherited-OpenAI child exercised the positive path: the Hook consumed an exact task/path ceiling, bound real SessionMeta and AgentPath, acquired and released the owned-path lease around one native apply_patch, and a fresh owner consumed the resulting contribution. A narrow current-source candidate now also emits PostToolUse after an accepted apply_patch reaches a handler-level context-verification failure; one live root run joined the same tool-use id, proved unchanged disk bytes, and released the lease without manual recovery. These are narrow surface receipts, not full shell or mutation-surface qualification. All other failed or partially executed mutation surfaces still retain their existing runtime semantics and remain open. Bounded child-role projection still preserves the parent permission profile, so a role-file sandbox_mode remains only a requested posture. An isolated disposable client proved that connection possession alone can invoke sandbox-none filesystem and unsandboxed process host-control RPCs without thread identity or client auth. Independent App Server startup, daemon bootstrap, proxy/connection acquisition, the remaining live mutation negative space, and broad sandbox confinement therefore remain unqualified. A detached descendant also wrote after App Server EOF/exit, so server termination is not a host-control process-tree barrier"
       },
       {
         "id": "P5",
@@ -366,9 +371,14 @@
           "tests/test_g4_live_closed_tool_catalog_apply_patch_denial.py",
           "probes/g4-live-exact-path-child-write-20260908.json",
           "probes/g4-live-exact-path-child-write-parent-adjudication-20260908.json",
-          "tests/test_g4_live_exact_path_child_write.py"
+          "tests/test_g4_live_exact_path_child_write.py",
+          "probes/current-signed-runtime-failed-apply-patch-posttool-source-candidate.patch",
+          "probes/g4-live-failed-apply-patch-posttool-callback-20260908.json",
+          "probes/codex_plaintext_candidate_wrapper.sh",
+          "tests/test_plaintext_candidate_wrapper.py",
+          "tests/test_g4_live_failed_apply_patch_posttool_callback.py"
         ],
-        "blocker": "current-runtime read-only OpenAI and external-ZHIPU children have per-target clean disk barriers and fresh consumed-state transitions. Parent-only non-Git apply_patch has an exact successful claim/callback/release receipt; child apply_patch and Bash denials plus the one-shot Seatbelt probe exercise blocked paths. One exact child apply_patch now adds a successful child claim/callback/release receipt, zero matching target claims, and a two-second no-late-write disk barrier followed by fresh-owner consumption. Serial and concurrent samples add ordered and overlapping callbacks, while the parent-exit orphan proves callback absence remains possible. One real auto-compaction run preserves exact read-only authority through a post-compact tool, callback, disk barrier, and fresh-owner consumption; its strong_global_quiescence claim remains deliberately false. The no-event first-attestation path holds the timeout-terminal final until native interrupt observes running and a later exact list observes interrupted. The current-source V2 close probe advances one layer: it resolves a still-running child by exact ThreadId/AgentPath, waits for target and live-descendant session loops, returns session_loop_terminated=true, and then observes the child absent from the live tree. Its truthful process_tree_quiescence_claimed=false and unresolved authority keep P5b partial. Tracked process confirmed-exit joins, detached/untracked descendants, closed all-surface mutation mediation, exact Hook/state reconciliation, and before/mid/after late-write handover races remain unproved. Failed apply_patch can still omit PostToolUse and require exact unchanged-snapshot recovery. The App Server host-control negative also proves server exit alone is not a process-tree barrier"
+        "blocker": "current-runtime read-only OpenAI and external-ZHIPU children have per-target clean disk barriers and fresh consumed-state transitions. Parent-only non-Git apply_patch has an exact successful claim/callback/release receipt; child apply_patch and Bash denials plus the one-shot Seatbelt probe exercise blocked paths. One exact child apply_patch now adds a successful child claim/callback/release receipt, zero matching target claims, and a two-second no-late-write disk barrier followed by fresh-owner consumption. Serial and concurrent samples add ordered and overlapping callbacks, while the parent-exit orphan proves callback absence remains possible. One real auto-compaction run preserves exact read-only authority through a post-compact tool, callback, disk barrier, and fresh-owner consumption; its strong_global_quiescence claim remains deliberately false. The no-event first-attestation path holds the timeout-terminal final until native interrupt observes running and a later exact list observes interrupted. The current-source V2 close probe advances one layer: it resolves a still-running child by exact ThreadId/AgentPath, waits for target and live-descendant session loops, returns session_loop_terminated=true, and then observes the child absent from the live tree. Its truthful process_tree_quiescence_claimed=false and unresolved authority keep P5b partial. A narrow current-source candidate closes the known handler-failed apply_patch callback gap: Rust regression tests and one live root run prove same-id PostToolUse, unchanged snapshots, and automatic lease release without manual recovery. Baseline signed runtime and all other unsuccessful mutation surfaces retain their prior behavior. Tracked process confirmed-exit joins, detached/untracked descendants, closed all-surface mutation mediation, exact Hook/state reconciliation, and before/mid/after late-write handover races remain unproved. The App Server host-control negative also proves server exit alone is not a process-tree barrier"
       },
       {
         "id": "P6",
@@ -506,7 +516,10 @@
           "tests/test_g4_live_concurrent_identity.py",
           "probes/g4-live-exact-path-child-write-20260908.json",
           "probes/g4-live-exact-path-child-write-parent-adjudication-20260908.json",
-          "tests/test_g4_live_exact_path_child_write.py"
+          "tests/test_g4_live_exact_path_child_write.py",
+          "probes/current-signed-runtime-failed-apply-patch-posttool-source-candidate.patch",
+          "probes/g4-live-failed-apply-patch-posttool-callback-20260908.json",
+          "tests/test_g4_live_failed_apply_patch_posttool_callback.py"
         ],
         "blocker": "a narrow exact child-role/provider source seam and two live OpenAI-parent to ZHIPU-child read-only native-tool loops, including one fresh consumed record, prove that the current provider-inheritance boundary can be crossed without replacing the parent provider or App Server. Provider-free POSIX serial and concurrent pairs also completed without selecting the candidate as the GUI App Server; the concurrent run has a known zero candidate exit and actual overlap, while its parent projection omitted child thread ids. One exact-path POSIX child write then completed under the same headless-only selection, and the hash-pinned Hook overlay returned to its original bytes immediately afterward. The earlier one-shot sandbox overlay also has an exact hash-pinned rollback: live config and scripts returned to their prior bytes, an in-process cached Hook definition failed closed rather than reloading, and a full App restart restored the prior trusted Hook set with zero warnings or errors. These are narrow positive receipts, not broad upgrade compatibility. The legacy Utopia DeepSeek route, Windows parity, DeepSeek regression, and broader external-child lifecycle and rollback cohorts remain missing; the independent App Server Broker replacement still cannot satisfy this project's native AgentPath lifecycle contract"
       }
@@ -565,7 +578,10 @@
           "probes/g4-child-read-only-shell-denial-20260908.json",
           "tests/test_g4_child_read_only_shell_denial.py",
           "probes/g4-child-read-only-sandbox-denial-20260908.json",
-          "tests/test_g4_child_read_only_sandbox_denial.py"
+          "tests/test_g4_child_read_only_sandbox_denial.py",
+          "probes/current-signed-runtime-failed-apply-patch-posttool-source-candidate.patch",
+          "probes/g4-live-failed-apply-patch-posttool-callback-20260908.json",
+          "tests/test_g4_live_failed_apply_patch_posttool_callback.py"
         ]
       },
       {
@@ -612,7 +628,10 @@
           "probes/g4-live-concurrent-batch-orphan-negative-20260908.json",
           "tests/test_g4_live_concurrent_batch_orphan_negative.py",
           "probes/g4-live-concurrent-identity-20260908.json",
-          "tests/test_g4_live_concurrent_identity.py"
+          "tests/test_g4_live_concurrent_identity.py",
+          "probes/current-signed-runtime-failed-apply-patch-posttool-source-candidate.patch",
+          "probes/g4-live-failed-apply-patch-posttool-callback-20260908.json",
+          "tests/test_g4_live_failed_apply_patch_posttool_callback.py"
         ]
       },
       {
@@ -689,7 +708,9 @@
           "probes/g4-live-first-attestation-watchdog-cancel-ack-20260908.json",
           "tests/test_g4_live_first_attestation_watchdog_cancel_ack.py",
           "probes/g4-live-concurrent-identity-20260908.json",
-          "tests/test_g4_live_concurrent_identity.py"
+          "tests/test_g4_live_concurrent_identity.py",
+          "probes/g4-live-failed-apply-patch-posttool-callback-20260908.json",
+          "tests/test_g4_live_failed_apply_patch_posttool_callback.py"
         ]
       },
       {
@@ -720,7 +741,9 @@
           "probes/g4-live-install-20260817.json",
           "probes/g4-parent-non-git-writer-live-20260908.json",
           "probes/g4-child-read-only-sandbox-denial-20260908.json",
-          "tests/test_g4_child_read_only_sandbox_denial.py"
+          "tests/test_g4_child_read_only_sandbox_denial.py",
+          "probes/g4-live-failed-apply-patch-posttool-callback-20260908.json",
+          "tests/test_g4_live_failed_apply_patch_posttool_callback.py"
         ]
       }
     ]

@@ -39,7 +39,7 @@
   },
   "hardened_wrapper": {
     "path": "probes/codex_plaintext_candidate_wrapper.sh",
-    "sha256": "d9e86d3b0b247d1f1d96f20c7f87d9c4323db89067389a81d58ae4221d409d1b",
+    "sha256": "7e29a7125e7299f1c4c14cc3cc9e88cdada56f2b77119ede343ded6f45a305d9",
     "historical_wrapper_disabled_by_replacement": true,
     "allowed_entry_points": ["login status", "exec"],
     "required_exec_flags": ["--ignore-user-config", "--ignore-rules"],
@@ -58,6 +58,9 @@
       "guarded_write_probe_root_namespace": "/private/tmp/codex-g4-write-*",
       "guarded_auto_compact_authorization": "CODEX_G4_AUTO_COMPACT_PROBE_AUTHORIZED=schema1-post-action-20000",
       "guarded_auto_compact_limit": 20000,
+      "guarded_failed_apply_patch_callback_authorization": "CODEX_G4_FAILED_PATCH_CALLBACK_PROBE_AUTHORIZED=schema1-root-failed-apply-patch",
+      "guarded_failed_apply_patch_root_namespace": "/private/tmp/codex-g4-write-posttool-*",
+      "guarded_failed_apply_patch_code_mode_host": true,
       "caller_config_override": "deny",
       "approval_policy": "never",
       "code_mode_host": false

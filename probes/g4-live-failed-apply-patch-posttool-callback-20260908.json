@@ -1,0 +1,128 @@
+{
+  "schema": 1,
+  "evidence_kind": "current_signed_runtime_failed_apply_patch_posttool_callback",
+  "observed_at": "2026-09-08T13:33:34.961732+00:00",
+  "runtime": {
+    "runtime_role": "current_signed_runtime",
+    "codex_version": "0.153.4",
+    "base_source_commit": "3d2ee51ca2d5db578f328aa75e20aa22c0197c9a",
+    "candidate_binary": "/private/tmp/codex-current-plaintext.aTU9C2/candidate-posttool-callback/codex",
+    "candidate_sha256": "abe80df563067cf9ebb856cbb85fe5f55d2624523eb0ae9700ef39f0e5e70b20",
+    "candidate_bytes": 589207352,
+    "code_mode_host_sha256": "d8a2222e017342718d16a5dbe092921c628961f812f62f42036b8d960e1ffe56",
+    "parent_provider_changed": false,
+    "gui_app_server_selected": false,
+    "codex_cli_path_modified": false,
+    "credential_values_read_or_stored": false
+  },
+  "source_candidate": {
+    "patch": "probes/current-signed-runtime-failed-apply-patch-posttool-source-candidate.patch",
+    "patch_sha256": "65bd5117fa205f2014a0e07578e7e48daa73f2f985a8e74269db4a1759532d7a",
+    "prerequisite_candidates": [
+      "probes/current-signed-runtime-plaintext-assignment-seam-source-candidate.patch",
+      "probes/current-signed-runtime-plaintext-child-provider-seam-source-candidate.patch",
+      "probes/current-signed-runtime-g4-closed-tool-catalog-source-candidate.patch",
+      "probes/current-signed-runtime-session-close-source-candidate.patch"
+    ],
+    "scope": "emit PostToolUse after an apply_patch handler error that followed an accepted PreToolUse; preserve all other unsuccessful-tool behavior",
+    "git_apply_reverse_check_exit_code": 0,
+    "cargo_fmt_check_exit_code": 0,
+    "rust_tests": [
+      {
+        "name": "post_tool_use_records_additional_context_for_apply_patch",
+        "rust_min_stack": 33554432,
+        "exit_code": 0
+      },
+      {
+        "name": "post_tool_use_runs_after_apply_patch_handler_failure",
+        "rust_min_stack": 33554432,
+        "exit_code": 0
+      }
+    ],
+    "default_test_stack_control": {
+      "exit_signal": "SIGABRT",
+      "classification": "test_thread_stack_overflow_before_assertions",
+      "qualified_as_source_failure": false
+    }
+  },
+  "build": {
+    "command": "cargo build -p codex-cli --bin codex",
+    "profile": "dev",
+    "exit_code": 0,
+    "cargo_target_dir": "/private/tmp/codex-g4-posttool-target",
+    "cargo_target_size_before_cleanup": "21G",
+    "cargo_target_removed_after_evidence_freeze": true,
+    "candidate_copy_size_after_cleanup": "622M",
+    "disposable_candidate_copy_preserved": true
+  },
+  "probe": {
+    "root": "/private/tmp/codex-g4-write-posttool-mrKOqx",
+    "branch": "main",
+    "full_head": "1fc808ef15c4926f55167f8299ca3fa41ea79ba1",
+    "target": "baseline.txt",
+    "target_sha256_before": "e793d84e78782460d7a28aed1f41b3e9f68afd2dc04fffda00676567297cb4c1",
+    "target_sha256_after": "e793d84e78782460d7a28aed1f41b3e9f68afd2dc04fffda00676567297cb4c1",
+    "failure": "apply_patch verification failed: expected context was absent",
+    "candidate_exit_code": 0,
+    "runtime_session_id": "01a08139-203e-73b3-b297-1fe0af398f57",
+    "turn_id": "01a08139-20b6-7503-b438-266f2ffb865e",
+    "canonical_agent_path": "/root",
+    "raw_stdout_path": "/private/tmp/codex-g4-posttool-run.Yz3zPB/stdout.jsonl",
+    "raw_stdout_sha256": "6b19d82e57f6d38f058e90c4e621bdfb528477ab131aa555a3108132b12db01e",
+    "raw_stdout_lines": 7,
+    "raw_stdout_bytes": 862,
+    "raw_stderr_path": "/private/tmp/codex-g4-posttool-run.Yz3zPB/stderr.txt",
+    "raw_stderr_sha256": "a38c59b9e1fb51cb043a0f839cc0466e79c99fc16812bf1178ed05dabd86c596",
+    "raw_stderr_lines": 3,
+    "raw_stderr_bytes": 255,
+    "no_tool_timing_controls": [
+      {
+        "thread_id": "01a08134-b25d-7ce0-8ee1-feb4134b0f5e",
+        "reason": "code_mode_host_disabled"
+      },
+      {
+        "thread_id": "01a08137-feca-7232-ba4d-03af3734dd79",
+        "reason": "candidate_adjacent_code_mode_host_missing"
+      }
+    ]
+  },
+  "hook_chain": {
+    "event_count_before": 1997,
+    "pretool_sequence": 1998,
+    "posttool_sequence": 1999,
+    "tool_name": "apply_patch",
+    "tool_use_id": "exec-1ea08bc9-97b9-4614-9e8d-5d5e14b97eb9",
+    "pretool_receipt_sha256": "4ee3a7cb8eb91dde612037d93cb1caf75870b321d47d063af0598be3cbb130da",
+    "posttool_receipt_sha256": "6d9189ee7166f4dae78e4790de9d0a9ca9dbdb9871f75fcae2f7fa4de7d078a4",
+    "chain_file_sha256_at_event_count_1999": "df0672cd1b1238746606087b21d253243d794c7410c88411b3607ff5d0442f25",
+    "raw_payload_stored": false
+  },
+  "writer_lease": {
+    "claim_id": "12f6080b-9c25-42a1-94de-7dbf0da6a91f",
+    "claim_sha256": "6df6c2882910b9869eedfdd85578d2290bb07b83fc47a2ef290331e0d841eaeb",
+    "receipt_sha256": "b6270a54c8d5a6ec461f9a9f241edc643560ea71173d5b3a5444166805c8c94e",
+    "before_snapshot_sha256": "4b102d6abc991b285b0c6c1d55414f133a4d091829eff0a611e9037a68b075fd",
+    "after_snapshot_sha256": "4b102d6abc991b285b0c6c1d55414f133a4d091829eff0a611e9037a68b075fd",
+    "claim_absent_after_callback": true,
+    "manual_recovery_required": false
+  },
+  "post_barrier": {
+    "git_status_short": "",
+    "index_changed": false,
+    "candidate_or_code_mode_host_process_count": 0,
+    "hooks_sha256": "82c8aa0bc4d739628646864578de6c078884c21413855ed3db448d4365a8668e",
+    "live_hooks_modified": false
+  },
+  "verdict": {
+    "failed_apply_patch_posttool_callback_qualified": true,
+    "same_tool_use_id_joined": true,
+    "unchanged_disk_release_qualified": true,
+    "other_failed_mutation_surfaces_qualified": false,
+    "strong_global_quiescence_qualified": false,
+    "p5b_complete": false,
+    "phase1_complete": false,
+    "direct_write_qualified": false,
+    "phase2_state": "closed",
+    "phase3_state": "closed"
+  }
+}

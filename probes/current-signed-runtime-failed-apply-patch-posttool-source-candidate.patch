@@ -1,0 +1,115 @@
+diff --git a/codex-rs/core/src/hook_runtime.rs b/codex-rs/core/src/hook_runtime.rs
+--- a/codex-rs/core/src/hook_runtime.rs
++++ b/codex-rs/core/src/hook_runtime.rs
+@@ -279,9 +279,10 @@ pub(crate) async fn run_permission_request_hooks(
+-/// Runs matching `PostToolUse` hooks after a tool has produced a successful output.
++/// Runs matching `PostToolUse` hooks after a tool has produced a selected output.
+ ///
+ /// The `tool_name`, matcher aliases, `tool_input`, and `tool_response` values are
+ /// already adapted by the tool handler into the stable hook contract. Passing
+ /// raw internal tool data here would leak implementation details into user hook
+-/// matchers and hook logs.
++/// matchers and hook logs. The registry also selects `apply_patch` handler
++/// failures so a PreToolUse writer lease receives its matching terminal callback.
+ pub(crate) async fn run_post_tool_use_hooks(
+     sess: &Arc<Session>,
+     turn_context: &Arc<TurnContext>,
+diff --git a/codex-rs/core/src/tools/registry.rs b/codex-rs/core/src/tools/registry.rs
+--- a/codex-rs/core/src/tools/registry.rs
++++ b/codex-rs/core/src/tools/registry.rs
+@@ -680,6 +680,20 @@ impl ToolRegistry {
+                 .as_ref()
+                 .ok()
+                 .and_then(|result| result.post_tool_use_payload.clone())
++        } else if let Err(error) = &result {
++            // `apply_patch` acquires writer authority in PreToolUse. Handler
++            // failures occur after that boundary, so omitting PostToolUse
++            // strands the lease even though the tool has returned. Keep the
++            // failure callback narrow to this structured mutation surface;
++            // other unsuccessful tools retain the existing contract.
++            tool.pre_tool_use_payload(&invocation)
++                .filter(|payload| payload.tool_name.name() == "apply_patch")
++                .map(|payload| PostToolUsePayload {
++                    tool_name: payload.tool_name,
++                    tool_use_id: invocation.call_id.clone(),
++                    tool_input: payload.tool_input,
++                    tool_response: Value::String(error.to_string()),
++                })
+         } else {
+             None
+         };
+diff --git a/codex-rs/core/tests/suite/hooks.rs b/codex-rs/core/tests/suite/hooks.rs
+--- a/codex-rs/core/tests/suite/hooks.rs
++++ b/codex-rs/core/tests/suite/hooks.rs
+@@ -5567,3 +5567,71 @@ async fn post_tool_use_records_additional_context_for_apply_patch() -> Result<()
++#[tokio::test]
++async fn post_tool_use_runs_after_apply_patch_handler_failure() -> Result<()> {
++    skip_if_no_network!(Ok(()));
++
++    let server = start_mock_server().await;
++    let call_id = "posttooluse-failed-apply-patch";
++    let file_name = "missing_post_tool_use_apply_patch.txt";
++    let patch = format!(
++        r#"*** Begin Patch
++*** Update File: {file_name}
++@@
++-before
+++after
++*** End Patch"#
++    );
++    let responses = mount_sse_sequence(
++        &server,
++        vec![
++            sse(vec![
++                ev_response_created("resp-1"),
++                ev_apply_patch_custom_tool_call(call_id, &patch),
++                ev_completed("resp-1"),
++            ]),
++            sse(vec![
++                ev_response_created("resp-2"),
++                ev_assistant_message("msg-1", "failed apply_patch post hook observed"),
++                ev_completed("resp-2"),
++            ]),
++        ],
++    )
++    .await;
++
++    let post_context = "Release the failed apply_patch writer lease.";
++    let mut builder = test_codex()
++        .with_pre_build_hook(|home| {
++            write_post_tool_use_hook(home, Some("^apply_patch$"), "context", post_context)
++                .expect("failed to write post tool use hook test fixture");
++        })
++        .with_config(trust_discovered_hooks);
++    let test = builder.build(&server).await?;
++
++    test.submit_turn("attempt the invalid patch with post hook")
++        .await?;
++
++    let requests = responses.requests();
++    assert_eq!(requests.len(), 2);
++    assert!(
++        requests[1]
++            .message_input_texts("developer")
++            .contains(&post_context.to_string()),
++        "follow-up request should include failed apply_patch post tool context",
++    );
++    assert!(!test.workspace_path(file_name).exists());
++
++    let hook_inputs = read_post_tool_use_hook_inputs(test.codex_home_path())?;
++    assert_eq!(hook_inputs.len(), 1);
++    assert_eq!(hook_inputs[0]["tool_name"], "apply_patch");
++    assert_eq!(hook_inputs[0]["tool_use_id"], call_id);
++    assert_eq!(hook_inputs[0]["tool_input"]["command"], patch);
++    assert!(
++        hook_inputs[0]["tool_response"]
++            .as_str()
++            .is_some_and(|response| response.contains("apply_patch verification failed"))
++    );
++
++    Ok(())
++}
++
+ #[tokio::test]
+ async fn post_tool_use_records_apply_patch_context_with_edit_alias() -> Result<()> {
+     skip_if_no_network!(Ok(()));
