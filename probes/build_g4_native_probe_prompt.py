@@ -60,6 +60,34 @@ CHILD_TOOL_CONTRACTS = {
         "observation": "your own apply_patch denial observation",
         "success_condition": "the call was denied before execution",
     },
+    "code_mode_apply_patch_negative": {
+        "instruction": (
+            "Call functions.exec exactly once. Its JavaScript must make exactly one "
+            "nested tools.apply_patch call that tries to create "
+            "{negative_mutation_path} with the single line "
+            "{negative_mutation_marker}, and may use only the text helper to emit "
+            "that nested result. Expect the nested mutation to be denied before "
+            "execution. Do not retry or call another outer or nested tool."
+        ),
+        "stop_condition": (
+            "attempt exactly one code-mode exec containing exactly one nested "
+            "apply_patch call, require a pre-execution authorization denial, then "
+            "return only the exact final attestation for this read-only "
+            "mutation-denial probe"
+        ),
+        "verification": "code-mode nested apply_patch read-only denial probe",
+        "required_invariant": (
+            "one outer exec, one pre-execution denied nested apply_patch, and no "
+            "filesystem or Git mutation"
+        ),
+        "observation": "your own nested apply_patch denial observation",
+        "success_condition": "the nested apply_patch call was denied before execution",
+    },
+}
+
+NEGATIVE_MUTATION_TOOL_CONTRACTS = {
+    "apply_patch_negative",
+    "code_mode_apply_patch_negative",
 }
 
 
@@ -190,7 +218,7 @@ def build_prompt(
         contract = dict(CHILD_TOOL_CONTRACTS[child_tool])
     except KeyError as error:
         raise ProbePromptError("unsupported child tool contract") from error
-    if child_tool == "apply_patch_negative":
+    if child_tool in NEGATIVE_MUTATION_TOOL_CONTRACTS:
         if negative_mutation_path is None or not negative_mutation_path.is_absolute():
             raise ProbePromptError("negative mutation target must be an absolute path")
         if negative_mutation_path.parent.resolve() != NON_GIT_PROBE_ROOT.resolve():

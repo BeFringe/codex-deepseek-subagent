@@ -148,6 +148,29 @@ class G4NativeProbePromptTests(unittest.TestCase):
             self.assertEqual(declaration["owned_paths"], [])
             self.assertFalse(any(declaration["git_authority"].values()))
 
+            code_mode_prompt = probe_prompt.build_prompt(
+                self.root,
+                "g4_child_deny_code_1",
+                child_tool="code_mode_apply_patch_negative",
+                negative_mutation_path=target,
+            )
+            code_mode_declaration = json.loads(
+                code_mode_prompt.split("BEGIN CODEX WORKER AUTHORITY\n", 1)[1].split(
+                    "\nEND CODEX WORKER AUTHORITY", 1
+                )[0]
+            )
+            self.assertIn("Call functions.exec exactly once", code_mode_prompt)
+            self.assertIn("one nested tools.apply_patch call", code_mode_prompt)
+            self.assertIn(
+                "code-mode nested apply_patch read-only denial probe",
+                code_mode_declaration["verification"],
+            )
+            self.assertEqual(
+                code_mode_declaration["assignment_mutation_mode"], "read_only"
+            )
+            self.assertEqual(code_mode_declaration["owned_paths"], [])
+            self.assertFalse(any(code_mode_declaration["git_authority"].values()))
+
             target.write_text("unexpected preexisting byte\n", encoding="utf-8")
             with self.assertRaisesRegex(
                 probe_prompt.ProbePromptError, "target must be absent"
@@ -156,6 +179,15 @@ class G4NativeProbePromptTests(unittest.TestCase):
                     self.root,
                     "g4_child_deny_2",
                     child_tool="apply_patch_negative",
+                    negative_mutation_path=target,
+                )
+            with self.assertRaisesRegex(
+                probe_prompt.ProbePromptError, "target must be absent"
+            ):
+                probe_prompt.build_prompt(
+                    self.root,
+                    "g4_child_deny_code_2",
+                    child_tool="code_mode_apply_patch_negative",
                     negative_mutation_path=target,
                 )
 
