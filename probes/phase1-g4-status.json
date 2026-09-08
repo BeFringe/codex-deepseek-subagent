@@ -74,7 +74,9 @@
           "probes/g4-zhipu-native-child-parent-adjudication-result-20260908.json",
           "tests/test_g4_zhipu_native_child_parent_adjudication.py",
           "probes/g4-child-read-only-nested-mutation-denial-20260908.json",
-          "tests/test_g4_child_read_only_nested_mutation_denial.py"
+          "tests/test_g4_child_read_only_nested_mutation_denial.py",
+          "probes/g4-child-read-only-sandbox-denial-20260908.json",
+          "tests/test_g4_child_read_only_sandbox_denial.py"
         ],
         "blocker": "the prior signed runtime encrypted the spawn message before PreToolUse, while the current signed runtime opt-in candidate now has a consumed inherited-OpenAI root receipt and a separately consumed external-ZHIPU child receipt in which PreToolUse observed the exact plaintext assignment hash and SubagentStart consumed and identity-bound the capsule. The ZHIPU child also completed a native read-only tool round trip. Upstream SDK and App Server still expose no supported plaintext spawn choice; send_message/followup_task delivery, distinct same-message deny pairs, nested/serial/concurrent delivery, and the broader cohort remain unqualified"
       },
@@ -102,7 +104,9 @@
           "tests/test_runtime_guard.py",
           "probes/codex-0.153.4-installed-baseline-20260907.json",
           "probes/g4-child-read-only-nested-mutation-denial-20260908.json",
-          "tests/test_g4_child_read_only_nested_mutation_denial.py"
+          "tests/test_g4_child_read_only_nested_mutation_denial.py",
+          "probes/g4-child-read-only-sandbox-denial-20260908.json",
+          "tests/test_g4_child_read_only_sandbox_denial.py"
         ],
         "blocker": "the current signed runtime now has one fresh inherited-OpenAI assignment-to-SessionMeta/canonical-AgentPath join and one exact external-ZHIPU child join, both through consumed state, in addition to one historical root and two older partial concurrent records. Complete nested, serial, concurrent identity joins and cohort scale remain missing"
       },
@@ -125,7 +129,9 @@
           "probes/g4-zhipu-native-child-parent-adjudication-result-20260908.json",
           "tests/test_g4_zhipu_native_child_parent_adjudication.py",
           "probes/g4-child-read-only-nested-mutation-denial-20260908.json",
-          "tests/test_g4_child_read_only_nested_mutation_denial.py"
+          "tests/test_g4_child_read_only_nested_mutation_denial.py",
+          "probes/g4-child-read-only-sandbox-denial-20260908.json",
+          "tests/test_g4_child_read_only_sandbox_denial.py"
         ],
         "blocker": "a current-runtime inherited-OpenAI assignment and a separate external-ZHIPU child both traverse pending, claimed, active, reported, and consumed with exact keyed identity. The OpenAI child includes an invalid-final continuation/correction; the ZHIPU child includes active native tool use, two SubagentStop observations, parent callback, and fresh five-dimension parent adjudication. Crash recovery, durable resume, cancel, and cohort replay remain missing"
       },
@@ -168,9 +174,11 @@
           "probes/g4-child-read-only-nested-mutation-denial-20260908.json",
           "tests/test_g4_child_read_only_nested_mutation_denial.py",
           "probes/g4-child-read-only-shell-denial-20260908.json",
-          "tests/test_g4_child_read_only_shell_denial.py"
+          "tests/test_g4_child_read_only_shell_denial.py",
+          "probes/g4-child-read-only-sandbox-denial-20260908.json",
+          "tests/test_g4_child_read_only_sandbox_denial.py"
         ],
-        "blocker": "an exact role-to-applied-provider capability projection now exposes and mediates one native read-only list_agents call for an external ZHIPU child without changing the default unknown-model catalog or granting mutation authority. One fresh current signed OpenAI root also proved a trusted PreToolUse/PostToolUse apply_patch round trip under an explicit parent-only /private/tmp ceiling, with exact identity, file bytes, released lease, and no child or Git authority. Two inherited-OpenAI read-only children now reached real nested mutation surfaces: PreToolUse denied both apply_patch and the native Bash tool before execution, froze exact terminal evidence with disk_changed=false, and left both /private/tmp targets absent. These qualify only those two child denial surfaces. Bounded child-role projection still preserves the parent permission profile, so sandbox_mode in the worker role is only a requested posture and cannot prove an effective per-child read-only sandbox. An isolated disposable client proved that connection possession alone can invoke sandbox-none filesystem and unsandboxed process host-control RPCs without thread identity or client auth. The mutation schema makes independent App Server startup, daemon bootstrap, and proxy/connection acquisition an explicit cross-surface escape that external workers must be denied unless an OS boundary independently confines it. A detached descendant also wrote after App Server EOF/exit, so server termination is not a host-control process-tree barrier. Native-child reachability to that control plane remains unproven and cannot count as complete mediation, while the remaining live child mutation negative space and a trusted parent-or-host sandbox receipt remain missing"
+        "blocker": "an exact role-to-applied-provider capability projection now exposes and mediates one native read-only list_agents call for an external ZHIPU child without changing the default unknown-model catalog or granting mutation authority. One fresh current signed OpenAI root also proved a trusted PreToolUse/PostToolUse apply_patch round trip under an explicit parent-only /private/tmp ceiling, with exact identity, file bytes, released lease, and no child or Git authority. Two inherited-OpenAI read-only children reached real nested mutation surfaces that PreToolUse denied before execution. A third exact inherited-OpenAI child used a one-shot qualification grant: the Hook consumed authority before dispatch, macOS Seatbelt independently denied the exact /private/tmp touch with operation_not_permitted, and two post-termination observations found no target or Git change. This is one trusted runtime-sandbox receipt, not full shell or mutation-surface qualification. Bounded child-role projection still preserves the parent permission profile, so a role-file sandbox_mode remains only a requested posture. An isolated disposable client proved that connection possession alone can invoke sandbox-none filesystem and unsandboxed process host-control RPCs without thread identity or client auth. Independent App Server startup, daemon bootstrap, proxy/connection acquisition, the remaining live mutation negative space, and broad sandbox confinement therefore remain unqualified. A detached descendant also wrote after App Server EOF/exit, so server termination is not a host-control process-tree barrier"
       },
       {
         "id": "P5",
@@ -213,9 +221,11 @@
           "probes/g4-child-read-only-nested-mutation-denial-20260908.json",
           "tests/test_g4_child_read_only_nested_mutation_denial.py",
           "probes/g4-child-read-only-shell-denial-20260908.json",
-          "tests/test_g4_child_read_only_shell_denial.py"
+          "tests/test_g4_child_read_only_shell_denial.py",
+          "probes/g4-child-read-only-sandbox-denial-20260908.json",
+          "tests/test_g4_child_read_only_sandbox_denial.py"
         ],
-        "blocker": "the current-runtime read-only root and external-ZHIPU child both have clean post-termination disk barriers and fresh consumed-state transitions. One trusted parent-only non-Git apply_patch now has an exact PreToolUse claim, successful PostToolUse callback, byte-level after-snapshot, released lease, and zero in-flight claims after process exit. Read-only child apply_patch and Bash denials also exercise the repaired terminal-state path: exact internally generated terminal-unresolved evidence permits one SubagentStop continuation without promoting the record, each parent receives the final callback, and each target stays absent. Candidate-process absence is still not a strong global quiescence receipt. A live failed multi-file apply_patch proves that a missing PostToolUse callback leaves its lease fail closed and that exact-identity, unchanged-snapshot recovery works; automatic failure-callback completeness is therefore still false. Child/parent/sibling all-surface writer serialization and strong global quiescence across success, cancel, crash, and late-write space remain missing. The isolated host-control negative additionally proves App Server exit alone is not a process-tree barrier"
+        "blocker": "the current-runtime read-only root and external-ZHIPU child both have clean post-termination disk barriers and fresh consumed-state transitions. One trusted parent-only non-Git apply_patch has an exact PreToolUse claim, successful PostToolUse callback, byte-level after-snapshot, released lease, and zero in-flight claims after process exit. Read-only child apply_patch and Bash denials exercise the repaired terminal-state path. The one-shot sandbox probe adds an independently enforced Seatbelt denial after Bash dispatch, one terminal SubagentStop, exact parent callback, and a stable absent target across two later observations. These are per-target barriers; candidate-process absence is still not a strong global quiescence receipt. A live failed multi-file apply_patch proves that a missing PostToolUse callback leaves its lease fail closed and that exact-identity, unchanged-snapshot recovery works; automatic failure-callback completeness is therefore still false. Child/parent/sibling all-surface writer serialization and strong global quiescence across success, cancel, crash, and late-write space remain missing. The isolated host-control negative additionally proves App Server exit alone is not a process-tree barrier"
       },
       {
         "id": "P6",
@@ -288,9 +298,11 @@
           "probes/g4-zhipu-native-child-tool-loop-20260907.json",
           "tests/test_g4_zhipu_native_child_tool_loop.py",
           "probes/g4-zhipu-native-child-parent-adjudication-result-20260908.json",
-          "tests/test_g4_zhipu_native_child_parent_adjudication.py"
+          "tests/test_g4_zhipu_native_child_parent_adjudication.py",
+          "probes/g4-child-read-only-sandbox-denial-20260908.json",
+          "tests/test_g4_child_read_only_sandbox_denial.py"
         ],
-        "blocker": "a narrow exact child-role/provider source seam and two live OpenAI-parent to ZHIPU-child read-only native-tool loops, including one fresh consumed record, now prove that the current provider-inheritance boundary can be crossed without replacing the parent provider or App Server. This does not qualify the legacy Utopia DeepSeek route. Windows parity, DeepSeek regression, broader external-child lifecycle cohorts, and trusted-process rollback/reload evidence remain missing; the independent App Server Broker replacement still cannot satisfy this project's native AgentPath lifecycle contract"
+        "blocker": "a narrow exact child-role/provider source seam and two live OpenAI-parent to ZHIPU-child read-only native-tool loops, including one fresh consumed record, prove that the current provider-inheritance boundary can be crossed without replacing the parent provider or App Server. The one-shot sandbox overlay now also has an exact hash-pinned rollback: live config and scripts returned to their prior bytes, an in-process cached Hook definition failed closed rather than reloading, and a full App restart restored the prior trusted Hook set with zero warnings or errors. This is one positive rollback/reload receipt, not broad upgrade compatibility. The legacy Utopia DeepSeek route, Windows parity, DeepSeek regression, and broader external-child lifecycle and rollback cohorts remain missing; the independent App Server Broker replacement still cannot satisfy this project's native AgentPath lifecycle contract"
       }
     ],
     "exit_receipts": [
@@ -303,7 +315,8 @@
           "probes/g4-current-headless-root-lifecycle-adjudication-result-20260907.json",
           "probes/g4-zhipu-native-child-tool-loop-20260907.json",
           "probes/g4-zhipu-native-child-parent-adjudication-result-20260908.json",
-          "probes/g4-child-read-only-nested-mutation-denial-20260908.json"
+          "probes/g4-child-read-only-nested-mutation-denial-20260908.json",
+          "probes/g4-child-read-only-sandbox-denial-20260908.json"
         ]
       },
       {
@@ -323,16 +336,20 @@
           "probes/g4-child-read-only-nested-mutation-denial-20260908.json",
           "tests/test_g4_child_read_only_nested_mutation_denial.py",
           "probes/g4-child-read-only-shell-denial-20260908.json",
-          "tests/test_g4_child_read_only_shell_denial.py"
+          "tests/test_g4_child_read_only_shell_denial.py",
+          "probes/g4-child-read-only-sandbox-denial-20260908.json",
+          "tests/test_g4_child_read_only_sandbox_denial.py"
         ]
       },
       {
         "id": "sandbox_block",
-        "state": "pending",
+        "state": "partial",
         "evidence": [
           "probes/check_state_trust.py",
           "probes/codex-0.153.4-component-boundaries.json",
-          "probes/check_codex_component_boundaries.py"
+          "probes/check_codex_component_boundaries.py",
+          "probes/g4-child-read-only-sandbox-denial-20260908.json",
+          "tests/test_g4_child_read_only_sandbox_denial.py"
         ]
       },
       {
@@ -352,7 +369,9 @@
           "probes/g4-child-read-only-nested-mutation-denial-20260908.json",
           "tests/test_g4_child_read_only_nested_mutation_denial.py",
           "probes/g4-child-read-only-shell-denial-20260908.json",
-          "tests/test_g4_child_read_only_shell_denial.py"
+          "tests/test_g4_child_read_only_shell_denial.py",
+          "probes/g4-child-read-only-sandbox-denial-20260908.json",
+          "tests/test_g4_child_read_only_sandbox_denial.py"
         ]
       },
       {
@@ -370,7 +389,9 @@
           "probes/g4-child-read-only-nested-mutation-denial-20260908.json",
           "tests/test_g4_child_read_only_nested_mutation_denial.py",
           "probes/g4-child-read-only-shell-denial-20260908.json",
-          "tests/test_g4_child_read_only_shell_denial.py"
+          "tests/test_g4_child_read_only_shell_denial.py",
+          "probes/g4-child-read-only-sandbox-denial-20260908.json",
+          "tests/test_g4_child_read_only_sandbox_denial.py"
         ]
       },
       {
@@ -384,7 +405,8 @@
           "probes/g4-zhipu-native-child-tool-loop-20260907.json",
           "probes/g4-zhipu-native-child-parent-adjudication-result-20260908.json",
           "probes/g4-child-read-only-nested-mutation-denial-20260908.json",
-          "probes/g4-child-read-only-shell-denial-20260908.json"
+          "probes/g4-child-read-only-shell-denial-20260908.json",
+          "probes/g4-child-read-only-sandbox-denial-20260908.json"
         ]
       },
       {
@@ -407,7 +429,9 @@
         "evidence": [
           "docs/phase1-g4-probe-plan.md#vi-platform-and-regression-exit-sequence",
           "probes/g4-live-install-20260817.json",
-          "probes/g4-parent-non-git-writer-live-20260908.json"
+          "probes/g4-parent-non-git-writer-live-20260908.json",
+          "probes/g4-child-read-only-sandbox-denial-20260908.json",
+          "tests/test_g4_child_read_only_sandbox_denial.py"
         ]
       }
     ]

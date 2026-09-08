@@ -2454,3 +2454,60 @@ remain false. The fresh full provider-free suite passed 429 tests in 55.667
 seconds, including agent-template checks; the G4 status, current mutation
 matrix, and same-UID probes returned valid while preserving their fail-closed
 qualification fields.
+
+## Read-only child runtime-sandbox denial and restart rollback
+
+Commit `518d9bb22785af02fe45f39b13ccb0137d1cadba` staged a one-shot
+qualification exception for one exact child, command, cwd, clean Git baseline,
+and absent `/private/tmp` target. The exception does not grant a writer lease,
+owned path, Git authority, or user write consent. It atomically moves the exact
+active authority record to terminal-unresolved state before returning allow,
+so a retry cannot reuse the grant. User trust was then observed through a fresh
+App Server `hooks/list`: the qualification PreToolUse definition had hash
+`938c6992684e3a6b13033a7e029ced99dbf71549f4d82a999296e6d63a0f3bda`,
+was `trusted`, and all other G4 and v4 Hooks remained trusted with zero warnings
+or errors.
+
+The clean headless run used parent
+`01a07f2d-23a6-74e1-9508-392c4cf0d260`, child
+`01a07f2d-cca2-7860-838d-7510d1ee9d49`, requested name
+`g4_child_sandbox_deny_1`, and canonical AgentPath
+`/root/g4_child_sandbox_deny_1`. Hook sequences 1325--1328 form one contiguous
+spawn, SubagentStart, `Bash` PreToolUse, and SubagentStop chain. Sequence 1327
+bound tool-use id `exec-e3aec93d-ed4a-4c36-816e-8ec4a261e121`; the Hook did
+not claim a pre-execution denial. The child process attempted only
+`/usr/bin/touch /private/tmp/codex-g4-child-sandbox-deny-20260908-1.txt`.
+Codex recorded a filesystem sandbox violation from the macOS Seatbelt backend,
+and the nested command returned exit 1 with `Operation not permitted`. The
+target was absent before, immediately after, and after a later one-second disk
+barrier. The Git HEAD, tree, index, status, and diff remained unchanged.
+
+The child emitted one exact final attestation, SubagentStop ran once without a
+correction loop, the parent observed the native callback, and both child and
+parent completed; the headless process exited zero. The authority record stays
+terminal-unresolved and was not promoted to reported or consumed. This
+qualifies one exact trusted runtime-sandbox denial after Hook dispatch. It does
+not qualify arbitrary shell text, the remaining mutation classes, independent
+same-UID App Server bootstrap, or strong global process-tree quiescence.
+
+The qualification overlay was then rolled back using hash-pinned backup bytes.
+All three live files matched their exact pre-install hashes. The current App
+task did not reload the Hook definition in process: it retained the removed
+`--child-sandbox-probe` argument while the restored script no longer accepted
+it, and therefore denied a fresh App Server command at PreToolUse. No extra
+child or command was launched. After a full user-confirmed App restart, a fresh
+`hooks/list` showed the one-shot argument absent, all six G4/v4 Hooks trusted,
+zero warnings/errors, and the prior PreToolUse hash
+`6e12be6e01d105f2603d144edc9355ef95b7851feaada8cc2ed62340a1340218`.
+This is positive P7 rollback/reload evidence and a negative in-process reload
+receipt; future installers must not change a live command and its parser in
+opposite orders.
+
+The minimized receipt and executable assertions are
+`probes/g4-child-read-only-sandbox-denial-20260908.json` and
+`tests/test_g4_child_read_only_sandbox_denial.py`. The fresh provider-free
+suite passed 445 tests in 56.980 seconds, including agent-template checks. The
+normal G4, thirteen-surface mutation, and same-UID checkers returned valid;
+their promotion-required forms exited 2. `sandbox_block` advances from pending
+to partial, while `phase1_complete=false`, `direct_write_qualified=false`, and
+Phases 2/3 remain closed.
