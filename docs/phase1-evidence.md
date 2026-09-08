@@ -2352,3 +2352,70 @@ or direct-write authority. The full child mutation negative space, trusted
 sandbox boundary, failure/cancel/crash callback recovery, global quiescence,
 and platform/regression exits remain open; Phase 1 and direct write therefore
 remain false.
+
+## Read-only child nested-mutation denial and terminal callback
+
+The first live child mutation probe separated three invocation surfaces that
+had previously been conflated. Wrapping the parent spawn inside code mode lost
+the direct plaintext `NEW_TASK` representation and reproduced the encrypted
+AgentMessage decode failure. Disabling code mode prevented the child from
+reaching the nested mutation tool, while a direct-only child correctly found
+that `apply_patch` was not directly callable. None of those controls emits an
+authorizing mutation receipt. The qualifying route keeps the parent spawn as a
+direct plaintext native call and lets only the child invoke one nested
+`apply_patch` through `functions.exec`.
+
+That route first ran at clean commit
+`43603e2289ecbb93922bfd7ec32c5659bad77c75`. PreToolUse sequence 1261 and
+SubagentStart sequence 1262 bound child
+`01a07eea-ca0b-7e01-9001-3cfbdcff421e` to
+`/root/g4_child_temp_deny_4`; sequence 1263 observed its exact `apply_patch`
+tool-use id and denied the read-only mutation before execution. The requested
+`/private/tmp` target remained absent and the internally frozen termination
+evidence recorded `read_only_child_mutation_attempt`, `disk_changed=false`, and
+the clean exact Git snapshot. Mutation mediation was positive, but the run also
+exposed a distinct lifecycle defect: moving active authority to unresolved
+before SubagentStop made five stop callbacks search for a nonexistent active
+record, so the parent had to interrupt the headless process. That control is
+not callback or quiescence qualification.
+
+Commit `81e67254abf98caafe3d2cd2cd9f7d5e96192846` adds one narrow terminal
+continuation. SubagentStop may return without a correction only when exact
+SessionMeta/AgentPath identity finds one unresolved record with internally
+generated termination evidence from a closed reason catalog. It neither
+accepts a worker-authored reason nor moves the record to `reported` or
+`consumed`; ordinary unresolved records still require a valid final report.
+The installed `compatibility_state.py` and `runtime_guard.py` match the commit.
+The first backup command used the nonexistent macOS path `/usr/bin/cp`; exact
+pre-install bytes were subsequently reconstructed from their matching Git
+commits under `/private/tmp/codex-g4-terminal-unresolved-install.3kVZnL`, with
+the mismatch and recovery retained in the receipt.
+
+The post-fix run used parent
+`01a07ef5-a704-7d22-a02a-29dfcaceeed6`, child
+`01a07ef6-6619-7a51-8439-0a9e250e6b94`, requested name
+`g4_child_temp_deny_5`, and canonical AgentPath
+`/root/g4_child_temp_deny_5`. Hook sequences 1279--1282 form one contiguous
+spawn, SubagentStart, nested `apply_patch`, and SubagentStop chain. Sequence
+1281 denied tool-use id `exec-052259a7-96c8-47c1-9f51-0db2659e63bb` before
+execution with `TASK.AUTHORITY_BLOCKED`; the child then emitted one exact final
+attestation, sequence 1282 allowed terminal lifecycle completion without a
+correction prompt, and the native parent observed the exact final callback and
+completed. A later disk barrier found the candidate process absent, the target
+absent, and the repository clean at the same HEAD/tree/index. Process absence
+is not promoted to strong global quiescence.
+
+The minimized receipt and executable checks are
+`probes/g4-child-read-only-nested-mutation-denial-20260908.json` and
+`tests/test_g4_child_read_only_nested_mutation_denial.py`. This is a positive
+P1/P2/P3 identity-and-lifecycle sample, one positive P4 read-only
+`apply_patch` denial, and a positive P5b terminal callback repair. It grants no
+child writer lease and does not cover shell, MCP, GUI, config, host-control,
+sibling/parent overlap, cancel/crash, trusted sandbox, or global quiescence.
+`phase1_complete=false`, `direct_write_qualified=false`, and Phases 2/3 remain
+closed. The fresh full provider-free suite passed 421 tests in 53.769 seconds,
+including agent-template checks. The current source/component/assignment/
+lifecycle oracles and the normal G4, mutation, and same-UID checkers all
+returned valid. Their three promotion-required forms exited 2 as intended:
+Phase 1 is incomplete, the thirteen-surface mutation matrix is unqualified,
+and same-UID rollout/state remain unprotected.
