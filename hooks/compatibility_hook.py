@@ -8,6 +8,7 @@ import argparse
 import json
 from pathlib import Path
 import sys
+from typing import Sequence
 
 from assignment_transport import capture_spawn, subagent_start
 from compatibility_state import StateError, StateStore
@@ -73,6 +74,7 @@ def dispatch(
     hook_input: dict,
     *,
     plaintext_agent_types: set[str],
+    parent_non_git_writer_roots: Sequence[Path] = (),
 ) -> dict:
     event = hook_input.get("hook_event_name")
     child_is_target = hook_input.get("agent_type") in plaintext_agent_types
@@ -84,9 +86,21 @@ def dispatch(
             hook_input,
             plaintext_agent_types=plaintext_agent_types,
         )
-        return captured or guard_writer_lease(store, hook_input)
+        return captured or guard_writer_lease(
+            store,
+            hook_input,
+            parent_non_git_writer_roots=parent_non_git_writer_roots,
+        )
     if event == "PostToolUse":
-        return {} if child_is_target else release_writer_lease(store, hook_input)
+        return (
+            {}
+            if child_is_target
+            else release_writer_lease(
+                store,
+                hook_input,
+                parent_non_git_writer_roots=parent_non_git_writer_roots,
+            )
+        )
     if event == "SubagentStart":
         return subagent_start(store, hook_input) if child_is_target else {}
     if event == "PreCompact":
@@ -106,6 +120,7 @@ def dispatch_with_receipts(
     *,
     plaintext_agent_types: set[str],
     pretool_schema_observation_root: Path | None = None,
+    parent_non_git_writer_roots: Sequence[Path] = (),
 ) -> dict:
     event = hook_input.get("hook_event_name")
     observation_root = pretool_schema_observation_root
@@ -147,6 +162,7 @@ def dispatch_with_receipts(
         store,
         hook_input,
         plaintext_agent_types=plaintext_agent_types,
+        parent_non_git_writer_roots=parent_non_git_writer_roots,
     )
     if is_parent_writer and event == "PreToolUse":
         specific = output.get("hookSpecificOutput")
@@ -169,6 +185,7 @@ def run_dispatch(
     *,
     plaintext_agent_types: set[str],
     pretool_schema_observation_root: Path | None = None,
+    parent_non_git_writer_roots: Sequence[Path] = (),
 ) -> dict:
     try:
         return dispatch_with_receipts(
@@ -176,6 +193,7 @@ def run_dispatch(
             hook_input,
             plaintext_agent_types=plaintext_agent_types,
             pretool_schema_observation_root=pretool_schema_observation_root,
+            parent_non_git_writer_roots=parent_non_git_writer_roots,
         )
     except (OSError, StateError) as error:
         return fail_closed_output(hook_input.get("hook_event_name"), error)
@@ -191,6 +209,13 @@ def main() -> int:
         dest="plaintext_agent_types",
     )
     parser.add_argument("--pretool-schema-observation-root", type=Path)
+    parser.add_argument(
+        "--parent-non-git-writer-root",
+        action="append",
+        default=[],
+        type=Path,
+        dest="parent_non_git_writer_roots",
+    )
     arguments = parser.parse_args()
     try:
         hook_input = json.load(sys.stdin)
@@ -205,6 +230,7 @@ def main() -> int:
         hook_input,
         plaintext_agent_types=set(arguments.plaintext_agent_types),
         pretool_schema_observation_root=arguments.pretool_schema_observation_root,
+        parent_non_git_writer_roots=arguments.parent_non_git_writer_roots,
     )
     json.dump(output, sys.stdout, ensure_ascii=False, separators=(",", ":"))
     sys.stdout.flush()

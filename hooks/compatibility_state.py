@@ -184,6 +184,8 @@ STATE_KINDS = (
     "writer_receipt",
     "writer_abort",
     "writer_conflict",
+    "non_git_writer_claim",
+    "non_git_writer_receipt",
     "hook_event_chain",
     "pretool_schema_observation",
     "subagentstart_schema_observation",
@@ -402,6 +404,16 @@ def writer_abort_sha256(receipt: Mapping[str, object]) -> str:
     return sha256_bytes(canonical_json(unsigned))
 
 
+def non_git_writer_snapshot_sha256(snapshot: Mapping[str, object]) -> str:
+    value = validate_non_git_writer_snapshot(dict(snapshot))
+    return sha256_bytes(canonical_json(value))
+
+
+def non_git_writer_receipt_sha256(receipt: Mapping[str, object]) -> str:
+    unsigned = {key: value for key, value in receipt.items() if key != "receipt_sha256"}
+    return sha256_bytes(canonical_json(unsigned))
+
+
 def _validate_writer_actor(actor: object) -> dict:
     if not isinstance(actor, dict) or set(actor) != WRITER_ACTOR_FIELDS:
         raise CorruptState("writer actor fields are not exact")
@@ -410,6 +422,165 @@ def _validate_writer_actor(actor: object) -> dict:
     if not actor["canonical_agent_path"].startswith("/"):
         raise CorruptState("writer actor canonical path must be absolute")
     return actor
+
+
+def _validate_root_writer_actor(actor: object) -> dict:
+    value = _validate_writer_actor(actor)
+    if value["canonical_agent_path"] != "/root" or value["agent_type"] != "root":
+        raise CorruptState("non-Git writer actor is not the root parent")
+    if value["runtime_session_id"] != value["thread_id"]:
+        raise CorruptState("non-Git writer root identity is not exact")
+    return value
+
+
+def validate_non_git_writer_snapshot(snapshot: object) -> dict:
+    if not isinstance(snapshot, dict) or set(snapshot) != {
+        "schema",
+        "surface",
+        "root",
+        "path_states",
+    }:
+        raise CorruptState("non-Git writer snapshot fields are not exact")
+    if snapshot["schema"] != 1 or snapshot["surface"] != "non_git_filesystem":
+        raise CorruptState("non-Git writer snapshot schema is invalid")
+    root = pathlib.Path(_nonempty_string(snapshot["root"], "non_git_snapshot.root"))
+    if not root.is_absolute() or str(root.resolve()) != str(root):
+        raise CorruptState("non-Git writer snapshot root is not canonical and absolute")
+    path_states = snapshot["path_states"]
+    if not isinstance(path_states, list) or not path_states:
+        raise CorruptState("non-Git writer snapshot path states are invalid")
+    paths: list[str] = []
+    for state in path_states:
+        if not isinstance(state, dict) or set(state) != {
+            "path",
+            "kind",
+            "sha256",
+            "byte_length",
+        }:
+            raise CorruptState("non-Git writer path state fields are not exact")
+        path = _relative_paths([state["path"]], "non_git_snapshot.path_states.path")[0]
+        paths.append(path)
+        if state["kind"] == "missing":
+            if state["sha256"] is not None or state["byte_length"] is not None:
+                raise CorruptState("missing non-Git writer path has content metadata")
+        elif state["kind"] == "file":
+            if not isinstance(state["sha256"], str) or not SHA256_RE.fullmatch(
+                state["sha256"]
+            ):
+                raise CorruptState("non-Git writer file digest is invalid")
+            if type(state["byte_length"]) is not int or state["byte_length"] < 0:
+                raise CorruptState("non-Git writer file length is invalid")
+        else:
+            raise CorruptState("non-Git writer path kind is unsupported")
+    if len(set(paths)) != len(paths):
+        raise CorruptState("non-Git writer snapshot contains duplicate paths")
+    return snapshot
+
+
+def _validate_non_git_writer_claim(claim: object) -> dict:
+    if not isinstance(claim, dict) or set(claim) != {
+        "schema",
+        "claim_id",
+        "actor",
+        "root",
+        "paths",
+        "tool_name",
+        "tool_use_id",
+        "created_at",
+        "authorization_ceiling",
+        "before_snapshot",
+        "before_snapshot_sha256",
+        "claim_sha256",
+    }:
+        raise CorruptState("non-Git writer claim fields are not exact")
+    if claim["schema"] != 1:
+        raise CorruptState("non-Git writer claim schema is invalid")
+    _uuid(claim["claim_id"], "non_git_writer_claim.claim_id")
+    _validate_root_writer_actor(claim["actor"])
+    root = pathlib.Path(_nonempty_string(claim["root"], "non_git_writer_claim.root"))
+    if not root.is_absolute() or str(root.resolve()) != str(root):
+        raise CorruptState("non-Git writer claim root is not canonical and absolute")
+    paths = _relative_paths(claim["paths"], "non_git_writer_claim.paths")
+    if not paths:
+        raise CorruptState("non-Git writer claim paths are empty")
+    if claim["tool_name"] != "apply_patch":
+        raise CorruptState("non-Git writer claim tool is not qualified")
+    _nonempty_string(claim["tool_use_id"], "non_git_writer_claim.tool_use_id")
+    _timestamp(claim["created_at"], "non_git_writer_claim.created_at")
+    ceiling = claim["authorization_ceiling"]
+    if not isinstance(ceiling, dict) or set(ceiling) != {"source", "root"}:
+        raise CorruptState("non-Git writer authorization ceiling fields are not exact")
+    if ceiling["source"] != "hook_cli_parent_non_git_writer_root":
+        raise CorruptState("non-Git writer authorization ceiling source is invalid")
+    if ceiling["root"] != str(root):
+        raise CorruptState("non-Git writer authorization ceiling root does not match")
+    snapshot = validate_non_git_writer_snapshot(claim["before_snapshot"])
+    if snapshot["root"] != str(root):
+        raise CorruptState("non-Git writer claim snapshot root does not match")
+    if tuple(state["path"] for state in snapshot["path_states"]) != paths:
+        raise CorruptState("non-Git writer claim snapshot paths do not match")
+    if claim["before_snapshot_sha256"] != non_git_writer_snapshot_sha256(snapshot):
+        raise CorruptState("non-Git writer claim snapshot hash does not match")
+    if claim["claim_sha256"] != writer_claim_sha256(claim):
+        raise CorruptState("non-Git writer claim hash does not match")
+    return claim
+
+
+def validate_non_git_writer_receipt(receipt: object) -> dict:
+    if not isinstance(receipt, dict) or set(receipt) != {
+        "schema",
+        "claim_id",
+        "claim_sha256",
+        "actor",
+        "root",
+        "paths",
+        "tool_name",
+        "tool_use_id",
+        "authorization_ceiling",
+        "before_snapshot_sha256",
+        "after_snapshot",
+        "after_snapshot_sha256",
+        "released_at",
+        "receipt_sha256",
+    }:
+        raise CorruptState("non-Git writer receipt fields are not exact")
+    if receipt["schema"] != 1:
+        raise CorruptState("non-Git writer receipt schema is invalid")
+    _uuid(receipt["claim_id"], "non_git_writer_receipt.claim_id")
+    if not isinstance(receipt["claim_sha256"], str) or not SHA256_RE.fullmatch(
+        receipt["claim_sha256"]
+    ):
+        raise CorruptState("non-Git writer receipt claim hash is invalid")
+    _validate_root_writer_actor(receipt["actor"])
+    root = pathlib.Path(_nonempty_string(receipt["root"], "non_git_writer_receipt.root"))
+    if not root.is_absolute() or str(root.resolve()) != str(root):
+        raise CorruptState("non-Git writer receipt root is not canonical and absolute")
+    paths = _relative_paths(receipt["paths"], "non_git_writer_receipt.paths")
+    if not paths:
+        raise CorruptState("non-Git writer receipt paths are empty")
+    if receipt["tool_name"] != "apply_patch":
+        raise CorruptState("non-Git writer receipt tool is not qualified")
+    _nonempty_string(receipt["tool_use_id"], "non_git_writer_receipt.tool_use_id")
+    ceiling = receipt["authorization_ceiling"]
+    if not isinstance(ceiling, dict) or ceiling != {
+        "source": "hook_cli_parent_non_git_writer_root",
+        "root": str(root),
+    }:
+        raise CorruptState("non-Git writer receipt authorization ceiling is invalid")
+    for field in ("before_snapshot_sha256", "after_snapshot_sha256"):
+        if not isinstance(receipt[field], str) or not SHA256_RE.fullmatch(receipt[field]):
+            raise CorruptState(f"non-Git writer receipt {field} is invalid")
+    after_snapshot = validate_non_git_writer_snapshot(receipt["after_snapshot"])
+    if after_snapshot["root"] != str(root):
+        raise CorruptState("non-Git writer receipt snapshot root does not match")
+    if tuple(state["path"] for state in after_snapshot["path_states"]) != paths:
+        raise CorruptState("non-Git writer receipt snapshot paths do not match")
+    if receipt["after_snapshot_sha256"] != non_git_writer_snapshot_sha256(after_snapshot):
+        raise CorruptState("non-Git writer receipt snapshot hash does not match")
+    _timestamp(receipt["released_at"], "non_git_writer_receipt.released_at")
+    if receipt["receipt_sha256"] != non_git_writer_receipt_sha256(receipt):
+        raise CorruptState("non-Git writer receipt hash does not match")
+    return receipt
 
 
 def _validate_writer_claim(claim: object) -> dict:
@@ -1507,6 +1678,188 @@ class StateStore:
                     continue
                 values.append((envelope["capsule"]["assignment_id"], envelope))
         return values
+
+    def acquire_non_git_writer_claim(
+        self,
+        actor: Mapping[str, str],
+        *,
+        root: str,
+        paths: Sequence[str],
+        tool_name: str,
+        tool_use_id: str,
+        before_snapshot: Mapping[str, object],
+        observed_at: dt.datetime | None = None,
+    ) -> pathlib.Path:
+        try:
+            _validate_root_writer_actor(dict(actor))
+        except CorruptState as error:
+            raise AuthorityViolation(str(error)) from error
+        canonical_root = pathlib.Path(root).resolve()
+        if str(canonical_root) != root:
+            raise AuthorityViolation("non-Git writer claim root is not canonical")
+        normalized_paths = list(
+            _relative_paths(list(paths), "non_git_writer_claim.paths")
+        )
+        if not normalized_paths:
+            raise AuthorityViolation("non-Git writer claim must name at least one path")
+        if tool_name != "apply_patch":
+            raise AuthorityViolation("non-Git writer claim tool is not qualified")
+        _nonempty_string(tool_use_id, "non_git_writer_claim.tool_use_id")
+        snapshot = validate_non_git_writer_snapshot(dict(before_snapshot))
+        if snapshot["root"] != str(canonical_root):
+            raise AuthorityViolation("non-Git writer claim snapshot root does not match")
+        snapshot_paths = [state["path"] for state in snapshot["path_states"]]
+        if snapshot_paths != normalized_paths:
+            raise AuthorityViolation("non-Git writer claim snapshot paths do not match")
+        now = observed_at or dt.datetime.now(dt.timezone.utc)
+        if now.tzinfo is None or now.utcoffset() is None:
+            raise StateError("non-Git writer claim time must include a UTC offset")
+
+        with self.locked():
+            conflicts: list[dict] = []
+            claims_directory = self.root / "non_git_writer_claim"
+            if claims_directory.exists():
+                for path in sorted(claims_directory.glob("*.json")):
+                    try:
+                        prior_claim = _validate_non_git_writer_claim(self._read(path))
+                    except CorruptState:
+                        self._quarantine(path)
+                        raise
+                    same_tool_use = (
+                        prior_claim["actor"] == dict(actor)
+                        and prior_claim["tool_use_id"] == tool_use_id
+                    )
+                    if pathlib.Path(prior_claim["root"]).resolve() == canonical_root and (
+                        same_tool_use
+                        or _paths_overlap_case_safe(
+                            normalized_paths, prior_claim["paths"]
+                        )
+                    ):
+                        conflicts.append(
+                            {
+                                "kind": "non_git_writer_claim",
+                                "claim_id": prior_claim["claim_id"],
+                                "paths": prior_claim["paths"],
+                            }
+                        )
+            if conflicts:
+                conflict_id = str(uuid.uuid4())
+                self._publish(
+                    self.path("writer_conflict", conflict_id),
+                    {
+                        "schema": 2,
+                        "classification": "non_git_writer_lease_conflict",
+                        "conflict_id": conflict_id,
+                        "actor": dict(actor),
+                        "root": str(canonical_root),
+                        "paths": normalized_paths,
+                        "tool_name": tool_name,
+                        "tool_use_id": tool_use_id,
+                        "conflicts": conflicts,
+                        "observed_at": now.isoformat(),
+                    },
+                )
+                raise AuthorityViolation(
+                    "apply_patch paths overlap an existing non-Git writer lease"
+                )
+
+            claim_id = str(uuid.uuid4())
+            claim = {
+                "schema": 1,
+                "claim_id": claim_id,
+                "actor": dict(actor),
+                "root": str(canonical_root),
+                "paths": normalized_paths,
+                "tool_name": tool_name,
+                "tool_use_id": tool_use_id,
+                "created_at": now.isoformat(),
+                "authorization_ceiling": {
+                    "source": "hook_cli_parent_non_git_writer_root",
+                    "root": str(canonical_root),
+                },
+                "before_snapshot": snapshot,
+                "before_snapshot_sha256": non_git_writer_snapshot_sha256(snapshot),
+            }
+            claim["claim_sha256"] = writer_claim_sha256(claim)
+            _validate_non_git_writer_claim(claim)
+            target = self.path("non_git_writer_claim", claim_id)
+            self._publish(target, claim)
+            return target
+
+    def release_non_git_writer_claim(
+        self,
+        actor: Mapping[str, str],
+        *,
+        tool_name: str,
+        tool_use_id: str,
+        after_snapshot: Mapping[str, object],
+        observed_at: dt.datetime | None = None,
+    ) -> pathlib.Path:
+        try:
+            _validate_root_writer_actor(dict(actor))
+        except CorruptState as error:
+            raise AuthorityViolation(str(error)) from error
+        if tool_name != "apply_patch":
+            raise AuthorityViolation("non-Git writer release tool is not qualified")
+        _nonempty_string(tool_use_id, "non_git_writer_release.tool_use_id")
+        snapshot = validate_non_git_writer_snapshot(dict(after_snapshot))
+        now = observed_at or dt.datetime.now(dt.timezone.utc)
+        if now.tzinfo is None or now.utcoffset() is None:
+            raise StateError("non-Git writer release time must include a UTC offset")
+
+        with self.locked():
+            matches: list[tuple[pathlib.Path, dict]] = []
+            directory = self.root / "non_git_writer_claim"
+            if directory.exists():
+                for path in sorted(directory.glob("*.json")):
+                    try:
+                        claim = _validate_non_git_writer_claim(self._read(path))
+                    except CorruptState:
+                        self._quarantine(path)
+                        raise
+                    if (
+                        claim["actor"] == dict(actor)
+                        and claim["tool_name"] == tool_name
+                        and claim["tool_use_id"] == tool_use_id
+                    ):
+                        matches.append((path, claim))
+            if not matches:
+                raise MissingState("expected one in-flight non-Git writer claim, found 0")
+            if len(matches) > 1:
+                raise AmbiguousState(
+                    "expected one in-flight non-Git writer claim, "
+                    f"found {len(matches)}"
+                )
+            claim_path, claim = matches[0]
+            if snapshot["root"] != claim["root"]:
+                raise AuthorityViolation(
+                    "non-Git writer release snapshot root does not match claim"
+                )
+            if [state["path"] for state in snapshot["path_states"]] != claim["paths"]:
+                raise AuthorityViolation(
+                    "non-Git writer release snapshot paths do not match claim"
+                )
+            receipt = {
+                "schema": 1,
+                "claim_id": claim["claim_id"],
+                "claim_sha256": claim["claim_sha256"],
+                "actor": dict(actor),
+                "root": claim["root"],
+                "paths": claim["paths"],
+                "tool_name": tool_name,
+                "tool_use_id": tool_use_id,
+                "authorization_ceiling": claim["authorization_ceiling"],
+                "before_snapshot_sha256": claim["before_snapshot_sha256"],
+                "after_snapshot": snapshot,
+                "after_snapshot_sha256": non_git_writer_snapshot_sha256(snapshot),
+                "released_at": now.isoformat(),
+            }
+            receipt["receipt_sha256"] = non_git_writer_receipt_sha256(receipt)
+            validate_non_git_writer_receipt(receipt)
+            target = self.path("non_git_writer_receipt", claim["claim_id"])
+            self._publish(target, receipt)
+            claim_path.unlink()
+            return target
 
     def acquire_writer_claim(
         self,
