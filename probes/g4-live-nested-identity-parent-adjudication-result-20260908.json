@@ -1,0 +1,115 @@
+{
+  "schema": 1,
+  "evidence_kind": "current_signed_runtime_provider_free_nested_identity_parent_adjudication_result",
+  "observed_at": "2026-09-08T14:52:01Z",
+  "runtime_role": "current_signed_runtime",
+  "input_evidence": {
+    "path": "probes/g4-live-nested-identity-parent-adjudication-input-20260908.json",
+    "sha256": "b6e56a05cc30ce76135fd3047f19e82b5341feba06e5f370c9abe276bdf8c99d"
+  },
+  "transition": {
+    "assignment_id": "462c7010-cdb4-411d-accd-dbe615453d53",
+    "source": "reported",
+    "destination": "consumed",
+    "active_absent_after": true,
+    "reported_absent_after": true,
+    "unresolved_absent_after": true,
+    "consumed_present_after": true,
+    "consumed_envelope_sha256": "b47dfbb76bcf38927cc7e8f996f154826da1f690f138fe2ea584c8b8a3d472d0"
+  },
+  "parent_adjudication": {
+    "location_integrity": "pass",
+    "mutation_scope_integrity": "pass",
+    "verification_freshness": "pass",
+    "derivation_provenance_integrity": "pass",
+    "feasibility_contract_integrity": "pass",
+    "evidence_sha256": "b6e56a05cc30ce76135fd3047f19e82b5341feba06e5f370c9abe276bdf8c99d"
+  },
+  "post_transition_barrier": {
+    "root": "/Users/pearly/文档/CAT/codex-deepseek-subagent",
+    "branch": "main",
+    "head": "ac3dff68ec996e5a5271f610d9bfb2602b5bb354",
+    "head_tree": "39eb77a2e14f1440598f0965c2ab794c53fbcab3",
+    "write_tree": "39eb77a2e14f1440598f0965c2ab794c53fbcab3",
+    "index_sha256": "b0a0c124f59972dff6da7781de612b10a7ba1fa34f1b1cd3e634cd3eb49a89fd",
+    "status_porcelain_v1": [
+      "?? probes/g4-live-nested-identity-20260908.json",
+      "?? probes/g4-live-nested-identity-parent-adjudication-input-20260908.json"
+    ],
+    "only_parent_evidence_writes_present": true,
+    "candidate_process_absent": true,
+    "code_mode_host_process_absent": true,
+    "headless_candidate_exit_code": 0,
+    "hooks_json_sha256": "82c8aa0bc4d739628646864578de6c078884c21413855ed3db448d4365a8668e",
+    "strong_global_quiescence_claimed": false
+  },
+  "scope_verdict": {
+    "provider_free_nested_identity_record_consumed": true,
+    "root_to_outer_direct_parent_edge_adjudicated": true,
+    "outer_to_inner_direct_parent_edge_adjudicated": true,
+    "depth_two_canonical_agent_path_adjudicated": true,
+    "nested_assignment_capsule_binding_adjudicated": true,
+    "native_list_agents_three_path_observation_adjudicated": true,
+    "subagentstop_correction_adjudicated": true,
+    "outer_and_root_terminal_callbacks_adjudicated": true,
+    "single_nested_identity_chain_qualified": true,
+    "nested_identity_cohort_complete": false,
+    "mutation_contribution_adjudicated": false,
+    "mutation_negative_space_complete": false,
+    "strong_global_quiescence_complete": false,
+    "windows_parity_complete": false,
+    "representative_cost_or_latency_cohort_complete": false,
+    "phase1_complete": false,
+    "direct_write_qualified": false,
+    "phase2_state": "closed",
+    "phase3_state": "closed"
+  },
+  "verification": {
+    "provider_free_suite": {
+      "command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPYCACHEPREFIX=/private/tmp/codex-pycache-phase1-nested-final2-20260908 python3 -m unittest discover -s tests -p 'test_*.py'",
+      "test_count": 606,
+      "duration_seconds": 68.009,
+      "exit_code": 0,
+      "agent_template_checks": "passed"
+    },
+    "phase1_gate": {
+      "normal_exit_code": 0,
+      "require_complete_exit_code": 2,
+      "valid": true,
+      "gate_blocker_count": 10,
+      "exit_receipt_blocker_count": 9,
+      "phase1_complete": false,
+      "direct_write_qualified": false
+    },
+    "mutation_matrix": {
+      "normal_exit_code": 0,
+      "require_qualified_exit_code": 2,
+      "valid": true,
+      "source_identity_verified": true,
+      "source_identity_failures": [],
+      "anchor_failure_count": 0,
+      "blocker_count": 13,
+      "direct_write_qualified": false
+    },
+    "same_uid_trust": {
+      "normal_exit_code": 0,
+      "require_protected_exit_code": 2,
+      "same_uid_child_exit_code": 0,
+      "same_uid_rollout_protected": false,
+      "same_uid_state_protected": false,
+      "direct_write_qualified": false
+    },
+    "hook_event_chain": {
+      "normal_exit_code": 0,
+      "require_complete_callbacks_exit_code": 2,
+      "event_count": 2069,
+      "chain_sha256": "3729a8dad042ec91de0fc0caf1541d08925b7e80a3455b43a2208f395107ef24",
+      "callback_count": 886,
+      "denied_tool_use_id_count": 43,
+      "pending_tool_use_ids": [
+        "exec-04d901ca-1eb5-4ecf-a046-16440788c4d3"
+      ]
+    }
+  },
+  "credential_values_stored": false
+}

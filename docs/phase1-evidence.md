@@ -2638,6 +2638,88 @@ P6c cost/latency, candidate exit-code gap, or strong global quiescence.
 `phase1_complete=false`, `direct_write_qualified=false`, and Phases 2/3 remain
 closed.
 
+## Provider-free depth-two identity and fresh-owner consumption
+
+The current 0.153.4 source candidate completed one real provider-free nested
+run at clean repository HEAD
+`ac3dff68ec996e5a5271f610d9bfb2602b5bb354`. The candidate remained a
+headless `codex exec` selection; the GUI App Server and live Hook configuration
+were unchanged. All three SessionMeta records bind the same repository, branch,
+full HEAD, native OpenAI provider, read-only sandbox, approval policy `never`,
+and root runtime session `01a0816e-c453-7b21-bebc-fa21734e10ff`.
+
+The identity chain is exact at both direct-parent edges. Root `/root` spawned
+native explorer `/root/g4_nested_parent_2`, whose SessionMeta records depth one
+and parent ThreadId `01a0816e-c453-7b21-bebc-fa21734e10ff`. That explorer
+spawned the one qualified child
+`/root/g4_nested_parent_2/g4_nested_identity_2`; the child SessionMeta records
+depth two, role `g4_qualification_probe_worker`, ThreadId
+`01a08170-0fe8-7243-9e24-7f15d4d30769`, and direct parent ThreadId
+`01a0816f-7bfc-7e80-ba9b-81203d40dcda`. Requested task names derive both
+canonical AgentPaths exactly. The inner plaintext message SHA-256
+`54d330784efe8e7b2c9f80edc55e0ea88dbc15f51b9745b8056f1399eef75a0e`
+equals the capsule assignment hash and contains one complete authority
+envelope.
+
+Hook sequences 2049--2053 join the explorer's exact spawn tool-use id to the
+inner SubagentStart, one native `list_agents` call, and two SubagentStop
+attempts. `list_agents` returned exactly `/root`, the explorer path, and the
+depth-two child path, all running. The first final placed
+`inventory_summaries` inside `authority_provenance`; SubagentStop rejected it
+with `TASK.FINAL_INVALID_FINAL_WITHOUT_CONTRIBUTION`. The child then corrected
+only that schema placement, and the second SubagentStop accepted the exact
+attestation. This is a live final-correction mediation signal, not an inferred
+success from worker narrative.
+
+The outer scout waited for the inner terminal callback and returned exactly
+`NESTED.PARENT.CALLBACK outer=/root/g4_nested_parent_2
+inner=/root/g4_nested_parent_2/g4_nested_identity_2`. Root received that
+callback after one timed-out wait and a second completed wait, then emitted the
+same two paths. The headless candidate exited zero. A delayed disk barrier
+found no candidate or code-mode-host process, no Git or index change, and the
+original `hooks.json` SHA-256
+`82c8aa0bc4d739628646864578de6c078884c21413855ed3db448d4365a8668e`.
+The narrow process checks do not constitute strong global quiescence.
+
+Stderr recorded one missing inherited-client-metadata warning and two missing
+analytics `thread_connection` warnings for the inner thread. They dropped
+analytics events but did not alter SessionMeta, Hook state, callbacks, or the
+authority transition. They remain recorded as a runtime observation rather
+than being promoted to an identity failure or hidden as clean stderr.
+
+The live receipt SHA-256 is
+`2698af032c297d22a0d0b20f84b6b64ea4183eb15c66a1870866e47f7a587dbf`.
+A fresh `/root` owner independently re-read all three rollouts, the exact
+reported envelope, the reconstructable 2053-event Hook-chain prefix, the
+candidate exit, and the clean Git/process barrier. The immutable adjudication
+input SHA-256 is
+`b6e56a05cc30ce76135fd3047f19e82b5341feba06e5f370c9abe276bdf8c99d`.
+All five parent dimensions passed against that hash, and assignment
+`462c7010-cdb4-411d-accd-dbe615453d53` moved atomically from reported to
+consumed with envelope SHA-256
+`b47dfbb76bcf38927cc7e8f996f154826da1f690f138fe2ea584c8b8a3d472d0`.
+
+The reusable prompt, live receipt, adjudication pair, and executable checks are
+`probes/build_g4_nested_identity_probe_prompt.py`,
+`probes/g4-live-nested-identity-20260908.json`,
+`probes/g4-live-nested-identity-parent-adjudication-input-20260908.json`,
+`probes/g4-live-nested-identity-parent-adjudication-result-20260908.json`, and
+`tests/test_g4_live_nested_identity.py`. Focused nested/status checks passed
+19 tests. The full provider-free suite passed all 606 tests in 68.009 seconds
+with agent-template checks. Normal Phase 1, mutation, same-UID, and Hook-chain
+checks returned zero. Promotion-required Phase 1, mutation, and same-UID checks
+returned 2; the matrix retained thirteen mutation blockers and same-UID
+rollout/state protection remained false. The global complete-callback audit
+also returned 2 for the pre-existing sequence-135 pending tool-use id
+`exec-04d901ca-1eb5-4ecf-a046-16440788c4d3`; the nested run's sequences
+2049--2053 contain no writer event and did not create that gap.
+
+This closes one depth-two identity sample for P1/P2/P3/P6/P6a/P6b and POSIX
+P7 evidence. It does not close the nested cohort, mutation negative space,
+P5b host quiescence, representative P6c, Windows parity, or DeepSeek
+regression. `phase1_complete=false`, `direct_write_qualified=false`, and
+Phases 2/3 remain closed.
+
 ## Live failed-apply-patch callback and unchanged-lease release
 
 The installed 0.153.4 runtime exposes a concrete P5b failure boundary. Its
