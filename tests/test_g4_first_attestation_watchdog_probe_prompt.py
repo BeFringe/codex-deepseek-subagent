@@ -78,11 +78,11 @@ class G4FirstAttestationWatchdogProbePromptTests(unittest.TestCase):
 
     def test_prompt_separates_watchdog_interrupt_and_quiescence_claims(self):
         prompt = self.build()
-        spawn = prompt.index("Call native spawn_agent exactly once")
+        spawn = prompt.index("g4_assignment.spawn_agent tool exactly once")
         delay = prompt.index("/bin/sleep 2")
         watchdog = prompt.index("authority_watchdog.py")
-        interrupt = prompt.index("call native interrupt_agent exactly once")
-        listing = prompt.index("Call native list_agents exactly once")
+        interrupt = prompt.index("g4_assignment.interrupt_agent tool exactly once")
+        listing = prompt.index("g4_assignment.list_agents tool exactly once")
 
         self.assertLess(spawn, delay)
         self.assertLess(delay, watchdog)
@@ -93,6 +93,8 @@ class G4FirstAttestationWatchdogProbePromptTests(unittest.TestCase):
         self.assertIn("classification=unresponsive_no_disk_change", prompt)
         self.assertIn("only an interrupt acknowledgement", prompt)
         self.assertIn("Do not infer strong termination", prompt)
+        self.assertIn("Do not call collaboration.spawn_agent", prompt)
+        self.assertIn("message wire is encrypted", prompt)
         self.assertNotIn("API_KEY", prompt)
 
     def test_child_capsule_is_one_short_lived_read_only_no_tool_authority(self):

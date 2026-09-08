@@ -24,6 +24,7 @@ from build_g4_native_probe_prompt import (  # noqa: E402
 
 
 DEFAULT_TASK_NAME = "g4_first_attestation_timeout_1"
+PLAINTEXT_TOOL_NAMESPACE = "g4_assignment"
 PRE_WRITE_TIMEOUT_SECONDS = 1
 WATCHDOG_DELAY_SECONDS = 2
 AUTHORITY_TTL_SECONDS = 120
@@ -79,14 +80,14 @@ END CODEX WORKER AUTHORITY"""
 
 Run exactly this lifecycle:
 
-1. Call native spawn_agent exactly once with agent_type={AGENT_TYPE}, task_name={task_name}, fork_turns=none, and message equal to EXACT CHILD ASSIGNMENT below, including its one terminating authority declaration.
+1. Call the exact {PLAINTEXT_TOOL_NAMESPACE}.spawn_agent tool exactly once with agent_type={AGENT_TYPE}, task_name={task_name}, fork_turns=none, and message equal to EXACT CHILD ASSIGNMENT below, including its one terminating authority declaration. Do not call collaboration.spawn_agent: its message wire is encrypted and cannot carry this plaintext capsule to PreToolUse.
 2. Require the spawn result to expose the staged assignment_id and canonical task path {canonical_agent_path}. If either is absent, report the non-secret failure and stop without guessing an identity.
 3. Call exec_command exactly once with cmd `/bin/sleep {WATCHDOG_DELAY_SECONDS}`, workdir `{resolved_root}`, and no shell composition.
 4. Call exec_command exactly once with cmd `PYTHONDONTWRITEBYTECODE=1 python3 {watchdog} --state-directory {resolved_state} --assignment-id <the exact staged assignment_id> --fail-on-termination`, workdir `{resolved_root}`. The expected result is exit 2 with valid=true, selection=exact, terminated_count=1, reason=pre_write_attestation_timeout, classification=unresponsive_no_disk_change, and parent_cancel_required=true. Any other result fails the probe closed.
-5. Immediately call native interrupt_agent exactly once with target={canonical_agent_path}. Record its exact previous_status; this is only an interrupt acknowledgement, not termination or mutation-quiescence proof.
-6. Call native list_agents exactly once. Require the exact child to be interrupted or otherwise non-running, then finish without resuming, messaging, following up, waiting, or spawning another child.
+5. Immediately call the exact {PLAINTEXT_TOOL_NAMESPACE}.interrupt_agent tool exactly once with target={canonical_agent_path}. Record its exact previous_status; this is only an interrupt acknowledgement, not termination or mutation-quiescence proof.
+6. Call the exact {PLAINTEXT_TOOL_NAMESPACE}.list_agents tool exactly once. Require the exact child to be interrupted or otherwise non-running, then finish without resuming, messaging, following up, waiting, or spawning another child.
 
-The child must make no tool call and reach no accepted final before the watchdog transition. Do not infer strong termination, process-tree quiescence, ownership handover, or Phase 1 completion from interrupt acknowledgement or process absence. If Hook trust is inactive, capture or binding fails, the child completes before timeout, the exact assignment cannot be selected, or user approval is requested, report the exact non-secret blocker and stop. Do not fall back to default, explorer, worker, or v4.
+The child must make no tool call and reach no accepted final before the watchdog transition. Do not infer strong termination, process-tree quiescence, ownership handover, or Phase 1 completion from interrupt acknowledgement or process absence. If the exact plaintext namespace is unavailable, Hook trust is inactive, capture or binding fails, the child completes before timeout, the exact assignment cannot be selected, or user approval is requested, report the exact non-secret blocker and stop. Do not fall back to collaboration, default, explorer, worker, or v4.
 
 EXACT CHILD ASSIGNMENT:
 
