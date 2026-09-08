@@ -2300,3 +2300,55 @@ identity cohort, wait receiver binding, mutation negative space, strong global
 quiescence, compact/resume, cancellation, platform parity, DeepSeek regression,
 or rollback. Phase 1 and direct write remain false; Phase 2 and Phase 3 remain
 closed.
+
+## Trusted parent-only non-Git writer ceiling
+
+Commit `4c0f8467bbf4fd070f7af7fd516534f346b01526` added a deliberately
+narrow non-Git mutation surface. A repeated
+`--parent-non-git-writer-root` Hook option is a user/host authorization ceiling,
+not assignment authority: only the exact native root actor (`/root`, root agent
+type, and runtime session equal to thread id) may acquire an exact-path lease.
+Child or nested identity, a missing option, the ceiling directory itself,
+cross-root paths, symlink traversal, Git control paths, and overlapping claims
+all fail closed. Non-Git receipts preserve exact file existence, digest, and
+byte length without manufacturing a Git snapshot.
+
+A hash-pinned overlay changed only the G4 `PreToolUse` and `PostToolUse`
+commands to admit `/private/tmp`. It did not change the v4 `SubagentStart`, any
+other Hook event, the App resource, or the GUI App Server selection. The
+installed Hook registry SHA-256 is
+`82c8aa0bc4d739628646864578de6c078884c21413855ed3db448d4365a8668e`;
+all three installed G4 scripts match the repository. Exact pre-install files
+remain under `/private/tmp/codex-g4-temp-writer-install.gbiF84` with recorded
+digests. This is rollback material only: rollback/reinstall through a fresh
+trusted process has not yet been exercised and P7 remains partial.
+
+The App Server initially reported both changed entries as modified/untrusted.
+One new headless parent created a control file while they were untrusted, but
+there was no matching Hook event or writer receipt, so that file is explicitly
+non-authorizing. The user then approved the two exact Hook hashes through the
+application. A subsequent `hooks/list` reported both entries trusted and
+enabled. This long-lived task retained its startup Hook command and denied the
+new surface, which is a useful session-static fail-closed control rather than a
+failed qualification.
+
+A fresh current signed native OpenAI root then wrote exactly
+`/private/tmp/codex-g4-writer-lease-headless-trusted-20260908.json`. Thread and
+runtime session were both `01a07ec0-7c0c-7f41-b4c1-a648ca3a7cd1`, canonical
+AgentPath was `/root`, and the Hook observed the internal tool as
+`apply_patch` at tool-use id
+`exec-cccabe1e-08a5-4601-910b-b302e728735b`. `PreToolUse` sequence 1215
+authorized claim `49c722bf-cbe7-40bb-8994-4c64080fe34c`; `PostToolUse`
+sequence 1216 observed the callback, froze the exact 109-byte file digest, and
+released the claim. Process exit was zero and the post-exit in-flight claim
+count was zero.
+
+`probes/g4-parent-non-git-writer-live-20260908.json` and
+`tests/test_g4_parent_non_git_writer_live.py` preserve and check the install,
+trust, negative control, identity, callback, file bytes, and non-promotion
+verdict. This qualifies one parent-only non-Git `apply_patch` success surface
+and advances P4/P5b mutation visibility. It grants no child, Git, integration,
+or direct-write authority. The full child mutation negative space, trusted
+sandbox boundary, failure/cancel/crash callback recovery, global quiescence,
+and platform/regression exits remain open; Phase 1 and direct write therefore
+remain false.

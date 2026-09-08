@@ -23,8 +23,9 @@ parent provider, or let an external worker adjudicate its own behavior.
   authorization. Migration did not restore an equivalent G4
   `PreToolUse`/`PostToolUse`/compact/stop configuration. On 2026-08-17 the user
   separately authorized installing a qualification-only G4 candidate. Its
-  files/state are now installed beside the unchanged v4 Hook, but the new Hook
-  entries still require user trust and no live candidate event has yet run.
+  files/state were installed beside the unchanged v4 Hook; at this historical
+  handoff point the new entries still required user trust and no live candidate
+  event had run.
 
 The migrated checkout initially had 62 blob-identical executable-bit changes.
 They were normalized only after a fresh remote fetch proved every content blob
@@ -51,6 +52,25 @@ only from a fresh root whose first record matches the exact
 `current_signed_runtime` identity; parent and child must match exactly. The two
 installed binaries have different package hashes, so
 version convergence is not treated as binary identity or qualification.
+
+### Trusted parent-only non-Git writer refresh (2026-09-08)
+
+After explicit user authorization, a hash-pinned overlay added
+`--parent-non-git-writer-root /private/tmp` only to the G4 `PreToolUse` and
+`PostToolUse` commands. The v4 `SubagentStart` and all other Hook events remain
+unchanged. The application reports both changed Hook definitions trusted and
+enabled. A fresh current signed OpenAI root produced an exact-path lease,
+successful PostToolUse callback, byte-level after-snapshot, released receipt,
+and zero in-flight claims after process exit. The raw minimized record is
+`probes/g4-parent-non-git-writer-live-20260908.json`.
+
+This surface is intentionally parent-only and non-Git. It proves that the
+trusted Hook can mediate one real internal `apply_patch` under an explicit host
+ceiling; it does not authorize any child write or satisfy the effective sandbox
+boundary. The installed backup has not been rolled back and reloaded through a
+fresh process, so live rollback also remains open. Continue to run external
+children read-only except for explicit deny probes; keep Phase 1 and
+`direct_write_qualified` false.
 
 ### Goal adjustment after App Server source visibility
 

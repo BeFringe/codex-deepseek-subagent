@@ -1,0 +1,155 @@
+{
+  "schema": 1,
+  "classification": "live_parent_non_git_writer_ceiling_qualification",
+  "observed_date": "2026-09-08",
+  "repository": {
+    "root": "/Users/pearly/文档/CAT/codex-deepseek-subagent",
+    "branch": "main",
+    "source_commit": "4c0f8467bbf4fd070f7af7fd516534f346b01526",
+    "status_before_live_smoke": "clean"
+  },
+  "runtime": {
+    "semantic_role": "current_signed_runtime",
+    "codex_cli_version": "0.153.4",
+    "source_commit": "3d2ee51ca2d5db578f328aa75e20aa22c0197c9a",
+    "parent_model_provider": "openai"
+  },
+  "installation": {
+    "authorization_ceiling": "parent_only",
+    "non_git_writer_root": "/private/tmp",
+    "changed_hook_events": [
+      "PostToolUse",
+      "PreToolUse"
+    ],
+    "v4_subagent_start_unchanged": true,
+    "hooks_json_sha256_before": "ffaad5c3533a2016253af148c96721818807823f779845a35c5d7dad2c676c2b",
+    "hooks_json_sha256_after": "82c8aa0bc4d739628646864578de6c078884c21413855ed3db448d4365a8668e",
+    "installed_source_sha256": {
+      "compatibility_hook.py": "e363fba8952bf7679e2450d97d201a14f6d9c6e52bb7809922cceff31916a476",
+      "compatibility_state.py": "6589e0e6aa8441dc7a0e0b01375ce92486a8d33d2d7ea97cff8d8d124ba14a4c",
+      "writer_lease_guard.py": "2375429a199cb9d3f0b51da117a35a00f1fbdc3d7a273756bcec046aa9e85ced"
+    },
+    "rollback_backup": {
+      "directory": "/private/tmp/codex-g4-temp-writer-install.gbiF84",
+      "compatibility_hook_py_sha256": "7daf3f2a8642dc084f51e0de5ea39f12880c69b059f821145d10e7ef08358ee4",
+      "compatibility_state_py_sha256": "c60d33b2ff92bebf3ba0c5a931e77cb4029b0fba775c0439ce59fcfa59a730b7",
+      "writer_lease_guard_py_sha256": "2c6c9aa7cfda1eda7bdbb99f7cf27f7fce16c0c35f31504849b082a27bfce028"
+    }
+  },
+  "hook_trust": {
+    "source": "current app-server hooks/list",
+    "pre_tool_use": {
+      "key": "/Users/pearly/.codex/hooks.json:pre_tool_use:0:0",
+      "current_hash": "sha256:6e12be6e01d105f2603d144edc9355ef95b7851feaada8cc2ed62340a1340218",
+      "trust_status": "trusted",
+      "enabled": true
+    },
+    "post_tool_use": {
+      "key": "/Users/pearly/.codex/hooks.json:post_tool_use:0:0",
+      "current_hash": "sha256:572c78f93464f9e3bad5050f1818d745999696193bf1580cdb1923a13cdd7e8d",
+      "trust_status": "trusted",
+      "enabled": true
+    }
+  },
+  "pre_trust_control": {
+    "authorizing": false,
+    "thread_id": "01a07eb8-39a8-7813-8c32-441594e72d93",
+    "rollout_path": "/Users/pearly/.codex/sessions/2026/09/08/rollout-2026-09-08T09-53-17-01a07eb8-39a8-7813-8c32-441594e72d93.jsonl",
+    "rollout_sha256": "294d09dca4a238b6893b1b7d7facc5c0a2194238b63c205ebe90e820d294c4ba",
+    "rollout_byte_length": 55845,
+    "outer_tool_name": "exec",
+    "outer_tool_call_id": "call_Ev8uMlC4Z2Ra6M6ME3V0y4zL",
+    "file_change_id": "exec-9834c187-d098-4ede-a6dc-be182bf85430",
+    "target_path": "/private/tmp/codex-g4-writer-lease-headless-20260908.json",
+    "target_sha256": "c95d70c4172685616173af012bf11cc8e3448a7aa9894fd24701f98495cdc724",
+    "target_byte_length": 101,
+    "matching_hook_event_count": 0,
+    "matching_non_git_writer_receipt_count": 0,
+    "reason_non_authorizing": "The modified Hook definitions were not trusted, so file creation alone did not prove Hook mediation."
+  },
+  "trusted_live_smoke": {
+    "thread_id": "01a07ec0-7c0c-7f41-b4c1-a648ca3a7cd1",
+    "runtime_session_id": "01a07ec0-7c0c-7f41-b4c1-a648ca3a7cd1",
+    "canonical_agent_path": "/root",
+    "agent_type": "root",
+    "rollout_path": "/Users/pearly/.codex/sessions/2026/09/08/rollout-2026-09-08T10-02-19-01a07ec0-7c0c-7f41-b4c1-a648ca3a7cd1.jsonl",
+    "rollout_sha256": "eb0a6ff13e07f944188e23efada66c556925016be8d174f1fd7eade646b1431c",
+    "rollout_byte_length": 56595,
+    "outer_tool_name": "exec",
+    "outer_tool_call_id": "call_PDYNF1igqSofGIJrOx8CST8m",
+    "file_change_id": "exec-cccabe1e-08a5-4601-910b-b302e728735b",
+    "hook_tool_name": "apply_patch",
+    "hook_tool_use_id": "exec-cccabe1e-08a5-4601-910b-b302e728735b",
+    "target_path": "/private/tmp/codex-g4-writer-lease-headless-trusted-20260908.json",
+    "target_sha256": "3bc1a548463312b1c6620ba1c710ea0e114eb35a837ba06de48ea2174965bc82",
+    "target_byte_length": 109,
+    "process_exit_code": 0,
+    "inflight_claim_count_after_exit": 0,
+    "hook_event_chain": {
+      "event_count_after_posttooluse": 1216,
+      "chain_sha256_after_posttooluse": "30ce77a1640546c086d2c1e83c21ff7fd63363eb429281d7650e345a0ab05d50",
+      "pre_tool_use": {
+        "sequence": 1215,
+        "event_stage": "authorized",
+        "receipt_id": "f57722dd-8ec2-4e6e-b9c3-34cc7dab7ab6",
+        "receipt_sha256": "720c6d3ad723c931649b26834f0a43bc79761bb611bd1e0ce5af0ad760298b4b"
+      },
+      "post_tool_use": {
+        "sequence": 1216,
+        "event_stage": "callback_observed",
+        "receipt_id": "775a2b13-6a55-4e5c-a425-9ad884bc4caa",
+        "receipt_sha256": "94b61d60a8590dce1b3b5a02250811a927fe45ed9cf4d77b29a4f910845529b9"
+      }
+    },
+    "writer_receipt_path": "/Users/pearly/.codex/state/codex-deepseek-subagent-g4/non_git_writer_receipt/49c722bf-cbe7-40bb-8994-4c64080fe34c.json",
+    "writer_receipt_file_sha256": "5c18c3f417474388754158771945ccac4b355bbb07340ea468c3dbe2f85e93d9",
+    "writer_receipt": {
+      "schema": 1,
+      "claim_id": "49c722bf-cbe7-40bb-8994-4c64080fe34c",
+      "claim_sha256": "9f9aab712814916e98f2c44be50e0c0ad484c2e1c2b86cf07a1f9ab6f1a18c08",
+      "actor": {
+        "agent_type": "root",
+        "canonical_agent_path": "/root",
+        "runtime_session_id": "01a07ec0-7c0c-7f41-b4c1-a648ca3a7cd1",
+        "thread_id": "01a07ec0-7c0c-7f41-b4c1-a648ca3a7cd1"
+      },
+      "root": "/private/tmp",
+      "paths": [
+        "codex-g4-writer-lease-headless-trusted-20260908.json"
+      ],
+      "tool_name": "apply_patch",
+      "tool_use_id": "exec-cccabe1e-08a5-4601-910b-b302e728735b",
+      "authorization_ceiling": {
+        "root": "/private/tmp",
+        "source": "hook_cli_parent_non_git_writer_root"
+      },
+      "before_snapshot_sha256": "686f5ccba0efe78de0f20eaeec1084f818cb2bbdb14fdca77cc3619f879f1660",
+      "after_snapshot": {
+        "schema": 1,
+        "surface": "non_git_filesystem",
+        "root": "/private/tmp",
+        "path_states": [
+          {
+            "path": "codex-g4-writer-lease-headless-trusted-20260908.json",
+            "kind": "file",
+            "sha256": "3bc1a548463312b1c6620ba1c710ea0e114eb35a837ba06de48ea2174965bc82",
+            "byte_length": 109
+          }
+        ]
+      },
+      "after_snapshot_sha256": "6c0617d0a4b9f9ef86d3bb1b37b24af96cfdc66917ddf45b52cf35361f59a70a",
+      "released_at": "2026-09-08T02:02:33.192835+00:00",
+      "receipt_sha256": "730e584a6815139c619b35c9b160ee6ca36cef0fc09e9340d375f88845b710d1"
+    }
+  },
+  "verdict": {
+    "parent_non_git_apply_patch_surface_qualified": true,
+    "user_authorization_is_only_a_ceiling": true,
+    "child_mutation_authority_granted": false,
+    "git_authority_granted": false,
+    "direct_write_qualified": false,
+    "phase1_complete": false,
+    "phase2_open": false,
+    "phase3_open": false
+  }
+}
