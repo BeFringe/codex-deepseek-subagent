@@ -670,6 +670,65 @@ class RuntimeGuardTests(unittest.TestCase):
             "apply_patch",
         )
 
+    def test_subagent_stop_acknowledges_exact_guard_terminated_unresolved(self):
+        prior_assignment_id = self.capsule["assignment_id"]
+        self.replace_active_capsule(self.make_capsule(mutation_mode="read_only"))
+        self.store.path("unresolved", prior_assignment_id).unlink()
+        blocked = runtime_guard.pre_tool_use(
+            self.store,
+            self.child_hook(
+                "PreToolUse",
+                tool_name="apply_patch",
+                tool_input={"patch": "*** Begin Patch\n*** End Patch"},
+            ),
+        )
+        unresolved_path = self.store.path(
+            "unresolved", self.capsule["assignment_id"]
+        )
+        before = hashlib.sha256(unresolved_path.read_bytes()).hexdigest()
+
+        stopped = runtime_guard.subagent_stop(
+            self.store,
+            self.stop_hook("terminal unresolved contribution narrative"),
+        )
+
+        self.assertEqual(
+            blocked["hookSpecificOutput"]["permissionDecision"], "deny"
+        )
+        self.assertEqual(stopped, {})
+        self.assertEqual(
+            hashlib.sha256(unresolved_path.read_bytes()).hexdigest(), before
+        )
+        self.assertFalse(
+            self.store.path("reported", self.capsule["assignment_id"]).exists()
+        )
+        self.assertFalse(
+            self.store.path("consumed", self.capsule["assignment_id"]).exists()
+        )
+
+    def test_subagent_stop_rejects_forged_terminal_unresolved_reason(self):
+        prior_assignment_id = self.capsule["assignment_id"]
+        self.replace_active_capsule(self.make_capsule(mutation_mode="read_only"))
+        self.store.path("unresolved", prior_assignment_id).unlink()
+        runtime_guard.pre_tool_use(
+            self.store,
+            self.child_hook("PreToolUse", tool_name="apply_patch"),
+        )
+        unresolved_path = self.store.path(
+            "unresolved", self.capsule["assignment_id"]
+        )
+        unresolved = json.loads(unresolved_path.read_text(encoding="utf-8"))
+        unresolved["termination_evidence"]["reason"] = "caller_forged_reason"
+        unresolved_path.write_text(json.dumps(unresolved), encoding="utf-8")
+
+        stopped = runtime_guard.subagent_stop(
+            self.store,
+            self.stop_hook("terminal unresolved contribution narrative"),
+        )
+
+        self.assertEqual(stopped["decision"], "block")
+        self.assertIn("expected one active authority capsule", stopped["reason"])
+
     def test_exact_candidate_namespace_list_agents_alias_is_read_only(self):
         result = runtime_guard.pre_tool_use(
             self.store,

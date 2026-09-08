@@ -54,6 +54,16 @@ READ_ONLY_TOOL_NAME_ALIASES = {
     # prefixes (which could authorize an unknown tool by suffix).
     "g4_assignmentlist_agents": "list_agents",
 }
+TERMINAL_AUTHORITY_REASONS = frozenset(
+    {
+        "assignment_timeout",
+        "initial_disk_baseline_mismatch",
+        "initial_location_or_scope_mismatch",
+        "pre_write_attestation_timeout",
+        "read_only_mutation_attempt",
+        "write_authority_gates_missing",
+    }
+)
 
 
 def qualified_read_only_tool_name(value: object) -> str | None:
@@ -62,6 +72,29 @@ def qualified_read_only_tool_name(value: object) -> str | None:
     if value in READ_ONLY_TOOL_NAMES:
         return value
     return READ_ONLY_TOOL_NAME_ALIASES.get(value)
+
+
+def guard_terminated_unresolved(envelope: Mapping[str, object]) -> bool:
+    evidence = envelope.get("termination_evidence")
+    if not isinstance(evidence, Mapping) or evidence.get("schema") != 1:
+        return False
+    if evidence.get("reason") not in TERMINAL_AUTHORITY_REASONS:
+        return False
+    if not isinstance(evidence.get("classification"), str):
+        return False
+    if type(evidence.get("baseline_comparable")) is not bool:
+        return False
+    if evidence.get("disk_changed") is not None and type(
+        evidence.get("disk_changed")
+    ) is not bool:
+        return False
+    if not isinstance(evidence.get("snapshot"), Mapping):
+        return False
+    try:
+        _session_meta_timestamp(evidence.get("observed_at"), "termination observed_at")
+    except IdentityMismatch:
+        return False
+    return True
 
 
 class GuardError(StateError):
@@ -796,6 +829,9 @@ def subagent_stop(store: StateStore, hook_input: Mapping[str, object]) -> dict:
         try:
             assignment_id, envelope = store.find_active(identity)
         except MissingState:
+            terminal = store.find_unresolved(identity)
+            if terminal is not None and guard_terminated_unresolved(terminal[1]):
+                return {}
             lost = store.context_lost_for(identity)
             message = hook_input.get("last_assistant_message")
             if lost is not None and isinstance(message, str) and message.strip() == "TASK.CONTEXT_LOST":

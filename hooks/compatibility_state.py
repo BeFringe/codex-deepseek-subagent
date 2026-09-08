@@ -2451,6 +2451,31 @@ class StateStore:
                 )
             return matches[0]
 
+    def find_unresolved(self, identity: Mapping[str, str]) -> tuple[str, dict] | None:
+        matches: list[tuple[str, dict]] = []
+        with self.locked():
+            unresolved_directory = self.root / "unresolved"
+            if not unresolved_directory.exists():
+                return None
+            for path in sorted(unresolved_directory.glob("*.json")):
+                try:
+                    envelope = self._validated_envelope(path)
+                except CorruptState:
+                    self._quarantine(path)
+                    continue
+                try:
+                    self._assert_identity(
+                        envelope["capsule"], identity, envelope.get("binding")
+                    )
+                except IdentityMismatch:
+                    continue
+                matches.append((envelope["capsule"]["assignment_id"], envelope))
+            if len(matches) > 1:
+                raise AmbiguousState(
+                    f"expected at most one unresolved authority capsule, found {len(matches)}"
+                )
+            return matches[0] if matches else None
+
     def finalize(
         self,
         assignment_id: str,
