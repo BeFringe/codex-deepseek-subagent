@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "as_of": "2026-09-08",
+  "as_of": "2026-09-09",
   "goal_contract": {
     "state": "active_fail_closed",
     "terminal_acceptance_unchanged": true,
@@ -52,6 +52,8 @@
           "tests/test_p1_plaintext_message_probe_prompt.py",
           "probes/p1-live-plaintext-message-delivery-20260908.json",
           "tests/test_p1_live_plaintext_message_delivery.py",
+          "probes/p1-live-plaintext-same-message-pairs-20260909.json",
+          "tests/test_p1_live_plaintext_same_message_pairs.py",
           "probes/current-signed-runtime-plaintext-assignment-seam-headless-preflight.json",
           "tests/test_current_plaintext_assignment_headless_preflight.py",
           "probes/check_codex_component_boundaries.py",
@@ -114,7 +116,7 @@
           "probes/g4-live-exact-path-child-write-parent-adjudication-20260908.json",
           "tests/test_g4_live_exact_path_child_write.py"
         ],
-        "blocker": "the prior signed runtime encrypted the spawn message before PreToolUse, while the current signed runtime opt-in candidate now has a consumed inherited-OpenAI root receipt and a separately consumed external-ZHIPU child receipt in which PreToolUse observed the exact plaintext assignment hash and SubagentStart consumed and identity-bound the capsule. A provider-free serial sample additionally captured and fresh-owner consumed two distinct plaintext assignments after two native read-only list_agents loops, with child B spawned only after child A's terminal callback. A first concurrent attempt captured only A and exposed a parent-exit orphan negative; the next attempt captured two distinct plaintext assignments, both real child identities, and actual execution overlap, then a fresh owner consumed both reports under one exact evidence hash. One depth-two provider-free run now joins root SessionMeta to an explorer and that explorer to the exact G4 child, with one plaintext inner assignment, target Hook capture, mediated final correction, two-level callbacks, and fresh-owner consumption. A separate idle explorer run now observes exact plaintext send_message and followup_task user-message wires, including queue-only then trigger-turn semantics, without placing either payload preimage in the initial child assignment. The native source-parent projection omitted child thread ids and therefore failed closed. Upstream SDK and App Server still expose no supported plaintext spawn choice; distinct same-message deny pairs, broader nested repetition, parent-visible concurrent identity, and broader cohort scale remain unqualified"
+        "blocker": "the prior signed runtime encrypted the spawn message before PreToolUse, while the current signed runtime opt-in candidate now has a consumed inherited-OpenAI root receipt and a separately consumed external-ZHIPU child receipt in which PreToolUse observed the exact plaintext assignment hash and SubagentStart consumed and identity-bound the capsule. Provider-free serial, concurrent, and depth-two samples join exact plaintext assignments to real SessionMeta and canonical AgentPaths, callbacks, and fresh-owner adjudication. An idle explorer run observes exact plaintext send_message and followup_task user-message wires across two turns without placing either payload preimage in the initial assignment. A distinct live schema-3 sample now qualifies the plaintext assignment seam for spawn_agent, send_message, and followup_task: for each operation the same message fingerprint was allowed once to the native handler and recipient, then a separate tool-use id was blocked by PreToolUse before dispatch. Its native callbacks arrived without an explicit parent wait and the temporary qualification Hook overlay rolled back to the exact prior bytes. The persisted root response items omit the encrypted_function_args field, so the configured-null route is proven by the exact source branch, session opt-in, namespace, operation, PreToolUse fingerprint, handler result, and recipient wire rather than misstated as an explicit server-null field. The native source-parent projection still omits child thread ids. Upstream SDK and App Server expose no supported plaintext spawn choice; broader nested repetition, parent-visible concurrent identity, and broader cohort scale remain unqualified"
       },
       {
         "id": "P2",
@@ -133,6 +135,8 @@
           "tests/test_codex_lifecycle_sources.py",
           "probes/p1-live-plaintext-message-delivery-20260908.json",
           "tests/test_p1_live_plaintext_message_delivery.py",
+          "probes/p1-live-plaintext-same-message-pairs-20260909.json",
+          "tests/test_p1_live_plaintext_same_message_pairs.py",
           "probes/g4-live-nested-identity-20260908.json",
           "probes/g4-live-nested-identity-parent-adjudication-input-20260908.json",
           "probes/g4-live-nested-identity-parent-adjudication-result-20260908.json",
@@ -192,6 +196,8 @@
           "tests/test_hook_event_receipts.py",
           "probes/p1-live-plaintext-message-delivery-20260908.json",
           "tests/test_p1_live_plaintext_message_delivery.py",
+          "probes/p1-live-plaintext-same-message-pairs-20260909.json",
+          "tests/test_p1_live_plaintext_same_message_pairs.py",
           "probes/g4-live-nested-identity-20260908.json",
           "probes/g4-live-nested-identity-parent-adjudication-input-20260908.json",
           "probes/g4-live-nested-identity-parent-adjudication-result-20260908.json",
@@ -527,6 +533,8 @@
           "docs/phase1-evidence.md#qualification-only-live-install-2026-08-17",
           "probes/p1-live-plaintext-message-delivery-20260908.json",
           "tests/test_p1_live_plaintext_message_delivery.py",
+          "probes/p1-live-plaintext-same-message-pairs-20260909.json",
+          "tests/test_p1_live_plaintext_same_message_pairs.py",
           "probes/g4-live-nested-identity-20260908.json",
           "probes/g4-live-nested-identity-parent-adjudication-input-20260908.json",
           "probes/g4-live-nested-identity-parent-adjudication-result-20260908.json",
@@ -597,7 +605,9 @@
           "probes/g4-live-nested-identity-parent-adjudication-result-20260908.json",
           "tests/test_g4_live_nested_identity.py",
           "probes/p1-live-plaintext-message-delivery-20260908.json",
-          "tests/test_p1_live_plaintext_message_delivery.py"
+          "tests/test_p1_live_plaintext_message_delivery.py",
+          "probes/p1-live-plaintext-same-message-pairs-20260909.json",
+          "tests/test_p1_live_plaintext_same_message_pairs.py"
         ]
       },
       {
@@ -680,7 +690,9 @@
           "probes/g4-live-nested-identity-parent-adjudication-result-20260908.json",
           "tests/test_g4_live_nested_identity.py",
           "probes/p1-live-plaintext-message-delivery-20260908.json",
-          "tests/test_p1_live_plaintext_message_delivery.py"
+          "tests/test_p1_live_plaintext_message_delivery.py",
+          "probes/p1-live-plaintext-same-message-pairs-20260909.json",
+          "tests/test_p1_live_plaintext_same_message_pairs.py"
         ]
       },
       {
@@ -768,7 +780,9 @@
           "probes/g4-live-nested-identity-parent-adjudication-result-20260908.json",
           "tests/test_g4_live_nested_identity.py",
           "probes/p1-live-plaintext-message-delivery-20260908.json",
-          "tests/test_p1_live_plaintext_message_delivery.py"
+          "tests/test_p1_live_plaintext_message_delivery.py",
+          "probes/p1-live-plaintext-same-message-pairs-20260909.json",
+          "tests/test_p1_live_plaintext_same_message_pairs.py"
         ]
       },
       {

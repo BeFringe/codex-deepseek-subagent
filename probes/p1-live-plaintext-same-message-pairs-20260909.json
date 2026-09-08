@@ -1,0 +1,470 @@
+{
+  "schema": 3,
+  "contract_schema": 3,
+  "evidence_kind": "live_native",
+  "classification": "live_provider_free_plaintext_same_message_delivery_and_pretool_deny_pairs",
+  "observed_date": "2026-09-09",
+  "codex_version": "0.153.4",
+  "source_commit": "3d2ee51ca2d5db578f328aa75e20aa22c0197c9a",
+  "runtime": {
+    "candidate_binary_sha256": "abe80df563067cf9ebb856cbb85fe5f55d2624523eb0ae9700ef39f0e5e70b20",
+    "candidate_patch_sha256": "25548e1fa53063157e0635e0907a45bd61099ac3be8dda2c1e6ff8c44ca5ff7d",
+    "selected_executable": "/private/tmp/codex-current-plaintext.aTU9C2/candidate-posttool-callback/codex",
+    "selection_mechanism": "direct_executable",
+    "signed_app_resource_replaced": false,
+    "headless_only": true,
+    "gui_app_server_selected": false
+  },
+  "configuration": {
+    "default_message_delivery": "encrypted",
+    "active_message_delivery": "plaintext",
+    "explicit_opt_in": true,
+    "parent_provider": "openai",
+    "parent_auth_unchanged": true,
+    "parent_base_url_unchanged": true,
+    "live_config_modified": false,
+    "native_multi_agent_v2": true,
+    "tool_namespace": "g4_assignment",
+    "configured_plaintext_operations": [
+      "followup_task",
+      "send_message",
+      "spawn_agent"
+    ],
+    "null_marker_plaintext_requires_exact_route": true,
+    "unconfigured_null_marker_remains_encrypted": true
+  },
+  "operations": [
+    {
+      "id": "spawn_agent",
+      "hook_tool_name": "g4_assignmentspawn_agent",
+      "delivery_case": {
+        "call_identity": {
+          "parent_session_id": "01a081dc-ba06-7503-abd3-23f5e113a946",
+          "parent_agent_path": "/root",
+          "parent_turn_id": "01a081dc-baa0-7671-a5d4-a14dd752d91f",
+          "tool_use_id": "call_AUk5rv9m8s0TleYyumhXw11m",
+          "target_session_id": "01a081dc-f84b-78e0-8405-1fe29a559547",
+          "canonical_agent_path": "/root/p1_plaintext_pair_2",
+          "requested_task_name": "p1_plaintext_pair_2"
+        },
+        "schema_message_encrypted": false,
+        "plaintext_route": {
+          "mode": "exact_configured_null_marker",
+          "server_encrypted_function_args": null,
+          "configured_tool_namespace": "g4_assignment",
+          "configured_operation": "spawn_agent",
+          "exact_session_opt_in": true
+        },
+        "pretool_plaintext": {
+          "length": 499,
+          "sha256": "b2cb0bc199933a516d066e64131134e06f3af0c61dfcf02fe9d341b4b2a11e26"
+        },
+        "handler_plaintext": {
+          "length": 499,
+          "sha256": "b2cb0bc199933a516d066e64131134e06f3af0c61dfcf02fe9d341b4b2a11e26"
+        },
+        "delivered_plaintext": {
+          "length": 499,
+          "sha256": "b2cb0bc199933a516d066e64131134e06f3af0c61dfcf02fe9d341b4b2a11e26"
+        },
+        "encrypted_content_present": false,
+        "hook_before_handler": true,
+        "native_multi_agent_v2": true
+      },
+      "deny_case": {
+        "call_identity": {
+          "parent_session_id": "01a081dc-ba06-7503-abd3-23f5e113a946",
+          "parent_agent_path": "/root",
+          "parent_turn_id": "01a081dc-baa0-7671-a5d4-a14dd752d91f",
+          "tool_use_id": "call_Inb4Imv8k6fNzb088dcY4kwA",
+          "requested_task_name": "p1_plaintext_pair_2"
+        },
+        "schema_message_encrypted": false,
+        "plaintext_route": {
+          "mode": "exact_configured_null_marker",
+          "server_encrypted_function_args": null,
+          "configured_tool_namespace": "g4_assignment",
+          "configured_operation": "spawn_agent",
+          "exact_session_opt_in": true
+        },
+        "pretool_plaintext": {
+          "length": 499,
+          "sha256": "b2cb0bc199933a516d066e64131134e06f3af0c61dfcf02fe9d341b4b2a11e26"
+        },
+        "native_multi_agent_v2": true,
+        "blocked_before_handler": true,
+        "handler_started": false,
+        "recipient_started": false
+      }
+    },
+    {
+      "id": "send_message",
+      "hook_tool_name": "g4_assignmentsend_message",
+      "delivery_case": {
+        "call_identity": {
+          "parent_session_id": "01a081dc-ba06-7503-abd3-23f5e113a946",
+          "parent_agent_path": "/root",
+          "parent_turn_id": "01a081dc-baa0-7671-a5d4-a14dd752d91f",
+          "tool_use_id": "call_3MD8SCKrwPWIlrhpMh5Q7Oos",
+          "target_session_id": "01a081dc-f84b-78e0-8405-1fe29a559547",
+          "canonical_agent_path": "/root/p1_plaintext_pair_2"
+        },
+        "schema_message_encrypted": false,
+        "plaintext_route": {
+          "mode": "exact_configured_null_marker",
+          "server_encrypted_function_args": null,
+          "configured_tool_namespace": "g4_assignment",
+          "configured_operation": "send_message",
+          "exact_session_opt_in": true
+        },
+        "pretool_plaintext": {
+          "length": 56,
+          "sha256": "7c538222bfe3a8e29c8683a5ba76262a827afb9f46aa8ca4f1ebfabb78c95073"
+        },
+        "handler_plaintext": {
+          "length": 56,
+          "sha256": "7c538222bfe3a8e29c8683a5ba76262a827afb9f46aa8ca4f1ebfabb78c95073"
+        },
+        "delivered_plaintext": {
+          "length": 56,
+          "sha256": "7c538222bfe3a8e29c8683a5ba76262a827afb9f46aa8ca4f1ebfabb78c95073"
+        },
+        "encrypted_content_present": false,
+        "hook_before_handler": true,
+        "native_multi_agent_v2": true
+      },
+      "deny_case": {
+        "call_identity": {
+          "parent_session_id": "01a081dc-ba06-7503-abd3-23f5e113a946",
+          "parent_agent_path": "/root",
+          "parent_turn_id": "01a081dc-baa0-7671-a5d4-a14dd752d91f",
+          "tool_use_id": "call_zqxbOiwjJQqBPVBMqhCw3LSQ"
+        },
+        "schema_message_encrypted": false,
+        "plaintext_route": {
+          "mode": "exact_configured_null_marker",
+          "server_encrypted_function_args": null,
+          "configured_tool_namespace": "g4_assignment",
+          "configured_operation": "send_message",
+          "exact_session_opt_in": true
+        },
+        "pretool_plaintext": {
+          "length": 56,
+          "sha256": "7c538222bfe3a8e29c8683a5ba76262a827afb9f46aa8ca4f1ebfabb78c95073"
+        },
+        "native_multi_agent_v2": true,
+        "blocked_before_handler": true,
+        "handler_started": false,
+        "recipient_started": false
+      }
+    },
+    {
+      "id": "followup_task",
+      "hook_tool_name": "g4_assignmentfollowup_task",
+      "delivery_case": {
+        "call_identity": {
+          "parent_session_id": "01a081dc-ba06-7503-abd3-23f5e113a946",
+          "parent_agent_path": "/root",
+          "parent_turn_id": "01a081dc-baa0-7671-a5d4-a14dd752d91f",
+          "tool_use_id": "call_A5GrqPW1UTTuGgKFZe5Uqe6U",
+          "target_session_id": "01a081dc-f84b-78e0-8405-1fe29a559547",
+          "canonical_agent_path": "/root/p1_plaintext_pair_2"
+        },
+        "schema_message_encrypted": false,
+        "plaintext_route": {
+          "mode": "exact_configured_null_marker",
+          "server_encrypted_function_args": null,
+          "configured_tool_namespace": "g4_assignment",
+          "configured_operation": "followup_task",
+          "exact_session_opt_in": true
+        },
+        "pretool_plaintext": {
+          "length": 60,
+          "sha256": "67a432ead5824c148153ab72113d30f168f95f169a7e50ea94cffe8e4339ec12"
+        },
+        "handler_plaintext": {
+          "length": 60,
+          "sha256": "67a432ead5824c148153ab72113d30f168f95f169a7e50ea94cffe8e4339ec12"
+        },
+        "delivered_plaintext": {
+          "length": 60,
+          "sha256": "67a432ead5824c148153ab72113d30f168f95f169a7e50ea94cffe8e4339ec12"
+        },
+        "encrypted_content_present": false,
+        "hook_before_handler": true,
+        "native_multi_agent_v2": true
+      },
+      "deny_case": {
+        "call_identity": {
+          "parent_session_id": "01a081dc-ba06-7503-abd3-23f5e113a946",
+          "parent_agent_path": "/root",
+          "parent_turn_id": "01a081dc-baa0-7671-a5d4-a14dd752d91f",
+          "tool_use_id": "call_uw0afqbbOkWgTT0p7TLHIx1F"
+        },
+        "schema_message_encrypted": false,
+        "plaintext_route": {
+          "mode": "exact_configured_null_marker",
+          "server_encrypted_function_args": null,
+          "configured_tool_namespace": "g4_assignment",
+          "configured_operation": "followup_task",
+          "exact_session_opt_in": true
+        },
+        "pretool_plaintext": {
+          "length": 60,
+          "sha256": "67a432ead5824c148153ab72113d30f168f95f169a7e50ea94cffe8e4339ec12"
+        },
+        "native_multi_agent_v2": true,
+        "blocked_before_handler": true,
+        "handler_started": false,
+        "recipient_started": false
+      }
+    }
+  ],
+  "regressions": {
+    "encrypted_mode_still_encrypted": true,
+    "unconfigured_null_marker_still_encrypted": true,
+    "nonempty_private_marker_fails_closed": true,
+    "v1_fallback_used": false,
+    "native_agent_control_preserved": true
+  },
+  "privacy": {
+    "raw_plaintext_stored": false,
+    "credential_value_read_or_stored": false
+  },
+  "repository": {
+    "root": "/Users/pearly/文档/CAT/codex-deepseek-subagent",
+    "branch": "main",
+    "full_head": "3f6f548a42a5471dfd2997a1ad1577218005f051",
+    "head_tree": "a6ff5cc9dd286c9475d75da1c3833893ea27f754",
+    "write_tree_after_barrier": "a6ff5cc9dd286c9475d75da1c3833893ea27f754",
+    "index_sha256_after_barrier": "87edeeecf2da3063822ad95d5f980f17c455b94c5a775f42655b868e8b140d34",
+    "status_before_probe": "clean",
+    "status_after_probe": "clean",
+    "index_changed": false
+  },
+  "source_contract": {
+    "receipt_path": "probes/current-signed-runtime-plaintext-assignment-seam-source-candidate.json",
+    "receipt_sha256": "94ff564284b315ce8782f90b65b02146b7b2fb288e66361427bee512bc92ac40",
+    "patch_path": "probes/current-signed-runtime-plaintext-assignment-seam-source-candidate.patch",
+    "patch_sha256": "25548e1fa53063157e0635e0907a45bd61099ac3be8dda2c1e6ff8c44ca5ff7d",
+    "configured_null_marker_source_route_verified": true,
+    "persisted_response_item_encrypted_function_args_field_present": false,
+    "route_inference_basis": "exact source branch plus exact session opt-in, namespace, operation, plaintext PreToolUse fingerprint, native handler result, and recipient wire",
+    "explicit_server_null_marker_claimed": false
+  },
+  "probe_assets": {
+    "prompt_builder_path": "probes/build_p1_plaintext_pair_probe_prompt.py",
+    "prompt_builder_sha256": "b7ca67b9451c8932cec7c5b0513c6a51bb11e85cb75baf54c01e9026bc82b9ee",
+    "guard_path": "hooks/plaintext_pair_probe_guard.py",
+    "guard_sha256": "2da8efafd379584044226b9619cd740329b0dbdf1c77726a813e7d2c5335501c",
+    "overlay_builder_path": "probes/build_plaintext_pair_probe_hook_overlay.py",
+    "overlay_builder_sha256": "f311349819618012b4c298349c8232b09165d77bba5f76f22bfe9977c3772455",
+    "temporary_overlay_sha256": "f6254fe3887f2d6ca1d6d818302f7e5ed2a08e503f74f0279e634149efcbbac3",
+    "base_hooks_sha256": "82c8aa0bc4d739628646864578de6c078884c21413855ed3db448d4365a8668e",
+    "guard_state_directory": "/private/tmp/codex-p1-pair-run.LOqrk9/pair-state",
+    "guard_state_stores_only_fingerprints": true,
+    "guard_bytecode_written_next_to_repo_source": false
+  },
+  "live_probe": {
+    "root_parent": {
+      "thread_id": "01a081dc-ba06-7503-abd3-23f5e113a946",
+      "turn_id": "01a081dc-baa0-7671-a5d4-a14dd752d91f",
+      "runtime_session_id": "01a081dc-ba06-7503-abd3-23f5e113a946",
+      "canonical_agent_path": "/root",
+      "thread_source": "user",
+      "model_provider": "openai",
+      "rollout_path": "/Users/pearly/.codex/sessions/2026/09/09/rollout-2026-09-09T00-32-01-01a081dc-ba06-7503-abd3-23f5e113a946.jsonl",
+      "rollout_sha256": "0ea9ecdbdc2489b2b305e2c5bca9f0ca54db9bdf5b2f9ef3acd6b4ec32aa6aed",
+      "rollout_line_count": 55,
+      "rollout_bytes": 82983,
+      "function_call_count": 6,
+      "wait_call_count": 0,
+      "started_child_activity_count": 1,
+      "interacted_child_activity_count": 2,
+      "initial_callback_message": "P1.PAIR.READY path=/root/p1_plaintext_pair_2",
+      "followup_callback_message": "P1.PAIR.CALLBACK path=/root/p1_plaintext_pair_2",
+      "final_message": "P1.PAIR.ROOT spawn_delivery=accepted spawn_deny=blocked ready=exact send_delivery=accepted send_deny=blocked followup_delivery=accepted followup_deny=blocked callback=exact",
+      "task_complete_at": "2026-09-08T16:32:57.956Z",
+      "duration_ms": 56249
+    },
+    "child": {
+      "thread_id": "01a081dc-f84b-78e0-8405-1fe29a559547",
+      "runtime_session_id": "01a081dc-ba06-7503-abd3-23f5e113a946",
+      "parent_thread_id": "01a081dc-ba06-7503-abd3-23f5e113a946",
+      "canonical_agent_path": "/root/p1_plaintext_pair_2",
+      "requested_task_name": "p1_plaintext_pair_2",
+      "agent_type": "explorer",
+      "depth": 1,
+      "thread_source": "subagent",
+      "model_provider": "openai",
+      "rollout_path": "/Users/pearly/.codex/sessions/2026/09/09/rollout-2026-09-09T00-32-17-01a081dc-f84b-78e0-8405-1fe29a559547.jsonl",
+      "rollout_sha256": "8030e7e07b96d7422d601cb0c54eba19c718a608a39653d032f8a1b96ef4e54d",
+      "rollout_line_count": 26,
+      "rollout_bytes": 57439,
+      "initial_turn_id": "01a081dc-f8af-7991-8f72-e527beb3e1da",
+      "followup_turn_id": "01a081dd-68bf-7a42-9e06-69844658d300",
+      "send_wire_ordinal": 18,
+      "send_wire_message_type": "MESSAGE",
+      "followup_wire_ordinal": 20,
+      "followup_wire_message_type": "NEW_TASK",
+      "permitted_send_payload_occurrence_count": 1,
+      "permitted_followup_payload_occurrence_count": 1,
+      "mutation_tool_call_count": 0
+    },
+    "pair_guard": {
+      "state_path": "/private/tmp/codex-p1-pair-run.LOqrk9/pair-state/plaintext_pair_probe/state.json",
+      "file_sha256": "62779584888103cfeb5d5c1d950e875d1246341ecbbb88159f5332fe698e47da",
+      "state_sha256": "8089f4eec75b27e1339c4caca3798b71ac4b75bd45956ac0cb05d79e5cd6376d",
+      "bytes": 2709,
+      "raw_plaintext_stored": false,
+      "operation_decisions": {
+        "spawn_agent": [
+          "allow",
+          "deny"
+        ],
+        "send_message": [
+          "allow",
+          "deny"
+        ],
+        "followup_task": [
+          "allow",
+          "deny"
+        ]
+      },
+      "distinct_tool_use_ids_per_pair": true,
+      "same_fingerprint_per_pair": true
+    },
+    "headless_harness": {
+      "run_directory": "/private/tmp/codex-p1-pair-run.LOqrk9",
+      "stdout_jsonl_sha256": "09693abf542ab3fd300e566483273652cd121f5aa802e8d7cc57d9a96dd50f3a",
+      "stdout_line_count": 4,
+      "stdout_bytes": 520,
+      "stderr_sha256": "d27980443d8bade519cc3089b8c35ceb65625bc09da2a732d73b037059020338",
+      "stderr_line_count": 7,
+      "stderr_bytes": 1347,
+      "candidate_exit_code": 0,
+      "sandbox": "read-only",
+      "approval_policy": "never"
+    },
+    "ordering": {
+      "spawn_delivery_hook_before_handler": true,
+      "spawn_deny_hook_before_block_result": true,
+      "denied_spawn_created_no_second_child": true,
+      "send_delivery_hook_before_handler": true,
+      "send_deny_hook_before_block_result": true,
+      "denied_send_created_no_child_activity": true,
+      "followup_delivery_hook_before_handler": true,
+      "followup_deny_hook_before_block_result": true,
+      "denied_followup_created_no_child_activity": true,
+      "native_callbacks_arrived_without_parent_wait_tool": true,
+      "same_child_identity_across_two_turns": true
+    },
+    "post_termination_barrier": {
+      "root": "/Users/pearly/文档/CAT/codex-deepseek-subagent",
+      "branch": "main",
+      "head": "3f6f548a42a5471dfd2997a1ad1577218005f051",
+      "head_tree": "a6ff5cc9dd286c9475d75da1c3833893ea27f754",
+      "write_tree": "a6ff5cc9dd286c9475d75da1c3833893ea27f754",
+      "index_sha256": "87edeeecf2da3063822ad95d5f980f17c455b94c5a775f42655b868e8b140d34",
+      "git_status_short": "",
+      "candidate_process_match_count": 0,
+      "code_mode_host_process_match_count": 0,
+      "hooks_json_sha256_after": "82c8aa0bc4d739628646864578de6c078884c21413855ed3db448d4365a8668e",
+      "temporary_overlay_rolled_back": true,
+      "v4_hook_preserved": true,
+      "g4_hooks_preserved": true,
+      "strong_global_quiescence_claimed": false
+    }
+  },
+  "regression_basis": {
+    "source_receipt": "probes/current-signed-runtime-plaintext-assignment-seam-source-candidate.json",
+    "source_patch": "probes/current-signed-runtime-plaintext-assignment-seam-source-candidate.patch",
+    "contract_checker": "probes/check_plaintext_assignment_candidate.py",
+    "prior_encrypted_control": "probes/g4-prior-signed-runtime-encrypted-spawn-negative-20260907.json",
+    "native_control_preserved_in_live_run": true
+  },
+  "scope_boundary": {
+    "plaintext_assignment_seam_qualified": true,
+    "same_message_delivery_and_deny_pairs_complete_for_one_live_sample": true,
+    "public_sdk_or_app_server_plaintext_selector_available": false,
+    "parent_visible_child_thread_id_available": false,
+    "broader_nested_repetition_complete": false,
+    "broader_delivery_cohort_complete": false,
+    "mixed_provider_pair_cohort_complete": false,
+    "mutation_authority_claimed": false,
+    "strong_global_quiescence_qualified": false
+  },
+  "verification": {
+    "focused_suite": {
+      "command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPYCACHEPREFIX=/private/tmp/codex-pycache-p1-pairs-focused python3 -m unittest -v tests.test_p1_live_plaintext_same_message_pairs tests.test_plaintext_assignment_candidate tests.test_p1_plaintext_pair_probe_prompt tests.test_plaintext_pair_probe_guard tests.test_plaintext_pair_probe_hook_overlay tests.test_phase1_g4_gate",
+      "test_count": 49,
+      "duration_seconds": 1.683,
+      "exit_code": 0
+    },
+    "provider_free_suite": {
+      "command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPYCACHEPREFIX=/private/tmp/codex-pycache-p1-pairs-full-20260909 python3 -m unittest discover -s tests -p 'test_*.py'",
+      "test_count": 641,
+      "duration_seconds": 65.544,
+      "exit_code": 0,
+      "agent_template_checks": "passed"
+    },
+    "plaintext_assignment_gate": {
+      "require_qualified_exit_code": 0,
+      "receipt_valid": true,
+      "plaintext_assignment_seam_qualified": true,
+      "phase1_complete": false,
+      "direct_write_qualified": false
+    },
+    "phase1_gate": {
+      "normal_exit_code": 0,
+      "require_phase1_complete_exit_code": 2,
+      "valid": true,
+      "gate_blocker_count": 10,
+      "exit_receipt_blocker_count": 9,
+      "phase1_complete": false,
+      "direct_write_qualified": false
+    },
+    "mutation_matrix": {
+      "normal_exit_code": 0,
+      "require_qualified_exit_code": 2,
+      "valid": true,
+      "source_identity_verified": true,
+      "source_commit": "3d2ee51ca2d5db578f328aa75e20aa22c0197c9a",
+      "anchor_failure_count": 0,
+      "blocker_count": 13,
+      "direct_write_qualified": false
+    },
+    "same_uid_trust": {
+      "normal_exit_code": 0,
+      "require_protected_exit_code": 2,
+      "same_uid_child_exit_code": 0,
+      "same_uid_rollout_protected": false,
+      "same_uid_state_protected": false,
+      "direct_write_qualified": false
+    },
+    "hook_event_chain": {
+      "normal_exit_code": 0,
+      "require_complete_callbacks_exit_code": 2,
+      "event_count": 2141,
+      "chain_sha256": "4cbbaddaccf17815165980d75f4f5096b0cc2fa9bcef8651d2f8a9a02b457828",
+      "callback_count": 922,
+      "denied_tool_use_id_count": 43,
+      "pending_tool_use_ids": [
+        "exec-04d901ca-1eb5-4ecf-a046-16440788c4d3"
+      ],
+      "unmatched_abort_claim_ids": [
+        "f3ac4aee-f571-451d-884d-4e7643eee014"
+      ],
+      "raw_payload_stored": false
+    }
+  },
+  "verdict": {
+    "receipt_valid": true,
+    "plaintext_assignment_seam_qualified": true,
+    "p1_complete": false,
+    "direct_write_qualified": false,
+    "phase1_complete": false,
+    "phase2_open": false,
+    "phase3_open": false
+  }
+}

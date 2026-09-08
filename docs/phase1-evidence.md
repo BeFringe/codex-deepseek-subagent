@@ -2787,6 +2787,83 @@ not qualify direct write, mixed-provider follow-up, or mutation authority.
 `phase1_complete=false`, `direct_write_qualified=false`, and Phases 2/3 remain
 closed.
 
+## Live plaintext same-message delivery/deny pairs
+
+The remaining P1 transport-control gap required two distinct native calls for
+each configured operation: one call had to deliver exact plaintext through the
+handler to its recipient, while a second call with byte-identical `message`
+content had to be denied by PreToolUse before handler dispatch. Reusing one
+call as both positive and negative evidence was prohibited. A qualification-only
+guard therefore matched exact configured SHA-256/length pairs for
+`g4_assignmentspawn_agent`, `g4_assignmentsend_message`, and
+`g4_assignmentfollowup_task`; it allowed the first distinct tool-use id and
+denied the second. The durable guard state contains only fingerprints,
+identity, tool-use ids, decisions, and timestamps, never the plaintext.
+
+The guard exposed one genuine probe observer effect before the live sample.
+Importing the repository-local compatibility module caused Python to create
+`hooks/__pycache__`, so the supposedly clean Git baseline became dirty before
+the candidate ran. Commit `3f6f548a42a5471dfd2997a1ad1577218005f051`
+sets `sys.dont_write_bytecode` before that local import and adds a subprocess
+regression proving the Hook process creates no adjacent bytecode. The affected
+attempt was not promoted as live transport evidence.
+
+The accepted provider-free POSIX run used clean repository HEAD
+`3f6f548a42a5471dfd2997a1ad1577218005f051`, direct headless candidate SHA-256
+`abe80df563067cf9ebb856cbb85fe5f55d2624523eb0ae9700ef39f0e5e70b20`,
+native OpenAI parent inference, read-only sandbox, approval policy `never`,
+Multi-Agent V2, the isolated `g4_assignment` namespace, and an explicit
+session-local `message_delivery=plaintext`. It did not select or replace the
+GUI App Server. The temporary Hook overlay was separately trusted, used only
+for this run, then restored `hooks.json` to the exact prior SHA-256
+`82c8aa0bc4d739628646864578de6c078884c21413855ed3db448d4365a8668e`;
+the existing v4 and G4 Hook commands remained present.
+
+Root ThreadId `01a081dc-ba06-7503-abd3-23f5e113a946`, turn
+`01a081dc-baa0-7671-a5d4-a14dd752d91f`, and AgentPath `/root` issued exactly
+six calls. The permitted spawn created only child ThreadId
+`01a081dc-f84b-78e0-8405-1fe29a559547` at canonical AgentPath
+`/root/p1_plaintext_pair_2`; the paired denied spawn created no second child.
+The permitted send and follow-up reached that same child as one `MESSAGE` and
+one `NEW_TASK` user wire in a second turn; each payload occurred once. Their
+paired denied calls created no child-activity event. All three permitted and
+denied pairs have distinct tool-use ids and identical per-operation
+fingerprints. Hook timestamps precede the successful handler results and the
+three exact deny errors. Native child finals returned to the parent without an
+explicit parent `wait` call, preserving callback semantics rather than using
+the child's narrative as transport authority.
+
+The root rollout does not persist an `encrypted_function_args` member for
+these response items. The receipt therefore does not claim that the server
+explicitly emitted JSON null. It classifies the path as
+`exact_configured_null_marker` from the exact source branch plus the session
+opt-in, namespace, operation, plaintext PreToolUse fingerprint, handler result,
+and recipient wire. Unconfigured null and encrypted/private branches remain
+covered by the source regressions and fail closed.
+
+The schema-3 receipt is
+`probes/p1-live-plaintext-same-message-pairs-20260909.json`; its executable
+assertions are `tests/test_p1_live_plaintext_same_message_pairs.py`. The
+contract checker with `--require-qualified` returned zero and reported
+`plaintext_assignment_seam_qualified=true`, while keeping Phase 1 and direct
+write false. Focused checks passed 49 tests in 1.683 seconds. The fresh full
+provider-free suite passed 641 tests in 65.544 seconds with agent-template
+checks. The normal Phase 1, mutation, same-UID, and Hook-chain checks returned
+zero; their promotion forms returned 2. Current-source mutation anchors are
+exact with thirteen unqualified surfaces. Same-UID rollout/state protection
+remain false. The Hook-chain snapshot contains 2141 events, 922 paired
+callbacks, 43 denied tool-use ids, and the unchanged historical sequence-135
+pending callback; the qualification-only pair guard is outside that G4 event
+chain.
+
+This qualifies the P1 plaintext assignment seam for one live sample across all
+three assignment operations and removes the distinct same-message deny-pair
+blocker. It does not provide a supported public SDK/App Server selector,
+parent-visible child ThreadIds, broader nested/repetition/provider cohorts,
+mutation qualification, or strong global quiescence. P1 remains partial;
+`phase1_complete=false`, `direct_write_qualified=false`, and Phases 2/3 remain
+closed.
+
 ## Live failed-apply-patch callback and unchanged-lease release
 
 The installed 0.153.4 runtime exposes a concrete P5b failure boundary. Its
