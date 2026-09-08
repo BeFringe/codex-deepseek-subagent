@@ -171,6 +171,28 @@ class G4NativeProbePromptTests(unittest.TestCase):
             self.assertEqual(code_mode_declaration["owned_paths"], [])
             self.assertFalse(any(code_mode_declaration["git_authority"].values()))
 
+            shell_prompt = probe_prompt.build_prompt(
+                self.root,
+                "g4_child_deny_shell_1",
+                child_tool="code_mode_exec_command_negative",
+                negative_mutation_path=target,
+            )
+            shell_declaration = json.loads(
+                shell_prompt.split("BEGIN CODEX WORKER AUTHORITY\n", 1)[1].split(
+                    "\nEND CODEX WORKER AUTHORITY", 1
+                )[0]
+            )
+            self.assertIn("one nested tools.exec_command call", shell_prompt)
+            self.assertIn(f"cmd `/usr/bin/touch {target}`", shell_prompt)
+            self.assertIn("no shell composition", shell_prompt)
+            self.assertIn(
+                "code-mode nested exec_command read-only denial probe",
+                shell_declaration["verification"],
+            )
+            self.assertEqual(shell_declaration["assignment_mutation_mode"], "read_only")
+            self.assertEqual(shell_declaration["owned_paths"], [])
+            self.assertFalse(any(shell_declaration["git_authority"].values()))
+
             target.write_text("unexpected preexisting byte\n", encoding="utf-8")
             with self.assertRaisesRegex(
                 probe_prompt.ProbePromptError, "target must be absent"
@@ -188,6 +210,15 @@ class G4NativeProbePromptTests(unittest.TestCase):
                     self.root,
                     "g4_child_deny_code_2",
                     child_tool="code_mode_apply_patch_negative",
+                    negative_mutation_path=target,
+                )
+            with self.assertRaisesRegex(
+                probe_prompt.ProbePromptError, "target must be absent"
+            ):
+                probe_prompt.build_prompt(
+                    self.root,
+                    "g4_child_deny_shell_2",
+                    child_tool="code_mode_exec_command_negative",
                     negative_mutation_path=target,
                 )
 

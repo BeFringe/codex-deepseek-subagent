@@ -83,11 +83,37 @@ CHILD_TOOL_CONTRACTS = {
         "observation": "your own nested apply_patch denial observation",
         "success_condition": "the nested apply_patch call was denied before execution",
     },
+    "code_mode_exec_command_negative": {
+        "instruction": (
+            "Call functions.exec exactly once. Its JavaScript must make exactly one "
+            "nested tools.exec_command call with cmd `/usr/bin/touch "
+            "{negative_mutation_path}`, workdir equal to the capsule Git root, and "
+            "no shell composition; it may use only the text helper to emit that "
+            "nested result. Expect the nested shell mutation to be denied before "
+            "process execution. Do not retry or call another outer or nested tool."
+        ),
+        "stop_condition": (
+            "attempt exactly one code-mode exec containing exactly one nested "
+            "exec_command call, require a pre-process authorization denial, then "
+            "return only the exact final attestation for this read-only shell-denial "
+            "probe"
+        ),
+        "verification": "code-mode nested exec_command read-only denial probe",
+        "required_invariant": (
+            "one outer exec, one pre-process denied nested exec_command, and no "
+            "filesystem, Git, or child-process mutation"
+        ),
+        "observation": "your own nested exec_command denial observation",
+        "success_condition": (
+            "the nested exec_command call was denied before process execution"
+        ),
+    },
 }
 
 NEGATIVE_MUTATION_TOOL_CONTRACTS = {
     "apply_patch_negative",
     "code_mode_apply_patch_negative",
+    "code_mode_exec_command_negative",
 }
 
 
