@@ -550,6 +550,10 @@ class RuntimeGuardTests(unittest.TestCase):
 
     def test_pre_tool_use_reads_actual_head_and_blocks_unauthorized_commit(self):
         runtime_guard.pre_compact(self.store, self.child_hook("PreCompact"))
+        allowed = runtime_guard.pre_tool_use(
+            self.store, self.child_hook("PreToolUse", tool_name="view_image")
+        )
+        self.assertNotIn("permissionDecision", allowed["hookSpecificOutput"])
         (self.repository / "owned").mkdir()
         (self.repository / "owned" / "result.txt").write_text("result\n", encoding="utf-8")
         self.git("add", "owned/result.txt")
@@ -561,6 +565,20 @@ class RuntimeGuardTests(unittest.TestCase):
 
         self.assertEqual(result["hookSpecificOutput"]["permissionDecision"], "deny")
         self.assertIn("HEAD", result["hookSpecificOutput"]["permissionDecisionReason"])
+        unresolved = json.loads(
+            self.store.path("unresolved", self.capsule["assignment_id"]).read_text(
+                encoding="utf-8"
+            )
+        )
+        evidence = unresolved["termination_evidence"]
+        self.assertEqual(evidence["reason"], "authority_reattestation_mismatch")
+        self.assertEqual(evidence["classification"], "post_attestation_authority_drift")
+        self.assertEqual(
+            evidence["provenance_status"],
+            "post_attestation_authority_drift_unattributed",
+        )
+        self.assertTrue(evidence["mutation_blocked_before_execution"])
+        self.assertFalse(self.store.path("active", self.capsule["assignment_id"]).exists())
 
     def test_first_git_attestation_exact_base_mismatch_fast_stops(self):
         self.store.finalize(self.capsule["assignment_id"], {}, complete=False)
@@ -604,6 +622,27 @@ class RuntimeGuardTests(unittest.TestCase):
 
         self.assertEqual(result["hookSpecificOutput"]["permissionDecision"], "deny")
         self.assertIn("outside.txt", result["hookSpecificOutput"]["permissionDecisionReason"])
+        unresolved_path = self.store.path("unresolved", self.capsule["assignment_id"])
+        unresolved = json.loads(unresolved_path.read_text(encoding="utf-8"))
+        evidence = unresolved["termination_evidence"]
+        self.assertEqual(evidence["reason"], "authority_reattestation_mismatch")
+        self.assertEqual(evidence["classification"], "post_attestation_authority_drift")
+        self.assertEqual(
+            evidence["provenance_status"],
+            "post_attestation_authority_drift_unattributed",
+        )
+        self.assertEqual(evidence["attempted_tool_name"], "view_image")
+        self.assertTrue(evidence["mutation_blocked_before_execution"])
+        self.assertTrue(evidence["disk_changed"])
+        self.assertFalse(self.store.path("active", self.capsule["assignment_id"]).exists())
+
+        frozen = hashlib.sha256(unresolved_path.read_bytes()).hexdigest()
+        stopped = runtime_guard.subagent_stop(
+            self.store,
+            self.stop_hook("authority was terminated before the fourth tool"),
+        )
+        self.assertEqual(stopped, {})
+        self.assertEqual(hashlib.sha256(unresolved_path.read_bytes()).hexdigest(), frozen)
 
     def test_parent_recorded_intent_does_not_bypass_write_authority_gates(self):
         result = runtime_guard.pre_tool_use(

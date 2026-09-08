@@ -64,6 +64,7 @@ QUALIFICATION_WRITE_PROBE_VERIFICATION = "exact-path child apply_patch qualifica
 TERMINAL_AUTHORITY_REASONS = frozenset(
     {
         "assignment_timeout",
+        "authority_reattestation_mismatch",
         "initial_disk_baseline_mismatch",
         "initial_location_or_scope_mismatch",
         "pre_write_attestation_timeout",
@@ -597,6 +598,17 @@ def pre_tool_use(
                     observed_at=observed_at,
                 )
                 store.terminate_active(assignment_id, evidence)
+            else:
+                evidence = _termination_evidence(
+                    capsule,
+                    snapshot,
+                    reason="authority_reattestation_mismatch",
+                    observed_at=observed_at,
+                    attempted_tool_name=(
+                        tool_name if isinstance(tool_name, str) and tool_name else "<invalid>"
+                    ),
+                )
+                store.terminate_active(assignment_id, evidence)
             raise AuthorityViolation("; ".join(violations))
         store.attest_tool_use(
             assignment_id,
@@ -899,7 +911,9 @@ def _termination_evidence(
     blocking_gates: list[str] | None = None,
 ) -> dict:
     disk_changed = disk_change_from_baseline(snapshot, capsule)
-    if disk_changed is None:
+    if reason == "authority_reattestation_mismatch":
+        classification = "post_attestation_authority_drift"
+    elif disk_changed is None:
         classification = "initial_authority_mismatch"
     elif reason == "pre_write_attestation_timeout":
         classification = (
@@ -927,7 +941,9 @@ def _termination_evidence(
         classification = "write_authority_gates_missing"
     else:
         classification = "initial_authority_mismatch"
-    if classification == "late_mutation_after_interrupt":
+    if classification == "post_attestation_authority_drift":
+        provenance_status = "post_attestation_authority_drift_unattributed"
+    elif classification == "late_mutation_after_interrupt":
         provenance_status = "overlapping_assignment_provenance"
     elif classification in {
         "read_only_child_mutation_attempt",

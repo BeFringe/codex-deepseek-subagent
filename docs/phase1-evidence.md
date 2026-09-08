@@ -3202,3 +3202,77 @@ checks. The normal Phase 1 gate returned zero and its promotion-required form
 returned 2 with P5a absent from the blocker list and P5b still present.
 `phase1_complete=false`, `direct_write_qualified=false`, and Phases 2/3 remain
 closed.
+
+## Live post-compact foreign-scope denial
+
+The first successful compact/resume receipt exposed one remaining failure
+semantic: a read-only tool correctly denied root, HEAD, index, or path drift
+after the first Git attestation, but left the assignment active. Because the
+denied `PreToolUse` response carried no new final seed, that could force a
+SubagentStop correction loop until TTL. The provider-free guard now atomically
+moves this exact case to unresolved with reason
+`authority_reattestation_mismatch`, classification
+`post_attestation_authority_drift`, and provenance status
+`post_attestation_authority_drift_unattributed`. It records the attempted tool
+and exact snapshot without assigning the dirty bytes to the child. This reason
+does not authorize integration or ownership handover, and it is not treated as
+a watchdog reason requiring a second cancel.
+
+The live negative used clean disposable root
+`/private/tmp/codex-g4-postcompact-drift-20260908-fvRdKu` at branch `main` and
+full HEAD `c435f0c5cf38d2b3115d412781c2e60b91d74f90`. Real SessionMeta bound child
+`01a08102-98c0-7520-9381-5ab1b0efff7c` to canonical AgentPath
+`/root/g4_postcompact_scope_drift_1` under parent/runtime session
+`01a08101-dbc9-7c62-baef-c7b4aa309f3e`. The assignment was strict read-only,
+with empty owned and excluded paths and no Git authority.
+
+Hook sequences 1942 through 1944 mediated three successful native
+`list_agents` calls. Automatic `PreCompact` ran at sequence 1945 and atomically
+advanced the durable recovery count to one. The provider-free host injector
+then acquired the same authority-state lock, revalidated the exact active
+capsule, binding, first Git attestation, clean root, branch, full HEAD, index,
+and empty path set, and created only
+`foreign-postcompact-drift.txt`. Injection occurred at
+`12:34:03.143528Z`, strictly after PreCompact at `12:34:02.871699Z` and before
+the fourth PreToolUse at `12:34:54.200298Z`. Holding the state lock through the
+exclusive 0600 write forced the fourth tool to observe the injected path after
+the write rather than race ahead of it. The path SHA-256 is
+`2c8aa089e24dbed995b1ba51f59a93751fb82edd00e889ef40ae469d441b383d`.
+
+Sequence 1946 denied the fourth native tool before execution with the exact
+unauthorized path and moved assignment
+`5d1a68d7-fa3c-4383-947b-571806cca3ac` from active to unresolved. The
+unresolved envelope SHA-256 is
+`7516ed7328331267b81c78ac73b1c1081cb99521a9e2a012760d1a59febc9154`.
+At sequence 1947 the terminal SubagentStop accepted only the fixed marker
+`TASK.AUTHORITY_REATTESTATION_BLOCKED`; the parent callback equals that marker.
+Both candidate and injector exited zero. A delayed fresh-owner barrier found
+no candidate process, no later write, unchanged branch/HEAD/index, and only
+the intentionally injected untracked path. The Hook overlay preserved v4 and
+restored the original `hooks.json` SHA-256
+`82c8aa0bc4d739628646864578de6c078884c21413855ed3db448d4365a8668e`.
+
+The frozen receipt has SHA-256
+`3f91bb744b6438aea7354cea24290137af4062752fa812ff47956c42d88bec1a`.
+A fresh owner passed the exact compact/injection/fourth-tool ordering, host
+provenance, denial, callback, and disk barrier against that hash. The negative
+state remains unresolved with the same envelope hash before and after
+adjudication; it was not consumed as a contribution. The reusable prompt,
+state-lock injector, evidence, adjudication, and executable assertions are
+`probes/build_g4_postcompact_scope_drift_probe_prompt.py`,
+`probes/inject_g4_postcompact_scope_drift.py`,
+`probes/g4-live-postcompact-scope-drift-denial-20260908.json`,
+`probes/g4-live-postcompact-scope-drift-parent-adjudication-20260908.json`, and
+`tests/test_g4_live_postcompact_scope_drift.py`.
+
+This closes the live post-compaction scope-expansion negative for P5. A real
+process-restart resume is still missing, so P5 remains partial. P5b still lacks
+strong host mutation quiescence and ownership handover; P4 retains the other
+mutation-surface blockers; P6c, Windows, and DeepSeek regression remain open.
+Fresh verification passed all 589 provider-free tests in 59.950 seconds,
+including agent-template checks. Normal Phase 1, mutation, and same-UID checks
+returned zero; promotion-required forms returned 2. The Phase 1 status retains
+eleven partial gate blockers, the mutation matrix retains thirteen blockers,
+and same-UID rollout/state protection remains false.
+`phase1_complete=false`, `direct_write_qualified=false`, and Phases 2/3 remain
+closed.
