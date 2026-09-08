@@ -1650,13 +1650,45 @@ class StateStore:
             claimed.unlink()
             return active
 
-    def mark_recovery(self, assignment_id: str) -> int:
+    def mark_recovery(
+        self,
+        assignment_id: str,
+        identity: Mapping[str, str],
+        *,
+        root: str,
+        branch: str | None,
+        head: str,
+        observed_at: dt.datetime | None = None,
+    ) -> int:
         active = self.path("active", assignment_id)
         with self.locked():
             envelope = self._validated_envelope(active)
+            capsule = envelope["capsule"]
+            observed = observed_at or dt.datetime.now(dt.timezone.utc)
+            if observed.tzinfo is None or observed.utcoffset() is None:
+                raise AuthorityViolation("recovery attestation time must include a UTC offset")
+            if _timestamp(capsule["expires_at"], "expires_at") <= observed:
+                unresolved = self.path("unresolved", assignment_id)
+                self._publish(unresolved, envelope)
+                active.unlink()
+                raise AuthorityViolation("active authority expired before compaction")
+            self._assert_identity(capsule, identity, envelope.get("binding"))
+            expected_root = capsule["root"]
+            if pathlib.Path(root).resolve() != pathlib.Path(expected_root["path"]).resolve():
+                raise AuthorityViolation("compaction root expansion is not authorized")
+            if branch != expected_root["branch"]:
+                raise AuthorityViolation("compaction branch change is not authorized")
+            if not expected_root["allow_descendant_head"] and head != expected_root["base_commit"]:
+                raise AuthorityViolation("compaction HEAD change is not authorized")
             runtime = envelope.get("runtime")
-            if not isinstance(runtime, dict) or type(runtime.get("recovery_count")) is not int:
+            if not isinstance(runtime, dict) or set(runtime) != {
+                "recovery_count",
+                "context_lost",
+                "first_git_attested_at",
+            }:
                 raise CorruptState("active runtime metadata is invalid")
+            if type(runtime["recovery_count"]) is not int or runtime["recovery_count"] < 0:
+                raise CorruptState("active recovery_count is invalid")
             runtime["recovery_count"] += 1
             self._publish(active, envelope, replace=True)
             return runtime["recovery_count"]

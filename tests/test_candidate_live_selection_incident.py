@@ -71,6 +71,11 @@ class CandidateLiveSelectionIncidentTests(unittest.TestCase):
             hardened["forced_posture"]["guarded_write_probe_root_namespace"],
             "/private/tmp/codex-g4-write-*",
         )
+        self.assertEqual(
+            hardened["forced_posture"]["guarded_auto_compact_limit"],
+            20000,
+        )
+        self.assertEqual(hardened["forced_posture"]["caller_config_override"], "deny")
 
     def test_non_reserved_smoke_is_server_acceptance_only(self) -> None:
         smoke = self.incident["isolated_server_schema_smoke"]

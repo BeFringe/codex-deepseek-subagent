@@ -1444,8 +1444,11 @@ Hook-trust guard. It forces `g4_assignment`, read-only, never-approve, and no
 code-mode host by default. A separately guarded exact-path probe may select
 `workspace-write` only for a clean exact Git root under
 `/private/tmp/codex-g4-write-*`; this does not broaden GUI/server entry points.
+The wrapper now also rejects all caller-supplied config overrides and can inject
+only the fixed 20,000-token auto-compaction limit behind its separate stateful
+qualification guard.
 Its current SHA-256 is
-`952132bdd1fb5ea24e6042e860f7f6054e3ef0b48120bcfd268e0c1e33e02201`;
+`d9e86d3b0b247d1f1d96f20c7f87d9c4323db89067389a81d58ae4221d409d1b`;
 the incident receipt separately preserves the historical unsafe wrapper hash.
 A candidate `codex exec` no-tool smoke under the non-reserved namespace returned
 exactly `READY` through the current ChatGPT login without HTTP 400 and exited.

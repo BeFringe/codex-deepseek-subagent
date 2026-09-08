@@ -649,8 +649,23 @@ def pre_tool_use(
 
 def pre_compact(store: StateStore, hook_input: Mapping[str, object]) -> dict:
     identity = child_identity_from_hook(hook_input)
-    assignment_id, _ = store.find_active(identity)
-    store.mark_recovery(assignment_id)
+    assignment_id, envelope = store.find_active(identity)
+    capsule = envelope["capsule"]
+    _active_runtime(envelope)
+    cwd = hook_input.get("cwd")
+    if not isinstance(cwd, str):
+        raise GuardError("PreCompact has no cwd")
+    snapshot = collect_git_snapshot(cwd)
+    violations = _snapshot_authority_violations(snapshot, capsule)
+    if violations:
+        raise AuthorityViolation("; ".join(violations))
+    store.mark_recovery(
+        assignment_id,
+        identity,
+        root=snapshot["root"],
+        branch=snapshot["branch"],
+        head=snapshot["head"],
+    )
     return {}
 
 

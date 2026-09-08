@@ -216,11 +216,13 @@ qualification.
 
 `probes/codex_plaintext_candidate_wrapper.sh` is now headless-only. It rejects
 `app-server`, `app`, `remote-control`, and `mcp-server` before candidate
-execution; permits only `login status` or an `exec` carrying
-`--ephemeral --ignore-user-config --ignore-rules`; and forces the non-reserved
-`g4_assignment` namespace, read-only sandbox, never-approve policy, and disabled
-code-mode host. A first no-tool READY request proved only that the server accepts
-this non-reserved schema. It did not spawn a child or close P1.
+execution; permits only `login status` or isolated `exec`; rejects caller
+config and permission overrides; and forces the non-reserved `g4_assignment`
+namespace, read-only sandbox, never-approve policy, and disabled code-mode host.
+Stateful SessionMeta, exact temporary-root write, and fixed auto-compaction
+variants each require their own exact guard. A first no-tool READY request
+proved only that the server accepts this non-reserved schema. It did not spawn a
+child or close P1.
 
 All later candidate probes run as a headless process and must leave the official
 GUI App untouched. Freeze the official process/hash and the candidate hash before

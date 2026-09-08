@@ -39,7 +39,7 @@
   },
   "hardened_wrapper": {
     "path": "probes/codex_plaintext_candidate_wrapper.sh",
-    "sha256": "952132bdd1fb5ea24e6042e860f7f6054e3ef0b48120bcfd268e0c1e33e02201",
+    "sha256": "d9e86d3b0b247d1f1d96f20c7f87d9c4323db89067389a81d58ae4221d409d1b",
     "historical_wrapper_disabled_by_replacement": true,
     "allowed_entry_points": ["login status", "exec"],
     "required_exec_flags": ["--ignore-user-config", "--ignore-rules"],
@@ -56,6 +56,9 @@
       "guarded_write_probe_sandbox": "workspace-write",
       "guarded_write_probe_authorization": "CODEX_G4_EXACT_WRITE_PROBE_AUTHORIZED=schema1-exact-temporary-git-root",
       "guarded_write_probe_root_namespace": "/private/tmp/codex-g4-write-*",
+      "guarded_auto_compact_authorization": "CODEX_G4_AUTO_COMPACT_PROBE_AUTHORIZED=schema1-post-action-20000",
+      "guarded_auto_compact_limit": 20000,
+      "caller_config_override": "deny",
       "approval_policy": "never",
       "code_mode_host": false
     },

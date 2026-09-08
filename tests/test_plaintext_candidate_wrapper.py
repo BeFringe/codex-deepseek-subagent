@@ -233,6 +233,73 @@ class PlaintextCandidateWrapperTests(unittest.TestCase):
             arguments = arg_log.read_text(encoding="utf-8").splitlines()
             self.assertEqual(arguments[arguments.index("-s") + 1], "workspace-write")
 
+    def test_auto_compact_guard_injects_fixed_limit_into_stateful_read_only_probe(self):
+        with tempfile.TemporaryDirectory() as candidate_dir, tempfile.TemporaryDirectory(
+            prefix="codex-g4-compact-wrapper-", dir="/private/tmp"
+        ) as root_dir:
+            directory = Path(candidate_dir)
+            root = Path(root_dir).resolve()
+            candidate, digest = self._fake_candidate(directory)
+            subprocess.run(
+                ["git", "-C", str(root), "init", "-b", "main"],
+                check=True,
+                capture_output=True,
+            )
+            subprocess.run(
+                [
+                    "git", "-C", str(root), "-c", "user.name=Phase1 Probe",
+                    "-c", "user.email=phase1-probe@invalid", "commit", "--allow-empty",
+                    "-m", "initial",
+                ],
+                check=True,
+                capture_output=True,
+            )
+            arg_log = directory / "compact-args.txt"
+            environment = self._environment(candidate, digest, arg_log)
+            environment.update(
+                {
+                    "CODEX_G4_SESSIONMETA_PROBE_AUTHORIZED": "schema1-headless-stateful",
+                    "CODEX_G4_SESSIONMETA_PROBE_ROOT": str(root),
+                    "CODEX_G4_AUTO_COMPACT_PROBE_AUTHORIZED": "schema1-post-action-20000",
+                }
+            )
+            result = subprocess.run(
+                [
+                    str(WRAPPER), "exec", "--ignore-user-config", "--ignore-rules",
+                    "--dangerously-bypass-hook-trust", "--json", "-C", str(root),
+                    "Return READY.",
+                ],
+                env=environment,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            arguments = arg_log.read_text(encoding="utf-8").splitlines()
+            self.assertIn("model_auto_compact_token_limit=20000", arguments)
+            self.assertEqual(arguments[arguments.index("-s") + 1], "read-only")
+
+    def test_caller_configuration_override_is_denied_before_candidate_execution(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            directory = Path(temp_dir)
+            candidate, digest = self._fake_candidate(directory)
+            arg_log = directory / "args.txt"
+            result = subprocess.run(
+                [
+                    str(WRAPPER), "exec", "--ephemeral", "--ignore-user-config",
+                    "--ignore-rules", "-c", "features.code_mode_host=true", "Return READY.",
+                ],
+                env=self._environment(candidate, digest, arg_log),
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+
+            self.assertEqual(result.returncode, 78)
+            self.assertIn("may not override candidate configuration", result.stderr)
+            self.assertFalse(arg_log.exists())
+
     def test_login_allows_status_only(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             directory = Path(temp_dir)

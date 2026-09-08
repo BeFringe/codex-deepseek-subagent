@@ -535,6 +535,19 @@ class RuntimeGuardTests(unittest.TestCase):
         self.assertIn("recovery_count=1", allowed["hookSpecificOutput"]["additionalContext"])
         self.assertEqual(blocked["hookSpecificOutput"]["permissionDecision"], "deny")
 
+    def test_precompact_rejects_disk_scope_drift_before_epoch_increment(self):
+        (self.repository / "outside.txt").write_text("unauthorized\n", encoding="utf-8")
+
+        with self.assertRaisesRegex(
+            compatibility_state.AuthorityViolation,
+            "outside.txt",
+        ):
+            runtime_guard.pre_compact(self.store, self.child_hook("PreCompact"))
+
+        active = self.store.path("active", self.capsule["assignment_id"])
+        envelope = json.loads(active.read_text(encoding="utf-8"))
+        self.assertEqual(envelope["runtime"]["recovery_count"], 0)
+
     def test_pre_tool_use_reads_actual_head_and_blocks_unauthorized_commit(self):
         runtime_guard.pre_compact(self.store, self.child_hook("PreCompact"))
         (self.repository / "owned").mkdir()

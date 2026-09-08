@@ -1,6 +1,7 @@
 import datetime as dt
 from concurrent.futures import ThreadPoolExecutor
 import importlib.util
+import json
 from pathlib import Path
 import tempfile
 import unittest
@@ -516,12 +517,53 @@ class CompatibilityStateTests(unittest.TestCase):
         self.assertTrue(active.exists())
         self.assertFalse(self.store.path("pending", value["handoff_id"]).exists())
         self.assertFalse(self.store.path("claimed", value["handoff_id"]).exists())
-        self.assertEqual(self.store.mark_recovery(value["assignment_id"]), 1)
+        self.assertEqual(
+            self.store.mark_recovery(
+                value["assignment_id"],
+                identity(),
+                root="/workspace/repository",
+                branch="main",
+                head="a" * 64,
+            ),
+            1,
+        )
         self.assertTrue(active.exists())
+
+    def test_recovery_epoch_requires_exact_bound_identity_and_location(self):
+        value, active = self.activate()
+        wrong_identity = identity()
+        wrong_identity["child_thread_id"] = "wrong-child"
+        wrong_identity["agent_id"] = "wrong-child"
+
+        with self.assertRaises(IdentityMismatch):
+            self.store.mark_recovery(
+                value["assignment_id"],
+                wrong_identity,
+                root="/workspace/repository",
+                branch="main",
+                head="a" * 64,
+            )
+        with self.assertRaises(AuthorityViolation):
+            self.store.mark_recovery(
+                value["assignment_id"],
+                identity(),
+                root="/workspace/repository",
+                branch="main",
+                head="b" * 64,
+            )
+
+        envelope = json.loads(active.read_text(encoding="utf-8"))
+        self.assertEqual(envelope["runtime"]["recovery_count"], 0)
 
     def test_post_recovery_reattestation_blocks_path_and_git_expansion(self):
         value, _ = self.activate()
-        self.store.mark_recovery(value["assignment_id"])
+        self.store.mark_recovery(
+            value["assignment_id"],
+            identity(),
+            root="/workspace/repository",
+            branch="main",
+            head="a" * 64,
+        )
 
         self.store.attest_tool_use(
             value["assignment_id"],

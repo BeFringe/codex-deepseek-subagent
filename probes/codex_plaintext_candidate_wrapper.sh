@@ -37,6 +37,7 @@ saw_hook_trust_bypass=false
 requested_cd=
 expect_cd=false
 sandbox_mode=read-only
+auto_compact_config=
 for argument in "$@"; do
   if [ "$expect_cd" = true ]; then
     requested_cd=$argument
@@ -78,6 +79,9 @@ for argument in "$@"; do
       ;;
     --dangerously-bypass-approvals-and-sandbox|--approve-for-me|--add-dir|-s|--sandbox|-a|--ask-for-approval)
       fail "caller may not widen the probe permission posture"
+      ;;
+    -c|--config|--config=*|-c?*)
+      fail "caller may not override candidate configuration"
       ;;
   esac
 done
@@ -122,11 +126,31 @@ case "$mode" in
         ;;
       *) fail "write probe authorization guard is invalid" ;;
     esac
+    case "${CODEX_G4_AUTO_COMPACT_PROBE_AUTHORIZED-}" in
+      "") ;;
+      schema1-post-action-20000)
+        [ "$saw_ephemeral" = false ] || fail "auto-compact probe must retain SessionMeta"
+        auto_compact_config=model_auto_compact_token_limit=20000
+        ;;
+      *) fail "auto-compact probe authorization guard is invalid" ;;
+    esac
     ;;
   *)
     fail "only headless exec or login status is allowed"
     ;;
 esac
+
+if [ -n "$auto_compact_config" ]; then
+  exec "$candidate" \
+    -c 'features.multi_agent_v2.enabled=true' \
+    -c 'features.multi_agent_v2.message_delivery="plaintext"' \
+    -c 'features.multi_agent_v2.tool_namespace="g4_assignment"' \
+    -c 'features.code_mode_host=false' \
+    -c "$auto_compact_config" \
+    -a never \
+    -s "$sandbox_mode" \
+    "$@"
+fi
 
 exec "$candidate" \
   -c 'features.multi_agent_v2.enabled=true' \
