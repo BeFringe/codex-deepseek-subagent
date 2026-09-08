@@ -2,6 +2,8 @@ import hashlib
 import importlib.util
 import json
 from pathlib import Path
+import shutil
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -147,6 +149,37 @@ class PlaintextPairProbeGuardTests(unittest.TestCase):
     def test_state_directory_must_be_canonical_private_tmp_descendant(self):
         with self.assertRaisesRegex(guard.ProbeGuardError, "/private/tmp"):
             guard.validate_state_directory(ROOT / "state")
+
+    def test_hook_process_does_not_create_bytecode_beside_its_source(self):
+        runtime = Path(self.temporary.name) / "runtime"
+        runtime.mkdir()
+        shutil.copy2(SCRIPT, runtime / SCRIPT.name)
+        shutil.copy2(
+            ROOT / "hooks" / "compatibility_state.py",
+            runtime / "compatibility_state.py",
+        )
+        arguments = [
+            sys.executable,
+            str(runtime / SCRIPT.name),
+            "--state-directory",
+            str(Path(self.temporary.name) / "subprocess-state"),
+        ]
+        for operation in guard.OPERATIONS:
+            arguments.extend(
+                ["--deny-second", f"{operation}={self.configured[operation]}"]
+            )
+
+        result = subprocess.run(
+            arguments,
+            input=json.dumps(self.hook("spawn_agent", "spawn-subprocess")),
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(json.loads(result.stdout), {})
+        self.assertFalse((runtime / "__pycache__").exists())
 
 
 if __name__ == "__main__":

@@ -19,6 +19,8 @@ import re
 import sys
 from typing import Mapping
 
+sys.dont_write_bytecode = True
+
 from compatibility_state import StateError, StateStore, canonical_json, sha256_bytes
 
 
