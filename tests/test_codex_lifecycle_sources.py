@@ -36,6 +36,8 @@ class CodexLifecycleSourceTests(unittest.TestCase):
         self.assertTrue(result["sessionmeta_flush_source_verified"])
         self.assertTrue(result["canonical_agentpath_source_verified"])
         self.assertTrue(result["resume_identity_source_verified"])
+        self.assertTrue(result["internal_subagent_resume_identity_supported"])
+        self.assertFalse(result["v2_root_resume_reopens_descendants"])
         self.assertFalse(result["live_sessionmeta_identity_qualified"])
         self.assertFalse(result["termination_quiescence_qualified"])
         self.assertFalse(result["phase1_complete"])

@@ -2698,8 +2698,8 @@ The executable receipt and checks are
 `probes/g4-live-compact-resume-parent-adjudication-20260908.json`, and
 `tests/test_g4_live_compact_resume.py`. This closes one real in-process
 auto-compaction and post-compact re-attestation path and advances
-P1/P2/P3/P5/P5b/P6/P6a/P6b/P7. It does not prove process-restart resume,
-post-resume scope-expansion denial, representative P6c scale, mixed-frontier
+P1/P2/P3/P5/P5b/P6/P6a/P6b/P7. It does not prove post-compact
+scope-expansion denial, representative P6c scale, mixed-frontier
 exactness, strong global quiescence, Windows parity, or DeepSeek regression.
 Fresh verification passed all 578 provider-free tests in 59.160 seconds,
 including agent-template checks. The normal Phase 1, mutation, and same-UID
@@ -3265,10 +3265,17 @@ state-lock injector, evidence, adjudication, and executable assertions are
 `probes/g4-live-postcompact-scope-drift-parent-adjudication-20260908.json`, and
 `tests/test_g4_live_postcompact_scope_drift.py`.
 
-This closes the live post-compaction scope-expansion negative for P5. A real
-process-restart resume is still missing, so P5 remains partial. P5b still lacks
-strong host mutation quiescence and ownership handover; P4 retains the other
-mutation-surface blockers; P6c, Windows, and DeepSeek regression remain open.
+This closes the live post-compaction scope-expansion negative for P5. Together
+with the exact positive re-attestation path and the fail-closed
+no-postcompact-tool timing control, P5 is qualified against its original
+compact/resume continuity contract. Current Codex source constrains that
+boundary: the internal subagent resume entry point restores stored AgentPath
+metadata, while Multi-Agent V2 root resume deliberately does not reopen
+descendants. A public CLI process-restart child resurrection is therefore not
+an available runtime contract and is not invented as an additional P5 gate.
+P5b still lacks strong host mutation quiescence and ownership handover; P4
+retains the other mutation-surface blockers; P6c, Windows, and DeepSeek
+regression remain open.
 Fresh verification passed all 589 provider-free tests in 59.950 seconds,
 including agent-template checks. Normal Phase 1, mutation, and same-UID checks
 returned zero; promotion-required forms returned 2. The Phase 1 status retains

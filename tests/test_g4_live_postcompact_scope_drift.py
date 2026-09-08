@@ -135,7 +135,7 @@ class G4LivePostcompactScopeDriftTests(unittest.TestCase):
         self.assertFalse(verification["same_uid_rollout_protected"])
         self.assertFalse(verification["same_uid_state_protected"])
 
-    def test_p5_advances_but_process_restart_and_phase1_stay_open(self):
+    def test_p5_qualifies_without_inventing_process_restart_child_resume(self):
         verdict = self.receipt["verdict"]
         gates = {gate["id"]: gate for gate in self.status["phase1"]["gates"]}
         receipt_path = "probes/g4-live-postcompact-scope-drift-denial-20260908.json"
@@ -149,6 +149,8 @@ class G4LivePostcompactScopeDriftTests(unittest.TestCase):
         self.assertTrue(verdict["postcompact_scope_expansion_negative_live_qualified"])
         self.assertFalse(verdict["process_restart_resume_qualified"])
         self.assertFalse(verdict["strong_global_quiescence_qualified"])
+        self.assertEqual(gates["P5"]["state"], "qualified")
+        self.assertEqual(gates["P5"]["provider_free"], "pass")
         self.assertFalse(verdict["phase1_complete"])
         self.assertFalse(verdict["direct_write_qualified"])
         self.assertFalse(self.status["phase1"]["declared_complete"])

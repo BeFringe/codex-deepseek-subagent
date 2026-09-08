@@ -58,6 +58,16 @@
       "id": "resume_preserves_agentpath_contract_test",
       "path": "codex-rs/core/src/agent/control_tests.rs",
       "contains": "assert_eq!(resumed_agent_path, Some(agent_path));"
+    },
+    {
+      "id": "internal_subagent_resume_restores_stored_metadata_test",
+      "path": "codex-rs/core/src/agent/control_tests.rs",
+      "contains": "async fn resume_thread_subagent_restores_stored_metadata()"
+    },
+    {
+      "id": "v2_root_resume_does_not_reopen_descendants_test",
+      "path": "codex-rs/core/src/agent/control_tests.rs",
+      "contains": "assert_thread_not_loaded(&resumed_manager, worker_thread_id).await;"
     }
   ],
   "verdict": {
@@ -65,10 +75,12 @@
     "sessionmeta_flush_source_verified": true,
     "canonical_agentpath_source_verified": true,
     "resume_identity_source_verified": true,
+    "internal_subagent_resume_identity_supported": true,
+    "v2_root_resume_reopens_descendants": false,
     "live_sessionmeta_identity_qualified": false,
     "termination_quiescence_qualified": false,
     "phase1_complete": false,
     "direct_write_qualified": false,
-    "blocker": "Source establishes the current schema, canonical path construction, ordered SessionMeta write/flush, and resume preservation contract. It does not prove that a live root, nested, serial, or concurrent cohort emitted exact durable identities, callbacks, or strong post-termination quiescence."
+    "blocker": "Historical source establishes the schema, canonical path construction, ordered SessionMeta write/flush, and exact metadata restoration only for the internal subagent resume entry point. Multi-Agent V2 root resume deliberately does not reopen descendants. Historical source evidence cannot replace current live identity, callback, mutation, or strong post-termination quiescence receipts."
   }
 }

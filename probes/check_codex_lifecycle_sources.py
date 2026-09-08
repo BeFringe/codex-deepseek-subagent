@@ -33,12 +33,16 @@ REQUIRED_ANCHORS = {
     "nested_requested_name_contract_test",
     "sessionmeta_precedes_pending_and_flush",
     "resume_preserves_agentpath_contract_test",
+    "internal_subagent_resume_restores_stored_metadata_test",
+    "v2_root_resume_does_not_reopen_descendants_test",
 }
 REQUIRED_VERDICT = {
     "hook_schema_source_verified": True,
     "sessionmeta_flush_source_verified": True,
     "canonical_agentpath_source_verified": True,
     "resume_identity_source_verified": True,
+    "internal_subagent_resume_identity_supported": True,
+    "v2_root_resume_reopens_descendants": False,
     "live_sessionmeta_identity_qualified": False,
     "termination_quiescence_qualified": False,
     "phase1_complete": False,
