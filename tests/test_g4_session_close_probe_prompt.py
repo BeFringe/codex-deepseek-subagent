@@ -76,20 +76,23 @@ class G4SessionCloseProbePromptTests(unittest.TestCase):
         self.assertEqual(len(matches), 1)
         return json.loads(matches[0])
 
-    def test_prompt_orders_watchdog_close_and_post_close_observation(self):
+    def test_prompt_orders_native_wait_close_and_post_close_observation(self):
         prompt = self.build()
         spawn = prompt.index("g4_assignment.spawn_agent tool exactly once")
-        watchdog = prompt.index("authority_watchdog.py")
+        wait = prompt.index("g4_assignment.wait_agent tool exactly once")
         close = prompt.index("g4_assignment.close_agent tool exactly once")
         listing = prompt.index("g4_assignment.list_agents tool exactly once")
 
-        self.assertLess(spawn, watchdog)
-        self.assertLess(watchdog, close)
+        self.assertLess(spawn, wait)
+        self.assertLess(wait, close)
         self.assertLess(close, listing)
+        self.assertIn("timeoutMs=5000", prompt)
         self.assertIn("session_loop_terminated=true", prompt)
         self.assertIn("process_tree_quiescence_claimed=false", prompt)
         self.assertIn("not filesystem or detached-process quiescence proof", prompt)
         self.assertIn("Do not infer mutation quiescence", prompt)
+        self.assertIn("do not run a watchdog", prompt)
+        self.assertNotIn("exec_command exactly once", prompt)
         self.assertNotIn("API_KEY", prompt)
 
     def test_capsule_is_short_lived_read_only_and_exactly_bound(self):
@@ -108,7 +111,7 @@ class G4SessionCloseProbePromptTests(unittest.TestCase):
         self.assertIn("without calling tools", declaration["stop_condition"])
         self.assertIn(f"task_name={task_name}", prompt)
         self.assertIn(f"target=/root/{task_name}", prompt)
-        self.assertIn("--assignment-id <the exact staged assignment_id>", prompt)
+        self.assertIn("expose the staged assignment_id", prompt)
         self.assertIn("WAITING_FOR_PARENT_CLOSE", prompt)
 
     def test_invalid_task_and_dirty_root_fail_closed(self):
