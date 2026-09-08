@@ -176,10 +176,12 @@
           "tests/test_g4_live_first_attestation_watchdog_cancel_race.py",
           "probes/g4-live-first-attestation-watchdog-cancel-ack-20260908.json",
           "tests/test_g4_live_first_attestation_watchdog_cancel_ack.py",
+          "probes/g4-live-session-close-20260908.json",
+          "tests/test_g4_live_session_close.py",
           "hooks/runtime_guard.py",
           "tests/test_runtime_guard.py"
         ],
-        "blocker": "a current-runtime inherited-OpenAI assignment and a separate external-ZHIPU child both traverse pending, claimed, active, reported, and consumed with exact keyed identity. The provider-free serial pair separately traverses spawn, SubagentStart, native tool use, SubagentStop, terminal callback, then next spawn; both records reach reported and then fresh-owner consumed state under one exact evidence hash. The first concurrent attempt stopped at active after parent-exit interruption without SubagentStop; an exact TTL watchdog moved that stale identity fail closed to unresolved and left the drifted Git baseline unattributed. The no-event first-attestation timeout now adds an exact running-child native interrupt acknowledgement while correctly retaining unresolved authority. The next concurrent pair traverses two spawn, two SubagentStart, two native tool calls, repeated mediated SubagentStop attempts, two accepted reports, and two parent waits while execution overlaps; both durable records now reach fresh-owner consumed state under one exact evidence hash. Strong termination/quiescence, fully qualified orphan reconciliation, durable resume, and cohort replay remain missing"
+        "blocker": "a current-runtime inherited-OpenAI assignment and a separate external-ZHIPU child both traverse pending, claimed, active, reported, and consumed with exact keyed identity. The provider-free serial pair separately traverses spawn, SubagentStart, native tool use, SubagentStop, terminal callback, then next spawn; both records reach reported and then fresh-owner consumed state under one exact evidence hash. The first concurrent attempt stopped at active after parent-exit interruption without SubagentStop; an exact TTL watchdog moved that stale identity fail closed to unresolved and left the drifted Git baseline unattributed. The no-event first-attestation timeout adds an exact running-child native interrupt acknowledgement while correctly retaining unresolved authority. A separate current-source V2 close probe now joins requested task name, canonical AgentPath, real SessionMeta ThreadId, Hook events, exact close target, and post-close live-tree absence for a still-running child; the host waited for its session loop and returned process_tree_quiescence_claimed=false. The concurrent pair traverses two spawn, two SubagentStart, two native tool calls, repeated mediated SubagentStop attempts, two accepted reports, and two parent waits while execution overlaps; both durable records reach fresh-owner consumed state under one exact evidence hash. Strong mutation/process-tree quiescence, fully qualified orphan reconciliation, durable resume, and cohort replay remain missing"
       },
       {
         "id": "P4",
@@ -292,9 +294,14 @@
           "probes/g4-live-concurrent-orphan-watchdog-recovery-20260908.json",
           "tests/test_g4_live_concurrent_orphan_watchdog_recovery.py",
           "probes/g4-live-first-attestation-watchdog-cancel-ack-20260908.json",
-          "tests/test_g4_live_first_attestation_watchdog_cancel_ack.py"
+          "tests/test_g4_live_first_attestation_watchdog_cancel_ack.py",
+          "probes/current-signed-runtime-session-close-source-candidate.json",
+          "probes/current-signed-runtime-session-close-source-candidate.patch",
+          "tests/test_current_session_close_source_candidate.py",
+          "probes/g4-live-session-close-20260908.json",
+          "tests/test_g4_live_session_close.py"
         ],
-        "blocker": "current-runtime read-only OpenAI and external-ZHIPU children have per-target clean disk barriers and fresh consumed-state transitions. Parent-only non-Git apply_patch has an exact successful claim/callback/release receipt; child apply_patch and Bash denials plus the one-shot Seatbelt probe exercise blocked paths. Serial and concurrent samples add ordered and overlapping callbacks, while the parent-exit orphan proves callback absence remains possible. The no-event first-attestation path now holds the timeout-terminal final until native interrupt observes running and a later exact list observes interrupted, but its authority correctly remains unresolved: interrupt acknowledgement is not a strong host termination, mutation-quiescence, or ownership-handover receipt. Failed apply_patch can still omit PostToolUse and require exact unchanged-snapshot recovery. Child/parent/sibling all-surface writer serialization and strong global quiescence across success, cancel, crash, and late-write space remain missing. The App Server host-control negative additionally proves server exit is not a process-tree barrier"
+        "blocker": "current-runtime read-only OpenAI and external-ZHIPU children have per-target clean disk barriers and fresh consumed-state transitions. Parent-only non-Git apply_patch has an exact successful claim/callback/release receipt; child apply_patch and Bash denials plus the one-shot Seatbelt probe exercise blocked paths. Serial and concurrent samples add ordered and overlapping callbacks, while the parent-exit orphan proves callback absence remains possible. The no-event first-attestation path holds the timeout-terminal final until native interrupt observes running and a later exact list observes interrupted. The current-source V2 close probe advances one layer: it resolves a still-running child by exact ThreadId/AgentPath, waits for target and live-descendant session loops, returns session_loop_terminated=true, and then observes the child absent from the live tree. Its truthful process_tree_quiescence_claimed=false and unresolved authority keep P5b partial. Tracked process confirmed-exit joins, detached/untracked descendants, closed all-surface mutation mediation, zero target writer claims, exact Hook/state reconciliation, and before/mid/after late-write handover races remain unproved. Failed apply_patch can still omit PostToolUse and require exact unchanged-snapshot recovery. The App Server host-control negative also proves server exit alone is not a process-tree barrier"
       },
       {
         "id": "P6",
@@ -521,6 +528,10 @@
           "tests/test_g4_live_first_attestation_watchdog_cancel_race.py",
           "probes/g4-live-first-attestation-watchdog-cancel-ack-20260908.json",
           "tests/test_g4_live_first_attestation_watchdog_cancel_ack.py",
+          "probes/current-signed-runtime-session-close-source-candidate.json",
+          "tests/test_current_session_close_source_candidate.py",
+          "probes/g4-live-session-close-20260908.json",
+          "tests/test_g4_live_session_close.py",
           "probes/g4-live-concurrent-identity-20260908.json",
           "tests/test_g4_live_concurrent_identity.py"
         ]

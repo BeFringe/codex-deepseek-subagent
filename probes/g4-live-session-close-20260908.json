@@ -1,0 +1,264 @@
+{
+  "schema": 1,
+  "classification": "live_native_v2_host_session_close_receipt",
+  "observed_date": "2026-09-08",
+  "runtime": {
+    "semantic_role": "current_isolated_plaintext_session_close_candidate",
+    "codex_cli_version": "0.153.4",
+    "source_commit": "3d2ee51ca2d5db578f328aa75e20aa22c0197c9a",
+    "candidate_path": "/private/tmp/codex-current-plaintext.aTU9C2/candidate-session-close/codex",
+    "candidate_sha256": "c60e3ffb16e7bdfe662d66cc5d7aff91fb62244c92fc86fe98f41a958a63a633",
+    "source_receipt": "probes/current-signed-runtime-session-close-source-candidate.json",
+    "source_patch": "probes/current-signed-runtime-session-close-source-candidate.patch",
+    "gui_app_server_selected": false,
+    "live_config_modified": false,
+    "credential_value_observed": false,
+    "parent_model_provider": "openai",
+    "child_model_provider": "openai",
+    "sandbox": "workspace-write",
+    "approval_policy": "never",
+    "message_delivery": "plaintext",
+    "tool_namespace": "g4_assignment"
+  },
+  "hook_preflight": {
+    "hooks_json_sha256": "82c8aa0bc4d739628646864578de6c078884c21413855ed3db448d4365a8668e",
+    "compatibility_hook_sha256": "e363fba8952bf7679e2450d97d201a14f6d9c6e52bb7809922cceff31916a476",
+    "runtime_guard_sha256": "fceff5adbac470c0b42e0aed788ae223b3552a084b4595b6e3fcc5cd8a4e7c14",
+    "new_hook_trust_prompt_observed": false,
+    "user_approval_prompt_observed": false
+  },
+  "repository": {
+    "root": "/Users/pearly/文档/CAT/codex-deepseek-subagent",
+    "branch": "main",
+    "head": "9f7a60411efda86f5a0954180e524ccb0eed69f2",
+    "tree": "f556d66f352ba21a3fd8fd8ca682cda4805934a3",
+    "status_at_spawn": "clean",
+    "status_at_close": "clean",
+    "status_at_post_close_observation": "clean"
+  },
+  "preflight_attempts": [
+    {
+      "task_name": "g4_session_close_1",
+      "parent_thread_id": "01a08028-e639-7673-9962-6b43dcd55c60",
+      "child_thread_id": "01a08029-d586-7590-a093-82675a85d615",
+      "assignment_id": "66134d2e-83a4-45b9-8922-00dd6caa1ee2",
+      "result": "stopped_before_close",
+      "blocker": "debug candidate package omitted codex-code-mode-host while the initial prompt requested exec_command",
+      "parent_rollout_path": "/Users/pearly/.codex/sessions/2026/09/08/rollout-2026-09-08T16-35-59-01a08028-e639-7673-9962-6b43dcd55c60.jsonl",
+      "parent_rollout_sha256": "e5b42fdfaa693a00ebf428deb35bb1eb7145e7415ca7802af13ad02fb5e4c931",
+      "child_rollout_path": "/Users/pearly/.codex/sessions/2026/09/08/rollout-2026-09-08T16-37-00-01a08029-d586-7590-a093-82675a85d615.jsonl",
+      "child_rollout_sha256": "9241d1c4b7384e9864547f632509ec2eaad0625b69c5a28086e31b0053983c16",
+      "authority_resolution": "exact watchdog transition to unresolved",
+      "disk_changed": false,
+      "close_receipt_claimed": false
+    },
+    {
+      "task_name": "g4_session_close_2",
+      "parent_thread_id": "01a0802c-4310-74a2-aadf-b75f81823ac3",
+      "child_thread_id": "01a0802c-c176-7283-9765-def5c9ad4f45",
+      "assignment_id": "944d7d43-fd74-4cdc-a125-51b32c830e54",
+      "result": "stopped_before_close",
+      "blocker": "disabling code mode still left the requested exec_command routed through the disabled code-mode host",
+      "parent_rollout_path": "/Users/pearly/.codex/sessions/2026/09/08/rollout-2026-09-08T16-39-39-01a0802c-4310-74a2-aadf-b75f81823ac3.jsonl",
+      "parent_rollout_sha256": "56713a962a963db19e64c73b5a307100e83b506a091584b71802ff832f2864d4",
+      "child_rollout_path": "/Users/pearly/.codex/sessions/2026/09/08/rollout-2026-09-08T16-40-11-01a0802c-c176-7283-9765-def5c9ad4f45.jsonl",
+      "child_rollout_sha256": "d4528ce14ded651ec765cf7b8ce4f3a4317e4f6d62df9a08c2d9db71deb0c806",
+      "authority_resolution": "exact watchdog transition to unresolved",
+      "disk_changed": false,
+      "close_receipt_claimed": false
+    },
+    {
+      "task_name": "g4_session_close_3",
+      "parent_thread_id": "01a0802f-fa29-71d0-9e7b-119ff3d0449d",
+      "result": "stopped_before_spawn",
+      "blocker": "prompt used the desktop-facing targets/timeoutMs wait schema while current-source V2 mailbox wait accepts timeout_ms only",
+      "parent_rollout_path": "/Users/pearly/.codex/sessions/2026/09/08/rollout-2026-09-08T16-43-43-01a0802f-fa29-71d0-9e7b-119ff3d0449d.jsonl",
+      "parent_rollout_sha256": "2577ff3b17f43f89187aa59d0a8a637e074d1663ee879bb60851a36a1dd4fc87",
+      "assignment_staged": false,
+      "close_receipt_claimed": false
+    }
+  ],
+  "parent": {
+    "thread_id": "01a08031-7008-7e80-ba0b-7e66d8955760",
+    "turn_id": "01a08031-70a6-7132-a5d7-28235a720f78",
+    "runtime_session_id": "01a08031-7008-7e80-ba0b-7e66d8955760",
+    "canonical_agent_path": "/root",
+    "model": "gpt-5.6-sol",
+    "model_provider": "openai",
+    "reasoning_effort": "high",
+    "multi_agent_version": "v2",
+    "rollout_path": "/Users/pearly/.codex/sessions/2026/09/08/rollout-2026-09-08T16-45-18-01a08031-7008-7e80-ba0b-7e66d8955760.jsonl",
+    "rollout_sha256": "76f816e9812cc0d18a043156ef85f6b9194d16f7d9e3b43fa5104df531228d34",
+    "rollout_line_count": 49,
+    "task_started_at": "2026-09-08T08:45:18.943Z",
+    "task_complete_at": "2026-09-08T08:46:35.891Z",
+    "duration_ms": 76995,
+    "candidate_exit_code": 0
+  },
+  "transport": {
+    "spawn_tool_use_id": "call_CNy5qbCln5mNyKdtpIGvmcAc",
+    "spawn_called_at": "2026-09-08T08:45:51.644Z",
+    "spawn_pretool_observed_at": "2026-09-08T08:45:51.722330+00:00",
+    "spawn_output_at": "2026-09-08T08:45:52.147Z",
+    "spawn_projection": {
+      "task_name": "/root/g4_session_close_4"
+    },
+    "requested_task_name": "g4_session_close_4",
+    "canonical_agent_path": "/root/g4_session_close_4",
+    "authority_begin_count": 1,
+    "authority_end_count": 1
+  },
+  "child": {
+    "thread_id": "01a08031-f21e-7b72-9327-a4ca826addf2",
+    "turn_id": "01a08031-f28f-7ed0-9d1b-15640db089a6",
+    "parent_thread_id": "01a08031-7008-7e80-ba0b-7e66d8955760",
+    "runtime_session_id": "01a08031-7008-7e80-ba0b-7e66d8955760",
+    "canonical_agent_path": "/root/g4_session_close_4",
+    "agent_type": "g4_qualification_probe_worker",
+    "model": "gpt-5.6-sol",
+    "model_provider": "openai",
+    "rollout_path": "/Users/pearly/.codex/sessions/2026/09/08/rollout-2026-09-08T16-45-52-01a08031-f21e-7b72-9327-a4ca826addf2.jsonl",
+    "rollout_sha256": "118767b0e9b83635cf5e7fb89df609a482243aadf9a946fa5c945d43c514c163",
+    "rollout_line_count": 38,
+    "session_meta_at": "2026-09-08T08:45:52.192Z",
+    "subagent_start_at": "2026-09-08T08:45:57.234639+00:00",
+    "assistant_waiting_final_attempts": [
+      "2026-09-08T08:45:59.680Z",
+      "2026-09-08T08:46:05.781Z",
+      "2026-09-08T08:46:11.003Z"
+    ],
+    "subagent_stop_block_count": 3,
+    "native_tool_call_count": 0,
+    "accepted_final_observed": false,
+    "task_complete_observed": false,
+    "turn_aborted_at": "2026-09-08T08:46:15.347Z",
+    "turn_aborted_reason": "interrupted"
+  },
+  "native_wait": {
+    "tool_use_id": "call_fgln6KQHhK49NVILpD9NyKKI",
+    "called_at": "2026-09-08T08:46:01.442Z",
+    "arguments": {
+      "timeout_ms": 5000
+    },
+    "returned_at": "2026-09-08T08:46:11.525Z",
+    "runtime_clamped_timeout_ms": 10000,
+    "timed_out": true
+  },
+  "host_session_close_receipt": {
+    "tool_use_id": "call_Yof9J6sfe8kVvV7LVSlg1hIN",
+    "called_at": "2026-09-08T08:46:15.252Z",
+    "returned_at": "2026-09-08T08:46:15.602Z",
+    "target": "/root/g4_session_close_4",
+    "previous_status": "running",
+    "target_thread_id": "01a08031-f21e-7b72-9327-a4ca826addf2",
+    "target_agent_path": "/root/g4_session_close_4",
+    "session_loop_terminated": true,
+    "process_tree_quiescence_claimed": false,
+    "mutation_quiescence_claimed": false,
+    "child_turn_aborted_before_receipt_ms": 255,
+    "source_primitive": "AgentControl.close_agent -> shutdown_agent_tree -> Op::Shutdown -> wait_until_terminated"
+  },
+  "post_close_host_observation": {
+    "tool_use_id": "call_F7xcDTh73oC4XBuL2mFya6Wg",
+    "called_at": "2026-09-08T08:46:19.370Z",
+    "returned_at": "2026-09-08T08:46:19.948Z",
+    "agents": [
+      {
+        "agent_name": "/root",
+        "agent_status": "running"
+      }
+    ],
+    "target_absent_from_live_tree": true,
+    "candidate_process_absent_after_parent_exit": true
+  },
+  "authority": {
+    "assignment_id": "edc79ae9-6fca-46db-a4e2-de27fe1e0e72",
+    "handoff_id": "ac57cbbc-eb47-447c-86d6-74993ad70b0a",
+    "assignment_sha256": "0ca5649f154a0747f3ae6b723519ad4f90d3566d05e928e9b50d2e72535a40f9",
+    "capsule_sha256": "f4fa3ef7da0068f72de846eb4aa30c4c0b59816684fb8381a6570eb6cca93600",
+    "capture_snapshot_sha256": "a5d00bb783c9f7276eee65a893425ffd86b01ab2e7b3f57645235e337143f489",
+    "created_at": "2026-09-08T08:45:51.917201+00:00",
+    "pre_write_attestation_deadline": "2026-09-08T08:45:52.917201+00:00",
+    "expires_at": "2026-09-08T08:47:51.917201+00:00",
+    "assignment_mutation_mode": "read_only",
+    "owned_paths": [],
+    "state_after_outer_owner_reconciliation": "unresolved",
+    "unresolved_state_path": "/Users/pearly/.codex/state/codex-deepseek-subagent-g4/unresolved/edc79ae9-6fca-46db-a4e2-de27fe1e0e72.json",
+    "unresolved_state_sha256": "4f268b9e877a31eb2f1bf2891745fcc9446be8fdd9b90635c2c83030a12900b6",
+    "termination_classification": "host_session_terminated_mutation_quiescence_unproven",
+    "quiescence_barrier_written": false,
+    "ownership_handover_authorized": false
+  },
+  "hook_event_chain_snapshot": {
+    "path": "/Users/pearly/.codex/state/codex-deepseek-subagent-g4/hook_event_chain/current.json",
+    "snapshot_sha256": "c1e3e1bb637641dc722ad5c72d5d569b10ec4f56d2ac7c593426efd5771c58b0",
+    "event_count": 1638,
+    "chain_sha256": "d02976d4381dda1ce6911827290d952545ce7979dc1cba61661944564b167258",
+    "head_receipt_sha256": "1e9a8ccd1c25517888972e3b5ea81af1becc8a3ea2fac464d1172b02e2cd10cb",
+    "target_events": [
+      {
+        "sequence": 1634,
+        "hook_event_name": "PreToolUse",
+        "scope": "target_spawn",
+        "tool_use_id": "call_CNy5qbCln5mNyKdtpIGvmcAc"
+      },
+      {
+        "sequence": 1635,
+        "hook_event_name": "SubagentStart",
+        "scope": "target_child",
+        "receipt_sha256": "50cbf8242b131dc97df0073ef2b2bd4e1c762800ae036b16212cc5924bf4a130"
+      },
+      {
+        "sequence": 1636,
+        "hook_event_name": "SubagentStop",
+        "scope": "target_child",
+        "receipt_sha256": "e78d9dbfb921f277a57c64e583939b9931a30b411f05f987f05d55071aa6d957"
+      },
+      {
+        "sequence": 1637,
+        "hook_event_name": "SubagentStop",
+        "scope": "target_child",
+        "receipt_sha256": "fb8166ec061625333b909a874e5e3812bf5c2bca9febf85ad3e1ebc960b748c9"
+      },
+      {
+        "sequence": 1638,
+        "hook_event_name": "SubagentStop",
+        "scope": "target_child",
+        "receipt_sha256": "1e9a8ccd1c25517888972e3b5ea81af1becc8a3ea2fac464d1172b02e2cd10cb"
+      }
+    ],
+    "raw_payload_stored": false
+  },
+  "post_close_disk_barrier": {
+    "observed_at": "2026-09-08T08:50:25.182140+00:00",
+    "root": "/Users/pearly/文档/CAT/codex-deepseek-subagent",
+    "branch": "main",
+    "head": "9f7a60411efda86f5a0954180e524ccb0eed69f2",
+    "index_changed": false,
+    "git_status_short": "",
+    "changed_paths": [],
+    "baseline_comparable": true,
+    "disk_changed": false,
+    "strong_mutation_quiescence_claimed": false
+  },
+  "source_boundary": {
+    "shutdown_waits_for_target_and_live_descendant_session_loops": true,
+    "tracked_unified_exec_termination_is_confirmed_exit_barrier": false,
+    "detached_or_untracked_descendants_covered": false,
+    "closed_mutation_surface_proven_live": false,
+    "zero_inflight_writer_claims_for_target_proven": false,
+    "strong_mutation_quiescence_receipt_available": false
+  },
+  "verdict": {
+    "native_host_session_termination_primitive_qualified": true,
+    "exact_running_child_identity_join_qualified": true,
+    "post_close_non_live_observation_qualified": true,
+    "p5b_strong_termination_mutation_quiescence_qualified": false,
+    "ownership_handover_qualified": false,
+    "phase1_complete": false,
+    "direct_write_qualified": false,
+    "phase2_state": "closed",
+    "phase3_state": "closed",
+    "next_required_proof": "Combine this host session-close receipt with a live closed mutation-surface catalog, zero target writer claims, exact Hook-state reconciliation, and a fresh post-close disk barrier; then exercise before/mid/after late-write and overlapping re-spawn races."
+  }
+}

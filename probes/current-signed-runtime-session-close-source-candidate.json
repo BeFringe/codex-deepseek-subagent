@@ -84,7 +84,10 @@
     "default_rust_test_stack_observation": "The first selected unit run aborted with a test-thread stack overflow. The unchanged binary passed with RUST_MIN_STACK=16777216; this record does not present the default-stack run as a functional pass."
   },
   "live_probe": {
-    "state": "pending",
+    "state": "native_session_close_observed",
+    "evidence": "probes/g4-live-session-close-20260908.json",
+    "native_host_session_termination_primitive_qualified": true,
+    "strong_mutation_quiescence_qualified": false,
     "phase1_complete": false,
     "direct_write_qualified": false
   }

@@ -72,7 +72,9 @@ class CurrentSessionCloseSourceCandidateTests(unittest.TestCase):
         self.assertEqual(source["semantic_runtime_version"], "codex-cli 0.153.4")
         self.assertFalse(candidate["selected_as_gui_app_server"])
         self.assertFalse(candidate["installed_live"])
-        self.assertEqual(live["state"], "pending")
+        self.assertEqual(live["state"], "native_session_close_observed")
+        self.assertTrue(live["native_host_session_termination_primitive_qualified"])
+        self.assertFalse(live["strong_mutation_quiescence_qualified"])
         self.assertFalse(live["phase1_complete"])
         self.assertFalse(live["direct_write_qualified"])
 

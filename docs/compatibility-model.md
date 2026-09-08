@@ -454,6 +454,22 @@ path 的 before/after identity 完全相同。该 abort 不能记为 PostToolUse
 PTY、outer executor、MCP 或其他 mutation source 已静默。interrupt ack 不能单独作为
 mutation quiescence，也不能授权立即把相同 owned paths 交给新 child。
 
+当前源码 candidate 为 Multi-Agent V2 单独暴露 `close_agent`，而不改变
+`interrupt_agent` 的既有语义。它按 exact ThreadId 或 canonical AgentPath 解析 target，调用
+`AgentControl.close_agent -> shutdown_agent_tree -> Op::Shutdown -> wait_until_terminated`，并只在
+target 及其仍 live 的 descendant session loop 均终止后返回
+`session_loop_terminated=true`。返回同时固定
+`process_tree_quiescence_claimed=false`：tracked unified-exec 的 termination 是 kill request，当前
+实现没有逐进程 confirmed-exit join，且 detached/untracked descendant 不在 session-tree 证明域内。
+因此 native session close 是强于 interrupt ack、弱于 mutation quiescence 的独立 host primitive。
+
+把该 primitive 升为 P5b handover receipt 还必须证明：本次 assignment 的 mutation-surface catalog
+闭合，所有不允许的 process/bootstrap surface 均未启动，target 的 in-flight writer claim 为零，
+Hook/state event 已按 exact ThreadId/tool-use identity 对账，而且在 close 返回后重新采集的
+root/branch/full HEAD/index/status/path hashes 与冻结 frontier 一致。任一项缺失时只可记录
+`host_session_terminated_mutation_quiescence_unproven`，不得创建 quiescence barrier 或释放
+overlapping ownership。
+
 mutation-capable assignment 从 pending/claimed/active 到 reported/unresolved 期间，其
 `owned_paths` 必须处于包含 parent 与所有 sibling child 的 single-writer 域。parent 在已交给
 active child 的相同或父子重叠路径上调用 `apply_patch`、shell 或其他写工具，是竞争 ownership

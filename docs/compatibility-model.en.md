@@ -335,6 +335,27 @@ prove that the child process, existing PTY, outer executor, MCP call, or every
 other mutation source is quiescent. An interrupt acknowledgement alone cannot
 authorize immediate reassignment of the same owned paths.
 
+The current-source candidate exposes `close_agent` separately for Multi-Agent
+V2 without changing `interrupt_agent` semantics. It resolves an exact ThreadId
+or canonical AgentPath, calls
+`AgentControl.close_agent -> shutdown_agent_tree -> Op::Shutdown -> wait_until_terminated`,
+and returns `session_loop_terminated=true` only after the target and its still-
+live descendant session loops have terminated. The result also fixes
+`process_tree_quiescence_claimed=false`: termination of tracked unified-exec
+entries is a kill request without a per-process confirmed-exit join, and
+detached or untracked descendants are outside the session-tree proof domain.
+Native session close is therefore a distinct host primitive stronger than an
+interrupt acknowledgement and weaker than mutation quiescence.
+
+Promotion of that primitive into a P5b handover receipt additionally requires
+a closed mutation-surface catalog for the assignment, proof that every
+disallowed process/bootstrap surface never started, zero in-flight writer
+claims for the target, exact Hook/state reconciliation by ThreadId and tool-use
+identity, and a fresh post-close root/branch/full-HEAD/index/status/path-hash
+snapshot equal to the frozen frontier. If any component is missing, the only
+valid record is `host_session_terminated_mutation_quiescence_unproven`; it must
+not create a quiescence barrier or release overlapping ownership.
+
 While a mutation-capable assignment is pending, claimed, active, reported, or
 unresolved, its `owned_paths` must be in one single-writer domain that includes
 the parent and every sibling child. A parent `apply_patch`, shell command, or

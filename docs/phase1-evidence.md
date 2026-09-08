@@ -2604,6 +2604,66 @@ P6c cost/latency, candidate exit-code gap, or strong global quiescence.
 `phase1_complete=false`, `direct_write_qualified=false`, and Phases 2/3 remain
 closed.
 
+## Live native V2 session-close boundary
+
+An isolated current-source candidate at OpenAI Codex commit
+`3d2ee51ca2d5db578f328aa75e20aa22c0197c9a` adds a V2 `close_agent` tool without
+changing `interrupt_agent`. Its exact native path is
+`AgentControl.close_agent -> shutdown_agent_tree -> Op::Shutdown ->
+wait_until_terminated`. Focused Rust verification proved that the target and a
+live nested descendant both receive shutdown and disappear from the agent
+control plane. The first run on the default Rust test-thread stack aborted with
+a stack overflow; the unchanged test passed with `RUST_MIN_STACK=16777216`.
+That environmental retry is recorded rather than presented as a default-stack
+pass.
+
+Three live preflights stopped fail closed before producing a close receipt: the
+first debug package omitted the optional code-mode companion requested by the
+prompt, the second showed that a disabled code-mode host still cannot execute a
+requested `exec_command`, and the third used the desktop-facing wait schema
+instead of the current-source V2 `timeout_ms` schema. Their rollouts, exact
+identities, authority disposition, and unchanged disk observations are retained
+in the minimized evidence. The successful fourth probe removed those unrelated
+dependencies and used only native multi-agent tools.
+
+At clean main HEAD `9f7a60411efda86f5a0954180e524ccb0eed69f2`, native OpenAI parent
+`01a08031-7008-7e80-ba0b-7e66d8955760` spawned read-only child
+`01a08031-f21e-7b72-9327-a4ca826addf2` as
+`/root/g4_session_close_4`. PreToolUse staged assignment
+`edc79ae9-6fca-46db-a4e2-de27fe1e0e72`; real child SessionMeta, SubagentStart,
+and the requested-task-name projection all joined to the same exact ThreadId
+and canonical AgentPath. The child made zero tool calls and three attempted
+waiting finals were blocked by SubagentStop, so it remained running.
+
+The native close call at `08:46:15.252Z` returned at `08:46:15.602Z` with
+`previous_status=running`, the exact child ThreadId and AgentPath,
+`session_loop_terminated=true`, and
+`process_tree_quiescence_claimed=false`. The child rollout recorded
+`turn_aborted(reason=interrupted)` 255 ms before the close receipt; the next
+native list contained only `/root`. The parent exited zero, the candidate
+process was absent, and the fresh Git snapshot remained clean and unchanged.
+No new Hook-trust or user-approval prompt appeared.
+
+This qualifies the exact running-child identity join, native host session-loop
+termination primitive, and post-close non-live observation. It does not qualify
+mutation or process-tree quiescence: tracked unified-exec termination is not a
+confirmed-exit join, detached/untracked descendants remain outside the proof,
+and this read-only sample does not close the mutation catalog or prove zero
+in-flight target writer claims. The outer owner therefore moved authority only
+to unresolved with
+`host_session_terminated_mutation_quiescence_unproven`; no quiescence barrier or
+ownership handover was created.
+
+The minimized receipt and executable assertions are
+`probes/g4-live-session-close-20260908.json` and
+`tests/test_g4_live_session_close.py`. P5b remains partial,
+`phase1_complete=false`, `direct_write_qualified=false`, and Phases 2/3 remain
+closed. Fresh verification passed 14 focused tests and the complete 536-test
+provider-free suite in 56.956 seconds, including agent-template checks. Normal
+Phase 1, mutation-surface, and same-UID checks returned zero; all three
+promotion-required forms returned 2. The mutation matrix still has thirteen
+blockers, and same-UID rollout/state protection remain false.
+
 ## Concurrent-cohort parent-exit orphan negative
 
 The first current-runtime concurrent identity attempt ran from clean commit
