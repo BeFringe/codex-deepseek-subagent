@@ -2788,3 +2788,66 @@ returned zero; all three promotion-required forms returned 2. The mutation
 matrix still has thirteen blockers and same-UID rollout/state remain
 unprotected. `phase1_complete=false`, `direct_write_qualified=false`, and
 Phases 2/3 remain closed.
+
+## Live first-attestation watchdog and cancel-race boundary
+
+The first P5a runner attempt at clean HEAD
+`8422ed4410741fd249ece1bd027a5218b3fbe138` intentionally preserved the
+runtime default and therefore selected `collaboration.spawn_agent`. The parent
+rollout shows its `message` argument beginning with the Fernet marker
+`gAAAAAB`, length 3596, and zero plaintext authority begin/end markers.
+PreToolUse rejected it with `TASK.HANDOFF_BLOCKED`; no child or authority state
+was created. This is the encrypted control, not a failure to copy the
+declaration into the source prompt and not a reason to decrypt inside the
+Hook.
+
+Commit `77faf0039046243e8671db68a6e46895a155adc4` made the runner select the
+candidate's exact `g4_assignment` namespace. The second standalone 0.153.4
+run explicitly opted into `message_delivery=plaintext`, kept the native OpenAI
+parent and inherited-OpenAI G4 child, used the repository as its exact cwd, and
+did not select the candidate as the GUI App Server. PreToolUse saw exactly one
+authority declaration and staged assignment
+`288b4db5-fd9d-4ea4-8836-f2673bca42f3`; real SessionMeta bound child
+`01a07fce-ed6f-7930-bd56-eea4b884d434` to
+`/root/g4_first_attestation_timeout_2` under parent/runtime session
+`01a07fce-6bfc-78b1-a615-3d4b650c1496`.
+
+The child made no tool call and `first_git_attested_at` remained null. Its
+one-second deadline elapsed at `06:57:43.650882Z`. The parent invoked the exact
+watchdog for only that assignment at `06:57:59.489867Z`; it returned exit 2,
+`valid=true`, `terminated_count=1`, `parent_cancel_required=true`, reason
+`pre_write_attestation_timeout`, and classification
+`unresponsive_no_disk_change`. The baseline was comparable and clean at full
+HEAD `77faf0039046243e8671db68a6e46895a155adc4`, so the record moved only from
+active to unresolved without attributing a contribution.
+
+The same run exposes a precise downstream cancel race. Two invalid
+`WAITING_FOR_PARENT_INTERRUPT` finals were blocked while authority was active.
+After the watchdog transition, the installed SubagentStop guard accepted the
+third attempt at `06:58:03.277517Z`, and the child completed at
+`06:58:03.352Z`. Native `g4_assignment.interrupt_agent` did not run until
+`06:58:10.485Z`; its `previous_status` was already completed, as was the later
+`list_agents` result. Thus this is a positive live first-attestation/watchdog
+sample and a negative running-child cancel sample. It is not a cancellation
+acknowledgement and not strong termination or quiescence.
+
+Commit `559640c8d05ba3c84d9d324167865a2b8ea862da` closes the isolated race by
+making only `pre_write_attestation_timeout` and `assignment_timeout` terminal
+records block SubagentStop with `TASK.PARENT_CANCEL_REQUIRED`. Other exact
+guard-terminal reasons retain their existing completion behavior. Related
+runtime, transport, callback, and prompt tests passed 120 tests in 38.124
+seconds. The guard change was not installed during the receipt and is not yet
+live revalidated, so a real running-child interrupt acknowledgement remains a
+P5a blocker. Even after that acknowledgement, P5b still requires a stronger
+host termination/mutation-quiescence receipt and post-termination barrier.
+
+The minimized receipt and executable assertions are
+`probes/g4-live-first-attestation-watchdog-cancel-race-20260908.json` and
+`tests/test_g4_live_first_attestation_watchdog_cancel_race.py`.
+Fresh verification passed 72 focused tests in 13.219 seconds and the full 515
+provider-free tests in 58.170 seconds, including agent-template checks. The
+normal Phase 1, mutation, and same-UID gates returned zero; their three
+promotion-required forms returned 2. The mutation matrix retains thirteen
+blockers, and same-UID rollout/state protection remain false.
+`phase1_complete=false`, `direct_write_qualified=false`, and Phases 2/3 remain
+closed.
