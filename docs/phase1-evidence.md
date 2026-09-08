@@ -2256,3 +2256,47 @@ qualify mutation, strong global quiescence, resume/compaction, cancellation,
 nested/serial/concurrent cohorts, POSIX/Windows parity, DeepSeek regression, or
 live install rollback. `native_external_child_qualified`, Phase 1, and direct
 write therefore remain false; Phase 2 and Phase 3 remain closed.
+
+## External ZHIPU child fresh parent adjudication
+
+The first ZHIPU record above intentionally remains in `reported`: evidence was
+committed after its callback, so a later observer could no longer prove the
+same Git frontier and must not retroactively mark all five parent integrity
+dimensions as fresh. A second assignment therefore used the clean current HEAD
+and a different task name, then performed parent adjudication before any source
+or evidence commit changed that frontier.
+
+Root `01a07e8e-8bc6-73e0-b5cf-9a997f03159a` remained on the OpenAI provider
+and `gpt-5.6-sol`. It spawned child
+`01a07e8f-25e1-75a1-8d02-18c509132691` through the exact parent-owned role to
+provider map, without a spawn-call model or reasoning override. The child's
+SessionMeta binds provider `zhipu`, model `glm-5.3` in TurnContext, parent
+session, depth one, exact role, and `/root/g4_zhipu_consume_1`. Hook sequences
+1175--1179 join spawn PreToolUse, SubagentStart, the child's
+`g4_assignment.list_agents` call and two SubagentStop observations. The child
+rollout contains the matching 127-byte function result, and the native parent
+observed an exact completion activity and final callback. The wait receipt's
+receiver list is still empty, so targeted wait identity remains unqualified.
+
+After both candidate processes had exited, a fresh parent observed the original
+root, branch, full HEAD, HEAD tree, write tree, index digest, empty status, the
+reported state, and absence of active/unresolved/consumed state for assignment
+`859e970a-0fc0-48c8-9e9f-c6f150b84a5b`. Location, mutation scope,
+verification freshness, derivation provenance, and feasibility contract all
+passed against the exact adjudication input SHA-256
+`bf41dc8e145ec96a6202f4437247b58cbb6ff38d22d46c31ce5aefbc9d4ea342`.
+The keyed state transition then atomically moved `reported -> consumed`; the
+consumed envelope SHA-256 is
+`81f893aa5ecdf1f1b9cfff252219ec41a1a96763cd3e4000db03754e1a8c8a19`.
+The post-transition Git barrier remained exact and contained only the parent
+adjudication input as an evidence write.
+
+The input, result, and executable assertions are
+`probes/g4-zhipu-native-child-parent-adjudication-input-20260908.json`,
+`probes/g4-zhipu-native-child-parent-adjudication-result-20260908.json`, and
+`tests/test_g4_zhipu_native_child_parent_adjudication.py`. This removes the
+fresh-consume gap for one external read-only child. It does not complete the
+identity cohort, wait receiver binding, mutation negative space, strong global
+quiescence, compact/resume, cancellation, platform parity, DeepSeek regression,
+or rollback. Phase 1 and direct write remain false; Phase 2 and Phase 3 remain
+closed.
