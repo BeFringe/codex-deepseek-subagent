@@ -672,6 +672,19 @@ paths, resolves absolute/`..`/symlink aliases against the actual Git root, and
 persists a hash-bound `writer_claim` before returning. Assignment capture and
 its final atomic stage both scan those claims under the same state lock.
 
+The lease store now distinguishes an active child's own exact write ownership
+from a foreign owner. A non-root actor may acquire a Git writer lease only when
+its real SessionMeta actor exactly matches one active write capsule and every
+patched path is equal to or below that capsule's owned paths. That one active
+record is not treated as a conflicting foreign lease; parent, sibling, prior
+claim, read-only, wrong-identity, and out-of-scope records still block. A
+provider-free positive acquires and releases the exact child's lease, while an
+otherwise identical patch outside its ownership creates an audited
+`missing_active_path_authority` conflict. The full assignment/lease module
+passes 55 tests. This removes a circular self-conflict but does not make child
+mutation live-reachable: trusted-host consent, the qualification-only runtime
+grant, workspace sandbox binding, callback, and quiescence remain required.
+
 An overlapping patch against pending/claimed/active/reported/unresolved child
 ownership is denied before execution and creates a path/actor/tool-use conflict
 receipt without storing patch content. Conversely, an in-flight parent claim

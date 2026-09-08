@@ -360,6 +360,21 @@ def _paths_overlap_case_safe(first: Sequence[str], second: Sequence[str]) -> boo
     return _paths_overlap(folded_first, folded_second)
 
 
+def _paths_within_case_safe(paths: Sequence[str], owned_paths: Sequence[str]) -> bool:
+    """Return whether every requested path is equal to or below one owned path."""
+
+    def normalized(value: str) -> pathlib.PurePosixPath:
+        if os.name == "nt" or sys.platform == "darwin":
+            value = unicodedata.normalize("NFC", value).casefold()
+        return pathlib.PurePosixPath(value)
+
+    owned = [normalized(value) for value in owned_paths]
+    return all(
+        any(path == owner or owner in path.parents for owner in owned)
+        for path in (normalized(value) for value in paths)
+    )
+
+
 def _snapshot_sha256(snapshot: Mapping[str, object]) -> str:
     _validate_git_snapshot(snapshot)
     return sha256_bytes(canonical_json(dict(snapshot)))
@@ -1892,6 +1907,11 @@ class StateStore:
         with self.locked():
             conflicts: list[dict] = []
             ownership_handover: list[dict] = []
+            actor_has_path_authority = (
+                actor["canonical_agent_path"] == "/root"
+                and actor["agent_type"] == "root"
+                and actor["runtime_session_id"] == actor["thread_id"]
+            )
             claims_directory = self.root / "writer_claim"
             if claims_directory.exists():
                 for path in sorted(claims_directory.glob("*.json")):
@@ -1932,6 +1952,22 @@ class StateStore:
                     if not _paths_overlap_case_safe(normalized_paths, capsule["owned_paths"]):
                         continue
                     binding = envelope.get("binding")
+                    exact_active_owner = (
+                        kind == "active"
+                        and capsule["assignment_mutation_mode"] == "write"
+                        and isinstance(binding, dict)
+                        and actor["runtime_session_id"] == capsule["runtime_session_id"]
+                        and actor["thread_id"] == binding.get("child_thread_id")
+                        and actor["agent_type"] == capsule["agent_type"]
+                        and actor["canonical_agent_path"]
+                        == capsule["canonical_agent_path"]
+                        and _paths_within_case_safe(
+                            normalized_paths, capsule["owned_paths"]
+                        )
+                    )
+                    if exact_active_owner:
+                        actor_has_path_authority = True
+                        continue
                     conflicts.append(
                         {
                             "kind": kind,
@@ -1996,6 +2032,15 @@ class StateStore:
                             ),
                         }
                     )
+
+            if not actor_has_path_authority:
+                conflicts.append(
+                    {
+                        "kind": "missing_active_path_authority",
+                        "actor_thread_id": actor["thread_id"],
+                        "paths": normalized_paths,
+                    }
+                )
 
             if conflicts:
                 conflict_id = str(uuid.uuid4())

@@ -1056,6 +1056,66 @@ class AssignmentTransportTests(unittest.TestCase):
         )
         self.assertEqual(evidence["conflicts"][0]["kind"], "active")
 
+    def test_exact_active_child_can_acquire_and_release_its_owned_path_lease(self):
+        self.capture(self.spawn_hook())
+        child = self.child_hook()
+        assignment_transport.subagent_start(self.store, child)
+        patch = self.parent_patch_hook(tool_use_id="child-owned-patch")
+        patch.update(
+            {
+                "agent_id": "child-bounded_task",
+                "agent_type": "fixture_worker",
+                "transcript_path": child["transcript_path"],
+            }
+        )
+
+        leased = writer_lease_guard.pre_tool_use(self.store, patch)
+
+        self.assertIn("WRITER.LEASED", leased["hookSpecificOutput"]["additionalContext"])
+        claim = json.loads(
+            next((self.store.root / "writer_claim").glob("*.json")).read_text(
+                encoding="utf-8"
+            )
+        )
+        self.assertEqual(claim["actor"]["thread_id"], "child-bounded_task")
+        self.assertEqual(claim["paths"], ["owned/result.txt"])
+
+        released = writer_lease_guard.post_tool_use(
+            self.store,
+            dict(
+                patch,
+                hook_event_name="PostToolUse",
+                tool_response={"status": "completed"},
+            ),
+        )
+        self.assertEqual(released, {})
+        self.assertEqual(len(list((self.store.root / "writer_claim").glob("*.json"))), 0)
+        self.assertEqual(len(list((self.store.root / "writer_receipt").glob("*.json"))), 1)
+
+    def test_child_writer_lease_requires_every_path_inside_exact_active_ownership(self):
+        self.capture(self.spawn_hook())
+        child = self.child_hook()
+        assignment_transport.subagent_start(self.store, child)
+        patch = self.parent_patch_hook("other/result.txt", tool_use_id="child-foreign-patch")
+        patch.update(
+            {
+                "agent_id": "child-bounded_task",
+                "agent_type": "fixture_worker",
+                "transcript_path": child["transcript_path"],
+            }
+        )
+
+        denied = writer_lease_guard.pre_tool_use(self.store, patch)
+
+        self.assertEqual(denied["hookSpecificOutput"]["permissionDecision"], "deny")
+        conflict = json.loads(
+            next((self.store.root / "writer_conflict").glob("*.json")).read_text(
+                encoding="utf-8"
+            )
+        )
+        self.assertEqual(conflict["conflicts"][0]["kind"], "missing_active_path_authority")
+        self.assertEqual(len(list((self.store.root / "writer_claim").glob("*.json"))), 0)
+
     def test_exact_quiescence_barrier_allows_parent_reclaim_in_new_claim(self):
         self.capture(self.spawn_hook())
         assignment_transport.subagent_start(self.store, self.child_hook())
