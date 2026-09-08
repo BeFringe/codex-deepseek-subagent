@@ -169,9 +169,11 @@
           "tests/test_g4_live_concurrent_identity.py",
           "probes/g4-live-concurrent-identity-parent-adjudication-input-20260908.json",
           "probes/g4-live-concurrent-identity-parent-adjudication-result-20260908.json",
-          "tests/test_g4_live_concurrent_identity_parent_adjudication.py"
+          "tests/test_g4_live_concurrent_identity_parent_adjudication.py",
+          "probes/g4-live-concurrent-orphan-watchdog-recovery-20260908.json",
+          "tests/test_g4_live_concurrent_orphan_watchdog_recovery.py"
         ],
-        "blocker": "a current-runtime inherited-OpenAI assignment and a separate external-ZHIPU child both traverse pending, claimed, active, reported, and consumed with exact keyed identity. The provider-free serial pair separately traverses spawn, SubagentStart, native tool use, SubagentStop, terminal callback, then next spawn; both records reach reported and then fresh-owner consumed state under one exact evidence hash. The first concurrent attempt stops at active after parent-exit interruption without SubagentStop. The next concurrent pair traverses two spawn, two SubagentStart, two native tool calls, repeated mediated SubagentStop attempts, two accepted reports, and two parent waits while execution overlaps; both durable records now reach fresh-owner consumed state under one exact evidence hash. Crash recovery, orphan reconciliation, durable resume, cancel, and cohort replay remain missing"
+        "blocker": "a current-runtime inherited-OpenAI assignment and a separate external-ZHIPU child both traverse pending, claimed, active, reported, and consumed with exact keyed identity. The provider-free serial pair separately traverses spawn, SubagentStart, native tool use, SubagentStop, terminal callback, then next spawn; both records reach reported and then fresh-owner consumed state under one exact evidence hash. The first concurrent attempt stopped at active after parent-exit interruption without SubagentStop; an exact TTL watchdog has now moved that stale identity fail closed to unresolved, requested parent cancellation, and left the drifted Git baseline unattributed. The next concurrent pair traverses two spawn, two SubagentStart, two native tool calls, repeated mediated SubagentStop attempts, two accepted reports, and two parent waits while execution overlaps; both durable records now reach fresh-owner consumed state under one exact evidence hash. Host cancellation acknowledgement, strong termination/quiescence, fully qualified orphan reconciliation, durable resume, and cohort replay remain missing"
       },
       {
         "id": "P4",
@@ -233,8 +235,13 @@
         "id": "P5a",
         "state": "partial",
         "provider_free": "pass",
-        "evidence": ["docs/phase1-evidence.md"],
-        "blocker": "live first-attestation deadline/watchdog/cancel receipt is missing"
+        "evidence": [
+          "docs/phase1-evidence.md",
+          "hooks/authority_watchdog.py",
+          "probes/g4-live-concurrent-orphan-watchdog-recovery-20260908.json",
+          "tests/test_g4_live_concurrent_orphan_watchdog_recovery.py"
+        ],
+        "blocker": "one exact live assignment-timeout watchdog sample moved a stale active identity to unresolved, returned exit 2, and required parent cancellation without attributing an incomparable Git baseline. A live first-attestation-deadline expiration, actual parent cancel acknowledgement, and strong termination receipt remain missing"
       },
       {
         "id": "P5b",
@@ -267,9 +274,11 @@
           "probes/g4-live-concurrent-batch-orphan-negative-20260908.json",
           "tests/test_g4_live_concurrent_batch_orphan_negative.py",
           "probes/g4-live-concurrent-identity-20260908.json",
-          "tests/test_g4_live_concurrent_identity.py"
+          "tests/test_g4_live_concurrent_identity.py",
+          "probes/g4-live-concurrent-orphan-watchdog-recovery-20260908.json",
+          "tests/test_g4_live_concurrent_orphan_watchdog_recovery.py"
         ],
-        "blocker": "the current-runtime read-only root and external-ZHIPU child both have clean post-termination disk barriers and fresh consumed-state transitions. One trusted parent-only non-Git apply_patch has an exact PreToolUse claim, successful PostToolUse callback, byte-level after-snapshot, released lease, and zero in-flight claims after process exit. Read-only child apply_patch and Bash denials exercise the repaired terminal-state path. The one-shot sandbox probe adds an independently enforced Seatbelt denial after Bash dispatch, one terminal SubagentStop, exact parent callback, and a stable absent target across two later observations. A provider-free serial pair adds two ordered per-child callbacks. A first concurrent attempt adds a stronger negative: parent task completion interrupted its sole started child 16 ms later, no SubagentStop was emitted, and the exact authority record remained active after restart despite process absence and a clean disk. A second concurrent pair completed with actual overlap, two accepted reported states, two parent waits, known candidate exit zero, and an unchanged disk; however, the parent tool projection omitted child thread ids and the records remain unconsumed. These are per-target barriers and callback gaps, not strong global quiescence. A live failed multi-file apply_patch separately proves that a missing PostToolUse callback leaves its lease fail closed and that exact-identity, unchanged-snapshot recovery works; automatic failure-callback completeness is therefore still false. Child/parent/sibling all-surface writer serialization and strong global quiescence across success, cancel, crash, and late-write space remain missing. The isolated host-control negative additionally proves App Server exit alone is not a process-tree barrier"
+        "blocker": "the current-runtime read-only root and external-ZHIPU child both have clean post-termination disk barriers and fresh consumed-state transitions. One trusted parent-only non-Git apply_patch has an exact PreToolUse claim, successful PostToolUse callback, byte-level after-snapshot, released lease, and zero in-flight claims after process exit. Read-only child apply_patch and Bash denials exercise the repaired terminal-state path. The one-shot sandbox probe adds an independently enforced Seatbelt denial after Bash dispatch, one terminal SubagentStop, exact parent callback, and a stable absent target across two later observations. A provider-free serial pair adds two ordered per-child callbacks. A first concurrent attempt adds a stronger negative: parent task completion interrupted its sole started child 16 ms later and emitted no SubagentStop. The exact watchdog has now frozen its stale active authority as unresolved after TTL, but produced no host cancel acknowledgement, mutation-quiesced guarantee, quiescence receipt, or ownership handover. A second concurrent pair completed with actual overlap, two accepted reported states, two parent waits, known candidate exit zero, an unchanged disk, and subsequent fresh-owner consumption; the source-parent tool projection still omitted child thread ids. These are per-target barriers and callback gaps, not strong global quiescence. A live failed multi-file apply_patch separately proves that a missing PostToolUse callback leaves its lease fail closed and that exact-identity, unchanged-snapshot recovery works; automatic failure-callback completeness is therefore still false. Child/parent/sibling all-surface writer serialization and strong global quiescence across success, cancel, crash, and late-write space remain missing. The isolated host-control negative additionally proves App Server exit alone is not a process-tree barrier"
       },
       {
         "id": "P6",
@@ -490,6 +499,8 @@
           "tests/test_g4_live_serial_identity.py",
           "probes/g4-live-concurrent-batch-orphan-negative-20260908.json",
           "tests/test_g4_live_concurrent_batch_orphan_negative.py",
+          "probes/g4-live-concurrent-orphan-watchdog-recovery-20260908.json",
+          "tests/test_g4_live_concurrent_orphan_watchdog_recovery.py",
           "probes/g4-live-concurrent-identity-20260908.json",
           "tests/test_g4_live_concurrent_identity.py"
         ]
@@ -513,6 +524,8 @@
           "tests/test_g4_live_serial_identity_parent_adjudication.py",
           "probes/g4-live-concurrent-batch-orphan-negative-20260908.json",
           "tests/test_g4_live_concurrent_batch_orphan_negative.py",
+          "probes/g4-live-concurrent-orphan-watchdog-recovery-20260908.json",
+          "tests/test_g4_live_concurrent_orphan_watchdog_recovery.py",
           "probes/g4-live-concurrent-identity-20260908.json",
           "tests/test_g4_live_concurrent_identity.py"
         ]

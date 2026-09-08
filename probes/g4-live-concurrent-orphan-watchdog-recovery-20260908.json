@@ -1,0 +1,123 @@
+{
+  "schema": 1,
+  "classification": "live_exact_assignment_watchdog_orphan_freeze",
+  "observed_date": "2026-09-08",
+  "repository": {
+    "root": "/Users/pearly/文档/CAT/codex-deepseek-subagent",
+    "branch": "main",
+    "source_commit": "ceebd126b65074409c3a625aa375b9f05d13aad4",
+    "source_tree": "fbea26a941d8d126d0770d6e103ba4ade91a1a94",
+    "index_sha256_after_barrier": "b6729017296bef3ad31b845823efc4720f631bc688407b2aac2e9ba919795a36",
+    "status_before_watchdog": "clean",
+    "status_after_watchdog": "clean"
+  },
+  "runtime": {
+    "semantic_role": "current_signed_runtime",
+    "codex_cli_version": "0.153.4",
+    "source_commit": "3d2ee51ca2d5db578f328aa75e20aa22c0197c9a",
+    "candidate_path": "/private/tmp/codex-current-plaintext.aTU9C2/candidate-provider-seam/codex",
+    "candidate_sha256": "60f7c933064d330c0d73444315172873d6158d2d060580891a746de34684fafd",
+    "gui_app_server_selected": false,
+    "credential_value_observed": false
+  },
+  "source_negative": {
+    "path": "probes/g4-live-concurrent-batch-orphan-negative-20260908.json",
+    "sha256": "cc4dd8a70223c58c74a2cd9a145890e96face20dec7d2323a29065eedb0b009e",
+    "parent_thread_id": "01a07f7a-eebd-76a2-8c91-07b49122e0a8",
+    "child_thread_id": "01a07f7b-88f0-7781-a3b4-8ab6bf3305d3",
+    "canonical_agent_path": "/root/g4_concurrent_identity_a1",
+    "child_terminal_event": "turn_aborted",
+    "subagent_stop_observed": false
+  },
+  "exact_active_input": {
+    "assignment_id": "c81ce04d-9106-4306-b4e3-e4d36b7b4c00",
+    "handoff_id": "c55e38aa-5b97-4c3e-b095-c05e389071db",
+    "active_state_sha256": "23d7751e56e86abd56a53fc4bcad6a1b0b423d105a6162fabb8a3d576848667a",
+    "created_at": "2026-09-08T05:26:37.380627+00:00",
+    "pre_write_attestation_deadline": "2026-09-08T05:27:37.380627+00:00",
+    "expires_at": "2026-09-08T05:41:37.380627+00:00",
+    "first_git_attested_at": "2026-09-08T05:26:47.497246+00:00",
+    "assignment_mutation_mode": "read_only",
+    "owned_paths": [],
+    "base_root": "/Users/pearly/文档/CAT/codex-deepseek-subagent",
+    "base_branch": "main",
+    "base_head": "040eea43274928a534f3052204fd6aaeaddc2132",
+    "only_active_bucket_present_before": true
+  },
+  "watchdog": {
+    "entry_point": "hooks/authority_watchdog.py",
+    "entry_point_sha256": "8b4079de60360276d655e3e035cce266f2421eb46268ce762920cd1202fb4d3a",
+    "runtime_guard_sha256": "622cce56ee03c11cf0a8a8378026d5595e549fd69070d2f9e23e72b2cd92552d",
+    "compatibility_state_sha256": "19328e94744c0ea0a97bc481f9ad3bd465b7fc33c2ffff5e859a4981ef9cca26",
+    "selection": "exact",
+    "requested_assignment_ids": ["c81ce04d-9106-4306-b4e3-e4d36b7b4c00"],
+    "now": "2026-09-08T06:23:44+00:00",
+    "fail_on_termination": true,
+    "exit_code": 2,
+    "stdout_sha256": "747bb32630a0c9b3868a355baee19b987aea6fae6c9080020524e76e46682791",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "valid": true,
+    "terminated_count": 1,
+    "parent_cancel_required": true,
+    "termination_evidence": {
+      "schema": 1,
+      "reason": "assignment_timeout",
+      "classification": "initial_authority_mismatch",
+      "disk_changed": null,
+      "baseline_comparable": false,
+      "provenance_status": null,
+      "observed_at": "2026-09-08T06:23:44+00:00",
+      "snapshot": {
+        "root": "/Users/pearly/文档/CAT/codex-deepseek-subagent",
+        "branch": "main",
+        "head": "ceebd126b65074409c3a625aa375b9f05d13aad4",
+        "index_changed": false,
+        "git_status_short": "",
+        "changed_paths": []
+      }
+    }
+  },
+  "state_transition": {
+    "source": "active",
+    "destination": "unresolved",
+    "active_absent_after": true,
+    "reported_absent_after": true,
+    "unresolved_present_after": true,
+    "consumed_absent_after": true,
+    "lost_absent_after": true,
+    "unresolved_state_sha256": "5506f70136945fbd223df0dbe421d70771784dab49fae30ad27fcdbe8f5c53ba",
+    "authority_deleted": false,
+    "terminal_success_inferred": false,
+    "contribution_attributed_to_child": false
+  },
+  "post_watchdog_barrier": {
+    "observed_at": "2026-09-08T06:24:32Z",
+    "candidate_process_match_count": 0,
+    "head": "ceebd126b65074409c3a625aa375b9f05d13aad4",
+    "head_tree": "fbea26a941d8d126d0770d6e103ba4ade91a1a94",
+    "index_sha256": "b6729017296bef3ad31b845823efc4720f631bc688407b2aac2e9ba919795a36",
+    "git_status_short": "",
+    "external_process_absence_observed": true,
+    "host_termination_acknowledgement_observed": false,
+    "mutations_quiesced_guarantee_observed": false,
+    "quiescence_receipt_written": false,
+    "strong_global_quiescence_claimed": false
+  },
+  "scope_verdict": {
+    "live_exact_watchdog_selector_observed": true,
+    "expired_active_frozen_fail_closed": true,
+    "stale_active_bucket_cleared": true,
+    "unresolved_evidence_preserved": true,
+    "baseline_mismatch_left_unattributed": true,
+    "p5a_watchdog_sample_advanced": true,
+    "parent_cancel_request_still_required_by_watchdog": true,
+    "subagentstop_callback_gap_repaired": false,
+    "host_termination_quiescence_qualified": false,
+    "ownership_handover_authorized": false,
+    "orphan_recovery_fully_qualified": false,
+    "phase1_complete": false,
+    "direct_write_qualified": false,
+    "phase2_open": false,
+    "phase3_open": false
+  }
+}

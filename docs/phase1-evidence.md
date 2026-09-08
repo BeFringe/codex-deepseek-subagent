@@ -2742,3 +2742,49 @@ Nested/resume identity, orphan recovery, mutation-capable contribution, full
 mutation negative space, representative P6c, strong global quiescence,
 Windows, and DeepSeek regression remain open. `phase1_complete=false`,
 `direct_write_qualified=false`, and Phases 2/3 remain closed.
+
+## Exact watchdog freeze of the parent-exit orphan
+
+The earlier `g4_concurrent_identity_a1` record was still present only in the
+live `active` bucket after its parent exited and the child rollout ended with
+`turn_aborted`. It retained assignment
+`c81ce04d-9106-4306-b4e3-e4d36b7b4c00`, handoff
+`c55e38aa-5b97-4c3e-b095-c05e389071db`, canonical AgentPath
+`/root/g4_concurrent_identity_a1`, active-state SHA-256
+`23d7751e56e86abd56a53fc4bcad6a1b0b423d105a6162fabb8a3d576848667a`,
+and the original clean base HEAD
+`040eea43274928a534f3052204fd6aaeaddc2132`. Its first Git attestation was
+present, but its assignment TTL had expired. No hand-edited state transition
+was used.
+
+The existing provider-free `hooks/authority_watchdog.py` was invoked for that
+one exact assignment at fixed observation time
+`2026-09-08T06:23:44+00:00` with fail-on-termination enabled. It returned exit
+2, `terminated_count=1`, and `parent_cancel_required=true`, then moved only the
+expired identity from `active` to `unresolved`. The termination evidence is
+classified `initial_authority_mismatch`: the later clean repository HEAD was
+not the child's attested base, so `baseline_comparable=false` and
+`disk_changed=null`. The watchdog therefore did not attribute intervening
+parent evidence commits to the child and did not infer terminal success or
+delete durable authority.
+
+A post-watchdog observation found no matching candidate process and no Git
+change at fresh-owner HEAD `ceebd126b65074409c3a625aa375b9f05d13aad4`.
+Those observations are deliberately weaker than a host-control receipt. No
+parent cancel acknowledgement, mutations-quiesced guarantee, quiescence
+receipt, or ownership handover was produced. Process absence does not repair
+the missing SubagentStop callback and does not authorize reuse of the child's
+paths.
+
+`probes/g4-live-concurrent-orphan-watchdog-recovery-20260908.json` and
+`tests/test_g4_live_concurrent_orphan_watchdog_recovery.py` preserve the exact
+transition and its fail-closed assertions. This advances one live P5a watchdog
+sample and clears a stale active bucket without weakening P5b. A live
+first-attestation-deadline expiration, actual cancellation acknowledgement,
+strong termination/quiescence, and fully qualified orphan reconciliation
+remain open. The fresh provider-free suite passed 502 tests in 54.576 seconds,
+including agent-template checks. The normal G4, mutation, and same-UID checks
+returned zero; all three promotion-required forms returned 2. The mutation
+matrix still has thirteen blockers and same-UID rollout/state remain
+unprotected. `phase1_complete=false`, `direct_write_qualified=false`, and
+Phases 2/3 remain closed.
