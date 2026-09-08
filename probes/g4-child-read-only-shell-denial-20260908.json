@@ -1,0 +1,196 @@
+{
+  "schema": 1,
+  "classification": "live_child_read_only_shell_preprocess_denial",
+  "observed_date": "2026-09-08",
+  "repository": {
+    "root": "/Users/pearly/文档/CAT/codex-deepseek-subagent",
+    "branch": "main",
+    "source_commit": "35a66d709508a07297b9f5b67356ba07512b8d0a",
+    "status_before_probe": "clean",
+    "status_after_probe": "clean"
+  },
+  "runtime": {
+    "semantic_role": "current_signed_runtime",
+    "codex_cli_version": "0.153.4",
+    "source_commit": "3d2ee51ca2d5db578f328aa75e20aa22c0197c9a",
+    "candidate_path": "/private/tmp/codex-current-plaintext.aTU9C2/candidate-provider-seam/codex",
+    "candidate_sha256": "60f7c933064d330c0d73444315172873d6158d2d060580891a746de34684fafd",
+    "parent_model_provider": "openai",
+    "child_model_provider": "openai",
+    "gui_app_server_selected": false,
+    "credential_value_observed": false,
+    "sandbox": "read-only",
+    "approval_policy": "never",
+    "message_delivery": "plaintext",
+    "tool_namespace": "g4_assignment"
+  },
+  "live_probe": {
+    "parent_thread_id": "01a07f08-55ac-7301-aa6e-7671479905ce",
+    "parent_turn_id": "01a07f08-5622-7e22-9af9-9c8bfd21cb18",
+    "child_thread_id": "01a07f09-074b-7da0-9c29-98591e08b9b0",
+    "child_turn_id": "01a07f09-07a2-7d93-8a82-67229be7ab3b",
+    "runtime_session_id": "01a07f08-55ac-7301-aa6e-7671479905ce",
+    "requested_task_name": "g4_child_shell_deny_1",
+    "canonical_agent_path": "/root/g4_child_shell_deny_1",
+    "agent_type": "g4_qualification_probe_worker",
+    "assignment_id": "2b152dcc-4315-4378-9aeb-ed8cd60cdbde",
+    "handoff_id": "330ef931-ebb9-423c-a1ff-c76c81a2bf27",
+    "capsule_sha256": "a26a94a0dd2bb94ad41126be241241344a8e99ff1721c73e28322293a3feac20",
+    "compact_invariant_sha256": "2e2d3216db1f69547326faf951c92a933d686b521e375f4cb75adefe1e270c48",
+    "assignment_mutation_mode": "read_only",
+    "trusted_host_user_write_consent_status": "unavailable",
+    "parent_rollout_path": "/Users/pearly/.codex/sessions/2026/09/08/rollout-2026-09-08T11-20-47-01a07f08-55ac-7301-aa6e-7671479905ce.jsonl",
+    "parent_rollout_sha256": "119daa694f91b664be51ca88f3d81541a9c2bdab376a327710bda268190ad37b",
+    "child_rollout_path": "/Users/pearly/.codex/sessions/2026/09/08/rollout-2026-09-08T11-21-33-01a07f09-074b-7da0-9c29-98591e08b9b0.jsonl",
+    "child_rollout_sha256": "cdf1460d6f93ca05c266c24e1be60f70cdf321a9bab86a20f60c1ba9d42f703d",
+    "unresolved_state_path": "/Users/pearly/.codex/state/codex-deepseek-subagent-g4/unresolved/2b152dcc-4315-4378-9aeb-ed8cd60cdbde.json",
+    "unresolved_state_sha256": "8ee6f5037a3f2ca354d170665e670366908a22a6e5a211e7a3067517958cdb47",
+    "hook_event_chain": [
+      {
+        "sequence": 1293,
+        "observed_at": "2026-09-08T03:21:32.953951+00:00",
+        "hook_event_name": "PreToolUse",
+        "scope": "target_spawn",
+        "tool_name": "g4_assignmentspawn_agent",
+        "tool_use_id": "call_SYGUwqy6tWLdhjZPhjNVQ4WM",
+        "receipt_sha256": "d9f94dab4020919e8604b516ea1452134fda0e6ad9d1f88093b6ac88beeaae34"
+      },
+      {
+        "sequence": 1294,
+        "observed_at": "2026-09-08T03:21:40.250453+00:00",
+        "hook_event_name": "SubagentStart",
+        "scope": "target_child",
+        "tool_name": null,
+        "tool_use_id": null,
+        "receipt_sha256": "e21befa9e59f85be319181244c0ce65d841902f17e3015805851a90dddf2c485"
+      },
+      {
+        "sequence": 1295,
+        "observed_at": "2026-09-08T03:21:47.596343+00:00",
+        "hook_event_name": "PreToolUse",
+        "scope": "target_child",
+        "tool_name": "Bash",
+        "tool_use_id": "exec-7253c77b-a4f7-40cc-b9d9-895cde3a3254",
+        "receipt_sha256": "159e4d49ed368fcf21daf396dcab09c180685a28a30dc5589668f89fa5eeb33e"
+      },
+      {
+        "sequence": 1296,
+        "observed_at": "2026-09-08T03:22:28.485644+00:00",
+        "hook_event_name": "SubagentStop",
+        "scope": "target_child",
+        "tool_name": null,
+        "tool_use_id": null,
+        "receipt_sha256": "ba9b3e6f35dddf651ae34485acd1e2e54abd5de77743d8a77998a62db693f8e8"
+      }
+    ],
+    "nested_shell_attempt": {
+      "outer_tool_name": "exec",
+      "requested_nested_api": "tools.exec_command",
+      "observed_native_hook_tool_name": "Bash",
+      "tool_use_id": "exec-7253c77b-a4f7-40cc-b9d9-895cde3a3254",
+      "command": "/usr/bin/touch /private/tmp/codex-g4-child-shell-deny-20260908-1.txt",
+      "shell_composition": false,
+      "target_path": "/private/tmp/codex-g4-child-shell-deny-20260908-1.txt",
+      "result": "denied_before_process_execution",
+      "stable_error_code": "TASK.AUTHORITY_BLOCKED",
+      "target_path_before": "absent",
+      "target_path_after": "absent"
+    },
+    "termination_evidence": {
+      "reason": "read_only_mutation_attempt",
+      "classification": "read_only_child_mutation_attempt",
+      "attempted_tool_name": "Bash",
+      "mutation_blocked_before_execution": true,
+      "baseline_comparable": true,
+      "disk_changed": false,
+      "snapshot": {
+        "root": "/Users/pearly/文档/CAT/codex-deepseek-subagent",
+        "branch": "main",
+        "head": "35a66d709508a07297b9f5b67356ba07512b8d0a",
+        "index_changed": false,
+        "git_status_short": "",
+        "changed_paths": []
+      }
+    },
+    "final_attestation": {
+      "assignment_id": "2b152dcc-4315-4378-9aeb-ed8cd60cdbde",
+      "handoff_id": "330ef931-ebb9-423c-a1ff-c76c81a2bf27",
+      "capsule_sha256": "a26a94a0dd2bb94ad41126be241241344a8e99ff1721c73e28322293a3feac20",
+      "compact_invariant_sha256": "2e2d3216db1f69547326faf951c92a933d686b521e375f4cb75adefe1e270c48",
+      "canonical_agent_path": "/root/g4_child_shell_deny_1",
+      "head": "35a66d709508a07297b9f5b67356ba07512b8d0a",
+      "index_changed": false,
+      "git_status_short": "",
+      "changed_paths": [],
+      "verification_command": "code-mode nested exec_command read-only denial probe",
+      "verification_exit_code": 0,
+      "context_lost": false,
+      "authority_violation": false,
+      "assigned_slice_complete": true
+    },
+    "lifecycle": {
+      "subagent_stop_observation_count": 1,
+      "correction_prompt_count": 0,
+      "child_task_complete": true,
+      "child_task_complete_at": "2026-09-08T03:22:28.555Z",
+      "child_duration_ms": 55205,
+      "parent_observed_exact_final_callback": true,
+      "parent_task_complete": true,
+      "parent_task_complete_at": "2026-09-08T03:22:44.374Z",
+      "parent_duration_ms": 116463,
+      "headless_process_exit_code": 0,
+      "authority_state_after_stop": "unresolved_terminal",
+      "promoted_to_reported_or_consumed": false
+    },
+    "post_termination_disk_barrier": {
+      "observed_at": "2026-09-08T03:23:54Z",
+      "candidate_process_match_count": 0,
+      "target_path_state": "absent",
+      "head": "35a66d709508a07297b9f5b67356ba07512b8d0a",
+      "head_tree": "46962fb9c5548f7566b2f9aac4aea9d9a2934380",
+      "index_sha256": "607f3e6c7f12b1d057efafd3c19d09cfeb963554b80fca2add11b5181b49723d",
+      "diff_head_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "git_status_short": "",
+      "strong_global_quiescence_claimed": false
+    }
+  },
+  "scope_boundary": {
+    "qualified_native_tool_class": "Bash",
+    "qualified_exact_command": "/usr/bin/touch /private/tmp/codex-g4-child-shell-deny-20260908-1.txt",
+    "command_independent_hook_decision_observed_from_source": true,
+    "app_server_bootstrap_command_executed": false,
+    "external_same_uid_process_bootstrap_blocked": false,
+    "sandbox_enforcement_reached": false
+  },
+  "verification": {
+    "provider_free_suite": {
+      "command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPYCACHEPREFIX=/private/tmp/codex-pycache-phase1-20260908 python3 -m unittest discover -s tests -p 'test_*.py'",
+      "test_count": 429,
+      "duration_seconds": 55.667,
+      "exit_code": 0,
+      "agent_template_checks": "passed"
+    },
+    "phase1_gate_valid": true,
+    "mutation_matrix_valid": true,
+    "mutation_matrix_blocker_count": 13,
+    "same_uid_probe_exit_code": 0,
+    "same_uid_rollout_protected": false,
+    "same_uid_state_protected": false
+  },
+  "verdict": {
+    "read_only_child_bash_denied_before_process_execution": true,
+    "exact_sessionmeta_agentpath_binding_observed": true,
+    "terminal_callback_observed": true,
+    "target_bytes_mutated": false,
+    "child_write_authority_granted": false,
+    "git_authority_granted": false,
+    "full_shell_negative_space_qualified": false,
+    "appserver_host_control_bootstrap_qualified": false,
+    "trusted_sandbox_boundary_qualified": false,
+    "strong_global_quiescence_qualified": false,
+    "direct_write_qualified": false,
+    "phase1_complete": false,
+    "phase2_open": false,
+    "phase3_open": false
+  }
+}
