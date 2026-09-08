@@ -1,0 +1,277 @@
+{
+  "schema": 1,
+  "classification": "live_provider_free_plaintext_send_message_and_followup_task_delivery",
+  "observed_date": "2026-09-08",
+  "repository": {
+    "root": "/Users/pearly/文档/CAT/codex-deepseek-subagent",
+    "branch": "main",
+    "source_commit": "f778484afb51898654446ab8711c6d94028093fc",
+    "source_tree": "7016c67736b4c70b31b7f93a0200d165e40b9c72",
+    "index_sha256_after_barrier": "3abf31c5c7cc2f4e523a45a26bad6654927aa9f3c7227333ff38177f3313f309",
+    "status_before_probe": "clean",
+    "status_after_probe": "clean",
+    "index_changed": false
+  },
+  "runtime": {
+    "semantic_role": "current_signed_runtime",
+    "codex_cli_version": "0.153.4",
+    "source_commit": "3d2ee51ca2d5db578f328aa75e20aa22c0197c9a",
+    "candidate_path": "/private/tmp/codex-current-plaintext.aTU9C2/candidate-posttool-callback/codex",
+    "candidate_sha256": "abe80df563067cf9ebb856cbb85fe5f55d2624523eb0ae9700ef39f0e5e70b20",
+    "candidate_entry_point": "headless_codex_exec_only",
+    "gui_app_server_selected": false,
+    "parent_model_provider": "openai",
+    "child_model_provider": "openai",
+    "credential_values_observed_or_recorded": false,
+    "sandbox": "read-only",
+    "approval_policy": "never",
+    "multi_agent_version": "v2",
+    "message_delivery": "plaintext",
+    "tool_namespace": "g4_assignment"
+  },
+  "source_contract": {
+    "receipt_path": "probes/current-signed-runtime-plaintext-assignment-seam-source-candidate.json",
+    "receipt_sha256": "94ff564284b315ce8782f90b65b02146b7b2fb288e66361427bee512bc92ac40",
+    "patch_path": "probes/current-signed-runtime-plaintext-assignment-seam-source-candidate.patch",
+    "patch_sha256": "25548e1fa53063157e0635e0907a45bd61099ac3be8dda2c1e6ff8c44ca5ff7d",
+    "configured_plaintext_tools": [
+      "spawn_agent",
+      "send_message",
+      "followup_task"
+    ],
+    "plaintext_model_input_type": "message",
+    "plaintext_model_input_role": "user",
+    "encrypted_default_preserved": true
+  },
+  "probe_prompt": {
+    "builder_path": "probes/build_p1_plaintext_message_probe_prompt.py",
+    "builder_sha256": "5e019d39c69d8dabf1a5fd9ba08a81f714855d85ac32e9499cd4e5c1334c12b9",
+    "rendered_prompt_path": "/private/tmp/p1-plaintext-message-prompt-20260908.txt",
+    "rendered_prompt_sha256": "7b2a64122426054b664c27505773051a65fa84c04ada953b288bfbfbcfc7fd83",
+    "rendered_prompt_bytes": 2345,
+    "initial_child_assignment_contains_send_payload": false,
+    "initial_child_assignment_contains_followup_payload": false
+  },
+  "live_probe": {
+    "root_parent": {
+      "thread_id": "01a08196-5aca-78d3-b9a4-7163ba7e2057",
+      "turn_id": "01a08196-5b59-74c0-a06b-f8075148a129",
+      "runtime_session_id": "01a08196-5aca-78d3-b9a4-7163ba7e2057",
+      "canonical_agent_path": "/root",
+      "thread_source": "user",
+      "rollout_path": "/Users/pearly/.codex/sessions/2026/09/08/rollout-2026-09-08T23-15-09-01a08196-5aca-78d3-b9a4-7163ba7e2057.jsonl",
+      "rollout_sha256": "09cbdaf0696c45e628a1b4e36b5b2dd977eb66256f753da7c47c2a386c8df6d5",
+      "rollout_line_count": 49,
+      "rollout_bytes": 72982,
+      "spawn_tool_use_id": "call_ecqEHdwomTUWxOKbluKUPve8",
+      "spawn_at": "2026-09-08T15:15:26.540Z",
+      "spawn_result_at": "2026-09-08T15:15:27.077Z",
+      "requested_task_name": "p1_plaintext_message_1",
+      "requested_agent_type": "explorer",
+      "requested_fork_turns": "none",
+      "child_assignment_sha256": "0d8975364af0897fd621e34af710beff83fe610c31d2f277d9c298e186dc197b",
+      "child_assignment_bytes": 524,
+      "spawn_result_task_name": "/root/p1_plaintext_message_1",
+      "send_message_tool_use_id": "call_PTfP082FeFqTvEsu8e6NXfJb",
+      "send_message_at": "2026-09-08T15:15:40.810Z",
+      "send_message_accepted_at": "2026-09-08T15:15:40.897Z",
+      "send_message_result": "",
+      "followup_task_tool_use_id": "call_qt5tYsyvm2keP4GzSrN8m1wc",
+      "followup_task_at": "2026-09-08T15:15:47.488Z",
+      "followup_task_accepted_at": "2026-09-08T15:15:48.032Z",
+      "followup_task_result": "",
+      "wait_call_count": 2,
+      "wait_timeout_count": 0,
+      "final_message": "P1.PLAINTEXT.ROOT spawn=/root/p1_plaintext_message_1 ready=exact send=accepted followup=accepted callback=exact",
+      "task_complete_at": "2026-09-08T15:15:57.880Z",
+      "duration_ms": 48090
+    },
+    "child": {
+      "thread_id": "01a08196-9d1f-7bb3-9961-7427a8845694",
+      "runtime_session_id": "01a08196-5aca-78d3-b9a4-7163ba7e2057",
+      "parent_thread_id": "01a08196-5aca-78d3-b9a4-7163ba7e2057",
+      "canonical_agent_path": "/root/p1_plaintext_message_1",
+      "requested_task_name": "p1_plaintext_message_1",
+      "agent_type": "explorer",
+      "depth": 1,
+      "thread_source": "subagent",
+      "sessionmeta_identity_exact": true,
+      "rollout_path": "/Users/pearly/.codex/sessions/2026/09/08/rollout-2026-09-08T23-15-26-01a08196-9d1f-7bb3-9961-7427a8845694.jsonl",
+      "rollout_sha256": "2bb8635efd9889256cd29cccca6d1afbd478e88d945c8b1ab9ce75ed71b8f7a6",
+      "rollout_line_count": 26,
+      "rollout_bytes": 57006,
+      "initial_turn": {
+        "turn_id": "01a08196-9d7d-7141-b360-3bbdc6681b80",
+        "started_at": "2026-09-08T15:15:26.759Z",
+        "completed_at": "2026-09-08T15:15:36.665Z",
+        "duration_ms": 9943,
+        "assignment_wire_ordinal": 9,
+        "assignment_wire_sha256": "7343f8c0c0ccd3628b9e7745bc5dfe047c61773980d90d8efcb1f17a270efa30",
+        "assignment_wire_bytes": 610,
+        "assignment_wire_type": "message",
+        "assignment_wire_role": "user",
+        "assignment_trigger_turn": true,
+        "final_message": "P1.PLAINTEXT.READY path=/root/p1_plaintext_message_1"
+      },
+      "followup_turn": {
+        "turn_id": "01a08196-eef3-7792-b7f8-7bb04ca86c8f",
+        "started_at": "2026-09-08T15:15:47.574Z",
+        "completed_at": "2026-09-08T15:15:50.254Z",
+        "duration_ms": 2679,
+        "send_wire_ordinal": 18,
+        "send_wire_observed_at": "2026-09-08T15:15:47.699Z",
+        "send_wire_sha256": "27c8eded4fc42d1f0405add56d9f507d1a2f517413dd9938ce029c5f6ed6e5d1",
+        "send_wire_bytes": 146,
+        "send_wire_type": "message",
+        "send_wire_role": "user",
+        "send_wire_message_type": "MESSAGE",
+        "send_trigger_turn": false,
+        "followup_wire_ordinal": 20,
+        "followup_wire_observed_at": "2026-09-08T15:15:47.700Z",
+        "followup_wire_sha256": "37e7d3c09d0fd430945769c83c14de2b413ec7174e281ff2a95e596d81cbcd15",
+        "followup_wire_bytes": 151,
+        "followup_wire_type": "message",
+        "followup_wire_role": "user",
+        "followup_wire_message_type": "NEW_TASK",
+        "followup_trigger_turn": true,
+        "final_message": "P1.PLAINTEXT.CALLBACK path=/root/p1_plaintext_message_1"
+      },
+      "send_payload": {
+        "sha256": "e35f83b0c60bd4a39c822beb676c30b46cae1034353710dc22886ca4034a2e9c",
+        "bytes": 61,
+        "rollout_occurrence_count": 1
+      },
+      "followup_payload": {
+        "sha256": "377eadf7e67caa585634a189259ee1599027588e452525ac77ccf11a63fa65da",
+        "bytes": 65,
+        "rollout_occurrence_count": 1
+      },
+      "incoming_inter_agent_user_message_count": 3,
+      "incoming_agent_message_response_item_count": 0,
+      "mutation_tool_call_count": 0
+    },
+    "ordering": {
+      "initial_turn_completed_before_send_message": true,
+      "send_message_accepted_before_followup_task": true,
+      "queue_only_send_did_not_start_a_turn": true,
+      "followup_task_started_second_turn": true,
+      "send_wire_precedes_followup_wire": true,
+      "both_wires_precede_second_turn_final": true,
+      "same_child_thread_and_canonical_path_across_turns": true
+    },
+    "headless_harness": {
+      "run_directory": "/private/tmp/codex-p1-message-run.jVbOvy",
+      "stdout_jsonl_sha256": "e50e85e2ba9cec0247972a11a939590e6e77d4b8a8b7721754b7ba419bf03b7d",
+      "stdout_line_count": 12,
+      "stdout_bytes": 2092,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_line_count": 0,
+      "stderr_bytes": 0,
+      "candidate_exit_code": 0,
+      "public_json_stream_spawn_send_followup_items_exposed": false,
+      "public_json_stream_wait_items_exposed": true,
+      "root_rollout_function_calls_exposed": true
+    },
+    "g4_state_boundary": {
+      "target_role": false,
+      "g4_authority_state_expected": false,
+      "g4_authority_state_created": false,
+      "counts_after": {
+        "pending": 0,
+        "claimed": 0,
+        "active": 3,
+        "reported": 1,
+        "consumed": 10,
+        "unresolved": 18,
+        "writer_claim": 1
+      }
+    },
+    "post_termination_barrier": {
+      "root": "/Users/pearly/文档/CAT/codex-deepseek-subagent",
+      "branch": "main",
+      "head": "f778484afb51898654446ab8711c6d94028093fc",
+      "head_tree": "7016c67736b4c70b31b7f93a0200d165e40b9c72",
+      "write_tree": "7016c67736b4c70b31b7f93a0200d165e40b9c72",
+      "index_sha256": "3abf31c5c7cc2f4e523a45a26bad6654927aa9f3c7227333ff38177f3313f309",
+      "git_status_short": "",
+      "candidate_process_match_count": 0,
+      "code_mode_host_process_match_count": 0,
+      "hooks_json_sha256_after": "82c8aa0bc4d739628646864578de6c078884c21413855ed3db448d4365a8668e",
+      "strong_global_quiescence_claimed": false
+    }
+  },
+  "scope_boundary": {
+    "live_plaintext_spawn_delivery_observed": true,
+    "live_plaintext_send_message_delivery_observed": true,
+    "live_plaintext_followup_task_delivery_observed": true,
+    "queue_only_and_trigger_turn_semantics_observed": true,
+    "followup_same_thread_identity_continuity_observed": true,
+    "raw_payload_in_initial_assignment": false,
+    "worker_narrative_used_as_transport_authority": false,
+    "g4_capsule_or_mutation_authority_claimed": false,
+    "mixed_provider_delivery_observed": false,
+    "broader_delivery_cohort_complete": false,
+    "strong_global_quiescence_qualified": false
+  },
+  "verification": {
+    "focused_suite": {
+      "command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPYCACHEPREFIX=/private/tmp/codex-pycache-p1-message-evidence-20260908 python3 -m unittest -v tests.test_p1_plaintext_message_probe_prompt tests.test_p1_live_plaintext_message_delivery tests.test_phase1_g4_gate",
+      "test_count": 18,
+      "duration_seconds": 0.451,
+      "exit_code": 0
+    },
+    "provider_free_suite": {
+      "command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPYCACHEPREFIX=/private/tmp/codex-pycache-p1-message-final-20260908 python3 -m unittest discover -s tests -p 'test_*.py'",
+      "test_count": 616,
+      "duration_seconds": 67.185,
+      "exit_code": 0,
+      "agent_template_checks": "passed"
+    },
+    "phase1_gate": {
+      "normal_exit_code": 0,
+      "require_complete_exit_code": 2,
+      "valid": true,
+      "gate_blocker_count": 10,
+      "exit_receipt_blocker_count": 9,
+      "phase1_complete": false,
+      "direct_write_qualified": false
+    },
+    "mutation_matrix": {
+      "normal_exit_code": 0,
+      "require_qualified_exit_code": 2,
+      "valid": true,
+      "source_identity_verified": true,
+      "anchor_failure_count": 0,
+      "blocker_count": 13,
+      "direct_write_qualified": false
+    },
+    "same_uid_trust": {
+      "normal_exit_code": 0,
+      "require_protected_exit_code": 2,
+      "same_uid_child_exit_code": 0,
+      "same_uid_rollout_protected": false,
+      "same_uid_state_protected": false,
+      "direct_write_qualified": false
+    },
+    "hook_event_chain": {
+      "normal_exit_code": 0,
+      "require_complete_callbacks_exit_code": 2,
+      "event_count": 2103,
+      "chain_sha256": "baa4a3e74b9e62eaf255df187e366d4375c3580ffd73a8cfa5e3d175cc243e88",
+      "callback_count": 903,
+      "denied_tool_use_id_count": 43,
+      "pending_tool_use_ids": [
+        "exec-04d901ca-1eb5-4ecf-a046-16440788c4d3"
+      ]
+    }
+  },
+  "verdict": {
+    "p1_live_send_message_delivery_gap_closed": true,
+    "p1_live_followup_task_delivery_gap_closed": true,
+    "p1_complete": false,
+    "direct_write_qualified": false,
+    "phase1_complete": false,
+    "phase2_open": false,
+    "phase3_open": false
+  }
+}

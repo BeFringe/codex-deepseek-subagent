@@ -2720,6 +2720,73 @@ P5b host quiescence, representative P6c, Windows parity, or DeepSeek
 regression. `phase1_complete=false`, `direct_write_qualified=false`, and
 Phases 2/3 remain closed.
 
+## Live plaintext send-message and follow-up delivery
+
+The current source candidate already contained the explicit plaintext wire for
+`spawn_agent`, `send_message`, and `followup_task`, while preserving encrypted
+delivery as the default. Its earlier source receipt had not observed the latter
+two tools live. A new provider-free POSIX run at clean HEAD
+`f778484afb51898654446ab8711c6d94028093fc` exercised both without selecting
+the candidate as the GUI App Server or changing the trusted Hook overlay.
+
+Root session `01a08196-5aca-78d3-b9a4-7163ba7e2057` spawned native explorer
+`/root/p1_plaintext_message_1` with `fork_turns=none`. The child SessionMeta
+binds ThreadId `01a08196-9d1f-7bb3-9961-7427a8845694`, depth one, the exact
+root parent ThreadId, native OpenAI provider, read-only sandbox, branch `main`,
+and the full repository HEAD. The initial assignment intentionally omitted the
+later send and follow-up payload preimages, so the child's initial context
+could not substitute for delivery evidence.
+
+The child completed its first turn at `15:15:36.665Z`. Root then called
+`send_message` at `15:15:40.810Z`; the empty successful result returned at
+`15:15:40.897Z`, and no second child turn began. Root called `followup_task` at
+`15:15:47.488Z`, and the second turn began at `15:15:47.574Z`. The child
+rollout then added two distinct plaintext response items:
+
+- ordinal 18 is type `message`, role `user`, `Message Type: MESSAGE`, with the
+  exact queued payload and `trigger_turn=false`;
+- ordinal 20 is type `message`, role `user`, `Message Type: NEW_TASK`, with the
+  exact follow-up payload and `trigger_turn=true`.
+
+Each payload occurs once in the child rollout, ordinal 18 precedes ordinal 20,
+and both precede the second-turn final at `15:15:50.254Z`. The rollout contains
+zero incoming `response_item` values of type `AgentMessage`. Thus the live
+evidence comes from the wire representation and ordering, not from the child's
+acknowledgement. The same SessionMeta ThreadId and canonical AgentPath persist
+across the two distinct turn ids.
+
+The child role was deliberately a non-target explorer. No G4 capsule, mutation
+authority, or compatibility state was expected or created; this isolates the
+assignment/message transport dimension from Hook identity and mutation
+qualification. Root made no mutation call. The headless candidate exited zero
+with empty stderr, both waits completed without timeout, the candidate and
+code-mode-host processes were absent afterward, Git HEAD/tree/index/status
+remained exact, and `hooks.json` retained SHA-256
+`82c8aa0bc4d739628646864578de6c078884c21413855ed3db448d4365a8668e`.
+Those narrow observations do not establish strong global quiescence.
+
+The generator, source-independent generator tests, minimized live receipt, and
+executable evidence tests are
+`probes/build_p1_plaintext_message_probe_prompt.py`,
+`tests/test_p1_plaintext_message_probe_prompt.py`,
+`probes/p1-live-plaintext-message-delivery-20260908.json`, and
+`tests/test_p1_live_plaintext_message_delivery.py`. Focused transport/status
+checks passed 18 tests in 0.451 seconds; the full provider-free suite passed
+all 616 tests in 67.185 seconds with agent-template checks. Normal Phase 1,
+mutation, same-UID, and Hook-chain checks returned zero. Their promotion gates
+returned 2, including the unchanged historical sequence-135 pending callback;
+the mutation matrix retains thirteen blockers and same-UID rollout/state remain
+unprotected.
+
+This closes the live
+`send_message` and `followup_task` observation gaps within P1 and adds one
+same-thread follow-up continuity sample for P2/P3 and POSIX P7. P1 remains
+partial for distinct same-message negative pairs, unsupported public plaintext
+selection, parent-visible child identity, and broader cohort scale. It does
+not qualify direct write, mixed-provider follow-up, or mutation authority.
+`phase1_complete=false`, `direct_write_qualified=false`, and Phases 2/3 remain
+closed.
+
 ## Live failed-apply-patch callback and unchanged-lease release
 
 The installed 0.153.4 runtime exposes a concrete P5b failure boundary. Its

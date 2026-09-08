@@ -48,6 +48,10 @@
           "probes/current-signed-runtime-plaintext-assignment-seam-source-candidate.json",
           "probes/current-signed-runtime-plaintext-assignment-seam-source-candidate.patch",
           "tests/test_current_plaintext_assignment_source_candidate.py",
+          "probes/build_p1_plaintext_message_probe_prompt.py",
+          "tests/test_p1_plaintext_message_probe_prompt.py",
+          "probes/p1-live-plaintext-message-delivery-20260908.json",
+          "tests/test_p1_live_plaintext_message_delivery.py",
           "probes/current-signed-runtime-plaintext-assignment-seam-headless-preflight.json",
           "tests/test_current_plaintext_assignment_headless_preflight.py",
           "probes/check_codex_component_boundaries.py",
@@ -110,7 +114,7 @@
           "probes/g4-live-exact-path-child-write-parent-adjudication-20260908.json",
           "tests/test_g4_live_exact_path_child_write.py"
         ],
-        "blocker": "the prior signed runtime encrypted the spawn message before PreToolUse, while the current signed runtime opt-in candidate now has a consumed inherited-OpenAI root receipt and a separately consumed external-ZHIPU child receipt in which PreToolUse observed the exact plaintext assignment hash and SubagentStart consumed and identity-bound the capsule. A provider-free serial sample additionally captured and fresh-owner consumed two distinct plaintext assignments after two native read-only list_agents loops, with child B spawned only after child A's terminal callback. A first concurrent attempt captured only A and exposed a parent-exit orphan negative; the next attempt captured two distinct plaintext assignments, both real child identities, and actual execution overlap, then a fresh owner consumed both reports under one exact evidence hash. One depth-two provider-free run now joins root SessionMeta to an explorer and that explorer to the exact G4 child, with one plaintext inner assignment, target Hook capture, mediated final correction, two-level callbacks, and fresh-owner consumption. The native source-parent projection omitted child thread ids and therefore failed closed. Upstream SDK and App Server still expose no supported plaintext spawn choice; send_message/followup_task delivery, distinct same-message deny pairs, broader nested repetition, parent-visible concurrent identity, and broader cohort scale remain unqualified"
+        "blocker": "the prior signed runtime encrypted the spawn message before PreToolUse, while the current signed runtime opt-in candidate now has a consumed inherited-OpenAI root receipt and a separately consumed external-ZHIPU child receipt in which PreToolUse observed the exact plaintext assignment hash and SubagentStart consumed and identity-bound the capsule. A provider-free serial sample additionally captured and fresh-owner consumed two distinct plaintext assignments after two native read-only list_agents loops, with child B spawned only after child A's terminal callback. A first concurrent attempt captured only A and exposed a parent-exit orphan negative; the next attempt captured two distinct plaintext assignments, both real child identities, and actual execution overlap, then a fresh owner consumed both reports under one exact evidence hash. One depth-two provider-free run now joins root SessionMeta to an explorer and that explorer to the exact G4 child, with one plaintext inner assignment, target Hook capture, mediated final correction, two-level callbacks, and fresh-owner consumption. A separate idle explorer run now observes exact plaintext send_message and followup_task user-message wires, including queue-only then trigger-turn semantics, without placing either payload preimage in the initial child assignment. The native source-parent projection omitted child thread ids and therefore failed closed. Upstream SDK and App Server still expose no supported plaintext spawn choice; distinct same-message deny pairs, broader nested repetition, parent-visible concurrent identity, and broader cohort scale remain unqualified"
       },
       {
         "id": "P2",
@@ -127,6 +131,8 @@
           "probes/codex-0.153.4-lifecycle-sources.json",
           "probes/check_codex_lifecycle_sources.py",
           "tests/test_codex_lifecycle_sources.py",
+          "probes/p1-live-plaintext-message-delivery-20260908.json",
+          "tests/test_p1_live_plaintext_message_delivery.py",
           "probes/g4-live-nested-identity-20260908.json",
           "probes/g4-live-nested-identity-parent-adjudication-input-20260908.json",
           "probes/g4-live-nested-identity-parent-adjudication-result-20260908.json",
@@ -167,7 +173,7 @@
           "probes/g4-live-exact-path-child-write-parent-adjudication-20260908.json",
           "tests/test_g4_live_exact_path_child_write.py"
         ],
-        "blocker": "the current signed runtime now has one fresh inherited-OpenAI assignment-to-SessionMeta/canonical-AgentPath join and one exact external-ZHIPU child join, both through consumed state, in addition to one historical root and two older partial concurrent records. One provider-free two-child serial sample proves distinct assignment, handoff, child thread, and canonical AgentPath values under the same parent SessionMeta, with child B starting only after child A's callback; both serial records have exact five-dimension fresh-owner consumption. The first new concurrent attempt proves an orphaned A join; the second proves two distinct exact SessionMeta/canonical-AgentPath joins and a 28.377-second overlap witnessed by B's list_agents result, and both records now have exact five-dimension fresh-owner consumption. A new depth-two sample proves exact direct-parent ThreadId edges, canonical AgentPath derivation, one inherited runtime session, and native self-observation across root, explorer, and G4 child; its inner report is fresh-owner consumed. The native source parent still cannot see child thread ids in spawn/wait results. Broader nested, serial, concurrent, and mixed-provider cohort scale remain missing"
+        "blocker": "the current signed runtime now has one fresh inherited-OpenAI assignment-to-SessionMeta/canonical-AgentPath join and one exact external-ZHIPU child join, both through consumed state, in addition to one historical root and two older partial concurrent records. One provider-free two-child serial sample proves distinct assignment, handoff, child thread, and canonical AgentPath values under the same parent SessionMeta, with child B starting only after child A's callback; both serial records have exact five-dimension fresh-owner consumption. The first new concurrent attempt proves an orphaned A join; the second proves two distinct exact SessionMeta/canonical-AgentPath joins and a 28.377-second overlap witnessed by B's list_agents result, and both records now have exact five-dimension fresh-owner consumption. A new depth-two sample proves exact direct-parent ThreadId edges, canonical AgentPath derivation, one inherited runtime session, and native self-observation across root, explorer, and G4 child; its inner report is fresh-owner consumed. An idle explorer message-delivery sample additionally preserves the same child ThreadId and canonical AgentPath across two distinct turn ids after a queue-only message and triggered follow-up. The native source parent still cannot see child thread ids in spawn/wait results. Broader nested, serial, concurrent, resumed-message, and mixed-provider cohort scale remain missing"
       },
       {
         "id": "P3",
@@ -184,6 +190,8 @@
           "hooks/hook_event_receipts.py",
           "probes/check_hook_event_chain.py",
           "tests/test_hook_event_receipts.py",
+          "probes/p1-live-plaintext-message-delivery-20260908.json",
+          "tests/test_p1_live_plaintext_message_delivery.py",
           "probes/g4-live-nested-identity-20260908.json",
           "probes/g4-live-nested-identity-parent-adjudication-input-20260908.json",
           "probes/g4-live-nested-identity-parent-adjudication-result-20260908.json",
@@ -229,7 +237,7 @@
           "probes/g4-live-exact-path-child-write-parent-adjudication-20260908.json",
           "tests/test_g4_live_exact_path_child_write.py"
         ],
-        "blocker": "a current-runtime inherited-OpenAI assignment and a separate external-ZHIPU child both traverse pending, claimed, active, reported, and consumed with exact keyed identity. The provider-free serial pair separately traverses spawn, SubagentStart, native tool use, SubagentStop, terminal callback, then next spawn; both records reach reported and then fresh-owner consumed state under one exact evidence hash. A provider-free depth-two chain adds root-to-explorer and explorer-to-G4 SessionMeta edges, one target spawn capture, one SubagentStart, one native tool, a rejected then corrected SubagentStop, two terminal callbacks, and fresh-owner consumption. The first concurrent attempt stopped at active after parent-exit interruption without SubagentStop; an exact TTL watchdog moved that stale identity fail closed to unresolved and left the drifted Git baseline unattributed. The no-event first-attestation timeout adds an exact running-child native interrupt acknowledgement while correctly retaining unresolved authority. A separate current-source V2 close probe joins requested task name, canonical AgentPath, real SessionMeta ThreadId, Hook events, exact close target, and post-close live-tree absence for a still-running child; the host waited for its session loop and returned process_tree_quiescence_claimed=false. The concurrent pair traverses two spawn, two SubagentStart, two native tool calls, repeated mediated SubagentStop attempts, two accepted reports, and two parent waits while execution overlaps; both durable records reach fresh-owner consumed state under one exact evidence hash. One real auto-compaction run joins PreCompact sequence 1906 to a later native PreToolUse at 1907, increments the durable recovery epoch, preserves exact SessionMeta/AgentPath and Git authority, reaches an exact callback, and is fresh-owner consumed; a three-tool timing attempt fails closed and is watchdog-unresolved. A separate post-compact negative serializes a foreign dirty-path injection between PreCompact and the next PreToolUse, denies that tool, records exact unattributed termination evidence, and returns a terminal callback without leaving active authority. Strong mutation/process-tree quiescence, fully qualified orphan reconciliation, and remaining cohort replay are still missing; unsupported public V2 child resurrection is not treated as an identity gate"
+        "blocker": "a current-runtime inherited-OpenAI assignment and a separate external-ZHIPU child both traverse pending, claimed, active, reported, and consumed with exact keyed identity. The provider-free serial pair separately traverses spawn, SubagentStart, native tool use, SubagentStop, terminal callback, then next spawn; both records reach reported and then fresh-owner consumed state under one exact evidence hash. A provider-free depth-two chain adds root-to-explorer and explorer-to-G4 SessionMeta edges, one target spawn capture, one SubagentStart, one native tool, a rejected then corrected SubagentStop, two terminal callbacks, and fresh-owner consumption. A separate message-delivery run adds one completed initial turn, an idle queue-only message, one follow-up-triggered second turn, and two exact completed parent waits on the same child identity. The first concurrent attempt stopped at active after parent-exit interruption without SubagentStop; an exact TTL watchdog moved that stale identity fail closed to unresolved and left the drifted Git baseline unattributed. The no-event first-attestation timeout adds an exact running-child native interrupt acknowledgement while correctly retaining unresolved authority. A separate current-source V2 close probe joins requested task name, canonical AgentPath, real SessionMeta ThreadId, Hook events, exact close target, and post-close live-tree absence for a still-running child; the host waited for its session loop and returned process_tree_quiescence_claimed=false. The concurrent pair traverses two spawn, two SubagentStart, two native tool calls, repeated mediated SubagentStop attempts, two accepted reports, and two parent waits while execution overlaps; both durable records reach fresh-owner consumed state under one exact evidence hash. One real auto-compaction run joins PreCompact sequence 1906 to a later native PreToolUse at 1907, increments the durable recovery epoch, preserves exact SessionMeta/AgentPath and Git authority, reaches an exact callback, and is fresh-owner consumed; a three-tool timing attempt fails closed and is watchdog-unresolved. A separate post-compact negative serializes a foreign dirty-path injection between PreCompact and the next PreToolUse, denies that tool, records exact unattributed termination evidence, and returns a terminal callback without leaving active authority. Strong mutation/process-tree quiescence, fully qualified orphan reconciliation, and remaining cohort replay are still missing; unsupported public V2 child resurrection is not treated as an identity gate"
       },
       {
         "id": "P4",
@@ -517,6 +525,8 @@
           "tests/test_g4_live_compact_resume.py",
           "docs/phase1-g4-probe-plan.md#vi-platform-and-regression-exit-sequence",
           "docs/phase1-evidence.md#qualification-only-live-install-2026-08-17",
+          "probes/p1-live-plaintext-message-delivery-20260908.json",
+          "tests/test_p1_live_plaintext_message_delivery.py",
           "probes/g4-live-nested-identity-20260908.json",
           "probes/g4-live-nested-identity-parent-adjudication-input-20260908.json",
           "probes/g4-live-nested-identity-parent-adjudication-result-20260908.json",
@@ -549,7 +559,7 @@
           "probes/g4-live-failed-apply-patch-posttool-callback-20260908.json",
           "tests/test_g4_live_failed_apply_patch_posttool_callback.py"
         ],
-        "blocker": "a narrow exact child-role/provider source seam and two live OpenAI-parent to ZHIPU-child read-only native-tool loops, including one fresh consumed record, prove that the current provider-inheritance boundary can be crossed without replacing the parent provider or App Server. Provider-free POSIX serial and concurrent pairs also completed without selecting the candidate as the GUI App Server; the concurrent run has a known zero candidate exit and actual overlap, while its parent projection omitted child thread ids. A provider-free POSIX depth-two run additionally completed with a known zero candidate exit, exact root/explorer/G4 identities, target Hook mediation, two-level callback, and fresh-owner consumption. One exact-path POSIX child write then completed under the same headless-only selection, and the hash-pinned Hook overlay returned to its original bytes immediately afterward. The earlier one-shot sandbox overlay also has an exact hash-pinned rollback: live config and scripts returned to their prior bytes, an in-process cached Hook definition failed closed rather than reloading, and a full App restart restored the prior trusted Hook set with zero warnings or errors. These are narrow positive receipts, not broad upgrade compatibility. The legacy Utopia DeepSeek route, Windows parity, DeepSeek regression, and broader external-child lifecycle and rollback cohorts remain missing; the independent App Server Broker replacement still cannot satisfy this project's native AgentPath lifecycle contract"
+        "blocker": "a narrow exact child-role/provider source seam and two live OpenAI-parent to ZHIPU-child read-only native-tool loops, including one fresh consumed record, prove that the current provider-inheritance boundary can be crossed without replacing the parent provider or App Server. Provider-free POSIX serial and concurrent pairs also completed without selecting the candidate as the GUI App Server; the concurrent run has a known zero candidate exit and actual overlap, while its parent projection omitted child thread ids. A provider-free POSIX depth-two run additionally completed with a known zero candidate exit, exact root/explorer/G4 identities, target Hook mediation, two-level callback, and fresh-owner consumption. A separate POSIX idle-child run completed with zero candidate exit and empty stderr while delivering send_message and followup_task as exact plaintext user-message wires. One exact-path POSIX child write then completed under the same headless-only selection, and the hash-pinned Hook overlay returned to its original bytes immediately afterward. The earlier one-shot sandbox overlay also has an exact hash-pinned rollback: live config and scripts returned to their prior bytes, an in-process cached Hook definition failed closed rather than reloading, and a full App restart restored the prior trusted Hook set with zero warnings or errors. These are narrow positive receipts, not broad upgrade compatibility. The legacy Utopia DeepSeek route, Windows parity, DeepSeek regression, and broader external-child lifecycle and rollback cohorts remain missing; the independent App Server Broker replacement still cannot satisfy this project's native AgentPath lifecycle contract"
       }
     ],
     "exit_receipts": [
@@ -585,7 +595,9 @@
           "probes/g4-live-nested-identity-20260908.json",
           "probes/g4-live-nested-identity-parent-adjudication-input-20260908.json",
           "probes/g4-live-nested-identity-parent-adjudication-result-20260908.json",
-          "tests/test_g4_live_nested_identity.py"
+          "tests/test_g4_live_nested_identity.py",
+          "probes/p1-live-plaintext-message-delivery-20260908.json",
+          "tests/test_p1_live_plaintext_message_delivery.py"
         ]
       },
       {
@@ -666,7 +678,9 @@
           "tests/test_g4_live_failed_apply_patch_posttool_callback.py",
           "probes/g4-live-nested-identity-20260908.json",
           "probes/g4-live-nested-identity-parent-adjudication-result-20260908.json",
-          "tests/test_g4_live_nested_identity.py"
+          "tests/test_g4_live_nested_identity.py",
+          "probes/p1-live-plaintext-message-delivery-20260908.json",
+          "tests/test_p1_live_plaintext_message_delivery.py"
         ]
       },
       {
@@ -752,7 +766,9 @@
           "probes/g4-live-nested-identity-20260908.json",
           "probes/g4-live-nested-identity-parent-adjudication-input-20260908.json",
           "probes/g4-live-nested-identity-parent-adjudication-result-20260908.json",
-          "tests/test_g4_live_nested_identity.py"
+          "tests/test_g4_live_nested_identity.py",
+          "probes/p1-live-plaintext-message-delivery-20260908.json",
+          "tests/test_p1_live_plaintext_message_delivery.py"
         ]
       },
       {
