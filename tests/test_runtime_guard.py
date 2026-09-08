@@ -804,6 +804,60 @@ class RuntimeGuardTests(unittest.TestCase):
             self.store.path("consumed", self.capsule["assignment_id"]).exists()
         )
 
+    def test_subagent_stop_blocks_pre_write_timeout_until_parent_cancel(self):
+        assignment_id = self.capsule["assignment_id"]
+        deadline = dt.datetime.fromisoformat(
+            self.capsule["pre_write_attestation_deadline"]
+        )
+        terminated = runtime_guard.sweep_deadlines(
+            self.store,
+            now=deadline + dt.timedelta(microseconds=1),
+            assignment_ids={assignment_id},
+        )
+        unresolved_path = self.store.path("unresolved", assignment_id)
+        before = hashlib.sha256(unresolved_path.read_bytes()).hexdigest()
+
+        stopped = runtime_guard.subagent_stop(
+            self.store,
+            self.stop_hook("WAITING_FOR_PARENT_INTERRUPT"),
+        )
+
+        self.assertEqual(terminated[0]["reason"], "pre_write_attestation_timeout")
+        self.assertEqual(stopped["decision"], "block")
+        self.assertIn("TASK.PARENT_CANCEL_REQUIRED", stopped["reason"])
+        self.assertIn("reason=pre_write_attestation_timeout", stopped["reason"])
+        self.assertIn("native interrupt or cancel", stopped["reason"])
+        self.assertIn("does not authorize ownership handover", stopped["reason"])
+        self.assertEqual(hashlib.sha256(unresolved_path.read_bytes()).hexdigest(), before)
+
+    def test_subagent_stop_blocks_assignment_timeout_until_parent_cancel(self):
+        assignment_id = self.capsule["assignment_id"]
+        created_at = dt.datetime.fromisoformat(self.capsule["created_at"])
+        allowed = runtime_guard.pre_tool_use(
+            self.store,
+            self.child_hook("PreToolUse", tool_name="list_agents"),
+            now=created_at + dt.timedelta(seconds=1),
+        )
+        expires_at = dt.datetime.fromisoformat(self.capsule["expires_at"])
+        terminated = runtime_guard.sweep_deadlines(
+            self.store,
+            now=expires_at + dt.timedelta(microseconds=1),
+            assignment_ids={assignment_id},
+        )
+
+        stopped = runtime_guard.subagent_stop(
+            self.store,
+            self.stop_hook("WAITING_FOR_PARENT_INTERRUPT"),
+        )
+
+        self.assertIn("additionalContext", allowed["hookSpecificOutput"])
+        self.assertEqual(terminated[0]["reason"], "assignment_timeout")
+        self.assertEqual(stopped["decision"], "block")
+        self.assertIn("TASK.PARENT_CANCEL_REQUIRED", stopped["reason"])
+        self.assertIn("reason=assignment_timeout", stopped["reason"])
+        self.assertTrue(self.store.path("unresolved", assignment_id).exists())
+        self.assertFalse(self.store.path("reported", assignment_id).exists())
+
     def test_subagent_stop_rejects_forged_terminal_unresolved_reason(self):
         prior_assignment_id = self.capsule["assignment_id"]
         self.replace_active_capsule(self.make_capsule(mutation_mode="read_only"))

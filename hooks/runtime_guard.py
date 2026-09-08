@@ -69,6 +69,12 @@ TERMINAL_AUTHORITY_REASONS = frozenset(
         "write_authority_gates_missing",
     }
 )
+PARENT_CANCEL_REQUIRED_REASONS = frozenset(
+    {
+        "assignment_timeout",
+        "pre_write_attestation_timeout",
+    }
+)
 
 
 def qualified_read_only_tool_name(value: object) -> str | None:
@@ -933,6 +939,19 @@ def subagent_stop(store: StateStore, hook_input: Mapping[str, object]) -> dict:
         except MissingState:
             terminal = store.find_unresolved(identity)
             if terminal is not None and guard_terminated_unresolved(terminal[1]):
+                termination_evidence = terminal[1]["termination_evidence"]
+                termination_reason = termination_evidence["reason"]
+                if termination_reason in PARENT_CANCEL_REQUIRED_REASONS:
+                    return {
+                        "decision": "block",
+                        "reason": (
+                            "TASK.PARENT_CANCEL_REQUIRED: authority terminated by watchdog "
+                            f"reason={termination_reason}; the child cannot self-complete "
+                            "after a no-event timeout. The parent must use native interrupt "
+                            "or cancel. An interrupt acknowledgement alone does not authorize "
+                            "ownership handover."
+                        ),
+                    }
                 return {}
             lost = store.context_lost_for(identity)
             message = hook_input.get("last_assistant_message")
