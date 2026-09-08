@@ -87,9 +87,12 @@
           "probes/g4-live-concurrent-batch-orphan-negative-20260908.json",
           "tests/test_g4_live_concurrent_batch_orphan_negative.py",
           "probes/g4-live-concurrent-identity-20260908.json",
-          "tests/test_g4_live_concurrent_identity.py"
+          "tests/test_g4_live_concurrent_identity.py",
+          "probes/g4-live-concurrent-identity-parent-adjudication-input-20260908.json",
+          "probes/g4-live-concurrent-identity-parent-adjudication-result-20260908.json",
+          "tests/test_g4_live_concurrent_identity_parent_adjudication.py"
         ],
-        "blocker": "the prior signed runtime encrypted the spawn message before PreToolUse, while the current signed runtime opt-in candidate now has a consumed inherited-OpenAI root receipt and a separately consumed external-ZHIPU child receipt in which PreToolUse observed the exact plaintext assignment hash and SubagentStart consumed and identity-bound the capsule. A provider-free serial sample additionally captured and fresh-owner consumed two distinct plaintext assignments after two native read-only list_agents loops, with child B spawned only after child A's terminal callback. A first concurrent attempt captured only A and exposed a parent-exit orphan negative; the next attempt captured two distinct plaintext assignments, both real child identities, and actual execution overlap. The native parent projection omitted child thread ids and therefore failed closed, while a fresh owner could complete the SessionMeta/Hook join. Upstream SDK and App Server still expose no supported plaintext spawn choice; send_message/followup_task delivery, distinct same-message deny pairs, nested delivery, parent-visible concurrent identity, and broader cohort scale remain unqualified"
+        "blocker": "the prior signed runtime encrypted the spawn message before PreToolUse, while the current signed runtime opt-in candidate now has a consumed inherited-OpenAI root receipt and a separately consumed external-ZHIPU child receipt in which PreToolUse observed the exact plaintext assignment hash and SubagentStart consumed and identity-bound the capsule. A provider-free serial sample additionally captured and fresh-owner consumed two distinct plaintext assignments after two native read-only list_agents loops, with child B spawned only after child A's terminal callback. A first concurrent attempt captured only A and exposed a parent-exit orphan negative; the next attempt captured two distinct plaintext assignments, both real child identities, and actual execution overlap, then a fresh owner consumed both reports under one exact evidence hash. The native source-parent projection omitted child thread ids and therefore failed closed. Upstream SDK and App Server still expose no supported plaintext spawn choice; send_message/followup_task delivery, distinct same-message deny pairs, nested delivery, parent-visible concurrent identity, and broader cohort scale remain unqualified"
       },
       {
         "id": "P2",
@@ -126,9 +129,12 @@
           "probes/g4-live-concurrent-batch-orphan-negative-20260908.json",
           "tests/test_g4_live_concurrent_batch_orphan_negative.py",
           "probes/g4-live-concurrent-identity-20260908.json",
-          "tests/test_g4_live_concurrent_identity.py"
+          "tests/test_g4_live_concurrent_identity.py",
+          "probes/g4-live-concurrent-identity-parent-adjudication-input-20260908.json",
+          "probes/g4-live-concurrent-identity-parent-adjudication-result-20260908.json",
+          "tests/test_g4_live_concurrent_identity_parent_adjudication.py"
         ],
-        "blocker": "the current signed runtime now has one fresh inherited-OpenAI assignment-to-SessionMeta/canonical-AgentPath join and one exact external-ZHIPU child join, both through consumed state, in addition to one historical root and two older partial concurrent records. One provider-free two-child serial sample proves distinct assignment, handoff, child thread, and canonical AgentPath values under the same parent SessionMeta, with child B starting only after child A's callback; both serial records now have exact five-dimension fresh-owner consumption. The first new concurrent attempt proves an orphaned A join; the second proves two distinct exact SessionMeta/canonical-AgentPath joins and a 28.377-second overlap witnessed by B's list_agents result. The native parent still cannot see child thread ids in spawn/wait results, and the two reported records are not yet fresh-owner consumed. Nested identity joins plus broader serial, concurrent, and mixed-provider cohort scale remain missing"
+        "blocker": "the current signed runtime now has one fresh inherited-OpenAI assignment-to-SessionMeta/canonical-AgentPath join and one exact external-ZHIPU child join, both through consumed state, in addition to one historical root and two older partial concurrent records. One provider-free two-child serial sample proves distinct assignment, handoff, child thread, and canonical AgentPath values under the same parent SessionMeta, with child B starting only after child A's callback; both serial records have exact five-dimension fresh-owner consumption. The first new concurrent attempt proves an orphaned A join; the second proves two distinct exact SessionMeta/canonical-AgentPath joins and a 28.377-second overlap witnessed by B's list_agents result, and both records now have exact five-dimension fresh-owner consumption. The native source parent still cannot see child thread ids in spawn/wait results. Nested identity joins plus broader serial, concurrent, and mixed-provider cohort scale remain missing"
       },
       {
         "id": "P3",
@@ -160,9 +166,12 @@
           "probes/g4-live-concurrent-batch-orphan-negative-20260908.json",
           "tests/test_g4_live_concurrent_batch_orphan_negative.py",
           "probes/g4-live-concurrent-identity-20260908.json",
-          "tests/test_g4_live_concurrent_identity.py"
+          "tests/test_g4_live_concurrent_identity.py",
+          "probes/g4-live-concurrent-identity-parent-adjudication-input-20260908.json",
+          "probes/g4-live-concurrent-identity-parent-adjudication-result-20260908.json",
+          "tests/test_g4_live_concurrent_identity_parent_adjudication.py"
         ],
-        "blocker": "a current-runtime inherited-OpenAI assignment and a separate external-ZHIPU child both traverse pending, claimed, active, reported, and consumed with exact keyed identity. The provider-free serial pair separately traverses spawn, SubagentStart, native tool use, SubagentStop, terminal callback, then next spawn; both records reach reported and then fresh-owner consumed state under one exact evidence hash. The first concurrent attempt stops at active after parent-exit interruption without SubagentStop. The next concurrent pair traverses two spawn, two SubagentStart, two native tool calls, repeated mediated SubagentStop attempts, two accepted reports, and two parent waits while execution overlaps; both durable records are reported but not consumed. Crash recovery, orphan reconciliation, durable resume, cancel, and cohort replay remain missing"
+        "blocker": "a current-runtime inherited-OpenAI assignment and a separate external-ZHIPU child both traverse pending, claimed, active, reported, and consumed with exact keyed identity. The provider-free serial pair separately traverses spawn, SubagentStart, native tool use, SubagentStop, terminal callback, then next spawn; both records reach reported and then fresh-owner consumed state under one exact evidence hash. The first concurrent attempt stops at active after parent-exit interruption without SubagentStop. The next concurrent pair traverses two spawn, two SubagentStart, two native tool calls, repeated mediated SubagentStop attempts, two accepted reports, and two parent waits while execution overlaps; both durable records now reach fresh-owner consumed state under one exact evidence hash. Crash recovery, orphan reconciliation, durable resume, cancel, and cohort replay remain missing"
       },
       {
         "id": "P4",
@@ -284,9 +293,12 @@
           "probes/g4-live-concurrent-batch-orphan-negative-20260908.json",
           "tests/test_g4_live_concurrent_batch_orphan_negative.py",
           "probes/g4-live-concurrent-identity-20260908.json",
-          "tests/test_g4_live_concurrent_identity.py"
+          "tests/test_g4_live_concurrent_identity.py",
+          "probes/g4-live-concurrent-identity-parent-adjudication-input-20260908.json",
+          "probes/g4-live-concurrent-identity-parent-adjudication-result-20260908.json",
+          "tests/test_g4_live_concurrent_identity_parent_adjudication.py"
         ],
-        "blocker": "the current signed runtime has one exact inherited-OpenAI SubagentStop report and one exact external-ZHIPU read-only report consumed after fresh five-dimension parent adjudication. The provider-free serial pair adds two exact consumed attestations under one fresh-owner evidence hash, one mediated invalid-final correction, and two ordered parent callbacks. The live concurrent pair adds two exact reported attestations under overlapping execution and a fresh-owner identity join, but the native parent projection lacked thread ids and integration consumption is not yet complete. Compact/resume, context-loss, mixed-frontier, mutation-capable contribution, and broader cohort adjudication remain missing"
+        "blocker": "the current signed runtime has one exact inherited-OpenAI SubagentStop report and one exact external-ZHIPU read-only report consumed after fresh five-dimension parent adjudication. The provider-free serial pair adds two exact consumed attestations under one fresh-owner evidence hash, one mediated invalid-final correction, and two ordered parent callbacks. The live concurrent pair adds two exact consumed attestations under overlapping execution and one fresh-owner evidence hash; the native source parent projection still lacks child thread ids. Compact/resume, context-loss, mixed-frontier, mutation-capable contribution, and broader cohort adjudication remain missing"
       },
       {
         "id": "P6a",
@@ -301,9 +313,12 @@
           "tests/test_g4_zhipu_native_child_parent_adjudication.py",
           "probes/g4-live-serial-identity-parent-adjudication-input-20260908.json",
           "probes/g4-live-serial-identity-parent-adjudication-result-20260908.json",
-          "tests/test_g4_live_serial_identity_parent_adjudication.py"
+          "tests/test_g4_live_serial_identity_parent_adjudication.py",
+          "probes/g4-live-concurrent-identity-parent-adjudication-input-20260908.json",
+          "probes/g4-live-concurrent-identity-parent-adjudication-result-20260908.json",
+          "tests/test_g4_live_concurrent_identity_parent_adjudication.py"
         ],
-        "blocker": "current-runtime inherited-OpenAI and external-ZHIPU owner-internal read-only observations pass fresh provenance adjudication; the provider-free serial pair adds two distinct identity-bound owner-internal list_agents observations consumed under one fresh-owner evidence hash. Live mutation contribution causality, cross-owner derivation, and mixed-frontier provenance remain missing"
+        "blocker": "current-runtime inherited-OpenAI and external-ZHIPU owner-internal read-only observations pass fresh provenance adjudication; the provider-free serial and concurrent pairs add four distinct identity-bound owner-internal list_agents observations consumed under per-pair fresh-owner evidence hashes. Live mutation contribution causality, cross-owner derivation, and mixed-frontier provenance remain missing"
       },
       {
         "id": "P6b",
@@ -318,9 +333,12 @@
           "tests/test_g4_zhipu_native_child_parent_adjudication.py",
           "probes/g4-live-serial-identity-parent-adjudication-input-20260908.json",
           "probes/g4-live-serial-identity-parent-adjudication-result-20260908.json",
-          "tests/test_g4_live_serial_identity_parent_adjudication.py"
+          "tests/test_g4_live_serial_identity_parent_adjudication.py",
+          "probes/g4-live-concurrent-identity-parent-adjudication-input-20260908.json",
+          "probes/g4-live-concurrent-identity-parent-adjudication-result-20260908.json",
+          "tests/test_g4_live_concurrent_identity_parent_adjudication.py"
         ],
-        "blocker": "strict read-only null-feasibility passes fresh current-runtime parent adjudication for inherited-OpenAI, external-ZHIPU, and the two distinct provider-free serial list_agents observations. Domain, scale, equivalence, and mutation-capable live feasibility evidence remain missing"
+        "blocker": "strict read-only null-feasibility passes fresh current-runtime parent adjudication for inherited-OpenAI, external-ZHIPU, and the four distinct provider-free serial/concurrent list_agents observations. Domain, scale, equivalence, and mutation-capable live feasibility evidence remain missing"
       },
       {
         "id": "P6c",
@@ -381,7 +399,10 @@
           "probes/g4-live-concurrent-batch-orphan-negative-20260908.json",
           "tests/test_g4_live_concurrent_batch_orphan_negative.py",
           "probes/g4-live-concurrent-identity-20260908.json",
-          "tests/test_g4_live_concurrent_identity.py"
+          "tests/test_g4_live_concurrent_identity.py",
+          "probes/g4-live-concurrent-identity-parent-adjudication-input-20260908.json",
+          "probes/g4-live-concurrent-identity-parent-adjudication-result-20260908.json",
+          "tests/test_g4_live_concurrent_identity_parent_adjudication.py"
         ]
       },
       {

@@ -2698,3 +2698,47 @@ scale or strong global quiescence. Mutation, compact/resume, cancel/crash,
 representative P6c, Windows, and DeepSeek regression remain open.
 `phase1_complete=false`, `direct_write_qualified=false`, and Phases 2/3 remain
 closed.
+
+## Fresh-owner adjudication of the concurrent identity pair
+
+After commit `00d6db7c0de6461109fa8157bc237b0f33673360`, the fresh `/root`
+owner independently re-read the two child rollouts, real SessionMeta, exact
+reported envelopes, Hook sequence, overlap witness, and clean disk/process
+barrier. Worker HEAD `da0cdcbafc80439f1589685af3731d0b34a3a95b` is an ancestor
+of the clean fresh-owner HEAD. The six intervening paths are exactly the
+parent-authored concurrent receipt, prompt acceptance wording, status,
+documentation, and tests; neither read-only child contributed a path.
+
+The immutable adjudication input has SHA-256
+`a55a69180b34fa6a7b2f7ed72af2596c0471fe9b08ab4f576284bb0de5389a9e`.
+Location integrity, mutation-scope integrity, verification freshness,
+derivation-provenance integrity, and null-feasibility integrity passed for both
+assignments against that same hash. Assignment
+`44b01bc1-80ba-49da-8f25-5a370f24f020` moved from reported to consumed with
+envelope hash
+`25f749ffd4d23dc2572b68c89dec44d62ad405fd4e4312a68258cb837fb78fe8`;
+assignment `f957955f-1e81-420d-9c40-e5facd685e35` moved likewise with envelope
+hash `9657e60f5d0eb4ec0facaf16382c4077f214c9d470d903f1e2b2b3d427cd6459`.
+Both exact identities are absent from active, reported, and unresolved after
+the transition.
+
+The fresh owner adjudicated the 28.377-second overlap because B's own native
+observation saw A and B running and the Hook/rollout timing placed B before A's
+accepted stop. This does not repair the source parent's result projection:
+spawn/wait still omitted child thread ids, so source-parent self-adjudication
+remains false. It also does not reconcile the earlier `a1` orphan, qualify
+cohort scale, or supply a strong global quiescence receipt.
+
+The input, result, and executable checks are
+`probes/g4-live-concurrent-identity-parent-adjudication-input-20260908.json`,
+`probes/g4-live-concurrent-identity-parent-adjudication-result-20260908.json`,
+and `tests/test_g4_live_concurrent_identity_parent_adjudication.py`. This adds
+positive P1/P2/P3/P6/P6a/P6b evidence for one provider-free concurrent pair.
+The fresh full provider-free suite passed 495 tests in 56.504 seconds with
+agent-template checks. Phase 1, mutation, and same-UID normal checks returned
+zero; their promotion-required forms returned 2. The mutation matrix retains
+thirteen blockers and same-UID rollout/state remain unprotected.
+Nested/resume identity, orphan recovery, mutation-capable contribution, full
+mutation negative space, representative P6c, strong global quiescence,
+Windows, and DeepSeek regression remain open. `phase1_complete=false`,
+`direct_write_qualified=false`, and Phases 2/3 remain closed.
