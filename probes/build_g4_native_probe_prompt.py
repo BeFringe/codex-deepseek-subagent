@@ -14,6 +14,7 @@ import sys
 
 AGENT_TYPE = "g4_qualification_probe_worker"
 TASK_NAME_RE = re.compile(r"^[a-z0-9_]+$")
+PARENT_AGENT_PATH_RE = re.compile(r"^/root(?:/[a-z0-9_]+)*$")
 VERIFICATION_COMMAND = "native list_agents read-only probe"
 NON_GIT_PROBE_ROOT = Path("/private/tmp")
 NEGATIVE_MUTATION_MARKER = "G4_CHILD_DENY_PROBE"
@@ -260,6 +261,7 @@ def build_prompt(
     root: Path,
     task_name: str,
     *,
+    parent_agent_path: str = "/root",
     pretool_schema_control: bool = False,
     child_tool: str = "list_agents",
     negative_mutation_path: Path | None = None,
@@ -268,6 +270,8 @@ def build_prompt(
         raise ProbePromptError(
             "task name must contain only lowercase letters, digits, and underscores"
         )
+    if not PARENT_AGENT_PATH_RE.fullmatch(parent_agent_path):
+        raise ProbePromptError("parent AgentPath must be canonical and rooted at /root")
     location = clean_git_location(root)
     try:
         contract = dict(CHILD_TOOL_CONTRACTS[child_tool])
@@ -285,7 +289,7 @@ def build_prompt(
             negative_mutation_marker=NEGATIVE_MUTATION_MARKER,
         )
     authority = authority_declaration(location, child_tool=child_tool)
-    canonical_agent_path = f"/root/{task_name}"
+    canonical_agent_path = f"{parent_agent_path}/{task_name}"
     parent_control = ""
     if pretool_schema_control:
         parent_control = f"""Before spawning, call exec_command exactly once with cmd `/bin/pwd`, workdir `{location['root']}`, and no shell composition. This is the read-only positive control for PreToolUse observation. Require exit code 0 and stdout exactly `{location['root']}`; if it fails or differs, report the non-secret result and stop without spawning.

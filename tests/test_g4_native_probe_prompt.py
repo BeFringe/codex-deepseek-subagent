@@ -112,6 +112,16 @@ class G4NativeProbePromptTests(unittest.TestCase):
         )
         self.assertNotIn("Call native list_agents exactly once", lifecycle)
 
+        nested = probe_prompt.build_prompt(
+            self.root,
+            "g4_nested_child_1",
+            parent_agent_path="/root/g4_nested_parent_1",
+        )
+        self.assertIn(
+            "/root/g4_nested_parent_1/g4_nested_child_1",
+            nested,
+        )
+
     def test_dirty_worktree_and_noncanonical_task_name_fail_closed(self):
         (self.root / "dirty.txt").write_text("dirty\n", encoding="utf-8")
 
@@ -123,6 +133,14 @@ class G4NativeProbePromptTests(unittest.TestCase):
             probe_prompt.ProbePromptError, "task name"
         ):
             probe_prompt.build_prompt(self.root, "G4/root")
+        with self.assertRaisesRegex(
+            probe_prompt.ProbePromptError, "parent AgentPath"
+        ):
+            probe_prompt.build_prompt(
+                self.root,
+                "g4_root_2",
+                parent_agent_path="/root//not-canonical",
+            )
 
     def test_negative_mutation_prompt_is_read_only_and_requires_absent_target(self):
         target = Path(self.temporary_directory.name) / "child-deny.txt"
