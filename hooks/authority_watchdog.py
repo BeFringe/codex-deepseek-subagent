@@ -17,14 +17,21 @@ from runtime_guard import sweep_deadlines
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--state-directory", type=Path, required=True)
+    parser.add_argument("--assignment-id", action="append", default=[])
     parser.add_argument("--now")
     parser.add_argument("--fail-on-termination", action="store_true")
     arguments = parser.parse_args()
     try:
         now = dt.datetime.fromisoformat(arguments.now) if arguments.now else None
+        if len(arguments.assignment_id) != len(set(arguments.assignment_id)):
+            raise ValueError("watchdog assignment selectors must be unique")
+        assignment_ids = (
+            set(arguments.assignment_id) if arguments.assignment_id else None
+        )
         terminated = sweep_deadlines(
             StateStore(arguments.state_directory),
             now=now,
+            assignment_ids=assignment_ids,
         )
     except (StateError, ValueError) as error:
         print(json.dumps({"valid": False, "error": str(error)}, separators=(",", ":")))
@@ -34,6 +41,8 @@ def main() -> int:
         "terminated_count": len(terminated),
         "terminated": terminated,
         "parent_cancel_required": bool(terminated),
+        "selection": "exact" if arguments.assignment_id else "all_active",
+        "requested_assignment_ids": sorted(arguments.assignment_id),
     }
     print(json.dumps(result, ensure_ascii=False, separators=(",", ":"), sort_keys=True))
     if arguments.fail_on_termination and terminated:

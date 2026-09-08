@@ -745,12 +745,26 @@ def sweep_deadlines(
     store: StateStore,
     *,
     now: dt.datetime | None = None,
+    assignment_ids: set[str] | None = None,
 ) -> list[dict]:
     observed_at = now or dt.datetime.now(dt.timezone.utc)
     if observed_at.tzinfo is None or observed_at.utcoffset() is None:
         raise GuardError("watchdog time must include a UTC offset")
+    if assignment_ids is not None and not assignment_ids:
+        raise GuardError("watchdog assignment selector must not be empty")
+    active = store.list_active()
+    if assignment_ids is not None:
+        available = {assignment_id for assignment_id, _ in active}
+        missing = sorted(assignment_ids - available)
+        if missing:
+            raise GuardError(
+                "requested active assignment not found: " + ", ".join(missing)
+            )
+        active = [
+            item for item in active if item[0] in assignment_ids
+        ]
     results = []
-    for assignment_id, envelope in store.list_active():
+    for assignment_id, envelope in active:
         capsule = envelope["capsule"]
         runtime = _active_runtime(envelope)
         reason = None

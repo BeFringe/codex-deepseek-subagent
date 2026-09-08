@@ -900,6 +900,63 @@ class RuntimeGuardTests(unittest.TestCase):
         )
         self.assertTrue(terminated[0]["disk_changed"])
 
+    def test_watchdog_exact_selector_ignores_unrelated_invalid_root(self):
+        other = self.make_capsule(mutation_mode="read_only")
+        other["requested_task_name"] = "stale_task"
+        other["canonical_agent_path"] = "/root/stale_task"
+        other["root"]["path"] = str(self.root / "missing-repository")
+        other["capsule_sha256"] = capsule_sha256(other)
+        self.store.stage(other, self.assignment)
+        self.store.claim(
+            other["handoff_id"],
+            {
+                "runtime_session_id": "runtime-session",
+                "child_thread_id": "stale-child",
+                "agent_id": "stale-child",
+                "parent_thread_id": "runtime-session",
+                "agent_type": "fixture_worker",
+                "canonical_agent_path": "/root/stale_task",
+                "codex_version": MIGRATION_HANDOFF_VERSION,
+            },
+        )
+        self.store.activate(other["handoff_id"])
+        deadline = dt.datetime.fromisoformat(
+            self.capsule["pre_write_attestation_deadline"]
+        )
+
+        terminated = runtime_guard.sweep_deadlines(
+            self.store,
+            now=deadline + dt.timedelta(seconds=1),
+            assignment_ids={self.capsule["assignment_id"]},
+        )
+
+        self.assertEqual(
+            [item["assignment_id"] for item in terminated],
+            [self.capsule["assignment_id"]],
+        )
+        self.assertTrue(
+            self.store.path("active", other["assignment_id"]).exists()
+        )
+
+    def test_watchdog_exact_selector_validates_before_mutation(self):
+        deadline = dt.datetime.fromisoformat(
+            self.capsule["pre_write_attestation_deadline"]
+        )
+        missing = str(uuid.uuid4())
+
+        with self.assertRaisesRegex(
+            runtime_guard.GuardError, "requested active assignment not found"
+        ):
+            runtime_guard.sweep_deadlines(
+                self.store,
+                now=deadline + dt.timedelta(seconds=1),
+                assignment_ids={self.capsule["assignment_id"], missing},
+            )
+
+        self.assertTrue(
+            self.store.path("active", self.capsule["assignment_id"]).exists()
+        )
+
     def test_executable_watchdog_requests_parent_cancel_on_deadline(self):
         deadline = dt.datetime.fromisoformat(self.capsule["pre_write_attestation_deadline"])
 
@@ -911,6 +968,8 @@ class RuntimeGuardTests(unittest.TestCase):
                 str(self.store.root),
                 "--now",
                 (deadline + dt.timedelta(seconds=1)).isoformat(),
+                "--assignment-id",
+                self.capsule["assignment_id"],
                 "--fail-on-termination",
             ],
             text=True,
@@ -921,6 +980,10 @@ class RuntimeGuardTests(unittest.TestCase):
         result = json.loads(completed.stdout)
 
         self.assertEqual(completed.returncode, 2, completed.stderr)
+        self.assertEqual(result["selection"], "exact")
+        self.assertEqual(
+            result["requested_assignment_ids"], [self.capsule["assignment_id"]]
+        )
         self.assertTrue(result["parent_cancel_required"])
         self.assertEqual(
             result["terminated"][0]["classification"],
