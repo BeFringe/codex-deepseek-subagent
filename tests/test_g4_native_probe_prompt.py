@@ -193,6 +193,28 @@ class G4NativeProbePromptTests(unittest.TestCase):
             self.assertEqual(shell_declaration["owned_paths"], [])
             self.assertFalse(any(shell_declaration["git_authority"].values()))
 
+            sandbox_prompt = probe_prompt.build_prompt(
+                self.root,
+                "g4_child_sandbox_1",
+                child_tool="code_mode_bash_sandbox_negative",
+                negative_mutation_path=target,
+            )
+            sandbox_declaration = json.loads(
+                sandbox_prompt.split("BEGIN CODEX WORKER AUTHORITY\n", 1)[1].split(
+                    "\nEND CODEX WORKER AUTHORITY", 1
+                )[0]
+            )
+            self.assertIn("exact qualification Hook grant", sandbox_prompt)
+            self.assertIn("runtime read-only sandbox", sandbox_prompt)
+            self.assertEqual(
+                sandbox_declaration["verification"],
+                ["code-mode nested Bash read-only sandbox denial probe"],
+            )
+            self.assertEqual(sandbox_declaration["assignment_mutation_mode"], "read_only")
+            self.assertEqual(sandbox_declaration["parent_recorded_user_write_intent"], "deny")
+            self.assertEqual(sandbox_declaration["owned_paths"], [])
+            self.assertFalse(any(sandbox_declaration["git_authority"].values()))
+
             target.write_text("unexpected preexisting byte\n", encoding="utf-8")
             with self.assertRaisesRegex(
                 probe_prompt.ProbePromptError, "target must be absent"
@@ -219,6 +241,15 @@ class G4NativeProbePromptTests(unittest.TestCase):
                     self.root,
                     "g4_child_deny_shell_2",
                     child_tool="code_mode_exec_command_negative",
+                    negative_mutation_path=target,
+                )
+            with self.assertRaisesRegex(
+                probe_prompt.ProbePromptError, "target must be absent"
+            ):
+                probe_prompt.build_prompt(
+                    self.root,
+                    "g4_child_sandbox_2",
+                    child_tool="code_mode_bash_sandbox_negative",
                     negative_mutation_path=target,
                 )
 

@@ -54,6 +54,10 @@ READ_ONLY_TOOL_NAME_ALIASES = {
     # prefixes (which could authorize an unknown tool by suffix).
     "g4_assignmentlist_agents": "list_agents",
 }
+QUALIFICATION_SANDBOX_PROBE_ROOT = Path("/private/tmp")
+QUALIFICATION_SANDBOX_PROBE_VERIFICATION = (
+    "code-mode nested Bash read-only sandbox denial probe"
+)
 TERMINAL_AUTHORITY_REASONS = frozenset(
     {
         "assignment_timeout",
@@ -61,6 +65,7 @@ TERMINAL_AUTHORITY_REASONS = frozenset(
         "initial_location_or_scope_mismatch",
         "pre_write_attestation_timeout",
         "read_only_mutation_attempt",
+        "sandbox_probe_dispatched",
         "write_authority_gates_missing",
     }
 )
@@ -94,6 +99,15 @@ def guard_terminated_unresolved(envelope: Mapping[str, object]) -> bool:
         _session_meta_timestamp(evidence.get("observed_at"), "termination observed_at")
     except IdentityMismatch:
         return False
+    if evidence.get("reason") == "sandbox_probe_dispatched":
+        target = evidence.get("sandbox_probe_target")
+        command = evidence.get("sandbox_probe_command")
+        if not isinstance(target, str) or not isinstance(command, str):
+            return False
+        if evidence.get("attempted_tool_name") != "Bash":
+            return False
+        if evidence.get("mutation_blocked_before_execution") is not False:
+            return False
     return True
 
 
@@ -339,11 +353,88 @@ def child_identity_from_stop(hook_input: Mapping[str, object]) -> dict[str, str]
     }
 
 
+def _consume_qualification_sandbox_probe(
+    store: StateStore,
+    assignment_id: str,
+    envelope: Mapping[str, object],
+    hook_input: Mapping[str, object],
+    identity: Mapping[str, str],
+    probe_targets: Mapping[str, Path],
+    *,
+    observed_at: dt.datetime,
+) -> bool:
+    capsule = envelope["capsule"]
+    task_name = capsule["requested_task_name"]
+    target_value = probe_targets.get(task_name)
+    if target_value is None:
+        return False
+    if hook_input.get("tool_name") != "Bash":
+        return False
+    target = Path(target_value)
+    probe_root = QUALIFICATION_SANDBOX_PROBE_ROOT.resolve(strict=True)
+    if not target.is_absolute() or target.parent.resolve(strict=True) != probe_root:
+        raise AuthorityViolation(
+            "qualification sandbox probe target is outside the fixed temporary root"
+        )
+    if target.resolve(strict=False) != target:
+        raise AuthorityViolation("qualification sandbox probe target is not canonical")
+    if target.exists() or target.is_symlink():
+        raise AuthorityViolation("qualification sandbox probe target is not absent")
+    expected_command = f"/usr/bin/touch {target}"
+    tool_input = hook_input.get("tool_input")
+    if not isinstance(tool_input, Mapping) or set(tool_input) != {"command"}:
+        return False
+    if tool_input["command"] != expected_command:
+        return False
+    if capsule["assignment_mutation_mode"] != "read_only":
+        raise AuthorityViolation("qualification sandbox probe requires read-only authority")
+    if capsule["parent_recorded_user_write_intent"] != "deny":
+        raise AuthorityViolation("qualification sandbox probe cannot carry parent write intent")
+    if capsule["trusted_host_user_write_consent"] != {
+        "schema": 1,
+        "status": "unavailable",
+        "source": None,
+        "receipt_sha256": None,
+    }:
+        raise AuthorityViolation("qualification sandbox probe cannot carry user write consent")
+    if capsule["owned_paths"] or capsule["excluded_paths"]:
+        raise AuthorityViolation("qualification sandbox probe cannot carry path ownership")
+    if any(capsule["git_authority"].values()):
+        raise AuthorityViolation("qualification sandbox probe cannot carry Git authority")
+    if capsule["verification"] != [QUALIFICATION_SANDBOX_PROBE_VERIFICATION]:
+        raise AuthorityViolation("qualification sandbox probe verification is not exact")
+    if identity["canonical_agent_path"] != f"/root/{task_name}":
+        raise AuthorityViolation("qualification sandbox probe AgentPath is not exact")
+    cwd = hook_input.get("cwd")
+    if not isinstance(cwd, str) or Path(cwd).resolve() != Path(
+        capsule["root"]["path"]
+    ).resolve():
+        raise AuthorityViolation("qualification sandbox probe cwd is not the capsule root")
+    snapshot = collect_git_snapshot(capsule["root"]["path"])
+    if disk_change_from_baseline(snapshot, capsule) is not False:
+        raise AuthorityViolation(
+            "qualification sandbox probe requires an unchanged captured baseline"
+        )
+    evidence = _termination_evidence(
+        capsule,
+        snapshot,
+        reason="sandbox_probe_dispatched",
+        observed_at=observed_at,
+        attempted_tool_name="Bash",
+    )
+    evidence["mutation_blocked_before_execution"] = False
+    evidence["sandbox_probe_target"] = str(target)
+    evidence["sandbox_probe_command"] = expected_command
+    store.terminate_active(assignment_id, evidence)
+    return True
+
+
 def pre_tool_use(
     store: StateStore,
     hook_input: Mapping[str, object],
     *,
     now: dt.datetime | None = None,
+    qualification_sandbox_probes: Mapping[str, Path] | None = None,
 ) -> dict:
     try:
         if hook_input.get("hook_event_name") != "PreToolUse":
@@ -351,10 +442,20 @@ def pre_tool_use(
         identity = child_identity_from_hook(hook_input)
         assignment_id, envelope = store.find_active(identity)
         tool_name = hook_input.get("tool_name")
+        observed_at = now or dt.datetime.now(dt.timezone.utc)
+        if qualification_sandbox_probes and _consume_qualification_sandbox_probe(
+            store,
+            assignment_id,
+            envelope,
+            hook_input,
+            identity,
+            qualification_sandbox_probes,
+            observed_at=observed_at,
+        ):
+            return {}
         qualified_tool_name = qualified_read_only_tool_name(tool_name)
         if qualified_tool_name is None:
             capsule = envelope["capsule"]
-            observed_at = now or dt.datetime.now(dt.timezone.utc)
             snapshot = collect_git_snapshot(capsule["root"]["path"])
             mutation_mode = capsule["assignment_mutation_mode"]
             reason = "read_only_mutation_attempt"
@@ -393,7 +494,6 @@ def pre_tool_use(
         if not isinstance(cwd, str):
             raise GuardError("PreToolUse has no cwd")
         snapshot = collect_git_snapshot(cwd)
-        observed_at = now or dt.datetime.now(dt.timezone.utc)
         runtime = _active_runtime(envelope)
         if (
             runtime["first_git_attested_at"] is None
@@ -743,6 +843,8 @@ def _termination_evidence(
         )
     elif reason == "read_only_mutation_attempt":
         classification = "read_only_child_mutation_attempt"
+    elif reason == "sandbox_probe_dispatched":
+        classification = "qualification_sandbox_probe_dispatched"
     elif reason == "write_authority_gates_missing":
         classification = "write_authority_gates_missing"
     else:

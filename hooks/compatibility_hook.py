@@ -7,8 +7,9 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
+import re
 import sys
-from typing import Sequence
+from typing import Mapping, Sequence
 
 from assignment_transport import capture_spawn, subagent_start
 from compatibility_state import StateError, StateStore
@@ -25,6 +26,31 @@ from subagentstart_schema_observation import (
 )
 from writer_lease_guard import post_tool_use as release_writer_lease
 from writer_lease_guard import pre_tool_use as guard_writer_lease
+
+
+SANDBOX_PROBE_TASK_NAME_RE = re.compile(r"^[a-z0-9_]+$")
+SANDBOX_PROBE_ROOT = Path("/private/tmp")
+
+
+def child_sandbox_probe_spec(value: str) -> tuple[str, Path]:
+    task_name, separator, raw_path = value.partition("=")
+    if not separator or not SANDBOX_PROBE_TASK_NAME_RE.fullmatch(task_name):
+        raise argparse.ArgumentTypeError(
+            "child sandbox probe must be task_name=/private/tmp/direct-child"
+        )
+    target = Path(raw_path)
+    try:
+        root = SANDBOX_PROBE_ROOT.resolve(strict=True)
+        parent = target.parent.resolve(strict=True)
+    except OSError as error:
+        raise argparse.ArgumentTypeError(
+            "child sandbox probe parent is unavailable"
+        ) from error
+    if not target.is_absolute() or parent != root or target.resolve(strict=False) != target:
+        raise argparse.ArgumentTypeError(
+            "child sandbox probe must target one canonical direct /private/tmp child"
+        )
+    return task_name, target
 
 
 def fail_closed_output(event: object, error: BaseException) -> dict:
@@ -75,12 +101,17 @@ def dispatch(
     *,
     plaintext_agent_types: set[str],
     parent_non_git_writer_roots: Sequence[Path] = (),
+    child_sandbox_probes: Mapping[str, Path] | None = None,
 ) -> dict:
     event = hook_input.get("hook_event_name")
     child_is_target = hook_input.get("agent_type") in plaintext_agent_types
     if event == "PreToolUse":
         if child_is_target:
-            return pre_tool_use(store, hook_input)
+            return pre_tool_use(
+                store,
+                hook_input,
+                qualification_sandbox_probes=child_sandbox_probes,
+            )
         captured = capture_spawn(
             store,
             hook_input,
@@ -121,6 +152,7 @@ def dispatch_with_receipts(
     plaintext_agent_types: set[str],
     pretool_schema_observation_root: Path | None = None,
     parent_non_git_writer_roots: Sequence[Path] = (),
+    child_sandbox_probes: Mapping[str, Path] | None = None,
 ) -> dict:
     event = hook_input.get("hook_event_name")
     observation_root = pretool_schema_observation_root
@@ -163,6 +195,7 @@ def dispatch_with_receipts(
         hook_input,
         plaintext_agent_types=plaintext_agent_types,
         parent_non_git_writer_roots=parent_non_git_writer_roots,
+        child_sandbox_probes=child_sandbox_probes,
     )
     if is_parent_writer and event == "PreToolUse":
         specific = output.get("hookSpecificOutput")
@@ -186,6 +219,7 @@ def run_dispatch(
     plaintext_agent_types: set[str],
     pretool_schema_observation_root: Path | None = None,
     parent_non_git_writer_roots: Sequence[Path] = (),
+    child_sandbox_probes: Mapping[str, Path] | None = None,
 ) -> dict:
     try:
         return dispatch_with_receipts(
@@ -194,6 +228,7 @@ def run_dispatch(
             plaintext_agent_types=plaintext_agent_types,
             pretool_schema_observation_root=pretool_schema_observation_root,
             parent_non_git_writer_roots=parent_non_git_writer_roots,
+            child_sandbox_probes=child_sandbox_probes,
         )
     except (OSError, StateError) as error:
         return fail_closed_output(hook_input.get("hook_event_name"), error)
@@ -216,7 +251,19 @@ def main() -> int:
         type=Path,
         dest="parent_non_git_writer_roots",
     )
+    parser.add_argument(
+        "--child-sandbox-probe",
+        action="append",
+        default=[],
+        type=child_sandbox_probe_spec,
+        dest="child_sandbox_probe_specs",
+    )
     arguments = parser.parse_args()
+    child_sandbox_probes: dict[str, Path] = {}
+    for task_name, target in arguments.child_sandbox_probe_specs:
+        if task_name in child_sandbox_probes:
+            parser.error("child sandbox probe task name is duplicated")
+        child_sandbox_probes[task_name] = target
     try:
         hook_input = json.load(sys.stdin)
     except json.JSONDecodeError as error:
@@ -231,6 +278,7 @@ def main() -> int:
         plaintext_agent_types=set(arguments.plaintext_agent_types),
         pretool_schema_observation_root=arguments.pretool_schema_observation_root,
         parent_non_git_writer_roots=arguments.parent_non_git_writer_roots,
+        child_sandbox_probes=child_sandbox_probes,
     )
     json.dump(output, sys.stdout, ensure_ascii=False, separators=(",", ":"))
     sys.stdout.flush()

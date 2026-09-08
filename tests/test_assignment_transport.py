@@ -1537,6 +1537,24 @@ class AssignmentTransportTests(unittest.TestCase):
             start["hookSpecificOutput"]["additionalContext"],
         )
 
+    def test_child_sandbox_probe_spec_is_exact_task_and_temp_child(self):
+        target = Path("/private/tmp") / f"g4-sandbox-spec-{uuid.uuid4().hex}"
+
+        task_name, parsed_target = compatibility_hook.child_sandbox_probe_spec(
+            f"g4_sandbox_1={target}"
+        )
+
+        self.assertEqual(task_name, "g4_sandbox_1")
+        self.assertEqual(parsed_target, target)
+        for invalid in (
+            str(target),
+            f"G4_SANDBOX={target}",
+            "g4_sandbox_1=relative.txt",
+            "g4_sandbox_1=/private/tmp/nested/probe.txt",
+        ):
+            with self.assertRaises(compatibility_hook.argparse.ArgumentTypeError):
+                compatibility_hook.child_sandbox_probe_spec(invalid)
+
     def test_executable_hook_runs_capture_claim_recovery_and_final_lifecycle(self):
         spawn = self.spawn_hook(tool_name="collaborationspawn_agent")
         captured = self.invoke_hook_cli(spawn)

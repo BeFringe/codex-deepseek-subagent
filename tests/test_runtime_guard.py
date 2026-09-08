@@ -7,6 +7,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 import uuid
 
 
@@ -669,6 +670,103 @@ class RuntimeGuardTests(unittest.TestCase):
             unresolved["termination_evidence"]["attempted_tool_name"],
             "apply_patch",
         )
+
+    def test_exact_sandbox_probe_consumes_authority_once_before_runtime_execution(self):
+        prior_assignment_id = self.capsule["assignment_id"]
+        capsule = self.make_capsule(mutation_mode="read_only")
+        capsule["verification"] = [
+            runtime_guard.QUALIFICATION_SANDBOX_PROBE_VERIFICATION
+        ]
+        capsule["capsule_sha256"] = capsule_sha256(capsule)
+        self.replace_active_capsule(capsule)
+        self.store.path("unresolved", prior_assignment_id).unlink()
+        probe_root = self.root / "sandbox-probe-root"
+        probe_root.mkdir()
+        probe_root = probe_root.resolve()
+        target = probe_root / "one-shot.txt"
+        hook = self.child_hook(
+            "PreToolUse",
+            tool_name="Bash",
+            tool_input={"command": f"/usr/bin/touch {target}"},
+        )
+
+        with mock.patch.object(
+            runtime_guard, "QUALIFICATION_SANDBOX_PROBE_ROOT", probe_root
+        ):
+            allowed = runtime_guard.pre_tool_use(
+                self.store,
+                hook,
+                qualification_sandbox_probes={"bounded_task": target},
+            )
+            repeated = runtime_guard.pre_tool_use(
+                self.store,
+                hook,
+                qualification_sandbox_probes={"bounded_task": target},
+            )
+
+        self.assertEqual(allowed, {})
+        self.assertEqual(repeated["hookSpecificOutput"]["permissionDecision"], "deny")
+        self.assertFalse(self.store.path("active", self.capsule["assignment_id"]).exists())
+        unresolved_path = self.store.path("unresolved", self.capsule["assignment_id"])
+        unresolved = json.loads(unresolved_path.read_text(encoding="utf-8"))
+        evidence = unresolved["termination_evidence"]
+        self.assertEqual(evidence["reason"], "sandbox_probe_dispatched")
+        self.assertEqual(
+            evidence["classification"], "qualification_sandbox_probe_dispatched"
+        )
+        self.assertFalse(evidence["disk_changed"])
+        self.assertFalse(evidence["mutation_blocked_before_execution"])
+        self.assertEqual(evidence["sandbox_probe_target"], str(target))
+        self.assertFalse(target.exists())
+
+        stopped = runtime_guard.subagent_stop(
+            self.store,
+            self.stop_hook("sandbox probe terminal narrative"),
+        )
+        self.assertEqual(stopped, {})
+        self.assertTrue(unresolved_path.exists())
+
+    def test_sandbox_probe_wrong_command_falls_back_to_read_only_denial(self):
+        prior_assignment_id = self.capsule["assignment_id"]
+        capsule = self.make_capsule(mutation_mode="read_only")
+        capsule["verification"] = [
+            runtime_guard.QUALIFICATION_SANDBOX_PROBE_VERIFICATION
+        ]
+        capsule["capsule_sha256"] = capsule_sha256(capsule)
+        self.replace_active_capsule(capsule)
+        self.store.path("unresolved", prior_assignment_id).unlink()
+        probe_root = self.root / "sandbox-probe-root"
+        probe_root.mkdir()
+        probe_root = probe_root.resolve()
+        target = probe_root / "one-shot.txt"
+
+        with mock.patch.object(
+            runtime_guard, "QUALIFICATION_SANDBOX_PROBE_ROOT", probe_root
+        ):
+            denied = runtime_guard.pre_tool_use(
+                self.store,
+                self.child_hook(
+                    "PreToolUse",
+                    tool_name="Bash",
+                    tool_input={"command": f"/usr/bin/touch {target}.different"},
+                ),
+                qualification_sandbox_probes={"bounded_task": target},
+            )
+
+        self.assertEqual(denied["hookSpecificOutput"]["permissionDecision"], "deny")
+        unresolved = json.loads(
+            self.store.path("unresolved", self.capsule["assignment_id"]).read_text(
+                encoding="utf-8"
+            )
+        )
+        self.assertEqual(
+            unresolved["termination_evidence"]["reason"],
+            "read_only_mutation_attempt",
+        )
+        self.assertTrue(
+            unresolved["termination_evidence"]["mutation_blocked_before_execution"]
+        )
+        self.assertFalse(target.exists())
 
     def test_subagent_stop_acknowledges_exact_guard_terminated_unresolved(self):
         prior_assignment_id = self.capsule["assignment_id"]
