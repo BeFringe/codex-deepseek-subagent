@@ -174,10 +174,12 @@
           "tests/test_g4_live_concurrent_orphan_watchdog_recovery.py",
           "probes/g4-live-first-attestation-watchdog-cancel-race-20260908.json",
           "tests/test_g4_live_first_attestation_watchdog_cancel_race.py",
+          "probes/g4-live-first-attestation-watchdog-cancel-ack-20260908.json",
+          "tests/test_g4_live_first_attestation_watchdog_cancel_ack.py",
           "hooks/runtime_guard.py",
           "tests/test_runtime_guard.py"
         ],
-        "blocker": "a current-runtime inherited-OpenAI assignment and a separate external-ZHIPU child both traverse pending, claimed, active, reported, and consumed with exact keyed identity. The provider-free serial pair separately traverses spawn, SubagentStart, native tool use, SubagentStop, terminal callback, then next spawn; both records reach reported and then fresh-owner consumed state under one exact evidence hash. The first concurrent attempt stopped at active after parent-exit interruption without SubagentStop; an exact TTL watchdog has now moved that stale identity fail closed to unresolved, requested parent cancellation, and left the drifted Git baseline unattributed. The next concurrent pair traverses two spawn, two SubagentStart, two native tool calls, repeated mediated SubagentStop attempts, two accepted reports, and two parent waits while execution overlaps; both durable records now reach fresh-owner consumed state under one exact evidence hash. Host cancellation acknowledgement, strong termination/quiescence, fully qualified orphan reconciliation, durable resume, and cohort replay remain missing"
+        "blocker": "a current-runtime inherited-OpenAI assignment and a separate external-ZHIPU child both traverse pending, claimed, active, reported, and consumed with exact keyed identity. The provider-free serial pair separately traverses spawn, SubagentStart, native tool use, SubagentStop, terminal callback, then next spawn; both records reach reported and then fresh-owner consumed state under one exact evidence hash. The first concurrent attempt stopped at active after parent-exit interruption without SubagentStop; an exact TTL watchdog moved that stale identity fail closed to unresolved and left the drifted Git baseline unattributed. The no-event first-attestation timeout now adds an exact running-child native interrupt acknowledgement while correctly retaining unresolved authority. The next concurrent pair traverses two spawn, two SubagentStart, two native tool calls, repeated mediated SubagentStop attempts, two accepted reports, and two parent waits while execution overlaps; both durable records now reach fresh-owner consumed state under one exact evidence hash. Strong termination/quiescence, fully qualified orphan reconciliation, durable resume, and cohort replay remain missing"
       },
       {
         "id": "P4",
@@ -237,7 +239,7 @@
       },
       {
         "id": "P5a",
-        "state": "partial",
+        "state": "qualified",
         "provider_free": "pass",
         "evidence": [
           "docs/phase1-evidence.md",
@@ -249,9 +251,11 @@
           "probes/g4-live-first-attestation-watchdog-cancel-race-20260908.json",
           "tests/test_g4_live_first_attestation_watchdog_cancel_race.py",
           "hooks/runtime_guard.py",
-          "tests/test_runtime_guard.py"
+          "tests/test_runtime_guard.py",
+          "probes/g4-live-first-attestation-watchdog-cancel-ack-20260908.json",
+          "tests/test_g4_live_first_attestation_watchdog_cancel_ack.py"
         ],
-        "blocker": "one exact live assignment-timeout watchdog sample moved a stale active identity to unresolved, returned exit 2, and required parent cancellation without attributing an incomparable Git baseline. A second exact live watchdog now proves the first-attestation deadline with no child tool call, no Git attestation, a comparable clean baseline, pre_write_attestation_timeout, active-to-unresolved transition, exit 2, and parent_cancel_required. The installed SubagentStop guard then allowed the child's next final before native interrupt arrived, so the interrupt observed completed rather than running. A provider-free fix now blocks timeout-terminal SubagentStop with TASK.PARENT_CANCEL_REQUIRED, but is not live installed or revalidated. A running-child interrupt acknowledgement and strong termination receipt remain missing"
+        "qualification": "provider-free fixtures cover exact full-HEAD mismatch, spawn preflight, first-attestation deadline, and fail-closed watchdog selection. The current isolated plaintext runtime now adds a no-event live timeout with no child tool or Git attestation, a comparable clean baseline, active-to-unresolved transition, exit 2, and parent_cancel_required. The installed SubagentStop guard holds the post-watchdog final with TASK.PARENT_CANCEL_REQUIRED; native interrupt observes the child running, the child turn aborts as interrupted, and the next exact list reports interrupted. This qualifies P5a only. Strong host termination, mutation quiescence, and ownership handover remain separate P5b requirements"
       },
       {
         "id": "P5b",
@@ -286,9 +290,11 @@
           "probes/g4-live-concurrent-identity-20260908.json",
           "tests/test_g4_live_concurrent_identity.py",
           "probes/g4-live-concurrent-orphan-watchdog-recovery-20260908.json",
-          "tests/test_g4_live_concurrent_orphan_watchdog_recovery.py"
+          "tests/test_g4_live_concurrent_orphan_watchdog_recovery.py",
+          "probes/g4-live-first-attestation-watchdog-cancel-ack-20260908.json",
+          "tests/test_g4_live_first_attestation_watchdog_cancel_ack.py"
         ],
-        "blocker": "the current-runtime read-only root and external-ZHIPU child both have clean post-termination disk barriers and fresh consumed-state transitions. One trusted parent-only non-Git apply_patch has an exact PreToolUse claim, successful PostToolUse callback, byte-level after-snapshot, released lease, and zero in-flight claims after process exit. Read-only child apply_patch and Bash denials exercise the repaired terminal-state path. The one-shot sandbox probe adds an independently enforced Seatbelt denial after Bash dispatch, one terminal SubagentStop, exact parent callback, and a stable absent target across two later observations. A provider-free serial pair adds two ordered per-child callbacks. A first concurrent attempt adds a stronger negative: parent task completion interrupted its sole started child 16 ms later and emitted no SubagentStop. The exact watchdog has now frozen its stale active authority as unresolved after TTL, but produced no host cancel acknowledgement, mutation-quiesced guarantee, quiescence receipt, or ownership handover. A separate first-attestation watchdog sample reproduced the downstream race: its clean timeout transition required cancellation, but the installed SubagentStop guard let the child complete 7.133 seconds before interrupt. The isolated fix holds only watchdog-timeout exits for parent cancel and still requires live revalidation. A second concurrent pair completed with actual overlap, two accepted reported states, two parent waits, known candidate exit zero, an unchanged disk, and subsequent fresh-owner consumption; the source-parent tool projection still omitted child thread ids. These are per-target barriers and callback gaps, not strong global quiescence. A live failed multi-file apply_patch separately proves that a missing PostToolUse callback leaves its lease fail closed and that exact-identity, unchanged-snapshot recovery works; automatic failure-callback completeness is therefore still false. Child/parent/sibling all-surface writer serialization and strong global quiescence across success, cancel, crash, and late-write space remain missing. The isolated host-control negative additionally proves App Server exit alone is not a process-tree barrier"
+        "blocker": "current-runtime read-only OpenAI and external-ZHIPU children have per-target clean disk barriers and fresh consumed-state transitions. Parent-only non-Git apply_patch has an exact successful claim/callback/release receipt; child apply_patch and Bash denials plus the one-shot Seatbelt probe exercise blocked paths. Serial and concurrent samples add ordered and overlapping callbacks, while the parent-exit orphan proves callback absence remains possible. The no-event first-attestation path now holds the timeout-terminal final until native interrupt observes running and a later exact list observes interrupted, but its authority correctly remains unresolved: interrupt acknowledgement is not a strong host termination, mutation-quiescence, or ownership-handover receipt. Failed apply_patch can still omit PostToolUse and require exact unchanged-snapshot recovery. Child/parent/sibling all-surface writer serialization and strong global quiescence across success, cancel, crash, and late-write space remain missing. The App Server host-control negative additionally proves server exit is not a process-tree barrier"
       },
       {
         "id": "P6",
@@ -513,6 +519,8 @@
           "tests/test_g4_live_concurrent_orphan_watchdog_recovery.py",
           "probes/g4-live-first-attestation-watchdog-cancel-race-20260908.json",
           "tests/test_g4_live_first_attestation_watchdog_cancel_race.py",
+          "probes/g4-live-first-attestation-watchdog-cancel-ack-20260908.json",
+          "tests/test_g4_live_first_attestation_watchdog_cancel_ack.py",
           "probes/g4-live-concurrent-identity-20260908.json",
           "tests/test_g4_live_concurrent_identity.py"
         ]
@@ -540,6 +548,8 @@
           "tests/test_g4_live_concurrent_orphan_watchdog_recovery.py",
           "probes/g4-live-first-attestation-watchdog-cancel-race-20260908.json",
           "tests/test_g4_live_first_attestation_watchdog_cancel_race.py",
+          "probes/g4-live-first-attestation-watchdog-cancel-ack-20260908.json",
+          "tests/test_g4_live_first_attestation_watchdog_cancel_ack.py",
           "probes/g4-live-concurrent-identity-20260908.json",
           "tests/test_g4_live_concurrent_identity.py"
         ]

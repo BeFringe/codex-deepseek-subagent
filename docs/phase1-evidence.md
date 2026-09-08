@@ -2851,3 +2851,55 @@ promotion-required forms returned 2. The mutation matrix retains thirteen
 blockers, and same-UID rollout/state protection remain false.
 `phase1_complete=false`, `direct_write_qualified=false`, and Phases 2/3 remain
 closed.
+
+## Live first-attestation watchdog cancellation acknowledgement
+
+After checkpoint `0d06688d162b33b189c3b0bd67e45d00054ccc43`, the exact
+provider-free timeout fix from commit
+`559640c8d05ba3c84d9d324167865a2b8ea862da` was installed into the trusted
+live overlay. Repository and installed `runtime_guard.py` both had SHA-256
+`fceff5adbac470c0b42e0aed788ae223b3552a084b4595b6e3fcc5cd8a4e7c14`;
+the previous `1fd9be69ac7dd6f52a4a9b12ccd13d69d2aece958a7b6e745e3c94ad39d172dc`
+file was preserved in the state backup tree. `hooks.json` did not change, no
+new Hook-trust prompt appeared, and the candidate was not selected as the GUI
+App Server.
+
+The isolated plaintext parent used native OpenAI inference and exact
+`g4_assignment` delivery. PreToolUse staged assignment
+`8022e266-84ec-45a7-98fc-3bb84d2de850`; real SessionMeta then bound child
+`01a07fee-8075-72e0-872c-194428b65d55` to canonical AgentPath
+`/root/g4_first_attestation_timeout_3` under parent/runtime session
+`01a07fed-ff8d-7271-8ff1-e27e00c805e4`. The child made no tool call, acquired
+no Git attestation, and twice had its bare waiting message rejected before the
+watchdog ran.
+
+The exact watchdog observed the expired one-second first-attestation deadline
+at `07:32:30.229906Z`. It returned exit 2 with `valid=true`,
+`terminated_count=1`, `parent_cancel_required=true`, reason
+`pre_write_attestation_timeout`, a comparable clean baseline, and no disk
+change. Unlike the preceding negative, the child's next SubagentStop at
+`07:32:33.841182Z` was blocked with `TASK.PARENT_CANCEL_REQUIRED`; it could not
+self-complete from the unresolved timeout record. Native interrupt was called
+at `07:32:35.622Z` and returned `previous_status=running`; the child rollout
+ended with `turn_aborted(reason=interrupted)`, not task completion. The exact
+follow-up list reported the child `interrupted`.
+
+After parent completion the candidate held no open executable file, Git
+HEAD/tree/status were unchanged, and the exact assignment was absent from
+pending, claimed, active, reported, and consumed while remaining present in
+unresolved. That last state is deliberate: a running-child interrupt
+acknowledgement is not a strong host termination, mutation-quiescence, or
+ownership-handover receipt.
+
+Together with the existing provider-free full-HEAD mismatch and spawn-preflight
+fixtures, this live no-event watchdog/cancel signal qualifies P5a for the
+current isolated runtime. It does not qualify P5b, Phase 1, or direct write.
+The minimized receipt and assertions are
+`probes/g4-live-first-attestation-watchdog-cancel-ack-20260908.json` and
+`tests/test_g4_live_first_attestation_watchdog_cancel_ack.py`.
+Fresh focused verification passed 79 tests in 13.619 seconds; the full
+provider-free suite passed 522 tests in 57.812 seconds with agent-template
+checks. The normal Phase 1 gate returned zero and its promotion-required form
+returned 2 with P5a absent from the blocker list and P5b still present.
+`phase1_complete=false`, `direct_write_qualified=false`, and Phases 2/3 remain
+closed.

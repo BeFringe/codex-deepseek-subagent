@@ -1,0 +1,246 @@
+{
+  "schema": 1,
+  "classification": "live_first_attestation_watchdog_running_child_interrupt_acknowledgement",
+  "observed_date": "2026-09-08",
+  "runtime": {
+    "semantic_role": "current_isolated_plaintext_candidate",
+    "codex_cli_version": "0.153.4",
+    "source_commit": "3d2ee51ca2d5db578f328aa75e20aa22c0197c9a",
+    "candidate_path": "/private/tmp/codex-current-plaintext.aTU9C2/candidate-provider-seam/codex",
+    "candidate_sha256": "60f7c933064d330c0d73444315172873d6158d2d060580891a746de34684fafd",
+    "gui_app_server_selected": false,
+    "live_config_modified": false,
+    "credential_value_observed": false
+  },
+  "live_hook_install": {
+    "mechanism_commit": "559640c8d05ba3c84d9d324167865a2b8ea862da",
+    "probe_repository_head": "0d06688d162b33b189c3b0bd67e45d00054ccc43",
+    "repository_runtime_guard_sha256": "fceff5adbac470c0b42e0aed788ae223b3552a084b4595b6e3fcc5cd8a4e7c14",
+    "installed_runtime_guard_sha256": "fceff5adbac470c0b42e0aed788ae223b3552a084b4595b6e3fcc5cd8a4e7c14",
+    "prior_runtime_guard_sha256": "1fd9be69ac7dd6f52a4a9b12ccd13d69d2aece958a7b6e745e3c94ad39d172dc",
+    "backup_path": "/Users/pearly/.codex/state/codex-deepseek-subagent-g4/live-install-backups/20260908-cancel-race-preinstall/runtime_guard.py",
+    "backup_sha256": "1fd9be69ac7dd6f52a4a9b12ccd13d69d2aece958a7b6e745e3c94ad39d172dc",
+    "hooks_json_sha256": "82c8aa0bc4d739628646864578de6c078884c21413855ed3db448d4365a8668e",
+    "compatibility_hook_sha256": "e363fba8952bf7679e2450d97d201a14f6d9c6e52bb7809922cceff31916a476",
+    "new_hook_trust_prompt_observed": false
+  },
+  "repository": {
+    "root": "/Users/pearly/文档/CAT/codex-deepseek-subagent",
+    "branch": "main",
+    "head": "0d06688d162b33b189c3b0bd67e45d00054ccc43",
+    "tree": "0b969cb1b9a518aec3f5e38305f89a70d812f202",
+    "status_at_spawn": "clean",
+    "status_at_watchdog": "clean"
+  },
+  "parent": {
+    "thread_id": "01a07fed-ff8d-7271-8ff1-e27e00c805e4",
+    "turn_id": "01a07fee-0030-7021-bb3b-f9782388ffdb",
+    "canonical_agent_path_from_hook": "/root",
+    "session_meta_agent_path": null,
+    "model_provider": "openai",
+    "rollout_path": "/Users/pearly/.codex/sessions/2026/09/08/rollout-2026-09-08T15-31-39-01a07fed-ff8d-7271-8ff1-e27e00c805e4.jsonl",
+    "rollout_sha256": "c3118e190a579afb637170bc4116ebb28afbaf8b1912b3b087ed1d93b043a7a5",
+    "task_complete_at": "2026-09-08T07:32:53.280Z",
+    "candidate_exit_code": 0
+  },
+  "transport": {
+    "tool_namespace": "g4_assignment",
+    "message_delivery": "plaintext",
+    "spawn_tool_use_id": "call_m3Z5ODejI7lSDo0cMu43LPOr",
+    "spawn_called_at": "2026-09-08T07:32:11.640Z",
+    "spawn_pretool_observed_at": "2026-09-08T07:32:11.713071+00:00",
+    "handoff_staged_context_at": "2026-09-08T07:32:12.020Z",
+    "spawn_projection_at": "2026-09-08T07:32:12.109Z",
+    "spawn_projection": {
+      "task_name": "/root/g4_first_attestation_timeout_3"
+    },
+    "message_length": 2474,
+    "authority_begin_count": 1,
+    "authority_end_count": 1
+  },
+  "child": {
+    "thread_id": "01a07fee-8075-72e0-872c-194428b65d55",
+    "turn_id": "01a07fee-80cb-77b3-9b7e-116c13a46fc3",
+    "parent_thread_id": "01a07fed-ff8d-7271-8ff1-e27e00c805e4",
+    "runtime_session_id": "01a07fed-ff8d-7271-8ff1-e27e00c805e4",
+    "canonical_agent_path": "/root/g4_first_attestation_timeout_3",
+    "agent_type": "g4_qualification_probe_worker",
+    "model_provider": "openai",
+    "rollout_path": "/Users/pearly/.codex/sessions/2026/09/08/rollout-2026-09-08T15-32-12-01a07fee-8075-72e0-872c-194428b65d55.jsonl",
+    "rollout_sha256": "89033151458ba3cf1e36e5cfee9eb8e7af4195cb3ef990bd930e818e165e5b4e",
+    "rollout_line_count": 37,
+    "session_meta_at": "2026-09-08T07:32:12.151Z",
+    "subagent_start_at": "2026-09-08T07:32:18.673980+00:00",
+    "native_tool_call_count": 0,
+    "first_git_attested_at": null,
+    "assistant_final_attempts": [
+      "2026-09-08T07:32:22.897Z",
+      "2026-09-08T07:32:29.118Z",
+      "2026-09-08T07:32:33.489Z"
+    ],
+    "turn_aborted_at": "2026-09-08T07:32:35.701Z",
+    "turn_aborted_reason": "interrupted",
+    "task_complete_observed": false,
+    "accepted_final_observed": false
+  },
+  "authority": {
+    "assignment_id": "8022e266-84ec-45a7-98fc-3bb84d2de850",
+    "handoff_id": "b4c591fe-3489-43c6-8008-a05d7bb6773b",
+    "assignment_sha256": "5a1148b7b7065ceafe7346fd63e34afd008baca6ecf6203d22293f91990a7dfb",
+    "capsule_sha256": "3eafba1e53b96b24a38392a0f34acf79df76cb29ce73c2def57cb23790a2f012",
+    "capture_snapshot_sha256": "f64de1907d7aa0b50cbd83a7d071330e720a593fa51bfc8d44672abd855e0d88",
+    "assignment_mutation_mode": "read_only",
+    "owned_paths": [],
+    "excluded_paths": [],
+    "git_authority": {
+      "branch": false,
+      "commit": false,
+      "push": false,
+      "stage": false
+    },
+    "created_at": "2026-09-08T07:32:11.907873+00:00",
+    "pre_write_attestation_deadline": "2026-09-08T07:32:12.907873+00:00",
+    "expires_at": "2026-09-08T07:34:11.907873+00:00",
+    "state_bucket_after_interrupt": "unresolved",
+    "unresolved_state_sha256": "098af748f7055aef9e512c89ca5df036b8f265099f862965c8d2dd88e59abc94"
+  },
+  "watchdog": {
+    "observed_at": "2026-09-08T07:32:30.229906+00:00",
+    "selection": "exact",
+    "requested_assignment_ids": [
+      "8022e266-84ec-45a7-98fc-3bb84d2de850"
+    ],
+    "exit_code": 2,
+    "valid": true,
+    "terminated_count": 1,
+    "parent_cancel_required": true,
+    "reason": "pre_write_attestation_timeout",
+    "classification": "unresponsive_no_disk_change",
+    "baseline_comparable": true,
+    "disk_changed": false,
+    "snapshot": {
+      "root": "/Users/pearly/文档/CAT/codex-deepseek-subagent",
+      "branch": "main",
+      "head": "0d06688d162b33b189c3b0bd67e45d00054ccc43",
+      "index_changed": false,
+      "git_status_short": "",
+      "changed_paths": []
+    }
+  },
+  "subagent_stop_gate": {
+    "hook_observations": [
+      {
+        "observed_at": "2026-09-08T07:32:23.014645+00:00",
+        "decision": "TASK.FINAL_INVALID_FINAL_WITHOUT_CONTRIBUTION"
+      },
+      {
+        "observed_at": "2026-09-08T07:32:29.205573+00:00",
+        "decision": "TASK.FINAL_INVALID_FINAL_WITHOUT_CONTRIBUTION"
+      },
+      {
+        "observed_at": "2026-09-08T07:32:33.841182+00:00",
+        "decision": "TASK.PARENT_CANCEL_REQUIRED"
+      }
+    ],
+    "parent_cancel_prompt_delivered_at": "2026-09-08T07:32:33.918Z",
+    "timeout_terminal_final_held": true,
+    "child_self_completion_after_watchdog": false
+  },
+  "cancellation": {
+    "interrupt_tool_namespace": "g4_assignment",
+    "interrupt_tool_use_id": "call_sWY0snWmk94u7t8jvIZefs0T",
+    "interrupt_called_at": "2026-09-08T07:32:35.622Z",
+    "child_turn_aborted_at": "2026-09-08T07:32:35.701Z",
+    "interrupt_acknowledged_at": "2026-09-08T07:32:35.988Z",
+    "interrupt_previous_status": "running",
+    "list_agents_tool_use_id": "call_qgNSYEwET2xR0pwXBD9IpL0h",
+    "list_agents_called_at": "2026-09-08T07:32:40.332Z",
+    "list_agents_acknowledged_at": "2026-09-08T07:32:40.614Z",
+    "list_agents_child_status": "interrupted",
+    "running_child_interrupt_acknowledged": true,
+    "strong_host_termination_receipt_observed": false,
+    "mutation_quiescence_receipt_observed": false
+  },
+  "hook_chain": {
+    "snapshot_sha256": "ae4cba328c63fca8c1e64ad9a7b09310af40317e71d0c2fbffda5848622d8e3b",
+    "event_count": 1542,
+    "chain_sha256": "fac98a8d82e5935d6df6d422202afacc1f4e185ec4e24e7ebfd18fc0c157acbd",
+    "head_receipt_sha256": "fafb071267d5d66a2ebfd00fbb0ad409acc6858b4b88ea6fbf65d1ff26ba0aec",
+    "target_receipts": [
+      {
+        "sequence": 1538,
+        "hook_event_name": "PreToolUse",
+        "scope": "target_spawn",
+        "receipt_sha256": "206d09e0b1995ad644198a70c33e65bb6f0988d128b7abdf261373412974574d"
+      },
+      {
+        "sequence": 1539,
+        "hook_event_name": "SubagentStart",
+        "scope": "target_child",
+        "receipt_sha256": "69bd257e131ed4007d93ecb01abbc5b7e190e4654ae75a1cb3c6c93dc13e159e"
+      },
+      {
+        "sequence": 1540,
+        "hook_event_name": "SubagentStop",
+        "scope": "target_child",
+        "receipt_sha256": "a4aff87f91c77fd95fd91901ce0c8c85d6640e0fa2b8bd6973c3ca3fa94062ec"
+      },
+      {
+        "sequence": 1541,
+        "hook_event_name": "SubagentStop",
+        "scope": "target_child",
+        "receipt_sha256": "d6173670bb50c0124f292082cde2ec5a29c379be0eac06066d0f17194496af22"
+      },
+      {
+        "sequence": 1542,
+        "hook_event_name": "SubagentStop",
+        "scope": "target_child",
+        "receipt_sha256": "fafb071267d5d66a2ebfd00fbb0ad409acc6858b4b88ea6fbf65d1ff26ba0aec"
+      }
+    ],
+    "raw_payload_stored": false
+  },
+  "post_interrupt_barrier": {
+    "observed_at": null,
+    "observation_order": "after candidate exit and before parent evidence edits",
+    "candidate_process_open_file_count": 0,
+    "repository_head": "0d06688d162b33b189c3b0bd67e45d00054ccc43",
+    "repository_tree": "0b969cb1b9a518aec3f5e38305f89a70d812f202",
+    "repository_status": "clean",
+    "assignment_buckets": {
+      "active": "absent",
+      "claimed": "absent",
+      "pending": "absent",
+      "reported": "absent",
+      "consumed": "absent",
+      "unresolved": "present"
+    },
+    "ownership_handover_authorized": false
+  },
+  "verification": {
+    "focused_test_count": 79,
+    "focused_test_seconds": 13.619,
+    "full_provider_free_test_count": 522,
+    "full_provider_free_test_seconds": 57.812,
+    "agent_template_checks_passed": true,
+    "phase1_gate_exit_code": 0,
+    "phase1_promotion_exit_code": 2,
+    "p5a_status": "qualified",
+    "p5b_status": "partial"
+  },
+  "scope_verdict": {
+    "live_timeout_guard_installed": true,
+    "live_pre_write_attestation_deadline_observed": true,
+    "live_exact_watchdog_transition_observed": true,
+    "timeout_terminal_final_held_until_parent_cancel": true,
+    "running_child_interrupt_acknowledged": true,
+    "post_interrupt_child_status_observed": "interrupted",
+    "p5a_current_runtime_signal_qualified": true,
+    "p5b_strong_termination_quiescence_qualified": false,
+    "ownership_handover_authorized": false,
+    "phase1_complete": false,
+    "direct_write_qualified": false,
+    "phase2_open": false,
+    "phase3_open": false
+  }
+}
