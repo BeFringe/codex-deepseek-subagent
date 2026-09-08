@@ -3134,6 +3134,83 @@ matrix retained thirteen blockers and same-UID rollout/state remained
 unprotected. These expected fail-closed results keep the new catalog receipt
 below direct-write qualification.
 
+## Runtime-final G4 tool catalog receipt
+
+The next current-source candidate moves the exact G4 catalog claim from a
+source-only assertion to a receipt emitted by the finalized runtime
+`ToolRouter`. Emission is disabled by default and requires the exact environment
+opt-in `CODEX_G4_TOOL_CATALOG_RECEIPT=stderr-v1`, a real
+`ThreadSpawn` source, role `g4_qualification_probe_worker`, a canonical
+AgentPath, and a nonempty turn id. Roots, other roles, and pre-turn warm-up
+contexts remain silent. The receipt is one compact stderr JSON line and writes
+no file or credential data.
+
+The emitted catalog is constructed after core, MCP, extension, dynamic,
+hosted, code-mode, discovery, and collaboration contributors have finalized.
+It preserves namespace identity instead of flattening names and records the
+registered tools, model-visible tools, code-mode map, selected tool mode, and
+whether the role can manage children. The reconstructable source patch is
+`probes/current-signed-runtime-g4-live-catalog-receipt-source-candidate.patch`
+with SHA-256
+`805ff02e28e7ddffa179697820bd1aa1af84a44ebf5458741d67e49d86326bc2`;
+its source record is
+`probes/current-signed-runtime-g4-live-catalog-receipt-source-candidate.json`.
+Both forward application to a pristine checkout and reverse application to the
+candidate source passed. The lockfile is excluded.
+
+Focused Rust verification passed the exact closed-catalog test, and all 59
+spec-plan tests passed. The headless Codex 0.153.4 candidate has SHA-256
+`6e1f9675f876588786a98dfbe5db34b20572499f476c3cbd653465daa106e816`.
+It was not installed or selected as the GUI App Server. After verification, the
+exact 22 GB Rust build cache was deleted; the 563 MB candidate, the 96 KB
+reconstruction patch, and the 85 MB source worktree remain.
+
+The final live run used native OpenAI parent
+`01a0821d-5c23-74b1-ac9b-016c8a8ac565` and real child
+`01a0821d-f4a9-7330-90b4-8d7efa59ddb6`. Runtime SessionMeta, Hook state, and
+two independently emitted catalog lines agree on turn
+`01a0821d-f50e-7bd1-a28f-6d3e41ea9b8f`, depth one, role
+`g4_qualification_probe_worker`, and canonical AgentPath
+`/root/g4_live_catalog_receipt_2`. Both catalog lines are byte-identical and
+contain no empty identity field. The exact finalized direct catalog contains
+only top-level `apply_patch`, top-level `view_image`, and
+`g4_assignment.list_agents`; its code-mode map is empty and
+`can_manage_children=false`.
+
+The same child called the only mutation-capable catalog entry,
+`apply_patch`, with tool-use id `call_zMp6I8kJmGPieh5PhDn84jYg`.
+PreToolUse sequence 2200 joined the same ThreadId, turn id, role, and AgentPath,
+then denied the call before execution with `TASK.AUTHORITY_BLOCKED`. The target
+remained absent, no writer claim was acquired, SubagentStop and the native
+callback completed, and the candidate exited zero. A later two-second barrier
+found no exact candidate process, no open candidate executable, no target, and
+the original clean HEAD/tree/index/diff. This remains a narrow process
+observation rather than strong global quiescence.
+
+The runtime receipt qualifies absence of the previously open shell, terminal,
+code-mode, MCP/app, extension, dynamic, discovery, hosted-generation, and child
+control surfaces from this exact G4 child's final model-callable catalog. It
+does not close P4 as a whole: the parent remains a writer participant, and the
+parent/sibling same-path matrix across opaque shell, Git/index, MCP/app, and an
+already-open PTY has not yet been exhaustively serialized under a live child
+lease. The separate App Server host-control, same-UID rollout/state, broad
+sandbox, and detached process-tree boundaries also remain open. Therefore P4
+stays partial, `phase1_complete=false`, `direct_write_qualified=false`, and
+Phases 2/3 stay closed. The minimized live receipt and executable assertions
+are `probes/g4-live-final-tool-catalog-receipt-20260909.json`,
+`tests/test_current_g4_live_catalog_receipt_source_candidate.py`, and
+`tests/test_g4_live_final_tool_catalog_receipt.py`.
+
+Fresh repository verification passed all 651 provider-free tests in 48.735
+seconds plus the agent-template checks. The normal Phase 1, mutation-surface,
+same-UID state, and Hook-chain consistency modes returned zero. Their
+promotion-required forms returned 2 as designed: all nine remaining P-gates
+are partial; the mutation matrix retains thirteen blockers with no source or
+anchor mismatch; same-UID rollout and state remain unprotected; and the
+historical live Hook chain still has one pending callback plus one unmatched
+pre-overlay abort. Those expected fail-closed results are frozen in the live
+receipt and do not diminish the exact-child catalog sub-gate that passed.
+
 ## Live native V2 session-close boundary
 
 An isolated current-source candidate at OpenAI Codex commit
