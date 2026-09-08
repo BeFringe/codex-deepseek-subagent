@@ -19,6 +19,8 @@ from compatibility_state import (
     capsule_sha256,
     canonical_json,
     git_snapshot_sha256,
+    QUALIFICATION_WRITE_CONSENT_SOURCE,
+    qualification_write_consent_receipt_sha256,
     sha256_bytes,
 )
 from compatibility_state import compact_invariant
@@ -56,6 +58,7 @@ TASK_NAME_RE = re.compile(r"^[a-z0-9_]+$")
 GIT_OID_RE = re.compile(r"^(?:[0-9a-f]{40}|[0-9a-f]{64})$")
 PLAINTEXT_COMPAT_TOOL_NAMESPACE = "g4_assignment"
 PLAINTEXT_COMPAT_SPAWN_TOOL_NAME = f"{PLAINTEXT_COMPAT_TOOL_NAMESPACE}spawn_agent"
+QUALIFICATION_WRITE_PROBE_VERIFICATION = "exact-path child apply_patch qualification probe"
 SPAWN_TOOL_NAMES = {
     "spawn_agent",
     "Agent",
@@ -330,6 +333,7 @@ def capture_spawn(
     *,
     plaintext_agent_types: Collection[str],
     now: dt.datetime | None = None,
+    qualification_write_probes: Mapping[str, Path] | None = None,
 ) -> dict:
     if hook_input.get("hook_event_name") != "PreToolUse":
         return {}
@@ -359,6 +363,29 @@ def capture_spawn(
         snapshot = collect_git_snapshot(cwd)
         _check_location_preflight(snapshot, declaration["location_preflight"])
         _check_execution_contract(Path(snapshot["root"]), snapshot, declaration)
+        qualification_target = (
+            qualification_write_probes.get(requested_task_name)
+            if qualification_write_probes
+            else None
+        )
+        if qualification_target is not None:
+            root_path = Path(snapshot["root"])
+            target = Path(qualification_target)
+            if root_path.parent != Path("/private/tmp") or root_path.resolve() != root_path:
+                raise GuardError("qualification write probe root is not canonical temporary Git root")
+            if not target.is_absolute() or target.parent.resolve() != root_path:
+                raise GuardError("qualification write probe target is not a direct root child")
+            if target.resolve(strict=False) != target or target.exists() or target.is_symlink():
+                raise GuardError("qualification write probe target is not canonical and absent")
+            relative_target = target.relative_to(root_path).as_posix()
+            if declaration["assignment_mutation_mode"] != "write":
+                raise GuardError("qualification write probe requires write mode")
+            if declaration["owned_paths"] != [relative_target] or declaration["excluded_paths"]:
+                raise GuardError("qualification write probe ownership is not exact")
+            if any(declaration["git_authority"].values()):
+                raise GuardError("qualification write probe cannot grant Git operations")
+            if declaration["verification"] != [QUALIFICATION_WRITE_PROBE_VERIFICATION]:
+                raise GuardError("qualification write probe verification is not exact")
         created_at = now or dt.datetime.now(dt.timezone.utc)
         if created_at.tzinfo is None or created_at.utcoffset() is None:
             raise GuardError("capture time must include a UTC offset")
@@ -426,6 +453,13 @@ def capture_spawn(
                 created_at + dt.timedelta(seconds=declaration["ttl_seconds"])
             ).isoformat(),
         }
+        if qualification_target is not None:
+            capsule["trusted_host_user_write_consent"] = {
+                "schema": 1,
+                "status": "verified",
+                "source": QUALIFICATION_WRITE_CONSENT_SOURCE,
+                "receipt_sha256": qualification_write_consent_receipt_sha256(capsule),
+            }
         capsule["capsule_sha256"] = capsule_sha256(capsule)
         staging_snapshot = collect_git_snapshot(cwd)
         store.stage_with_ownership_recheck(

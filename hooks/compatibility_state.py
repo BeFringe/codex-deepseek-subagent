@@ -204,6 +204,7 @@ TRUSTED_HOST_USER_WRITE_CONSENT_FIELDS = {
     "source",
     "receipt_sha256",
 }
+QUALIFICATION_WRITE_CONSENT_SOURCE = "qualification_hook_exact_path"
 
 
 class StateError(RuntimeError):
@@ -251,6 +252,29 @@ def capsule_sha256(capsule: Mapping[str, object]) -> str:
     unsigned = dict(capsule)
     unsigned.pop("capsule_sha256", None)
     return sha256_bytes(canonical_json(unsigned))
+
+
+def qualification_write_consent_receipt_sha256(
+    capsule: Mapping[str, object],
+) -> str:
+    """Bind a one-shot host ceiling to the immutable assignment dimensions."""
+    return sha256_bytes(
+        canonical_json(
+            {
+                "schema": 1,
+                "authorization_ceiling": "qualification_only",
+                "runtime_session_id": capsule.get("runtime_session_id"),
+                "parent_thread_id": capsule.get("parent_thread_id"),
+                "agent_type": capsule.get("agent_type"),
+                "requested_task_name": capsule.get("requested_task_name"),
+                "canonical_agent_path": capsule.get("canonical_agent_path"),
+                "root": capsule.get("root"),
+                "owned_paths": capsule.get("owned_paths"),
+                "created_at": capsule.get("created_at"),
+                "expires_at": capsule.get("expires_at"),
+            }
+        )
+    )
 
 
 def compact_invariant(capsule: Mapping[str, object]) -> dict:
@@ -903,15 +927,32 @@ def validate_capsule(capsule: object, assignment: str) -> dict:
         or host_consent.get("schema") != 1
     ):
         raise CorruptState("trusted host user write consent fields are not exact")
-    if host_consent != {
+    unavailable_consent = {
         "schema": 1,
         "status": "unavailable",
         "source": None,
         "receipt_sha256": None,
-    }:
+    }
+    qualification_consent = {
+        "schema": 1,
+        "status": "verified",
+        "source": QUALIFICATION_WRITE_CONSENT_SOURCE,
+        "receipt_sha256": qualification_write_consent_receipt_sha256(capsule),
+    }
+    if host_consent not in (unavailable_consent, qualification_consent):
         raise CorruptState(
-            "trusted host user write consent is unavailable in isolated schema 2"
+            "trusted host user write consent is unavailable in isolated schema 2 "
+            "without an exact qualification receipt"
         )
+    if host_consent == qualification_consent:
+        if mutation_mode != "write":
+            raise CorruptState("qualification consent requires write mutation mode")
+        if root_path.parent != pathlib.Path("/private/tmp") or root_path.resolve() != root_path:
+            raise CorruptState("qualification consent requires one canonical temporary Git root")
+        if len(capsule.get("owned_paths", [])) != 1 or capsule.get("excluded_paths") != []:
+            raise CorruptState("qualification consent requires one exact owned path")
+        if any(capsule.get("git_authority", {}).values()):
+            raise CorruptState("qualification consent cannot grant Git operations")
 
     _relative_paths(capsule.get("owned_paths"), "owned_paths")
     _relative_paths(capsule.get("excluded_paths"), "excluded_paths")

@@ -53,6 +53,29 @@ def child_sandbox_probe_spec(value: str) -> tuple[str, Path]:
     return task_name, target
 
 
+def child_write_probe_spec(value: str) -> tuple[str, Path]:
+    task_name, separator, raw_path = value.partition("=")
+    if not separator or not SANDBOX_PROBE_TASK_NAME_RE.fullmatch(task_name):
+        raise argparse.ArgumentTypeError(
+            "child write probe must be task_name=/private/tmp/direct-git-root/file"
+        )
+    target = Path(raw_path)
+    try:
+        temporary_root = SANDBOX_PROBE_ROOT.resolve(strict=True)
+        git_root = target.parent.resolve(strict=True)
+    except OSError as error:
+        raise argparse.ArgumentTypeError("child write probe root is unavailable") from error
+    if (
+        not target.is_absolute()
+        or git_root.parent != temporary_root
+        or target.resolve(strict=False) != target
+    ):
+        raise argparse.ArgumentTypeError(
+            "child write probe must target one canonical direct child of a temporary root"
+        )
+    return task_name, target
+
+
 def fail_closed_output(event: object, error: BaseException) -> dict:
     """Translate an internal failure into the blocking shape for its Hook event."""
 
@@ -102,20 +125,40 @@ def dispatch(
     plaintext_agent_types: set[str],
     parent_non_git_writer_roots: Sequence[Path] = (),
     child_sandbox_probes: Mapping[str, Path] | None = None,
+    child_write_probes: Mapping[str, Path] | None = None,
 ) -> dict:
     event = hook_input.get("hook_event_name")
     child_is_target = hook_input.get("agent_type") in plaintext_agent_types
     if event == "PreToolUse":
         if child_is_target:
-            return pre_tool_use(
+            authority = pre_tool_use(
                 store,
                 hook_input,
                 qualification_sandbox_probes=child_sandbox_probes,
+                qualification_write_probes=child_write_probes,
             )
+            specific = authority.get("hookSpecificOutput")
+            denied = isinstance(specific, dict) and specific.get("permissionDecision") == "deny"
+            if denied or hook_input.get("tool_name") != "apply_patch":
+                return authority
+            lease = guard_writer_lease(
+                store,
+                hook_input,
+                parent_non_git_writer_roots=parent_non_git_writer_roots,
+            )
+            lease_specific = lease.get("hookSpecificOutput")
+            if isinstance(lease_specific, dict) and lease_specific.get("permissionDecision") == "deny":
+                return lease
+            authority_context = specific.get("additionalContext") if isinstance(specific, dict) else None
+            lease_context = lease_specific.get("additionalContext") if isinstance(lease_specific, dict) else None
+            if authority_context and lease_context:
+                specific["additionalContext"] = f"{authority_context}\n{lease_context}"
+            return authority
         captured = capture_spawn(
             store,
             hook_input,
             plaintext_agent_types=plaintext_agent_types,
+            qualification_write_probes=child_write_probes,
         )
         return captured or guard_writer_lease(
             store,
@@ -123,14 +166,10 @@ def dispatch(
             parent_non_git_writer_roots=parent_non_git_writer_roots,
         )
     if event == "PostToolUse":
-        return (
-            {}
-            if child_is_target
-            else release_writer_lease(
-                store,
-                hook_input,
-                parent_non_git_writer_roots=parent_non_git_writer_roots,
-            )
+        return release_writer_lease(
+            store,
+            hook_input,
+            parent_non_git_writer_roots=parent_non_git_writer_roots,
         )
     if event == "SubagentStart":
         return subagent_start(store, hook_input) if child_is_target else {}
@@ -153,6 +192,7 @@ def dispatch_with_receipts(
     pretool_schema_observation_root: Path | None = None,
     parent_non_git_writer_roots: Sequence[Path] = (),
     child_sandbox_probes: Mapping[str, Path] | None = None,
+    child_write_probes: Mapping[str, Path] | None = None,
 ) -> dict:
     event = hook_input.get("hook_event_name")
     observation_root = pretool_schema_observation_root
@@ -196,6 +236,7 @@ def dispatch_with_receipts(
         plaintext_agent_types=plaintext_agent_types,
         parent_non_git_writer_roots=parent_non_git_writer_roots,
         child_sandbox_probes=child_sandbox_probes,
+        child_write_probes=child_write_probes,
     )
     if is_parent_writer and event == "PreToolUse":
         specific = output.get("hookSpecificOutput")
@@ -220,6 +261,7 @@ def run_dispatch(
     pretool_schema_observation_root: Path | None = None,
     parent_non_git_writer_roots: Sequence[Path] = (),
     child_sandbox_probes: Mapping[str, Path] | None = None,
+    child_write_probes: Mapping[str, Path] | None = None,
 ) -> dict:
     try:
         return dispatch_with_receipts(
@@ -229,6 +271,7 @@ def run_dispatch(
             pretool_schema_observation_root=pretool_schema_observation_root,
             parent_non_git_writer_roots=parent_non_git_writer_roots,
             child_sandbox_probes=child_sandbox_probes,
+            child_write_probes=child_write_probes,
         )
     except (OSError, StateError) as error:
         return fail_closed_output(hook_input.get("hook_event_name"), error)
@@ -258,12 +301,24 @@ def main() -> int:
         type=child_sandbox_probe_spec,
         dest="child_sandbox_probe_specs",
     )
+    parser.add_argument(
+        "--child-write-probe",
+        action="append",
+        default=[],
+        type=child_write_probe_spec,
+        dest="child_write_probe_specs",
+    )
     arguments = parser.parse_args()
     child_sandbox_probes: dict[str, Path] = {}
     for task_name, target in arguments.child_sandbox_probe_specs:
         if task_name in child_sandbox_probes:
             parser.error("child sandbox probe task name is duplicated")
         child_sandbox_probes[task_name] = target
+    child_write_probes: dict[str, Path] = {}
+    for task_name, target in arguments.child_write_probe_specs:
+        if task_name in child_write_probes:
+            parser.error("child write probe task name is duplicated")
+        child_write_probes[task_name] = target
     try:
         hook_input = json.load(sys.stdin)
     except json.JSONDecodeError as error:
@@ -279,6 +334,7 @@ def main() -> int:
         pretool_schema_observation_root=arguments.pretool_schema_observation_root,
         parent_non_git_writer_roots=arguments.parent_non_git_writer_roots,
         child_sandbox_probes=child_sandbox_probes,
+        child_write_probes=child_write_probes,
     )
     json.dump(output, sys.stdout, ensure_ascii=False, separators=(",", ":"))
     sys.stdout.flush()

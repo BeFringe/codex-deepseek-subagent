@@ -20,6 +20,8 @@ from compatibility_state import (
     IdentityMismatch,
     MissingState,
     provenance_policy_sha256,
+    QUALIFICATION_WRITE_CONSENT_SOURCE,
+    qualification_write_consent_receipt_sha256,
     registry_items_sha256,
     StateError,
     StateStore,
@@ -58,6 +60,7 @@ QUALIFICATION_SANDBOX_PROBE_ROOT = Path("/private/tmp")
 QUALIFICATION_SANDBOX_PROBE_VERIFICATION = (
     "code-mode nested Bash read-only sandbox denial probe"
 )
+QUALIFICATION_WRITE_PROBE_VERIFICATION = "exact-path child apply_patch qualification probe"
 TERMINAL_AUTHORITY_REASONS = frozenset(
     {
         "assignment_timeout",
@@ -435,12 +438,57 @@ def _consume_qualification_sandbox_probe(
     return True
 
 
+def _qualification_write_probe_authorized(
+    envelope: Mapping[str, object],
+    hook_input: Mapping[str, object],
+    identity: Mapping[str, str],
+    probe_targets: Mapping[str, Path],
+) -> bool:
+    capsule = envelope["capsule"]
+    task_name = capsule["requested_task_name"]
+    target_value = probe_targets.get(task_name)
+    if target_value is None or hook_input.get("tool_name") != "apply_patch":
+        return False
+    root = Path(capsule["root"]["path"])
+    target = Path(target_value)
+    if root.parent != Path("/private/tmp") or root.resolve() != root:
+        raise AuthorityViolation("qualification write probe root is not canonical temporary root")
+    if not target.is_absolute() or target.parent.resolve() != root:
+        raise AuthorityViolation("qualification write probe target is not an exact root child")
+    if target.resolve(strict=False) != target or target.exists() or target.is_symlink():
+        raise AuthorityViolation("qualification write probe target is not canonical and absent")
+    relative_target = target.relative_to(root).as_posix()
+    if capsule["assignment_mutation_mode"] != "write":
+        raise AuthorityViolation("qualification write probe requires write authority")
+    if capsule["owned_paths"] != [relative_target] or capsule["excluded_paths"]:
+        raise AuthorityViolation("qualification write probe ownership is not exact")
+    if any(capsule["git_authority"].values()):
+        raise AuthorityViolation("qualification write probe cannot carry Git authority")
+    if capsule["verification"] != [QUALIFICATION_WRITE_PROBE_VERIFICATION]:
+        raise AuthorityViolation("qualification write probe verification is not exact")
+    expected_consent = {
+        "schema": 1,
+        "status": "verified",
+        "source": QUALIFICATION_WRITE_CONSENT_SOURCE,
+        "receipt_sha256": qualification_write_consent_receipt_sha256(capsule),
+    }
+    if capsule["trusted_host_user_write_consent"] != expected_consent:
+        raise AuthorityViolation("qualification write probe lacks exact trusted-host receipt")
+    if identity["canonical_agent_path"] != capsule["canonical_agent_path"]:
+        raise AuthorityViolation("qualification write probe AgentPath is not exact")
+    cwd = hook_input.get("cwd")
+    if not isinstance(cwd, str) or Path(cwd).resolve() != root:
+        raise AuthorityViolation("qualification write probe cwd is not the capsule root")
+    return True
+
+
 def pre_tool_use(
     store: StateStore,
     hook_input: Mapping[str, object],
     *,
     now: dt.datetime | None = None,
     qualification_sandbox_probes: Mapping[str, Path] | None = None,
+    qualification_write_probes: Mapping[str, Path] | None = None,
 ) -> dict:
     try:
         if hook_input.get("hook_event_name") != "PreToolUse":
@@ -460,7 +508,16 @@ def pre_tool_use(
         ):
             return {}
         qualified_tool_name = qualified_read_only_tool_name(tool_name)
-        if qualified_tool_name is None:
+        qualification_write = bool(
+            qualification_write_probes
+            and _qualification_write_probe_authorized(
+                envelope,
+                hook_input,
+                identity,
+                qualification_write_probes,
+            )
+        )
+        if qualified_tool_name is None and not qualification_write:
             capsule = envelope["capsule"]
             snapshot = collect_git_snapshot(capsule["root"]["path"])
             mutation_mode = capsule["assignment_mutation_mode"]

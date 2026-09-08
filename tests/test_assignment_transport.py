@@ -487,6 +487,111 @@ class AssignmentTransportTests(unittest.TestCase):
             capsule["trusted_host_user_write_consent"]["status"], "unavailable"
         )
 
+    def test_exact_temporary_hook_ceiling_creates_hash_bound_qualification_consent(self):
+        original_repository = self.repository
+        with tempfile.TemporaryDirectory(
+            prefix="codex-g4-write-qualification-", dir="/private/tmp"
+        ) as temporary_root:
+            self.repository = Path(temporary_root).resolve()
+            self.git("init", "-b", "main")
+            self.git("config", "user.name", "Fixture")
+            self.git("config", "user.email", "fixture@example.invalid")
+            (self.repository / "baseline.txt").write_text("baseline\n", encoding="utf-8")
+            self.git("add", "baseline.txt")
+            self.git("commit", "-m", "baseline")
+            self.write_meta(
+                self.parent_transcript,
+                session_id="runtime-session",
+                thread_id="runtime-session",
+                agent_path=None,
+                parent_thread_id=None,
+                agent_role=None,
+            )
+            target = self.repository / "qualified.txt"
+            authority = json.loads(
+                self.message().split("BEGIN CODEX WORKER AUTHORITY\n", 1)[1].split(
+                    "\nEND CODEX WORKER AUTHORITY", 1
+                )[0]
+            )
+            authority["owned_paths"] = ["qualified.txt"]
+            authority["excluded_paths"] = []
+            authority["verification"] = [
+                assignment_transport.QUALIFICATION_WRITE_PROBE_VERIFICATION
+            ]
+            hook = self.spawn_hook(
+                "qualified_write",
+                tool_input={"message": self.message(authority=authority)},
+            )
+
+            result = assignment_transport.capture_spawn(
+                self.store,
+                hook,
+                plaintext_agent_types={"fixture_worker"},
+                qualification_write_probes={"qualified_write": target},
+            )
+
+            self.assertNotIn("permissionDecision", result["hookSpecificOutput"])
+            capsule = json.loads(
+                next((self.store.root / "pending").glob("*.json")).read_text(
+                    encoding="utf-8"
+                )
+            )["capsule"]
+            consent = capsule["trusted_host_user_write_consent"]
+            self.assertEqual(consent["status"], "verified")
+            self.assertEqual(
+                consent["source"],
+                compatibility_state.QUALIFICATION_WRITE_CONSENT_SOURCE,
+            )
+            self.assertEqual(
+                consent["receipt_sha256"],
+                compatibility_state.qualification_write_consent_receipt_sha256(
+                    capsule
+                ),
+            )
+            compatibility_state.validate_capsule(capsule, hook["tool_input"]["message"])
+            child = self.child_hook("qualified_write")
+            assignment_transport.subagent_start(self.store, child)
+            patch = self.parent_patch_hook(
+                "qualified.txt", tool_use_id="qualification-child-patch"
+            )
+            patch.update(
+                {
+                    "agent_id": "child-qualified_write",
+                    "agent_type": "fixture_worker",
+                    "transcript_path": child["transcript_path"],
+                }
+            )
+            pretool = compatibility_hook.dispatch(
+                self.store,
+                patch,
+                plaintext_agent_types={"fixture_worker"},
+                child_write_probes={"qualified_write": target},
+            )
+            self.assertIn(
+                "WRITER.LEASED",
+                pretool["hookSpecificOutput"]["additionalContext"],
+            )
+            target.write_text("qualified bytes\n", encoding="utf-8")
+            posttool = compatibility_hook.dispatch(
+                self.store,
+                dict(
+                    patch,
+                    hook_event_name="PostToolUse",
+                    tool_response={"status": "completed"},
+                ),
+                plaintext_agent_types={"fixture_worker"},
+                child_write_probes={"qualified_write": target},
+            )
+            self.assertEqual(posttool, {})
+            receipt = json.loads(
+                next((self.store.root / "writer_receipt").glob("*.json")).read_text(
+                    encoding="utf-8"
+                )
+            )
+            self.assertEqual(receipt["actor"]["thread_id"], "child-qualified_write")
+            self.assertEqual(receipt["paths"], ["qualified.txt"])
+        self.repository = original_repository
+
     def test_invalid_authority_or_fork_mode_blocks_spawn(self):
         invalid = self.message(authority={"schema": 1, "credentials": "forbidden"})
         cases = [

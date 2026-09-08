@@ -627,19 +627,34 @@ small, explicitly different facts:
   assignment with missing or `deny` intent cannot stage. It is not described as
   host-attested user consent and grants no mutation authority.
 - `trusted_host_user_write_consent` is written by the Hook, not accepted from
-  the assignment. Schema 2 currently permits only
+  the assignment. The default remains
   `status=unavailable, source=null, receipt_sha256=null`; a parent-fabricated
-  `verified` receipt is corrupt state. A future verified form requires a new
-  schema revision plus a real Codex host/UI consent signal.
+  `verified` receipt is corrupt state. One qualification-only exception now
+  derives a verified receipt from an exact trusted Hook overlay. Its digest
+  binds runtime session, parent, role, requested task, canonical AgentPath,
+  direct `/private/tmp` Git root, one owned path, root/base identity, and
+  lifetime. It cannot grant Git operations and is accepted only with the exact
+  apply-patch qualification verification. This is a bounded test ceiling, not
+  a general Codex host/UI consent signal.
 
-The compact invariant freezes both facts. A write capsule with parent intent
-`allow` may reach later read-only contribution/lifecycle checks, but its first
-mutation request is denied before execution and moved to unresolved as
-`write_authority_gates_missing`. The receipt mechanically lists all three
+The compact invariant freezes both facts. Without the exact qualification
+overlay, a write capsule with parent intent `allow` may reach later read-only
+contribution/lifecycle checks, but its first mutation request is denied before
+execution and moved to unresolved as `write_authority_gates_missing`. The
+receipt mechanically lists all three
 current blockers: `trusted_host_user_write_consent`,
 `direct_write_qualification`, and `live_mutation_mediation`. Exact paths,
 parent/sibling writer claims, Git authority, sandbox, identity, callback,
 termination/quiescence, and the disk barrier remain separate gates.
+
+Provider-free qualification fixtures now prove the complementary bounded path:
+the exact overlay is injected only during spawn capture, survives capsule
+validation, is rechecked against real child identity at PreToolUse, then
+acquires and releases the exact child-owned writer lease around one simulated
+successful callback. Missing overlay, wrong path, wrong identity, non-write
+mode, extra ownership, Git authority, or a forged receipt cannot enter this
+path. No live configuration has been changed by this fixture, and global
+`direct_write_qualified` remains false.
 
 Provider-free tests prove missing/deny intent blocks write staging, allow intent
 does not fabricate host consent, forged host consent fails closed, read-only
