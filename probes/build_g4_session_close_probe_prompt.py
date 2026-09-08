@@ -79,7 +79,7 @@ Run exactly this lifecycle:
 
 1. Call the exact {PLAINTEXT_TOOL_NAMESPACE}.spawn_agent tool exactly once with agent_type={AGENT_TYPE}, task_name={task_name}, fork_turns=none, and message equal to EXACT CHILD ASSIGNMENT below, including its one terminating authority declaration. Do not call collaboration.spawn_agent.
 2. Require the spawn result to expose the staged assignment_id and canonical task path {canonical_agent_path}. If either is absent, report the non-secret failure and stop without guessing an identity.
-3. Call the exact {PLAINTEXT_TOOL_NAMESPACE}.wait_agent tool exactly once with targets containing only target={canonical_agent_path} and timeoutMs={WAIT_TIMEOUT_MS}. Whether it returns on timeout or on a blocked child final, treat it only as a bounded native delay and do not accept a child contribution.
+3. Call the exact {PLAINTEXT_TOOL_NAMESPACE}.wait_agent tool exactly once with timeout_ms={WAIT_TIMEOUT_MS}. This current-source V2 mailbox-wait schema has no target list. Whether it returns on timeout or on a blocked child final, treat it only as a bounded native delay and do not accept a child contribution.
 4. Immediately call the exact {PLAINTEXT_TOOL_NAMESPACE}.close_agent tool exactly once with target={canonical_agent_path}. Require an exact target_thread_id, target_agent_path={canonical_agent_path}, session_loop_terminated=true, and process_tree_quiescence_claimed=false. This is a host session-loop termination receipt, not filesystem or detached-process quiescence proof.
 5. Call the exact {PLAINTEXT_TOOL_NAMESPACE}.list_agents tool exactly once. Require the exact child to be absent or non-live, then finish without resuming, messaging, following up, waiting again, interrupting, or spawning another child.
 
