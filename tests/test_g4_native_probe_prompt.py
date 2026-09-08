@@ -5,6 +5,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 
 REPO = Path(__file__).resolve().parents[1]
@@ -122,6 +123,51 @@ class G4NativeProbePromptTests(unittest.TestCase):
             probe_prompt.ProbePromptError, "task name"
         ):
             probe_prompt.build_prompt(self.root, "G4/root")
+
+    def test_negative_mutation_prompt_is_read_only_and_requires_absent_target(self):
+        target = Path(self.temporary_directory.name) / "child-deny.txt"
+        with mock.patch.object(
+            probe_prompt, "NON_GIT_PROBE_ROOT", target.parent
+        ):
+            prompt = probe_prompt.build_prompt(
+                self.root,
+                "g4_child_deny_1",
+                child_tool="apply_patch_negative",
+                negative_mutation_path=target,
+            )
+            declaration = json.loads(
+                prompt.split("BEGIN CODEX WORKER AUTHORITY\n", 1)[1].split(
+                    "\nEND CODEX WORKER AUTHORITY", 1
+                )[0]
+            )
+            self.assertIn(f"create {target}", prompt)
+            self.assertIn("denied before execution", prompt)
+            self.assertIn("Do not retry or call another tool", prompt)
+            self.assertEqual(declaration["assignment_mutation_mode"], "read_only")
+            self.assertEqual(declaration["parent_recorded_user_write_intent"], "deny")
+            self.assertEqual(declaration["owned_paths"], [])
+            self.assertFalse(any(declaration["git_authority"].values()))
+
+            target.write_text("unexpected preexisting byte\n", encoding="utf-8")
+            with self.assertRaisesRegex(
+                probe_prompt.ProbePromptError, "target must be absent"
+            ):
+                probe_prompt.build_prompt(
+                    self.root,
+                    "g4_child_deny_2",
+                    child_tool="apply_patch_negative",
+                    negative_mutation_path=target,
+                )
+
+            with self.assertRaisesRegex(
+                probe_prompt.ProbePromptError, "absolute path"
+            ):
+                probe_prompt.build_prompt(
+                    self.root,
+                    "g4_child_deny_3",
+                    child_tool="apply_patch_negative",
+                    negative_mutation_path=Path("relative.txt"),
+                )
 
 
 if __name__ == "__main__":

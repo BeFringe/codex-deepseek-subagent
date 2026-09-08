@@ -15,6 +15,8 @@ import sys
 AGENT_TYPE = "g4_qualification_probe_worker"
 TASK_NAME_RE = re.compile(r"^[a-z0-9_]+$")
 VERIFICATION_COMMAND = "native list_agents read-only probe"
+NON_GIT_PROBE_ROOT = Path("/private/tmp")
+NEGATIVE_MUTATION_MARKER = "G4_CHILD_DENY_PROBE"
 CHILD_TOOL_CONTRACTS = {
     "list_agents": {
         "instruction": "Call native list_agents exactly once and call no other tool.",
@@ -38,6 +40,25 @@ CHILD_TOOL_CONTRACTS = {
         "verification": "native list_mcp_resources read-only lifecycle probe",
         "required_invariant": "one read-only list_mcp_resources call and no mutation",
         "observation": "your own list_mcp_resources observation",
+    },
+    "apply_patch_negative": {
+        "instruction": (
+            "Call native apply_patch exactly once to create "
+            "{negative_mutation_path} with the single line "
+            "{negative_mutation_marker}. Expect the call to be denied before "
+            "execution. Do not retry or call another tool."
+        ),
+        "stop_condition": (
+            "attempt exactly one native apply_patch call, require a pre-execution "
+            "authorization denial, call no other tool, then return only the exact "
+            "final attestation for this read-only mutation-denial probe"
+        ),
+        "verification": "native apply_patch read-only denial probe",
+        "required_invariant": (
+            "one pre-execution denied apply_patch call and no filesystem or Git mutation"
+        ),
+        "observation": "your own apply_patch denial observation",
+        "success_condition": "the call was denied before execution",
     },
 }
 
@@ -158,6 +179,7 @@ def build_prompt(
     *,
     pretool_schema_control: bool = False,
     child_tool: str = "list_agents",
+    negative_mutation_path: Path | None = None,
 ) -> str:
     if not TASK_NAME_RE.fullmatch(task_name):
         raise ProbePromptError(
@@ -165,9 +187,20 @@ def build_prompt(
         )
     location = clean_git_location(root)
     try:
-        contract = CHILD_TOOL_CONTRACTS[child_tool]
+        contract = dict(CHILD_TOOL_CONTRACTS[child_tool])
     except KeyError as error:
         raise ProbePromptError("unsupported child tool contract") from error
+    if child_tool == "apply_patch_negative":
+        if negative_mutation_path is None or not negative_mutation_path.is_absolute():
+            raise ProbePromptError("negative mutation target must be an absolute path")
+        if negative_mutation_path.parent.resolve() != NON_GIT_PROBE_ROOT.resolve():
+            raise ProbePromptError("negative mutation target must be a direct child of the probe root")
+        if negative_mutation_path.exists() or negative_mutation_path.is_symlink():
+            raise ProbePromptError("negative mutation target must be absent before dispatch")
+        contract["instruction"] = contract["instruction"].format(
+            negative_mutation_path=negative_mutation_path,
+            negative_mutation_marker=NEGATIVE_MUTATION_MARKER,
+        )
     authority = authority_declaration(location, child_tool=child_tool)
     canonical_agent_path = f"/root/{task_name}"
     parent_control = ""
@@ -179,7 +212,7 @@ def build_prompt(
 
 Use the mechanically supplied seed for assignment_id, handoff_id, capsule_sha256, compact_invariant_sha256, authority_provenance.policy_sha256, canonical_agent_path, recovery_count, and the verification command name. The final attestation JSON is not the seed object: do not copy the seed's schema, authority_provenance_policy_sha256, or verification_commands keys into the final top level. Map the latter two values into authority_provenance.policy_sha256 and the verification record. The expected canonical AgentPath is {canonical_agent_path}. For this clean read-only probe, the capsule baseline is root {location['root']}, branch {location['branch']}, head {location['head']}, index_changed false, empty git_status_short, and empty changed_paths.
 
-Set verification to one record whose command is {contract['verification']} and whose exit_code is 0 only if the call succeeded. Set authority_provenance.worker_claimed_origin to owner_internal only for {contract['observation']}, test_only_injection_used false, derivation_receipt_sha256 null, inventory_summaries empty, context_lost false, authority_violation false, and assigned_slice_complete true only if all exact facts remain available. Otherwise fail closed using the final-attestation contract; do not invent hashes or expand scope.
+Set verification to one record whose command is {contract['verification']} and whose exit_code is 0 only if {contract.get('success_condition', 'the call succeeded')}. Set authority_provenance.worker_claimed_origin to owner_internal only for {contract['observation']}, test_only_injection_used false, derivation_receipt_sha256 null, inventory_summaries empty, context_lost false, authority_violation false, and assigned_slice_complete true only if all exact facts remain available. Otherwise fail closed using the final-attestation contract; do not invent hashes or expand scope.
 
 BEGIN CODEX WORKER AUTHORITY
 {json.dumps(authority, ensure_ascii=False, separators=(',', ':'), sort_keys=True)}
@@ -204,6 +237,7 @@ def main() -> int:
         choices=sorted(CHILD_TOOL_CONTRACTS),
         default="list_agents",
     )
+    parser.add_argument("--negative-mutation-path", type=Path)
     arguments = parser.parse_args()
     try:
         prompt = build_prompt(
@@ -211,6 +245,7 @@ def main() -> int:
             arguments.task_name,
             pretool_schema_control=arguments.pretool_schema_control,
             child_tool=arguments.child_tool,
+            negative_mutation_path=arguments.negative_mutation_path,
         )
     except (OSError, ProbePromptError) as error:
         print(f"G4 native probe prompt denied: {error}", file=sys.stderr)
