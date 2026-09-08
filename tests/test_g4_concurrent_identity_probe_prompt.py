@@ -63,21 +63,32 @@ class G4ConcurrentIdentityProbePromptTests(unittest.TestCase):
             )
         ]
 
-    def test_prompt_requires_one_batch_two_spawns_before_any_wait(self):
+    def test_prompt_requires_two_immediate_spawns_before_any_wait(self):
         first = "g4_concurrent_a"
         second = "g4_concurrent_b"
         prompt = concurrent_prompt.build_concurrent_prompt(self.root, (first, second))
 
-        self.assertIn("In one assistant tool-call batch", prompt)
-        self.assertIn("emit exactly two native spawn_agent calls", prompt)
+        self.assertNotIn("one assistant tool-call batch", prompt)
+        self.assertIn("Emit exactly two native spawn_agent calls before any other call", prompt)
         self.assertIn(f"task_name={first}", prompt)
         self.assertIn(f"task_name={second}", prompt)
-        self.assertIn("Do not call wait_agent until both spawn_agent calls have returned", prompt)
-        self.assertIn("do not wait for either child before spawning the other", prompt)
+        self.assertIn("As soon as A's spawn_agent call returns", prompt)
+        self.assertIn("A staged or task-path-only spawn result is successful dispatch", prompt)
+        self.assertIn("must not prevent B's spawn", prompt)
+        self.assertIn("Do not call any other tool", prompt)
+        self.assertIn("or wait for A between the two spawn calls", prompt)
         self.assertIn("until both exact children have reached terminal completion", prompt)
-        self.assertIn("concurrent overlap fails", prompt)
+        self.assertIn("Qualification requires actual child execution overlap", prompt)
+        self.assertIn("B must start before A reaches any terminal callback", prompt)
+        self.assertIn("Same-assistant-response batching is not required", prompt)
         self.assertIn("call no other tool", prompt)
         self.assertNotIn("API_KEY", prompt)
+
+    def test_default_names_advance_past_the_frozen_orphan_attempt(self):
+        self.assertEqual(
+            concurrent_prompt.DEFAULT_TASK_NAMES,
+            ("g4_concurrent_identity_a2", "g4_concurrent_identity_b2"),
+        )
 
     def test_each_child_has_one_strict_read_only_identity_capsule(self):
         prompt = concurrent_prompt.build_concurrent_prompt(

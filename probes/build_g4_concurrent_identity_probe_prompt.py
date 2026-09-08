@@ -23,8 +23,8 @@ from build_g4_native_probe_prompt import (  # noqa: E402
 
 
 DEFAULT_TASK_NAMES = (
-    "g4_concurrent_identity_a1",
-    "g4_concurrent_identity_b1",
+    "g4_concurrent_identity_a2",
+    "g4_concurrent_identity_b2",
 )
 CHILD_ASSIGNMENT_MARKER = "\nEXACT CHILD ASSIGNMENT:\n\n"
 
@@ -59,12 +59,12 @@ def build_concurrent_prompt(root: Path, task_names: tuple[str, str]) -> str:
 
 Run exactly this concurrent lifecycle and call no other tool:
 
-1. In one assistant tool-call batch, emit exactly two native spawn_agent calls and no other call. The first must use agent_type={AGENT_TYPE}, task_name={first_name}, fork_turns=none, and message equal to CONCURRENT CHILD A below, including its terminating authority declaration. The second must use agent_type={AGENT_TYPE}, task_name={second_name}, fork_turns=none, and message equal to CONCURRENT CHILD B below, including its terminating authority declaration.
-2. Do not call wait_agent until both spawn_agent calls have returned. Do not intentionally serialize the children and do not wait for either child before spawning the other.
+1. Emit exactly two native spawn_agent calls before any other call. First call spawn_agent for A with agent_type={AGENT_TYPE}, task_name={first_name}, fork_turns=none, and message equal to CONCURRENT CHILD A below, including its terminating authority declaration.
+2. As soon as A's spawn_agent call returns, immediately call spawn_agent for B with agent_type={AGENT_TYPE}, task_name={second_name}, fork_turns=none, and message equal to CONCURRENT CHILD B below, including its terminating authority declaration. A staged or task-path-only spawn result is successful dispatch for this scheduling step; absence of a child thread id in that first tool result is not a failure and must not prevent B's spawn. Do not call any other tool, inspect terminal state, or wait for A between the two spawn calls.
 3. After both spawn results, use only the native wait/callback path until both exact children have reached terminal completion and returned their exact final attestations. If the first wait returns while one child remains running, call wait_agent again for the remaining callback.
 4. Report both spawn results, child thread ids, canonical AgentPaths, and exact final results. Do not issue follow-up, send-message, list-agents, interrupt, cancel, or mutation calls from the parent.
 
-If either custom-agent spawn, Hook capture, identity binding, wait, callback, final attestation, or concurrent overlap fails, report the exact non-secret failure and stop. Never reuse either child's task name, thread id, assignment id, handoff id, capsule hash, compact hash, or final result for the other child. Do not fall back to default, explorer, worker, or v4.
+Qualification requires actual child execution overlap: B must start before A reaches any terminal callback, and both identities must later complete independently. Same-assistant-response batching is not required. If either custom-agent spawn explicitly fails, or if Hook capture, identity binding, wait, callback, final attestation, or actual overlap fails, report the exact non-secret failure and stop. Never reuse either child's task name, thread id, assignment id, handoff id, capsule hash, compact hash, or final result for the other child. Do not fall back to default, explorer, worker, or v4.
 
 CONCURRENT CHILD A ({first_name}):
 
