@@ -2511,3 +2511,57 @@ normal G4, thirteen-surface mutation, and same-UID checkers returned valid;
 their promotion-required forms exited 2. `sandbox_block` advances from pending
 to partial, while `phase1_complete=false`, `direct_write_qualified=false`, and
 Phases 2/3 remain closed.
+
+## Provider-free two-child serial identity sample
+
+Commit `d0831a282f4f48262e90b389ad81f23b957fe8e8` added a fail-closed prompt
+builder for one exact two-child serial identity run. It requires a clean Git
+root, two distinct canonical task names, the qualification worker role, and
+strict read-only authority. The native parent must wait for child A's terminal
+callback before spawning child B, and neither child may call anything except
+one native `list_agents`. No Hook or App Server configuration changed for this
+probe.
+
+The isolated current-runtime run used parent
+`01a07f4d-f0bc-7ec3-9adc-01cb025e27e8`. Real child SessionMeta bound child A
+`01a07f4e-8099-72e3-b2b5-51add39cf51c` to
+`/root/g4_serial_identity_a1`, then bound child B
+`01a07f4f-e862-74b0-9682-9923e20d4646` to
+`/root/g4_serial_identity_b1`. The children have distinct assignment, handoff,
+thread, turn, capsule, compact-invariant, and canonical AgentPath values while
+sharing the exact parent thread/runtime session and clean Git base. Each child
+called native `list_agents` exactly once, re-attested the same immutable base,
+and made no disk change.
+
+Hook sequences 1341--1349 preserve the serial boundary. Child A reached task
+completion and its parent callback at `04:38:22.402Z` and `04:38:22.408Z`;
+child B's spawn did not begin until `04:38:58.021Z`, 35.613 seconds after the
+callback. A's first final put Git fields under a nested `root` object.
+SubagentStop rejected it with
+`TASK.FINAL_INVALID_FINAL_WITHOUT_CONTRIBUTION`, after which A returned the
+exact flat schema and reached reported state. B passed its first SubagentStop.
+This is direct evidence that final-schema mediation and serial callback
+ordering work together; it is not evidence that an external worker can
+adjudicate itself.
+
+Both durable records remain in `reported`, deliberately not fresh-owner
+`consumed`. The parent rollout contains the two native spawn calls and exact
+child SessionMeta, while the public `codex exec --json` projection exposes only
+the two wait items. The outer zsh recorder then used the reserved variable
+`status` after the completed parent turn and returned exit 1, so the candidate's
+direct exit code was not captured. No retry was performed and the receipt marks
+that field unknown rather than inferring it from task completion. A later
+barrier found no candidate process and the exact HEAD/tree/index/status
+unchanged, but does not claim strong global quiescence.
+
+`probes/g4-live-serial-identity-20260908.json` and
+`tests/test_g4_live_serial_identity.py` preserve the minimized receipt and
+executable assertions. The fresh provider-free suite passed 459 tests in
+54.767 seconds, including agent-template checks. The normal G4, thirteen-surface
+mutation, and same-UID checks remain valid; all three promotion-required checks
+exit 2. This advances one provider-free serial identity sample for P1--P3 and
+its callback/barrier evidence for P5b/P6/P7. Nested and concurrent identity,
+fresh-owner consumption, resume/cancel/crash, strong quiescence, full mutation
+mediation, representative P6c cost/latency, Windows, and DeepSeek regression
+remain open. Therefore `phase1_complete=false`,
+`direct_write_qualified=false`, and Phases 2/3 remain closed.
