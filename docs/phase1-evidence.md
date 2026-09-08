@@ -2603,3 +2603,45 @@ nested/concurrent/resume cases, mutation-capable contribution, representative
 P6c cost/latency, candidate exit-code gap, or strong global quiescence.
 `phase1_complete=false`, `direct_write_qualified=false`, and Phases 2/3 remain
 closed.
+
+## Concurrent-cohort parent-exit orphan negative
+
+The first current-runtime concurrent identity attempt ran from clean commit
+`040eea43274928a534f3052204fd6aaeaddc2132` with the isolated 0.153.4
+candidate, read-only sandbox, `approval_policy=never`, and no GUI App Server or
+Hook configuration change. The prompt requested two read-only qualification
+children in one assistant tool-call batch. The parent emitted only the A spawn,
+then explicitly declared the probe failed and completed without issuing B,
+wait, interrupt, cancel, or any mutation call. The candidate exit code was
+captured directly as zero; that process result records parent turn completion,
+not concurrent qualification success.
+
+The one started child is nevertheless an exact positive identity observation.
+Assignment `c81ce04d-9106-4306-b4e3-e4d36b7b4c00` and handoff
+`c55e38aa-5b97-4c3e-b095-c05e389071db` bound real child thread
+`01a07f7b-88f0-7781-a3b4-8ab6bf3305d3` to canonical AgentPath
+`/root/g4_concurrent_identity_a1` and parent/runtime session
+`01a07f7a-eebd-76a2-8c91-07b49122e0a8`. Hook sequences 1390--1392 are exactly
+parent spawn PreToolUse, child SubagentStart, and the child's one allowed native
+`list_agents` call. That result observed both `/root` and A running. No B spawn
+or execution overlap occurred, so this is not a concurrent identity cohort.
+
+The termination tail is the material negative. The parent completed at
+`05:27:01.260Z`; 16 ms later the child rollout recorded `turn_aborted` with
+reason `interrupted`. It emitted no assistant final, task-complete event, or
+SubagentStop. After process exit and a later App restart, no candidate process
+remained and HEAD/tree/index/status were unchanged, but the exact assignment
+was still present only in `active`, with the same state hash and mtime from its
+first Git attestation. It was absent from reported, unresolved, consumed, and
+lost. The record was deliberately not reclassified by hand.
+
+`probes/g4-live-concurrent-batch-orphan-negative-20260908.json` and
+`tests/test_g4_live_concurrent_batch_orphan_negative.py` preserve the minimized
+receipt and executable assertions. They prove that process absence is not Hook
+state quiescence and expose a P5b parent-exit callback/reconciliation gap. The
+same-assistant-batch mechanism is not itself a Phase 1 acceptance property; the
+next bounded attempt may use two immediately sequential spawn calls, provided
+the second occurs before either child reaches a terminal event and the actual
+overlap is verified from real identities and timestamps. Distinct task names
+must be used while the orphan remains fail-closed. `phase1_complete=false`,
+`direct_write_qualified=false`, and Phases 2/3 remain closed.

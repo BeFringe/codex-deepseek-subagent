@@ -83,9 +83,11 @@
           "tests/test_g4_live_serial_identity.py",
           "probes/g4-live-serial-identity-parent-adjudication-input-20260908.json",
           "probes/g4-live-serial-identity-parent-adjudication-result-20260908.json",
-          "tests/test_g4_live_serial_identity_parent_adjudication.py"
+          "tests/test_g4_live_serial_identity_parent_adjudication.py",
+          "probes/g4-live-concurrent-batch-orphan-negative-20260908.json",
+          "tests/test_g4_live_concurrent_batch_orphan_negative.py"
         ],
-        "blocker": "the prior signed runtime encrypted the spawn message before PreToolUse, while the current signed runtime opt-in candidate now has a consumed inherited-OpenAI root receipt and a separately consumed external-ZHIPU child receipt in which PreToolUse observed the exact plaintext assignment hash and SubagentStart consumed and identity-bound the capsule. A provider-free serial sample additionally captured and fresh-owner consumed two distinct plaintext assignments after two native read-only list_agents loops, with child B spawned only after child A's terminal callback. Upstream SDK and App Server still expose no supported plaintext spawn choice; send_message/followup_task delivery, distinct same-message deny pairs, nested and concurrent delivery, and broader serial cohort scale remain unqualified"
+        "blocker": "the prior signed runtime encrypted the spawn message before PreToolUse, while the current signed runtime opt-in candidate now has a consumed inherited-OpenAI root receipt and a separately consumed external-ZHIPU child receipt in which PreToolUse observed the exact plaintext assignment hash and SubagentStart consumed and identity-bound the capsule. A provider-free serial sample additionally captured and fresh-owner consumed two distinct plaintext assignments after two native read-only list_agents loops, with child B spawned only after child A's terminal callback. A first concurrent attempt captured one exact plaintext assignment and child identity, but the parent emitted only the A spawn and then completed; B was never spawned, so it is negative evidence rather than a concurrent cohort. Upstream SDK and App Server still expose no supported plaintext spawn choice; send_message/followup_task delivery, distinct same-message deny pairs, nested and concurrent delivery, and broader serial cohort scale remain unqualified"
       },
       {
         "id": "P2",
@@ -118,9 +120,11 @@
           "tests/test_g4_live_serial_identity.py",
           "probes/g4-live-serial-identity-parent-adjudication-input-20260908.json",
           "probes/g4-live-serial-identity-parent-adjudication-result-20260908.json",
-          "tests/test_g4_live_serial_identity_parent_adjudication.py"
+          "tests/test_g4_live_serial_identity_parent_adjudication.py",
+          "probes/g4-live-concurrent-batch-orphan-negative-20260908.json",
+          "tests/test_g4_live_concurrent_batch_orphan_negative.py"
         ],
-        "blocker": "the current signed runtime now has one fresh inherited-OpenAI assignment-to-SessionMeta/canonical-AgentPath join and one exact external-ZHIPU child join, both through consumed state, in addition to one historical root and two older partial concurrent records. One provider-free two-child serial sample proves distinct assignment, handoff, child thread, and canonical AgentPath values under the same parent SessionMeta, with child B starting only after child A's callback; both serial records now have exact five-dimension fresh-owner consumption. Nested and concurrent identity joins plus serial and mixed-provider cohort scale remain missing"
+        "blocker": "the current signed runtime now has one fresh inherited-OpenAI assignment-to-SessionMeta/canonical-AgentPath join and one exact external-ZHIPU child join, both through consumed state, in addition to one historical root and two older partial concurrent records. One provider-free two-child serial sample proves distinct assignment, handoff, child thread, and canonical AgentPath values under the same parent SessionMeta, with child B starting only after child A's callback; both serial records now have exact five-dimension fresh-owner consumption. The first new concurrent attempt proves one more exact A join but no B join or overlap, and its parent-exit interruption left A active without SubagentStop. Nested and successful concurrent identity joins plus serial and mixed-provider cohort scale remain missing"
       },
       {
         "id": "P3",
@@ -148,9 +152,11 @@
           "tests/test_g4_live_serial_identity.py",
           "probes/g4-live-serial-identity-parent-adjudication-input-20260908.json",
           "probes/g4-live-serial-identity-parent-adjudication-result-20260908.json",
-          "tests/test_g4_live_serial_identity_parent_adjudication.py"
+          "tests/test_g4_live_serial_identity_parent_adjudication.py",
+          "probes/g4-live-concurrent-batch-orphan-negative-20260908.json",
+          "tests/test_g4_live_concurrent_batch_orphan_negative.py"
         ],
-        "blocker": "a current-runtime inherited-OpenAI assignment and a separate external-ZHIPU child both traverse pending, claimed, active, reported, and consumed with exact keyed identity. The provider-free serial pair separately traverses spawn, SubagentStart, native tool use, SubagentStop, terminal callback, then next spawn; both records reach reported and then fresh-owner consumed state under one exact evidence hash. Child A's wrong final shape was rejected and corrected once, while child B passed on its first stop. Crash recovery, durable resume, cancel, and cohort replay remain missing"
+        "blocker": "a current-runtime inherited-OpenAI assignment and a separate external-ZHIPU child both traverse pending, claimed, active, reported, and consumed with exact keyed identity. The provider-free serial pair separately traverses spawn, SubagentStart, native tool use, SubagentStop, terminal callback, then next spawn; both records reach reported and then fresh-owner consumed state under one exact evidence hash. Child A's wrong final shape was rejected and corrected once, while child B passed on its first stop. The first concurrent attempt stops at active after spawn, SubagentStart, and native tool use: parent completion interrupts the child without SubagentStop or a terminal-state transition. Crash recovery, orphan reconciliation, durable resume, cancel, and cohort replay remain missing"
       },
       {
         "id": "P4",
@@ -242,9 +248,11 @@
           "probes/g4-child-read-only-sandbox-denial-20260908.json",
           "tests/test_g4_child_read_only_sandbox_denial.py",
           "probes/g4-live-serial-identity-20260908.json",
-          "tests/test_g4_live_serial_identity.py"
+          "tests/test_g4_live_serial_identity.py",
+          "probes/g4-live-concurrent-batch-orphan-negative-20260908.json",
+          "tests/test_g4_live_concurrent_batch_orphan_negative.py"
         ],
-        "blocker": "the current-runtime read-only root and external-ZHIPU child both have clean post-termination disk barriers and fresh consumed-state transitions. One trusted parent-only non-Git apply_patch has an exact PreToolUse claim, successful PostToolUse callback, byte-level after-snapshot, released lease, and zero in-flight claims after process exit. Read-only child apply_patch and Bash denials exercise the repaired terminal-state path. The one-shot sandbox probe adds an independently enforced Seatbelt denial after Bash dispatch, one terminal SubagentStop, exact parent callback, and a stable absent target across two later observations. A provider-free serial pair adds two ordered per-child callbacks, proves no child execution overlap, and leaves the exact Git baseline unchanged with the candidate process absent; its direct candidate exit code is unavailable because the outer zsh recorder failed after task completion. These are per-target barriers, not strong global quiescence. A live failed multi-file apply_patch proves that a missing PostToolUse callback leaves its lease fail closed and that exact-identity, unchanged-snapshot recovery works; automatic failure-callback completeness is therefore still false. Child/parent/sibling all-surface writer serialization and strong global quiescence across success, cancel, crash, and late-write space remain missing. The isolated host-control negative additionally proves App Server exit alone is not a process-tree barrier"
+        "blocker": "the current-runtime read-only root and external-ZHIPU child both have clean post-termination disk barriers and fresh consumed-state transitions. One trusted parent-only non-Git apply_patch has an exact PreToolUse claim, successful PostToolUse callback, byte-level after-snapshot, released lease, and zero in-flight claims after process exit. Read-only child apply_patch and Bash denials exercise the repaired terminal-state path. The one-shot sandbox probe adds an independently enforced Seatbelt denial after Bash dispatch, one terminal SubagentStop, exact parent callback, and a stable absent target across two later observations. A provider-free serial pair adds two ordered per-child callbacks, proves no child execution overlap, and leaves the exact Git baseline unchanged with the candidate process absent; its direct candidate exit code is unavailable because the outer zsh recorder failed after task completion. A first concurrent attempt now adds a stronger negative: parent task completion interrupted its sole started child 16 ms later, no SubagentStop was emitted, and the exact authority record remained active after restart despite process absence and a clean disk. These are per-target barriers and callback gaps, not strong global quiescence. A live failed multi-file apply_patch separately proves that a missing PostToolUse callback leaves its lease fail closed and that exact-identity, unchanged-snapshot recovery works; automatic failure-callback completeness is therefore still false. Child/parent/sibling all-surface writer serialization and strong global quiescence across success, cancel, crash, and late-write space remain missing. The isolated host-control negative additionally proves App Server exit alone is not a process-tree barrier"
       },
       {
         "id": "P6",
@@ -264,7 +272,9 @@
           "tests/test_g4_live_serial_identity.py",
           "probes/g4-live-serial-identity-parent-adjudication-input-20260908.json",
           "probes/g4-live-serial-identity-parent-adjudication-result-20260908.json",
-          "tests/test_g4_live_serial_identity_parent_adjudication.py"
+          "tests/test_g4_live_serial_identity_parent_adjudication.py",
+          "probes/g4-live-concurrent-batch-orphan-negative-20260908.json",
+          "tests/test_g4_live_concurrent_batch_orphan_negative.py"
         ],
         "blocker": "the current signed runtime has one exact inherited-OpenAI SubagentStop report and one exact external-ZHIPU read-only report consumed after fresh five-dimension parent adjudication. The provider-free serial pair adds two exact consumed attestations under one fresh-owner evidence hash, one mediated invalid-final correction, and two ordered parent callbacks. Compact/resume, context-loss, mixed-frontier, mutation-capable contribution, and broader cohort adjudication remain missing"
       },
@@ -332,7 +342,9 @@
           "probes/g4-child-read-only-sandbox-denial-20260908.json",
           "tests/test_g4_child_read_only_sandbox_denial.py",
           "probes/g4-live-serial-identity-20260908.json",
-          "tests/test_g4_live_serial_identity.py"
+          "tests/test_g4_live_serial_identity.py",
+          "probes/g4-live-concurrent-batch-orphan-negative-20260908.json",
+          "tests/test_g4_live_concurrent_batch_orphan_negative.py"
         ],
         "blocker": "a narrow exact child-role/provider source seam and two live OpenAI-parent to ZHIPU-child read-only native-tool loops, including one fresh consumed record, prove that the current provider-inheritance boundary can be crossed without replacing the parent provider or App Server. A provider-free POSIX serial pair also completed without selecting the candidate as the GUI App Server, although its outer recorder lost the direct candidate exit code after task completion. The one-shot sandbox overlay has an exact hash-pinned rollback: live config and scripts returned to their prior bytes, an in-process cached Hook definition failed closed rather than reloading, and a full App restart restored the prior trusted Hook set with zero warnings or errors. These are narrow positive receipts, not broad upgrade compatibility. The legacy Utopia DeepSeek route, Windows parity, DeepSeek regression, and broader external-child lifecycle and rollback cohorts remain missing; the independent App Server Broker replacement still cannot satisfy this project's native AgentPath lifecycle contract"
       }
@@ -353,7 +365,9 @@
           "tests/test_g4_live_serial_identity.py",
           "probes/g4-live-serial-identity-parent-adjudication-input-20260908.json",
           "probes/g4-live-serial-identity-parent-adjudication-result-20260908.json",
-          "tests/test_g4_live_serial_identity_parent_adjudication.py"
+          "tests/test_g4_live_serial_identity_parent_adjudication.py",
+          "probes/g4-live-concurrent-batch-orphan-negative-20260908.json",
+          "tests/test_g4_live_concurrent_batch_orphan_negative.py"
         ]
       },
       {
@@ -412,7 +426,9 @@
           "probes/g4-live-serial-identity-20260908.json",
           "tests/test_g4_live_serial_identity.py",
           "probes/g4-live-serial-identity-parent-adjudication-result-20260908.json",
-          "tests/test_g4_live_serial_identity_parent_adjudication.py"
+          "tests/test_g4_live_serial_identity_parent_adjudication.py",
+          "probes/g4-live-concurrent-batch-orphan-negative-20260908.json",
+          "tests/test_g4_live_concurrent_batch_orphan_negative.py"
         ]
       },
       {
@@ -434,7 +450,9 @@
           "probes/g4-child-read-only-sandbox-denial-20260908.json",
           "tests/test_g4_child_read_only_sandbox_denial.py",
           "probes/g4-live-serial-identity-20260908.json",
-          "tests/test_g4_live_serial_identity.py"
+          "tests/test_g4_live_serial_identity.py",
+          "probes/g4-live-concurrent-batch-orphan-negative-20260908.json",
+          "tests/test_g4_live_concurrent_batch_orphan_negative.py"
         ]
       },
       {
@@ -453,7 +471,9 @@
           "probes/g4-live-serial-identity-20260908.json",
           "tests/test_g4_live_serial_identity.py",
           "probes/g4-live-serial-identity-parent-adjudication-result-20260908.json",
-          "tests/test_g4_live_serial_identity_parent_adjudication.py"
+          "tests/test_g4_live_serial_identity_parent_adjudication.py",
+          "probes/g4-live-concurrent-batch-orphan-negative-20260908.json",
+          "tests/test_g4_live_concurrent_batch_orphan_negative.py"
         ]
       },
       {
