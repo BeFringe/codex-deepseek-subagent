@@ -2641,7 +2641,60 @@ receipt and executable assertions. They prove that process absence is not Hook
 state quiescence and expose a P5b parent-exit callback/reconciliation gap. The
 same-assistant-batch mechanism is not itself a Phase 1 acceptance property; the
 next bounded attempt may use two immediately sequential spawn calls, provided
-the second occurs before either child reaches a terminal event and the actual
-overlap is verified from real identities and timestamps. Distinct task names
-must be used while the orphan remains fail-closed. `phase1_complete=false`,
-`direct_write_qualified=false`, and Phases 2/3 remain closed.
+the second child starts before the first child reaches accepted terminal
+completion and the actual overlap is verified from real identities and
+timestamps. A rejected SubagentStop correction attempt is not terminal
+completion. Distinct task names must be used while the orphan remains
+fail-closed. `phase1_complete=false`, `direct_write_qualified=false`, and
+Phases 2/3 remain closed.
+
+## Provider-free two-child concurrent identity sample
+
+Commit `da0cdcbafc80439f1589685af3731d0b34a3a95b` changed the scheduling
+mechanism without weakening the acceptance property. It removed the
+same-assistant-response batching requirement, advanced the task names to
+`g4_concurrent_identity_a2` and `g4_concurrent_identity_b2`, and required two
+spawn calls before any parent wait or other tool. A staged or task-path-only
+first result is sufficient to dispatch B; qualification still requires real
+execution overlap and two independent terminal identities.
+
+The clean isolated 0.153.4 run used parent
+`01a07f8f-c0aa-74a2-8662-888b04b37dcf`. Real SessionMeta bound child A
+`01a07f90-611b-7d80-a74d-b0d39727cf30` to
+`/root/g4_concurrent_identity_a2` and child B
+`01a07f90-f9cb-7562-b916-4a930e74b08d` to
+`/root/g4_concurrent_identity_b2`. The assignments, handoffs, child threads,
+AgentPaths, capsules, compact invariants, and spawn tool-use ids are distinct;
+both children share the exact parent/runtime session and clean Git base. Each
+child called only native `list_agents`, re-attested the immutable base, changed
+no bytes, and reached a durable reported state.
+
+The current runtime did execute the children concurrently. A's first
+SubagentStop attempt at `05:49:58.321Z` was not terminal: B spawned afterward,
+started at `05:50:11.037Z`, and its own `list_agents` result at
+`05:50:15.602Z` observed `/root`, A, and B all running. A did not reach its
+accepted SubagentStop until `05:50:39.414Z` or task completion until
+`05:50:39.593Z`. Thus the independently witnessed overlap lasted at least
+28.377 seconds before A's accepted stop. B completed at `05:51:05.760Z`.
+Hook sequences 1409--1419 preserve both spawn/start/tool paths and all mediated
+stop attempts.
+
+The parent made no call between the two spawns, then completed two non-timed-out
+waits. Its native spawn and wait projections exposed task paths and Hook-staged
+assignment/handoff ids, but not either child thread id. The parent therefore
+reported the probe failed closed even though both children completed. A fresh
+owner could join the real child rollouts, SessionMeta, Hook actors, reported
+records, and final attestations exactly. This is a parent result-projection gap,
+not a runtime identity-binding failure, but it prevents the original parent
+from self-adjudicating exact identity without an external durable receipt.
+
+`probes/g4-live-concurrent-identity-20260908.json` and
+`tests/test_g4_live_concurrent_identity.py` preserve the minimized dual
+receipt: one live concurrent identity positive sample and one parent-projection
+negative. The candidate exit code was directly captured as zero; a later
+barrier found the process absent and HEAD/tree/index/status unchanged. Both
+records remain reported, not fresh-owner consumed, and one sample is not cohort
+scale or strong global quiescence. Mutation, compact/resume, cancel/crash,
+representative P6c, Windows, and DeepSeek regression remain open.
+`phase1_complete=false`, `direct_write_qualified=false`, and Phases 2/3 remain
+closed.

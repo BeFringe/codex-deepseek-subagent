@@ -79,7 +79,11 @@ class G4ConcurrentIdentityProbePromptTests(unittest.TestCase):
         self.assertIn("or wait for A between the two spawn calls", prompt)
         self.assertIn("until both exact children have reached terminal completion", prompt)
         self.assertIn("Qualification requires actual child execution overlap", prompt)
-        self.assertIn("B must start before A reaches any terminal callback", prompt)
+        self.assertIn("B must start before A reaches accepted terminal completion", prompt)
+        self.assertIn(
+            "A rejected SubagentStop correction attempt is not terminal completion",
+            prompt,
+        )
         self.assertIn("Same-assistant-response batching is not required", prompt)
         self.assertIn("call no other tool", prompt)
         self.assertNotIn("API_KEY", prompt)
