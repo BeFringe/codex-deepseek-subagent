@@ -1,0 +1,163 @@
+{
+  "schema": 1,
+  "evidence_kind": "current_signed_runtime_provider_free_serial_identity_parent_adjudication_input",
+  "observed_at": "2026-09-08T05:10:06Z",
+  "authorization": "explicit_user_phase1_g4_probe_authorization",
+  "runtime_role": "current_signed_runtime",
+  "source_probe": {
+    "path": "probes/g4-live-serial-identity-20260908.json",
+    "sha256": "fc88dff2b9df9e92acefb4fce3de7595f0a53e087d892e14879c625b548ee3fa"
+  },
+  "runtime": {
+    "codex_version": "0.153.4",
+    "base_source_commit": "3d2ee51ca2d5db578f328aa75e20aa22c0197c9a",
+    "candidate_binary_sha256": "60f7c933064d330c0d73444315172873d6158d2d060580891a746de34684fafd",
+    "candidate_entry_point": "headless_codex_exec_only",
+    "gui_app_server_selected": false,
+    "sandbox": "read-only",
+    "approval_policy": "never",
+    "parent_model_provider": "openai",
+    "child_model_provider": "openai",
+    "credential_values_observed_or_recorded": false
+  },
+  "worker_git_frontier": {
+    "root": "/Users/pearly/文档/CAT/codex-deepseek-subagent",
+    "branch": "main",
+    "head": "d0831a282f4f48262e90b389ad81f23b957fe8e8",
+    "head_tree": "92c23f7ad151a33008c84370b73edd90e6faeb39",
+    "index_sha256": "76ab45d266a98d497732dbe8e6397ea2b1a9276df639a4a0b20087b6969cc7c8",
+    "status_short": "",
+    "index_changed": false
+  },
+  "fresh_parent_git_frontier_before_evidence_write": {
+    "root": "/Users/pearly/文档/CAT/codex-deepseek-subagent",
+    "branch": "main",
+    "head": "44fa86f45e516512f70f8a94feaf04e9f39802c6",
+    "head_tree": "2f8c68e3ad5bf02a74588c1a6ae36dc23e1d46af",
+    "write_tree": "2f8c68e3ad5bf02a74588c1a6ae36dc23e1d46af",
+    "index_sha256": "654268151a1a96079325c2b80505297a2dc84e05900ab67e8bb987c2373165cd",
+    "status_short": "",
+    "index_changed": false,
+    "worker_head_is_ancestor": true,
+    "changes_since_worker_head": [
+      "docs/phase1-evidence.md",
+      "probes/g4-live-serial-identity-20260908.json",
+      "probes/phase1-g4-status.json",
+      "tests/test_g4_live_serial_identity.py"
+    ],
+    "changes_since_worker_head_owner": "fresh_parent_evidence_only"
+  },
+  "parent_identity": {
+    "thread_id": "01a00147-39cb-7b50-b78d-7baed910eb45",
+    "runtime_session_id": "01a00147-39cb-7b50-b78d-7baed910eb45",
+    "canonical_agent_path": "/root",
+    "adjudication_authority": "fresh_owner"
+  },
+  "source_parent_identity": {
+    "thread_id": "01a07f4d-f0bc-7ec3-9adc-01cb025e27e8",
+    "runtime_session_id": "01a07f4d-f0bc-7ec3-9adc-01cb025e27e8",
+    "turn_id": "01a07f4d-f12d-7593-beb4-841ffa06da33",
+    "canonical_agent_path": "/root"
+  },
+  "assignments": [
+    {
+      "serial_position": "A",
+      "assignment_id": "3f8da61f-7bb4-40b1-8db6-c52e58e92e33",
+      "handoff_id": "bf7aa158-8785-4aa8-b64a-82dc562a09b8",
+      "requested_task_name": "g4_serial_identity_a1",
+      "canonical_agent_path": "/root/g4_serial_identity_a1",
+      "child_thread_id": "01a07f4e-8099-72e3-b2b5-51add39cf51c",
+      "child_turn_id": "01a07f4e-80ef-70f3-a640-e96848575341",
+      "assignment_sha256": "d670673b050e467fbb0bb06ed98e56c571a99ea18ec4990484af08d4d12883fb",
+      "capsule_sha256": "70923416d89635147b51a2e2a28dd967d9c2a6749249ee1059cc274299bf6429",
+      "compact_invariant_sha256": "426155d060c23d23691afff76bf8d931d38103260d9695f13ea01b00cb4b1979",
+      "reported_state_sha256": "9ee4db06b57c47ed3b9346e111b0e6717b79a08be82aadbbf03918d39e591ab3",
+      "rollout_sha256": "29d13f756702e14edbbe294518b9775c3ce2d4ca850f35c5743a8c0bc8d6d492",
+      "native_tool": "list_agents",
+      "native_tool_call_count": 1,
+      "subagent_stop_attempts": 2,
+      "final_correction_count": 1,
+      "final_attestation_exact": true,
+      "assignment_mutation_mode": "read_only",
+      "changed_paths": [],
+      "authority_violation": false,
+      "assigned_slice_complete": true
+    },
+    {
+      "serial_position": "B",
+      "assignment_id": "4b00cd46-3f3e-4499-8aa2-35f8d1a9846c",
+      "handoff_id": "6240d911-87b5-40f2-84ae-9a71ecf642c9",
+      "requested_task_name": "g4_serial_identity_b1",
+      "canonical_agent_path": "/root/g4_serial_identity_b1",
+      "child_thread_id": "01a07f4f-e862-74b0-9682-9923e20d4646",
+      "child_turn_id": "01a07f4f-e8b4-7e13-8fb9-1eb9865d0433",
+      "assignment_sha256": "a30949ef3d38588511c9445b4e6c9ba0ca9e574bd6a15d31693eab4c310b3a2c",
+      "capsule_sha256": "14ebd65e1bd6fa138a0ab9ff6bd74b8557dc8bdf462301543d9e7e562beaa1aa",
+      "compact_invariant_sha256": "4eb18497f1a8f8658735135c2fb43a04f49596c95891174e94f22c6abbfb64c4",
+      "reported_state_sha256": "5603171b685707d14d8ab9cca3d54e75bc6afc0df4dd05d208c624b9e4d844fa",
+      "rollout_sha256": "545be3e91a23f251f6520e7a48dafc5eb95b3ab9a50d50c5d47d4d2eaba14ad9",
+      "native_tool": "list_agents",
+      "native_tool_call_count": 1,
+      "subagent_stop_attempts": 1,
+      "final_correction_count": 0,
+      "final_attestation_exact": true,
+      "assignment_mutation_mode": "read_only",
+      "changed_paths": [],
+      "authority_violation": false,
+      "assigned_slice_complete": true
+    }
+  ],
+  "serial_lifecycle": {
+    "child_a_parent_callback_at": "2026-09-08T04:38:22.408Z",
+    "child_b_spawn_at": "2026-09-08T04:38:58.021Z",
+    "callback_to_next_spawn_gap_ms": 35613,
+    "child_b_spawn_after_child_a_callback": true,
+    "overlapping_child_execution_observed": false,
+    "both_parent_waits_timed_out": false,
+    "both_parent_callbacks_observed": true,
+    "both_reported_states_present": true,
+    "both_active_states_absent": true,
+    "both_unresolved_states_absent": true,
+    "both_consumed_states_absent": true
+  },
+  "fresh_parent_observation": {
+    "source_probe_hash_exact": true,
+    "reported_state_hashes_exact": true,
+    "sessionmeta_and_rollout_hashes_exact": true,
+    "worker_head_and_tree_exact_at_recorded_barrier": true,
+    "current_head_is_clean_parent_evidence_descendant": true,
+    "candidate_parent_and_child_processes_absent": true,
+    "worker_report_is_contribution_evidence_only": true,
+    "headless_candidate_exit_code_observed": false,
+    "headless_exit_gap_confined_to_termination_qualification": true
+  },
+  "adjudication_input": {
+    "location_integrity": "pass",
+    "mutation_scope_integrity": "pass",
+    "verification_freshness": "pass",
+    "derivation_provenance_integrity": "pass",
+    "feasibility_contract_integrity": "pass"
+  },
+  "adjudication_basis": {
+    "location_integrity": "both SessionMeta records, capsules, final attestations, and the recorded worker barrier bind the exact root, branch, and full worker HEAD; the current clean HEAD is a strict descendant containing only parent evidence changes",
+    "mutation_scope_integrity": "both assignments were strict read-only, each called only list_agents, both final changed_paths are empty, and the recorded worker barrier is clean",
+    "verification_freshness": "the parent independently re-read both immutable rollouts, SessionMeta, Hook receipts, exact reported envelopes, and the post-run disk/process barrier",
+    "derivation_provenance_integrity": "each worker claims only its own list_agents observation and the parent independently adjudicates identity, disk, and integration authority",
+    "feasibility_contract_integrity": "the strict read-only assignments have null mutation feasibility and completed exactly one permitted native observation each"
+  },
+  "scope_verdict": {
+    "both_assignments_may_advance_reported_to_consumed": true,
+    "serial_identity_sample_parent_adjudication_ready": true,
+    "identity_cohort_complete": false,
+    "nested_identity_complete": false,
+    "concurrent_identity_complete": false,
+    "resume_identity_complete": false,
+    "mutation_negative_space_complete": false,
+    "strong_global_quiescence_complete": false,
+    "representative_cost_or_latency_cohort_complete": false,
+    "phase1_complete": false,
+    "direct_write_qualified": false,
+    "phase2_state": "closed",
+    "phase3_state": "closed"
+  }
+}

@@ -2565,3 +2565,41 @@ fresh-owner consumption, resume/cancel/crash, strong quiescence, full mutation
 mediation, representative P6c cost/latency, Windows, and DeepSeek regression
 remain open. Therefore `phase1_complete=false`,
 `direct_write_qualified=false`, and Phases 2/3 remain closed.
+
+## Fresh-owner adjudication of the serial identity pair
+
+After commit `44fa86f45e516512f70f8a94feaf04e9f39802c6`, a fresh `/root`
+owner independently re-read the two child rollouts, real SessionMeta, exact
+reported envelopes, Hook sequence, and the recorded clean disk/process
+barrier. The original worker HEAD
+`d0831a282f4f48262e90b389ad81f23b957fe8e8` is an ancestor of the clean
+fresh-owner HEAD; the four intervening paths are exactly the parent-authored
+serial receipt, test, status, and evidence documentation. Neither read-only
+worker contributed any changed path.
+
+The immutable adjudication input has SHA-256
+`0183f5281f85ac754bff4baa68084994d1044db665bd37c56e7af8d0ce88df02`.
+Location integrity, mutation-scope integrity, verification freshness,
+derivation-provenance integrity, and null-feasibility integrity all passed for
+both assignments against that same evidence hash. Assignment
+`3f8da61f-7bb4-40b1-8db6-c52e58e92e33` moved from `reported` to `consumed`
+with envelope hash
+`6d016ad62bc2f8ce5f03a896706dfb17027e82d79a81b0f850b86ef4631b9e50`;
+assignment `4b00cd46-3f3e-4499-8aa2-35f8d1a9846c` moved likewise with envelope
+hash `5289c738765a1e067c4f1c7b307024d9365f9aa0a8ab962fddee963c2dbd612a`.
+For both identities, active, reported, and unresolved state was absent after
+the transition.
+
+The input, result, and executable checks are
+`probes/g4-live-serial-identity-parent-adjudication-input-20260908.json`,
+`probes/g4-live-serial-identity-parent-adjudication-result-20260908.json`, and
+`tests/test_g4_live_serial_identity_parent_adjudication.py`. This closes the
+fresh-owner consumption step for this one provider-free serial pair and adds
+positive P6/P6a/P6b evidence. The final provider-free suite passed 468 tests
+in 58.198 seconds with agent-template checks; Phase 1, mutation, and same-UID
+normal checks returned zero, while their promotion-required forms returned 2.
+It does not close the full identity cohort,
+nested/concurrent/resume cases, mutation-capable contribution, representative
+P6c cost/latency, candidate exit-code gap, or strong global quiescence.
+`phase1_complete=false`, `direct_write_qualified=false`, and Phases 2/3 remain
+closed.
