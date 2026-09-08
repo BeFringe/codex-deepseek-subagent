@@ -1,0 +1,91 @@
+{
+  "schema": 1,
+  "as_of": "2026-09-08",
+  "purpose": "Isolated current-source candidate for a native Multi-Agent V2 host session-close barrier without conflating it with mutation or detached-process quiescence.",
+  "source": {
+    "repository": "https://github.com/openai/codex",
+    "commit": "3d2ee51ca2d5db578f328aa75e20aa22c0197c9a",
+    "semantic_runtime_version": "codex-cli 0.153.4",
+    "tree": "/private/tmp/codex-current-plaintext.aTU9C2/source"
+  },
+  "candidate": {
+    "path": "/private/tmp/codex-current-plaintext.aTU9C2/candidate-session-close/codex",
+    "sha256": "c60e3ffb16e7bdfe662d66cc5d7aff91fb62244c92fc86fe98f41a958a63a633",
+    "build_profile": "dev",
+    "selected_as_gui_app_server": false,
+    "installed_live": false
+  },
+  "reconstruction": {
+    "patch": "probes/current-signed-runtime-session-close-source-candidate.patch",
+    "patch_sha256": "91ec9fcb35a1b27eb9b4b1d851d98dc206a69e55a7beab6ddee7228a550bcdbd",
+    "patch_bytes": 72460,
+    "patch_lines": 1842,
+    "changed_path_count": 23,
+    "cargo_lock_included": false,
+    "reverse_apply_check": "pass"
+  },
+  "host_contract": {
+    "tool": "close_agent",
+    "multi_agent_version": "V2",
+    "target_forms": [
+      "exact_thread_id",
+      "canonical_agent_path"
+    ],
+    "native_primitive": "AgentControl.close_agent -> shutdown_agent_tree -> shutdown_live_agent -> Op::Shutdown -> wait_until_terminated",
+    "result_fields": [
+      "previous_status",
+      "target_thread_id",
+      "target_agent_path",
+      "session_loop_terminated",
+      "process_tree_quiescence_claimed"
+    ],
+    "session_loop_terminated": true,
+    "live_descendant_session_loops_terminated": true,
+    "process_tree_quiescence_claimed": false,
+    "filesystem_mutation_quiescence_claimed": false,
+    "interrupt_agent_semantics_changed": false
+  },
+  "source_observation": {
+    "shutdown_stops": [
+      "active turns",
+      "hooks",
+      "async hook result intake",
+      "tracked unified-exec entries",
+      "code-mode service",
+      "MCP runtime",
+      "guardian review session",
+      "thread persistence"
+    ],
+    "shutdown_waits_for_session_loop_termination": true,
+    "tracked_unified_exec_termination_is_confirmed_exit_barrier": false,
+    "detached_or_untracked_descendants_are_covered": false,
+    "consequence": "The native close result may prove host session-loop termination only. P5b mutation quiescence still requires a closed mutation catalog, proof that disallowed process/bootstrap surfaces never started, zero in-flight writer claims, exact Hook-state reconciliation, and a fresh post-termination disk barrier."
+  },
+  "verification": {
+    "rust": [
+      {
+        "command": "RUST_MIN_STACK=16777216 cargo test -p codex-core multi_agent_v2_close_agent_waits_for_target_and_descendant_session_loops -- --nocapture",
+        "result": "pass: 1 selected unit test; target and nested descendant became NotFound and both received Op::Shutdown"
+      },
+      {
+        "command": "RUST_MIN_STACK=16777216 cargo test -p codex-core --lib tools::spec_plan::tests::multi_agent -- --nocapture",
+        "result": "pass: 7 selected schema/exposure tests"
+      },
+      {
+        "command": "RUST_MIN_STACK=16777216 cargo test -p codex-core --lib tools::spec_plan::tests::exact_child_provider_mapping -- --nocapture",
+        "result": "pass: 1 selected external-child tool exposure test"
+      },
+      {
+        "command": "RUST_MIN_STACK=16777216 cargo test -p codex-core --lib tools::spec_plan::tests::code_mode_only_can_expose_namespaced_multi_agent_v2_as_normal_tools -- --nocapture",
+        "result": "pass: 1 selected namespaced tool exposure test"
+      }
+    ],
+    "provider_free_prompt_tests": "pass: 7 tests across the session-close and prior watchdog prompt builders",
+    "default_rust_test_stack_observation": "The first selected unit run aborted with a test-thread stack overflow. The unchanged binary passed with RUST_MIN_STACK=16777216; this record does not present the default-stack run as a functional pass."
+  },
+  "live_probe": {
+    "state": "pending",
+    "phase1_complete": false,
+    "direct_write_qualified": false
+  }
+}
