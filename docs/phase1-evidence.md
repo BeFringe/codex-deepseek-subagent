@@ -2638,6 +2638,76 @@ P6c cost/latency, candidate exit-code gap, or strong global quiescence.
 `phase1_complete=false`, `direct_write_qualified=false`, and Phases 2/3 remain
 closed.
 
+## Live PreCompact and post-compact authority re-attestation
+
+Checkpoint `023f8386fd1a7b136121dbd086ec24b41a18e812` changed the
+provider-free recovery boundary before the live run. `PreCompact` now requires
+the exact bound SessionMeta identity, current root, branch, full HEAD, index,
+and dirty-path scope before it atomically increments the durable recovery
+epoch. A later child tool cannot proceed until its normal `PreToolUse` path
+re-attests that same capsule and current Git snapshot. The isolated candidate
+remained a headless-only Codex 0.153.4 binary; it did not replace the GUI App
+Server, change the OpenAI parent provider, or inspect credentials. The
+hash-pinned Hook overlay changed only the five G4 event entries, preserved the
+existing v4 entries, added no write qualification, and restored
+`~/.codex/hooks.json` byte-for-byte to SHA-256
+`82c8aa0bc4d739628646864578de6c078884c21413855ed3db448d4365a8668e`.
+
+The first live timing attempt bound real child
+`01a080d4-8f2b-7823-aa88-e1b3d98cbb15` to
+`/root/g4_compact_resume_1` and did reach `PreCompact`, so durable state held
+`recovery_count=1`. Its third native `list_agents` call completed immediately
+before compaction, however, and there was no later tool acknowledgement from
+which the Hook could deliver the incremented final seed. The child retained
+the stale seed with recovery count zero; every SubagentStop attempt was denied
+and no completion was accepted. After the real assignment TTL expired, the
+exact watchdog returned exit 2 with `assignment_timeout`,
+`parent_cancel_required=true`, and `unresponsive_no_disk_change`, moving only
+that identity from active to unresolved. This is the required fail-closed
+timing control, not a resume success.
+
+The four-step live attempt used disposable clean root
+`/private/tmp/codex-g4-compact-live-20260908-t2L9D8` at full HEAD
+`632afa16f9db0eeee430ec2fd28d7e2cf7586e8a`. Real SessionMeta bound child
+`01a080db-1e09-7462-ba4c-995652ba88be` to exact canonical AgentPath
+`/root/g4_compact_resume_2` under parent/runtime session
+`01a080da-8524-70c2-8b53-f5ae49584fd2`. Hook sequences 1903, 1904, and 1905
+mediated the first three native `list_agents` calls; sequence 1906 recorded
+real automatic `PreCompact`; sequence 1907 then mediated the fourth native
+tool and re-attested the unchanged root, branch, full HEAD, index, and empty
+scope with durable `recovery_count=1`. The child rollout independently contains
+one `compacted` record before that fourth tool.
+
+The first final added an unallowed top-level `schema` key and was denied at
+sequence 1908. The corrected exact final was accepted at sequence 1909, its
+SHA-256 is
+`5b7af197fb004bfdbb03a13dfdd0fe3780efc39bc459964b60192da8eb3cc832`,
+and the parent callback equals those accepted bytes. Candidate exit was zero;
+stderr was empty; the clean Git and index snapshot remained exact; and a
+delayed fresh-owner barrier found no candidate process or late write. The
+frozen live receipt has SHA-256
+`12052fcdfd17ea604ab195f7dcd99c684c744bc8f66974642413f0358734ff6e`.
+The fresh owner passed location, mutation-scope, verification-freshness,
+derivation-provenance, and null-feasibility integrity against only that hash,
+then moved assignment `94ebad83-b11e-47d9-bda6-3d0851eac953` from reported
+to consumed. The consumed envelope SHA-256 is
+`52687cb5bb2e15c2425a0654ebc1249320a4b8e58170c314163984ca7fa4e41e`.
+
+The executable receipt and checks are
+`probes/g4-live-compact-resume-20260908.json`,
+`probes/g4-live-compact-resume-parent-adjudication-20260908.json`, and
+`tests/test_g4_live_compact_resume.py`. This closes one real in-process
+auto-compaction and post-compact re-attestation path and advances
+P1/P2/P3/P5/P5b/P6/P6a/P6b/P7. It does not prove process-restart resume,
+post-resume scope-expansion denial, representative P6c scale, mixed-frontier
+exactness, strong global quiescence, Windows parity, or DeepSeek regression.
+Fresh verification passed all 578 provider-free tests in 59.160 seconds,
+including agent-template checks. The normal Phase 1, mutation, and same-UID
+checks returned zero. Their promotion-required forms returned 2; the mutation
+matrix retains thirteen blockers and same-UID rollout/state protection remains
+false. Those gates remain open; `phase1_complete=false`,
+`direct_write_qualified=false`, and Phases 2/3 remain closed.
+
 ## Live exact-path child write qualification
 
 The qualification-only write path is now exercised by a real current-runtime

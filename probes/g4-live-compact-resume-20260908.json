@@ -1,0 +1,235 @@
+{
+  "schema": 1,
+  "evidence_kind": "current_signed_runtime_compact_resume_reattestation",
+  "recorded_at": "2026-09-08T12:02:15+00:00",
+  "repository_baseline": {
+    "component_head": "023f8386fd1a7b136121dbd086ec24b41a18e812",
+    "origin_main": "076ee0df9aca11fbc0c19a6ccd7cd8befc0051f7",
+    "ahead": 96,
+    "behind": 13
+  },
+  "runtime": {
+    "codex_version": "0.153.4",
+    "source_commit": "3d2ee51ca2d5db578f328aa75e20aa22c0197c9a",
+    "candidate_path": "/private/tmp/codex-current-plaintext.aTU9C2/candidate-closed-catalog/codex",
+    "candidate_sha256": "90dbd98a2eb12328f6febf4eb52e1cf67ec10cda049841d16dcf7f25abb3420d",
+    "parent_model_provider": "openai",
+    "child_model_provider": "openai",
+    "gui_app_server_selected": false,
+    "credential_value_observed": false,
+    "sandbox": "read-only",
+    "approval_policy": "never",
+    "fixed_auto_compact_token_limit": 20000
+  },
+  "source_under_test": {
+    "compatibility_state_sha256": "da92c763edb845d1f40563750c2975dc8ab5f6ab962d97b35d9427b00b9eaaa3",
+    "runtime_guard_sha256": "76b0ef187dd93adb60c512ab6ecdba7887d3abe438b7d3078a1d91a1ec867b28",
+    "compatibility_hook_sha256": "a0bb882c8c454720294f80d897856f7be22d289617de1820bc2c8ef874d1873c",
+    "candidate_wrapper_sha256": "d9e86d3b0b247d1f1d96f20c7f87d9c4323db89067389a81d58ae4221d409d1b",
+    "overlay_builder_sha256": "ec81d83ea237043eced96a79a16470d9e25b1df1a6d66a19ebd6c4a97a4c8f20",
+    "four_step_prompt_builder_sha256": "108b621a72af48c4b888a3bab6393d5356a0812f04344a071d1a5d0d8473a5bd"
+  },
+  "qualification_overlay": {
+    "base_hooks_sha256": "82c8aa0bc4d739628646864578de6c078884c21413855ed3db448d4365a8668e",
+    "overlay_hooks_sha256": "f0551618f50b8105e7f1485c5bf33589e55d75cf3437c98f2acdf9c74b098d37",
+    "restored_hooks_sha256": "82c8aa0bc4d739628646864578de6c078884c21413855ed3db448d4365a8668e",
+    "g4_changed_event_count": 5,
+    "v4_entries_preserved": true,
+    "qualification_write_options_added": false,
+    "installed_hook_files_overwritten": false
+  },
+  "timing_negative": {
+    "purpose": "prove that a PreCompact event without a later tool re-attestation cannot be reported as resumed authority",
+    "root": "/private/tmp/codex-g4-compact-live-20260908-ISyWps",
+    "branch": "main",
+    "head": "21ff64486e9d866f733688e7cf3064d913b0a439",
+    "prompt_sha256": "1d2e8b7033f7110230868039c8179729de30ad8c60afc94aac00f6242e64132e",
+    "parent_thread_id": "01a080d3-f407-79b0-8678-7f016e3b3f62",
+    "child_thread_id": "01a080d4-8f2b-7823-aa88-e1b3d98cbb15",
+    "runtime_session_id": "01a080d3-f407-79b0-8678-7f016e3b3f62",
+    "canonical_agent_path": "/root/g4_compact_resume_1",
+    "assignment_id": "5f056a68-f4d9-4368-b509-1c7c00a1b85c",
+    "handoff_id": "fd5f8945-ce14-426a-b513-34c2dacb2617",
+    "assignment_sha256": "f59d299a87b14cc903cb4669058436b95db5a882b181531b66f8f9e705ad0834",
+    "capsule_sha256": "3225025a0d415818a1050f2a2ab1ac15f3f76c1f371a926b5405825c413ac863",
+    "capture_snapshot_sha256": "700bba4e735c499d4084b97bf72c6c68adb065760777397e462a361b4f2487cc",
+    "native_list_agents_call_count": 3,
+    "precompact_hook_sequence": 1888,
+    "durable_recovery_count": 1,
+    "child_final_seed_recovery_count": 0,
+    "postcompact_tool_call_observed": false,
+    "subagentstop_accepted": false,
+    "candidate_exit_code": 1,
+    "candidate_interrupted_by_parent": true,
+    "parent_events": {
+      "path": "/private/tmp/codex-g4-compact-live-20260908-ISyWps.parent-events.jsonl",
+      "sha256": "8ad66814f83f47eb17f1fae52fa3ae04f97f64fb5dda3155d537232d1f579c4f",
+      "line_count": 16,
+      "bytes": 2955
+    },
+    "parent_rollout": {
+      "path": "/Users/pearly/.codex/sessions/2026/09/08/rollout-2026-09-08T19-42-49-01a080d3-f407-79b0-8678-7f016e3b3f62.jsonl",
+      "sha256": "18bedcaaecb998a28e8a177c983698e37c67373c0280a732fa81419f27e6400e",
+      "line_count": 52,
+      "bytes": 85441
+    },
+    "child_rollout": {
+      "path": "/Users/pearly/.codex/sessions/2026/09/08/rollout-2026-09-08T19-43-29-01a080d4-8f2b-7823-aa88-e1b3d98cbb15.jsonl",
+      "sha256": "377863d2adc6e8bd959c0e6704883f59543cdb1f2e23e1cffce758c9c68345fb",
+      "line_count": 90,
+      "bytes": 272092
+    },
+    "watchdog": {
+      "observed_at": "2026-09-08T12:00:33.181209+00:00",
+      "exit_code": 2,
+      "valid": true,
+      "selection": "exact",
+      "terminated_count": 1,
+      "parent_cancel_required": true,
+      "reason": "assignment_timeout",
+      "classification": "unresponsive_no_disk_change",
+      "baseline_comparable": true,
+      "disk_changed": false,
+      "state_before": "active",
+      "state_after": "unresolved",
+      "unresolved_envelope_sha256": "143321cd886781d5287ef5b7e928f838e007068afee99ace5d2bd16ee2f5e5fc"
+    },
+    "disk_barrier": {
+      "git_status_short": "",
+      "index_changed": false,
+      "candidate_process_count": 0,
+      "late_write_observed": false
+    },
+    "verdict": {
+      "compaction_observed": true,
+      "postcompact_reattestation_observed": false,
+      "fail_closed": true,
+      "terminal_success_claimed": false
+    }
+  },
+  "positive": {
+    "purpose": "prove exact durable authority re-attestation after real auto compaction and before a later native tool call",
+    "root": "/private/tmp/codex-g4-compact-live-20260908-t2L9D8",
+    "branch": "main",
+    "head": "632afa16f9db0eeee430ec2fd28d7e2cf7586e8a",
+    "prompt_sha256": "e5c36afa5c407b0642004de1fd2a03bb4637e3499033a2e5a419641a3bc2470e",
+    "parent_thread_id": "01a080da-8524-70c2-8b53-f5ae49584fd2",
+    "child_thread_id": "01a080db-1e09-7462-ba4c-995652ba88be",
+    "runtime_session_id": "01a080da-8524-70c2-8b53-f5ae49584fd2",
+    "agent_type": "g4_qualification_probe_worker",
+    "requested_task_name": "g4_compact_resume_2",
+    "canonical_agent_path": "/root/g4_compact_resume_2",
+    "assignment_id": "94ebad83-b11e-47d9-bda6-3d0851eac953",
+    "handoff_id": "54fb0e1b-c5c4-4648-a37d-06a573291153",
+    "assignment_sha256": "e26c0118d18632b832c393a83ee17ae97425388a9b98533c0efe788b5c2e78ed",
+    "capsule_sha256": "4d6f6f4dd1effac947f6e880406c44869d69a292d5be3324ec1f5325bb9fd80e",
+    "compact_invariant_sha256": "4fcbbfa070bbeda69a35b82df08b2ed9c611fec2353851179b1866535c614d38",
+    "provenance_policy_sha256": "adde5392c2d7252c581ce596a996a7bbc7096ea5def04e1efd3147e0abea2eb0",
+    "capture_snapshot_sha256": "283b9483dda6f4a99eaa11230e6ac44e3b9cbf457b397dfc308e439c2bbc2c00",
+    "first_git_attested_at": "2026-09-08T11:50:45.931848+00:00",
+    "native_list_agents_calls": [
+      "call_9mBpyHyz6o2rWrCTM2far70L",
+      "call_WGo8XO4rdFJ1dbhawQIBtSkl",
+      "call_7AAGjlv4UvnPJZO4PGsDqS93",
+      "call_WsdFCQDAtBs12H9t1h6iSkzq"
+    ],
+    "child_rollout_compacted_record_ordinal": 27,
+    "child_rollout_compacted_record_count": 1,
+    "postcompact_tool_call_id": "call_WsdFCQDAtBs12H9t1h6iSkzq",
+    "durable_recovery_count": 1,
+    "accepted_final_recovery_count": 1,
+    "context_lost": false,
+    "assignment_mutation_mode": "read_only",
+    "owned_paths": [],
+    "git_authority": {
+      "stage": false,
+      "commit": false,
+      "branch": false,
+      "push": false
+    },
+    "verification": [
+      {
+        "command": "native four-step list_agents compact-resume probe",
+        "exit_code": 0
+      }
+    ],
+    "first_subagentstop_denial": "final attestation fields are not exact",
+    "first_subagentstop_extra_field": "schema",
+    "accepted_final_attestation_sha256": "5b7af197fb004bfdbb03a13dfdd0fe3780efc39bc459964b60192da8eb3cc832",
+    "parent_callback_exactly_equals_accepted_final": true,
+    "candidate_exit_code": 0,
+    "candidate_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "parent_events": {
+      "path": "/private/tmp/codex-g4-compact-live-20260908-t2L9D8.parent-events.jsonl",
+      "sha256": "fd430874952cd7bd372ebbc224a9e8b24b561977790f514ca8bcc352cec75cae",
+      "line_count": 13,
+      "bytes": 3454
+    },
+    "parent_rollout": {
+      "path": "/Users/pearly/.codex/sessions/2026/09/08/rollout-2026-09-08T19-49-59-01a080da-8524-70c2-8b53-f5ae49584fd2.jsonl",
+      "sha256": "35b58a260561a81e120082e710fd962ae0528e10965e3f5584e4b5c33f19a943",
+      "line_count": 41,
+      "bytes": 81952
+    },
+    "child_rollout": {
+      "path": "/Users/pearly/.codex/sessions/2026/09/08/rollout-2026-09-08T19-50-38-01a080db-1e09-7462-ba4c-995652ba88be.jsonl",
+      "sha256": "831f9626facec8cfa83f379b7fcbc4ecc82e5413590ba0a64e5cd5182294ea89",
+      "line_count": 51,
+      "bytes": 240966
+    },
+    "hook_chain": {
+      "event_count": 1909,
+      "chain_sha256": "059f6a736ea33b8b5ea60ddcb3b5320639f44b70a660c87364c11e5878ab055b",
+      "head_receipt_sha256": "f52cee57f88eea38ef5c4d9d610b9989e755f5d6ac93045e497abaffae5beb3d",
+      "file_sha256": "56f16c924fa59df692b40476554be388e82c2d9cd60786ab5d679910b176b50b",
+      "sequences": {
+        "spawn_pretool": 1901,
+        "subagent_start": 1902,
+        "list_agents_1_pretool": 1903,
+        "list_agents_2_pretool": 1904,
+        "list_agents_3_pretool": 1905,
+        "precompact": 1906,
+        "postcompact_list_agents_pretool": 1907,
+        "subagentstop_schema_denial": 1908,
+        "subagentstop_accepted": 1909
+      }
+    },
+    "state": {
+      "before_parent_adjudication": "reported",
+      "reported_envelope_sha256": "db09cad190ee6a5d9e74a2eec6060474e457e53d7fea8b85c06d6188ff7772d8",
+      "worker_contribution_is_integration_authority": false
+    },
+    "fresh_owner_disk_barrier": {
+      "observed_at": "2026-09-08T11:56:09+00:00",
+      "git_status_short": "",
+      "index_changed": false,
+      "candidate_process_count": 0,
+      "late_write_observed": false,
+      "strong_global_quiescence_claimed": false
+    },
+    "verdict": {
+      "real_precompact_observed": true,
+      "exact_identity_retained": true,
+      "exact_root_branch_full_head_retained": true,
+      "postcompact_pretool_reattestation_observed": true,
+      "durable_epoch_increment_consumed": true,
+      "subagentstop_mediation_observed": true,
+      "parent_callback_exact": true,
+      "fresh_disk_barrier_exact": true,
+      "one_live_compact_resume_qualified": true
+    }
+  },
+  "scope": {
+    "process_restart_resume_qualified": false,
+    "postcompact_scope_expansion_negative_live_qualified": false,
+    "representative_dense_cost_qualified": false,
+    "mixed_frontier_qualified": false,
+    "strong_global_quiescence_qualified": false,
+    "windows_live_qualified": false,
+    "deepseek_regression_qualified": false,
+    "phase1_complete": false,
+    "direct_write_qualified": false,
+    "phase2_state": "closed",
+    "phase3_state": "closed"
+  }
+}

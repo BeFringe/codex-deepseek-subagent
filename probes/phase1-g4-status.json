@@ -34,6 +34,9 @@
         "state": "partial",
         "provider_free": "pass",
         "evidence": [
+          "probes/g4-live-compact-resume-20260908.json",
+          "probes/g4-live-compact-resume-parent-adjudication-20260908.json",
+          "tests/test_g4_live_compact_resume.py",
           "docs/phase1-evidence.md",
           "probes/g4-live-native-hook-schema-20260817.json",
           "probes/codex-0.153.4-native-assignment-seam.json",
@@ -107,6 +110,9 @@
         "state": "partial",
         "provider_free": "pass",
         "evidence": [
+          "probes/g4-live-compact-resume-20260908.json",
+          "probes/g4-live-compact-resume-parent-adjudication-20260908.json",
+          "tests/test_g4_live_compact_resume.py",
           "docs/phase1-g4-probe-plan.md#ii-real-identity-and-sessionmeta-probe",
           "probes/codex-0.153.4-lifecycle-sources.json",
           "probes/check_codex_lifecycle_sources.py",
@@ -154,6 +160,9 @@
         "state": "partial",
         "provider_free": "pass",
         "evidence": [
+          "probes/g4-live-compact-resume-20260908.json",
+          "probes/g4-live-compact-resume-parent-adjudication-20260908.json",
+          "tests/test_g4_live_compact_resume.py",
           "docs/phase1-evidence.md",
           "hooks/hook_event_receipts.py",
           "probes/check_hook_event_chain.py",
@@ -199,7 +208,7 @@
           "probes/g4-live-exact-path-child-write-parent-adjudication-20260908.json",
           "tests/test_g4_live_exact_path_child_write.py"
         ],
-        "blocker": "a current-runtime inherited-OpenAI assignment and a separate external-ZHIPU child both traverse pending, claimed, active, reported, and consumed with exact keyed identity. The provider-free serial pair separately traverses spawn, SubagentStart, native tool use, SubagentStop, terminal callback, then next spawn; both records reach reported and then fresh-owner consumed state under one exact evidence hash. The first concurrent attempt stopped at active after parent-exit interruption without SubagentStop; an exact TTL watchdog moved that stale identity fail closed to unresolved and left the drifted Git baseline unattributed. The no-event first-attestation timeout adds an exact running-child native interrupt acknowledgement while correctly retaining unresolved authority. A separate current-source V2 close probe now joins requested task name, canonical AgentPath, real SessionMeta ThreadId, Hook events, exact close target, and post-close live-tree absence for a still-running child; the host waited for its session loop and returned process_tree_quiescence_claimed=false. The concurrent pair traverses two spawn, two SubagentStart, two native tool calls, repeated mediated SubagentStop attempts, two accepted reports, and two parent waits while execution overlaps; both durable records reach fresh-owner consumed state under one exact evidence hash. Strong mutation/process-tree quiescence, fully qualified orphan reconciliation, durable resume, and cohort replay remain missing"
+        "blocker": "a current-runtime inherited-OpenAI assignment and a separate external-ZHIPU child both traverse pending, claimed, active, reported, and consumed with exact keyed identity. The provider-free serial pair separately traverses spawn, SubagentStart, native tool use, SubagentStop, terminal callback, then next spawn; both records reach reported and then fresh-owner consumed state under one exact evidence hash. The first concurrent attempt stopped at active after parent-exit interruption without SubagentStop; an exact TTL watchdog moved that stale identity fail closed to unresolved and left the drifted Git baseline unattributed. The no-event first-attestation timeout adds an exact running-child native interrupt acknowledgement while correctly retaining unresolved authority. A separate current-source V2 close probe now joins requested task name, canonical AgentPath, real SessionMeta ThreadId, Hook events, exact close target, and post-close live-tree absence for a still-running child; the host waited for its session loop and returned process_tree_quiescence_claimed=false. The concurrent pair traverses two spawn, two SubagentStart, two native tool calls, repeated mediated SubagentStop attempts, two accepted reports, and two parent waits while execution overlaps; both durable records reach fresh-owner consumed state under one exact evidence hash. One real auto-compaction run now joins PreCompact sequence 1906 to a later native PreToolUse at 1907, increments the durable recovery epoch, preserves exact SessionMeta/AgentPath and Git authority, reaches an exact callback, and is fresh-owner consumed; a three-tool timing attempt fails closed and is watchdog-unresolved. Process-restart resume, post-resume scope-expansion denial, strong mutation/process-tree quiescence, fully qualified orphan reconciliation, and cohort replay remain missing"
       },
       {
         "id": "P4",
@@ -259,11 +268,14 @@
         "state": "partial",
         "provider_free": "pass",
         "evidence": [
+          "probes/g4-live-compact-resume-20260908.json",
+          "probes/g4-live-compact-resume-parent-adjudication-20260908.json",
+          "tests/test_g4_live_compact_resume.py",
           "docs/phase1-evidence.md",
           "probes/codex-0.153.4-lifecycle-sources.json",
           "probes/check_codex_lifecycle_sources.py"
         ],
-        "blocker": "live compaction/resume re-attestation and scope-expansion denial are missing"
+        "blocker": "one real auto-compaction run now proves exact SessionMeta/AgentPath plus root/branch/full-HEAD re-attestation before the first post-compact native tool, durable recovery_count=1, exact callback, clean disk barrier, and fresh-owner consumption. A timing control with no post-compact tool fails closed and moves to unresolved only after its real TTL. Process-restart resume and live post-resume scope-expansion denial remain missing, so P5 stays partial"
       },
       {
         "id": "P5a",
@@ -290,6 +302,9 @@
         "state": "partial",
         "provider_free": "partial",
         "evidence": [
+          "probes/g4-live-compact-resume-20260908.json",
+          "probes/g4-live-compact-resume-parent-adjudication-20260908.json",
+          "tests/test_g4_live_compact_resume.py",
           "docs/phase1-g4-probe-plan.md#parentchild-single-writer-negative-space",
           "hooks/writer_lease_guard.py",
           "probes/recover_writer_claim.py",
@@ -335,13 +350,16 @@
           "probes/g4-live-exact-path-child-write-parent-adjudication-20260908.json",
           "tests/test_g4_live_exact_path_child_write.py"
         ],
-        "blocker": "current-runtime read-only OpenAI and external-ZHIPU children have per-target clean disk barriers and fresh consumed-state transitions. Parent-only non-Git apply_patch has an exact successful claim/callback/release receipt; child apply_patch and Bash denials plus the one-shot Seatbelt probe exercise blocked paths. One exact child apply_patch now adds a successful child claim/callback/release receipt, zero matching target claims, and a two-second no-late-write disk barrier followed by fresh-owner consumption. Serial and concurrent samples add ordered and overlapping callbacks, while the parent-exit orphan proves callback absence remains possible. The no-event first-attestation path holds the timeout-terminal final until native interrupt observes running and a later exact list observes interrupted. The current-source V2 close probe advances one layer: it resolves a still-running child by exact ThreadId/AgentPath, waits for target and live-descendant session loops, returns session_loop_terminated=true, and then observes the child absent from the live tree. Its truthful process_tree_quiescence_claimed=false and unresolved authority keep P5b partial. Tracked process confirmed-exit joins, detached/untracked descendants, closed all-surface mutation mediation, exact Hook/state reconciliation, and before/mid/after late-write handover races remain unproved. Failed apply_patch can still omit PostToolUse and require exact unchanged-snapshot recovery. The App Server host-control negative also proves server exit alone is not a process-tree barrier"
+        "blocker": "current-runtime read-only OpenAI and external-ZHIPU children have per-target clean disk barriers and fresh consumed-state transitions. Parent-only non-Git apply_patch has an exact successful claim/callback/release receipt; child apply_patch and Bash denials plus the one-shot Seatbelt probe exercise blocked paths. One exact child apply_patch now adds a successful child claim/callback/release receipt, zero matching target claims, and a two-second no-late-write disk barrier followed by fresh-owner consumption. Serial and concurrent samples add ordered and overlapping callbacks, while the parent-exit orphan proves callback absence remains possible. One real auto-compaction run preserves exact read-only authority through a post-compact tool, callback, disk barrier, and fresh-owner consumption; its strong_global_quiescence claim remains deliberately false. The no-event first-attestation path holds the timeout-terminal final until native interrupt observes running and a later exact list observes interrupted. The current-source V2 close probe advances one layer: it resolves a still-running child by exact ThreadId/AgentPath, waits for target and live-descendant session loops, returns session_loop_terminated=true, and then observes the child absent from the live tree. Its truthful process_tree_quiescence_claimed=false and unresolved authority keep P5b partial. Tracked process confirmed-exit joins, detached/untracked descendants, closed all-surface mutation mediation, exact Hook/state reconciliation, and before/mid/after late-write handover races remain unproved. Failed apply_patch can still omit PostToolUse and require exact unchanged-snapshot recovery. The App Server host-control negative also proves server exit alone is not a process-tree barrier"
       },
       {
         "id": "P6",
         "state": "partial",
         "provider_free": "pass",
         "evidence": [
+          "probes/g4-live-compact-resume-20260908.json",
+          "probes/g4-live-compact-resume-parent-adjudication-20260908.json",
+          "tests/test_g4_live_compact_resume.py",
           "docs/phase1-evidence.md",
           "probes/g4-live-root-lifecycle-adjudication-input-20260817.json",
           "probes/g4-live-root-lifecycle-adjudication-result-20260817.json",
@@ -367,13 +385,16 @@
           "probes/g4-live-exact-path-child-write-parent-adjudication-20260908.json",
           "tests/test_g4_live_exact_path_child_write.py"
         ],
-        "blocker": "the current signed runtime has one exact inherited-OpenAI SubagentStop report and one exact external-ZHIPU read-only report consumed after fresh five-dimension parent adjudication. The provider-free serial pair adds two exact consumed attestations under one fresh-owner evidence hash, one mediated invalid-final correction, and two ordered parent callbacks. The live concurrent pair adds two exact consumed attestations under overlapping execution and one fresh-owner evidence hash; the native source parent projection still lacks child thread ids. One exact-path mutation-capable child contribution also reached SubagentStop, byte-identical parent callback, fresh disk adjudication, and consumed state. Compact/resume, context-loss, mixed-frontier, broader mutation cohorts, and broader cohort adjudication remain missing"
+        "blocker": "the current signed runtime has one exact inherited-OpenAI SubagentStop report and one exact external-ZHIPU read-only report consumed after fresh five-dimension parent adjudication. The provider-free serial pair adds two exact consumed attestations under one fresh-owner evidence hash, one mediated invalid-final correction, and two ordered parent callbacks. The live concurrent pair adds two exact consumed attestations under overlapping execution and one fresh-owner evidence hash; the native source parent projection still lacks child thread ids. One exact-path mutation-capable child contribution also reached SubagentStop, byte-identical parent callback, fresh disk adjudication, and consumed state. One real auto-compaction contribution adds durable epoch re-attestation, a mediated invalid-final correction, an exact parent callback, and fresh-owner consumption. Process-restart/context-loss, post-resume scope denial, mixed-frontier, broader mutation cohorts, and broader cohort adjudication remain missing"
       },
       {
         "id": "P6a",
         "state": "partial",
         "provider_free": "pass",
         "evidence": [
+          "probes/g4-live-compact-resume-20260908.json",
+          "probes/g4-live-compact-resume-parent-adjudication-20260908.json",
+          "tests/test_g4_live_compact_resume.py",
           "docs/phase1-evidence.md",
           "probes/g4-live-root-lifecycle-adjudication-result-20260817.json",
           "probes/g4-current-headless-root-lifecycle-adjudication-result-20260907.json",
@@ -390,13 +411,16 @@
           "probes/g4-live-exact-path-child-write-parent-adjudication-20260908.json",
           "tests/test_g4_live_exact_path_child_write.py"
         ],
-        "blocker": "current-runtime inherited-OpenAI and external-ZHIPU owner-internal read-only observations pass fresh provenance adjudication; the provider-free serial and concurrent pairs add four distinct identity-bound owner-internal list_agents observations consumed under per-pair fresh-owner evidence hashes. One exact-path native child mutation now has independent disk causality and fresh five-dimension consumption. Cross-owner derivation, mixed-frontier provenance, and broader mutation cohorts remain missing"
+        "blocker": "current-runtime inherited-OpenAI and external-ZHIPU owner-internal read-only observations pass fresh provenance adjudication; the provider-free serial and concurrent pairs add four distinct identity-bound owner-internal list_agents observations consumed under per-pair fresh-owner evidence hashes. One exact-path native child mutation now has independent disk causality and fresh five-dimension consumption. A real compact/resume contribution preserves the same owner-internal provenance policy hash through the incremented recovery epoch and fresh-owner consumption. Cross-owner derivation, mixed-frontier provenance, and broader mutation cohorts remain missing"
       },
       {
         "id": "P6b",
         "state": "partial",
         "provider_free": "pass",
         "evidence": [
+          "probes/g4-live-compact-resume-20260908.json",
+          "probes/g4-live-compact-resume-parent-adjudication-20260908.json",
+          "tests/test_g4_live_compact_resume.py",
           "docs/phase1-evidence.md",
           "probes/g4-live-root-lifecycle-adjudication-result-20260817.json",
           "probes/g4-current-headless-root-lifecycle-adjudication-result-20260907.json",
@@ -413,7 +437,7 @@
           "probes/g4-live-exact-path-child-write-parent-adjudication-20260908.json",
           "tests/test_g4_live_exact_path_child_write.py"
         ],
-        "blocker": "strict read-only null-feasibility passes fresh current-runtime parent adjudication for inherited-OpenAI, external-ZHIPU, and the four distinct provider-free serial/concurrent list_agents observations. One exact one-tool/one-path mutation feasibility capsule now passed live execution and fresh adjudication. Representative domain scale, equivalence, dense p95, and staged mixed-frontier feasibility remain missing"
+        "blocker": "strict read-only null-feasibility passes fresh current-runtime parent adjudication for inherited-OpenAI, external-ZHIPU, the four distinct provider-free serial/concurrent list_agents observations, and one real post-compact continuation. One exact one-tool/one-path mutation feasibility capsule now passed live execution and fresh adjudication. Representative domain scale, equivalence, dense p95, and staged mixed-frontier feasibility remain missing"
       },
       {
         "id": "P6c",
@@ -427,6 +451,9 @@
         "state": "partial",
         "provider_free": "pass",
         "evidence": [
+          "probes/g4-live-compact-resume-20260908.json",
+          "probes/g4-live-compact-resume-parent-adjudication-20260908.json",
+          "tests/test_g4_live_compact_resume.py",
           "docs/phase1-g4-probe-plan.md#vi-platform-and-regression-exit-sequence",
           "docs/phase1-evidence.md#qualification-only-live-install-2026-08-17",
           "probes/g4-live-install-20260817.json",
@@ -462,6 +489,9 @@
         "id": "sessionmeta_identity",
         "state": "partial",
         "evidence": [
+          "probes/g4-live-compact-resume-20260908.json",
+          "probes/g4-live-compact-resume-parent-adjudication-20260908.json",
+          "tests/test_g4_live_compact_resume.py",
           "docs/phase1-g4-probe-plan.md#ii-real-identity-and-sessionmeta-probe",
           "probes/g4-live-plaintext-lifecycle-20260817.json",
           "probes/g4-current-headless-root-lifecycle-adjudication-result-20260907.json",
@@ -520,6 +550,9 @@
         "id": "callback_continuity",
         "state": "partial",
         "evidence": [
+          "probes/g4-live-compact-resume-20260908.json",
+          "probes/g4-live-compact-resume-parent-adjudication-20260908.json",
+          "tests/test_g4_live_compact_resume.py",
           "docs/phase1-g4-probe-plan.md#iv-resume-callback-and-termination-probes",
           "probes/g4-live-install-20260817.json",
           "probes/g4-live-callback-receipts-20260817.json",
@@ -550,6 +583,9 @@
         "id": "termination_quiescence",
         "state": "partial",
         "evidence": [
+          "probes/g4-live-compact-resume-20260908.json",
+          "probes/g4-live-compact-resume-parent-adjudication-20260908.json",
+          "tests/test_g4_live_compact_resume.py",
           "docs/phase1-g4-probe-plan.md#iv-resume-callback-and-termination-probes",
           "probes/g4-live-plaintext-lifecycle-20260817.json",
           "probes/g4-live-root-lifecycle-adjudication-result-20260817.json",
@@ -586,6 +622,9 @@
         "id": "posix_live",
         "state": "partial",
         "evidence": [
+          "probes/g4-live-compact-resume-20260908.json",
+          "probes/g4-live-compact-resume-parent-adjudication-20260908.json",
+          "tests/test_g4_live_compact_resume.py",
           "docs/phase1-g4-probe-plan.md#vi-platform-and-regression-exit-sequence",
           "probes/g4-live-plaintext-lifecycle-20260817.json",
           "probes/g4-live-root-lifecycle-adjudication-result-20260817.json",
@@ -629,6 +668,9 @@
         "id": "install_rollback",
         "state": "partial",
         "evidence": [
+          "probes/g4-live-compact-resume-20260908.json",
+          "probes/g4-live-compact-resume-parent-adjudication-20260908.json",
+          "tests/test_g4_live_compact_resume.py",
           "docs/phase1-g4-probe-plan.md#vi-platform-and-regression-exit-sequence",
           "probes/g4-live-install-20260817.json",
           "probes/g4-parent-non-git-writer-live-20260908.json",

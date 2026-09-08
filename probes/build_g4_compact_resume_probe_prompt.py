@@ -5,7 +5,9 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
+import os
 from pathlib import Path
 import sys
 
@@ -23,7 +25,17 @@ from build_g4_native_probe_prompt import (  # noqa: E402
 )
 
 
-VERIFICATION = "native three-step list_agents compact-resume probe"
+VERIFICATION = "native four-step list_agents compact-resume probe"
+
+
+def write_new(path: Path, prompt: str) -> str:
+    encoded = prompt.encode("utf-8")
+    descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    with os.fdopen(descriptor, "wb") as stream:
+        stream.write(encoded)
+        stream.flush()
+        os.fsync(stream.fileno())
+    return hashlib.sha256(encoded).hexdigest()
 
 
 def build_prompt(root: Path, task_name: str) -> str:
@@ -34,22 +46,22 @@ def build_prompt(root: Path, task_name: str) -> str:
     location = clean_git_location(root)
     authority = authority_declaration(location, child_tool="list_agents")
     authority["stop_condition"] = (
-        "call native list_agents exactly three times sequentially, observe at least one "
-        "PreCompact epoch increment before the third result, call no other tool, then "
+        "call native list_agents exactly four times sequentially, observe at least one "
+        "PreCompact epoch increment before the fourth result, call no other tool, then "
         "return only the exact final attestation"
     )
     authority["verification"] = [VERIFICATION]
     authority["execution_contract"]["required_invariants"] = [
         "exact SessionMeta and canonical AgentPath binding",
-        "three sequential read-only list_agents calls and no mutation",
+        "four sequential read-only list_agents calls and no mutation",
         "at least one PreCompact epoch followed by a PreToolUse re-attestation",
     ]
     canonical_agent_path = f"/root/{task_name}"
     assignment = f"""You are the target G4 compact/resume qualification child. Treat each Hook-delivered capsule, compact invariant, and final-attestation seed as the only authority.
 
-Call native list_agents exactly three times, sequentially, and call no other tool. Wait for each result before making the next call. After the third result, use only the most recent Hook-delivered final-attestation seed. Require its recovery_count to be greater than zero; this proves a PreCompact epoch occurred and a later PreToolUse re-attested the same durable capsule. If no incremented recovery_count is visible, set context_lost=true and assigned_slice_complete=false rather than inventing a recovery.
+Call native list_agents exactly four times, sequentially, and call no other tool. Wait for each result before making the next call. After the fourth result, use only the most recent Hook-delivered final-attestation seed. Require its recovery_count to be greater than zero; this proves a PreCompact epoch occurred and a later PreToolUse re-attested the same durable capsule. If no incremented recovery_count is visible, set context_lost=true and assigned_slice_complete=false rather than inventing a recovery.
 
-Return only an exact BEGIN/END CODEX WORKER ATTESTATION envelope. Map seed keys exactly: assignment_id, handoff_id, capsule_sha256, compact_invariant_sha256, canonical_agent_path, recovery_count, and authority_provenance.policy_sha256. The expected AgentPath is {canonical_agent_path}. The exact clean Git snapshot is root {location['root']}, branch {location['branch']}, head {location['head']}, index_changed false, empty git_status_short, and empty changed_paths. Verification contains one record with command `{VERIFICATION}` and exit_code 0 only if all three calls succeeded and recovery_count is greater than zero. Set worker_claimed_origin=owner_internal only for your own three list_agents observations, test_only_injection_used=false, derivation_receipt_sha256=null, inventory_summaries=[], authority_violation=false, and assigned_slice_complete=true only when every exact fact remains available.
+Return only an exact BEGIN/END CODEX WORKER ATTESTATION envelope. Do not add a top-level `schema` key or any other field outside the Hook-delivered final-attestation schema. Map seed keys exactly: assignment_id, handoff_id, capsule_sha256, compact_invariant_sha256, canonical_agent_path, recovery_count, and authority_provenance.policy_sha256. The expected AgentPath is {canonical_agent_path}. The exact clean Git snapshot is root {location['root']}, branch {location['branch']}, head {location['head']}, index_changed false, empty git_status_short, and empty changed_paths. Verification contains one record with command `{VERIFICATION}` and exit_code 0 only if all four calls succeeded and recovery_count is greater than zero. The verification record must contain exactly `command` and `exit_code`. Set worker_claimed_origin=owner_internal only for your own four list_agents observations, test_only_injection_used=false, derivation_receipt_sha256=null, inventory_summaries=[], authority_violation=false, and assigned_slice_complete=true only when every exact fact remains available.
 
 BEGIN CODEX WORKER AUTHORITY
 {json.dumps(authority, ensure_ascii=False, separators=(',', ':'), sort_keys=True)}
@@ -68,13 +80,33 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--root", type=Path, required=True)
     parser.add_argument("--task-name", default="g4_compact_resume_1")
+    parser.add_argument("--output", type=Path)
     arguments = parser.parse_args()
     try:
         prompt = build_prompt(arguments.root, arguments.task_name)
     except (OSError, ProbePromptError) as error:
         print(f"G4 compact/resume prompt denied: {error}", file=sys.stderr)
         return 2
-    sys.stdout.write(prompt)
+    if arguments.output is None:
+        sys.stdout.write(prompt)
+    else:
+        try:
+            digest = write_new(arguments.output, prompt)
+        except OSError as error:
+            print(f"G4 compact/resume prompt denied: {error}", file=sys.stderr)
+            return 2
+        print(
+            json.dumps(
+                {
+                    "schema": 1,
+                    "output": str(arguments.output),
+                    "sha256": digest,
+                    "task_name": arguments.task_name,
+                },
+                sort_keys=True,
+                separators=(",", ":"),
+            )
+        )
     return 0
 
 
