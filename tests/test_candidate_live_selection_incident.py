@@ -62,7 +62,15 @@ class CandidateLiveSelectionIncidentTests(unittest.TestCase):
         self.assertFalse(hardened["can_be_used_as_gui_codex_cli_path"])
         self.assertIn("app-server", hardened["forbidden_entry_points"])
         self.assertEqual(hardened["forced_posture"]["tool_namespace"], "g4_assignment")
-        self.assertEqual(hardened["forced_posture"]["sandbox"], "read-only")
+        self.assertEqual(hardened["forced_posture"]["default_sandbox"], "read-only")
+        self.assertEqual(
+            hardened["forced_posture"]["guarded_write_probe_sandbox"],
+            "workspace-write",
+        )
+        self.assertEqual(
+            hardened["forced_posture"]["guarded_write_probe_root_namespace"],
+            "/private/tmp/codex-g4-write-*",
+        )
 
     def test_non_reserved_smoke_is_server_acceptance_only(self) -> None:
         smoke = self.incident["isolated_server_schema_smoke"]

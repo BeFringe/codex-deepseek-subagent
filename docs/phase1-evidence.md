@@ -1441,8 +1441,11 @@ The wrapper was replaced in place with a headless-only guard. It now rejects all
 GUI/server entry points, requires config/rules isolation for `exec`, and permits
 stateful SessionMeta probes only behind a separate exact-root/clean-Git/JSON/
 Hook-trust guard. It forces `g4_assignment`, read-only, never-approve, and no
-code-mode host. Its current SHA-256 is
-`43f2181f8d49b03bfb2ba077dd2b1cacf40ecd6f7812dcbdbc368a7292940fed`;
+code-mode host by default. A separately guarded exact-path probe may select
+`workspace-write` only for a clean exact Git root under
+`/private/tmp/codex-g4-write-*`; this does not broaden GUI/server entry points.
+Its current SHA-256 is
+`952132bdd1fb5ea24e6042e860f7f6054e3ef0b48120bcfd268e0c1e33e02201`;
 the incident receipt separately preserves the historical unsafe wrapper hash.
 A candidate `codex exec` no-tool smoke under the non-reserved namespace returned
 exactly `READY` through the current ChatGPT login without HTTP 400 and exited.
@@ -2631,6 +2634,67 @@ nested/concurrent/resume cases, mutation-capable contribution, representative
 P6c cost/latency, candidate exit-code gap, or strong global quiescence.
 `phase1_complete=false`, `direct_write_qualified=false`, and Phases 2/3 remain
 closed.
+
+## Live exact-path child write qualification
+
+The qualification-only write path is now exercised by a real current-runtime
+child rather than only provider-free state fixtures. The headless Codex 0.153.4
+candidate retained the native OpenAI parent and current ChatGPT login, selected
+`workspace-write` only for disposable Git root
+`/private/tmp/codex-g4-write-live-20260908-BpvgBl`, and never became the GUI App
+Server. A hash-pinned temporary `hooks.json` redirected only the five G4 events
+to the current Hook source and added one exact task/target ceiling to
+PreToolUse. All v4 entries were preserved. The original `hooks.json` SHA-256
+`82c8aa0bc4d739628646864578de6c078884c21413855ed3db448d4365a8668e`
+was restored immediately after the run; installed Hook source files were not
+overwritten.
+
+The first prompt attempt was denied before staging because its bounded
+completion phrase was not literally bound by the stop condition. No child or
+target was created. After provider-free validation of the corrected authority,
+PreToolUse staged assignment `908b17bb-1a4d-4b78-be37-a49d9934960b` and the
+trusted Hook derived—not the parent assignment—a hash-bound qualification
+consent. Real SessionMeta joined child
+`01a080a4-d7aa-7cf3-9873-16117d777be4`, role
+`g4_qualification_probe_worker`, parent/runtime session
+`01a080a4-2b3b-78c3-9245-889a5892e433`, and canonical AgentPath
+`/root/g4_exact_write_1`.
+
+The child called native `apply_patch` exactly once with tool-use id
+`call_q9nal7wlYenhGhZjEXxXJZxM`. G4 PreToolUse sequence 1783 re-attested the
+immutable capsule and exact host consent, then the lease store recognized the
+same active child as owner of only `qualified.txt`. Claim
+`ff4195f3-04b2-4b6a-8f11-b8d5dd7e5eed` froze the clean before snapshot.
+Successful PostToolUse released that exact claim into a writer receipt whose
+after snapshot contains only the untracked owned file with SHA-256
+`4fd8e8f97e640e495fefed6d4fdb0467c4e5835d9bd006173da14af37698ac8c`.
+SubagentStop accepted the exact final attestation, and the native parent
+callback reproduced the child's final message byte-for-byte.
+
+A fresh owner independently observed the same 25 bytes, unchanged branch/HEAD
+and index, no target writer claim, no candidate process, and no late change
+after a two-second delayed barrier. It then used frozen evidence hash
+`39f7296e566b9fa0bce20bc2e37c7d8ee7c3a98b9a967361b1a83fa1cf2155e0`
+to pass all five parent-adjudication dimensions and atomically move the report
+to consumed state. The worker narrative and hashes remain contribution
+evidence rather than integration authority.
+
+This qualifies one positive native `apply_patch` surface with exact child
+identity, user ceiling, owned path, lease acquire/release, callback, fresh disk
+adjudication, and live rollback. It does not qualify other mutation surfaces,
+detached/untracked descendants, all before/mid/after races, representative P6c
+dense p95, Windows parity, DeepSeek regression, or strong global quiescence.
+Accordingly P4/P5b/P6a/P6b/P7 advance but remain partial;
+`phase1_complete=false`, `direct_write_qualified=false`, and Phases 2/3 remain
+closed. The receipts are
+`probes/g4-live-exact-path-child-write-20260908.json` and
+`probes/g4-live-exact-path-child-write-parent-adjudication-20260908.json`.
+Fresh verification passed 26 focused wrapper/overlay/prompt/live-receipt tests
+and the full 563-test provider-free suite in 47.336 seconds, including agent
+template checks. The normal Phase 1, mutation-surface, and same-UID trust gates
+returned zero. Their promotion-required forms returned 2; the Phase 1 gate
+retains all unresolved P-gates, the mutation matrix retains thirteen blockers,
+and same-UID rollout/state protection remain false.
 
 ## Exact G4 closed tool catalog and live apply-patch denial
 

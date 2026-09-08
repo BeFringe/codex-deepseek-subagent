@@ -194,6 +194,45 @@ class PlaintextCandidateWrapperTests(unittest.TestCase):
             self.assertEqual(denied.returncode, 78)
             self.assertFalse(denied_log.exists())
 
+    def test_exact_temporary_write_guard_selects_workspace_write_only_for_that_root(self):
+        with tempfile.TemporaryDirectory() as candidate_dir, tempfile.TemporaryDirectory(
+            prefix="codex-g4-write-wrapper-", dir="/private/tmp"
+        ) as root_dir:
+            directory = Path(candidate_dir)
+            root = Path(root_dir).resolve()
+            candidate, digest = self._fake_candidate(directory)
+            subprocess.run(["git", "-C", str(root), "init", "-b", "main"], check=True, capture_output=True)
+            subprocess.run(
+                [
+                    "git", "-C", str(root), "-c", "user.name=Phase1 Probe",
+                    "-c", "user.email=phase1-probe@invalid", "commit", "--allow-empty", "-m", "initial",
+                ],
+                check=True,
+                capture_output=True,
+            )
+            arg_log = directory / "write-args.txt"
+            environment = self._environment(candidate, digest, arg_log)
+            environment.update(
+                {
+                    "CODEX_G4_SESSIONMETA_PROBE_AUTHORIZED": "schema1-headless-stateful",
+                    "CODEX_G4_SESSIONMETA_PROBE_ROOT": str(root),
+                    "CODEX_G4_EXACT_WRITE_PROBE_AUTHORIZED": "schema1-exact-temporary-git-root",
+                }
+            )
+            result = subprocess.run(
+                [
+                    str(WRAPPER), "exec", "--ignore-user-config", "--ignore-rules",
+                    "--dangerously-bypass-hook-trust", "--json", "-C", str(root), "Return READY.",
+                ],
+                env=environment,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            arguments = arg_log.read_text(encoding="utf-8").splitlines()
+            self.assertEqual(arguments[arguments.index("-s") + 1], "workspace-write")
+
     def test_login_allows_status_only(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             directory = Path(temp_dir)

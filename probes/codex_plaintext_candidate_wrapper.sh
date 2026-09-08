@@ -36,6 +36,7 @@ saw_json=false
 saw_hook_trust_bypass=false
 requested_cd=
 expect_cd=false
+sandbox_mode=read-only
 for argument in "$@"; do
   if [ "$expect_cd" = true ]; then
     requested_cd=$argument
@@ -107,6 +108,20 @@ case "$mode" in
       [ -z "$(/usr/bin/git -C "$stateful_root" status --short --untracked-files=all)" ] ||
         fail "stateful probe root is not clean"
     fi
+    case "${CODEX_G4_EXACT_WRITE_PROBE_AUTHORIZED-}" in
+      "") ;;
+      schema1-exact-temporary-git-root)
+        [ "$saw_ephemeral" = false ] || fail "write probe must retain SessionMeta"
+        [ "$requested_cd" = "${CODEX_G4_SESSIONMETA_PROBE_ROOT-}" ] ||
+          fail "write probe root is not the stateful root"
+        case "$requested_cd" in
+          /private/tmp/codex-g4-write-*) ;;
+          *) fail "write probe root is outside the fixed temporary namespace" ;;
+        esac
+        sandbox_mode=workspace-write
+        ;;
+      *) fail "write probe authorization guard is invalid" ;;
+    esac
     ;;
   *)
     fail "only headless exec or login status is allowed"
@@ -119,5 +134,5 @@ exec "$candidate" \
   -c 'features.multi_agent_v2.tool_namespace="g4_assignment"' \
   -c 'features.code_mode_host=false' \
   -a never \
-  -s read-only \
+  -s "$sandbox_mode" \
   "$@"
