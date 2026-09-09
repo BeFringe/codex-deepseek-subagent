@@ -50,7 +50,13 @@ def is_g4(command: object) -> bool:
     )
 
 
-def validate(task_name: str, target: Path, hook_script: Path) -> None:
+def validate(
+    task_name: str,
+    target: Path,
+    hook_script: Path,
+    *,
+    handover: bool = False,
+) -> None:
     if not TASK_RE.fullmatch(task_name):
         raise OverlayError("task name is not canonical")
     temporary = Path("/private/tmp").resolve(strict=True)
@@ -59,10 +65,13 @@ def validate(task_name: str, target: Path, hook_script: Path) -> None:
         not target.is_absolute()
         or root.parent != temporary
         or target.resolve(strict=False) != target
-        or target.exists()
         or target.is_symlink()
     ):
-        raise OverlayError("target must be an absent direct child of a temporary root")
+        raise OverlayError("target must be a canonical direct child of a temporary root")
+    if handover and not target.is_file():
+        raise OverlayError("handover target must be an existing regular file")
+    if not handover and target.exists():
+        raise OverlayError("target must be absent")
     if not (root / ".git").exists():
         raise OverlayError("target root is not a Git worktree")
     if not hook_script.is_absolute() or not hook_script.is_file():
@@ -76,10 +85,13 @@ def build(
     target: Path,
     hook_script: Path,
     writer_hold_seconds: int = 0,
+    handover: bool = False,
 ) -> tuple[dict, dict]:
-    validate(task_name, target, hook_script)
+    validate(task_name, target, hook_script, handover=handover)
     if writer_hold_seconds and not 1 <= writer_hold_seconds <= 10:
         raise OverlayError("writer hold must be between 1 and 10 seconds")
+    if handover and writer_hold_seconds:
+        raise OverlayError("handover probe cannot add an artificial writer hold")
     hooks = config.get("hooks")
     if not isinstance(hooks, dict):
         raise OverlayError("configuration has no hooks object")
@@ -107,9 +119,10 @@ def build(
             raise OverlayError(f"G4 {event} command has no unique Hook script")
         value[script_indexes[0]] = str(hook_script)
         if event == "PreToolUse":
-            if "--child-write-probe" in value:
+            if "--child-write-probe" in value or "--child-handover-write-probe" in value:
                 raise OverlayError("write probe option is already present")
-            value.extend(["--child-write-probe", f"{task_name}={target}"])
+            option = "--child-handover-write-probe" if handover else "--child-write-probe"
+            value.extend([option, f"{task_name}={target}"])
             if writer_hold_seconds:
                 value.extend(
                     [
@@ -132,6 +145,12 @@ def build(
         "changed_events": sorted(changed),
         "changed_command_count": command_count,
         "writer_hold_seconds": writer_hold_seconds,
+        "handover": handover,
+        "authorization_ceiling": (
+            "exact_post_quiescence_handover"
+            if handover
+            else "exact_absent_target"
+        ),
         "v4_entries_preserved": True,
     }
 
@@ -154,6 +173,7 @@ def main() -> int:
     parser.add_argument("--target", type=Path, required=True)
     parser.add_argument("--hook-script", type=Path, required=True)
     parser.add_argument("--writer-hold-seconds", type=int, default=0)
+    parser.add_argument("--handover", action="store_true")
     arguments = parser.parse_args()
     try:
         if not SHA_RE.fullmatch(arguments.expected_input_sha256):
@@ -168,6 +188,7 @@ def main() -> int:
             target=arguments.target,
             hook_script=arguments.hook_script,
             writer_hold_seconds=arguments.writer_hold_seconds,
+            handover=arguments.handover,
         )
         write_new(arguments.output, overlay)
         report["input_sha256"] = observed

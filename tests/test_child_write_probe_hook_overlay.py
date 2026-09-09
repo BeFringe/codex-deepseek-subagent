@@ -52,7 +52,14 @@ class ChildWriteProbeHookOverlayTests(unittest.TestCase):
     def digest(self):
         return hashlib.sha256(self.input.read_bytes()).hexdigest()
 
-    def run_builder(self, *, expected=None, output=None, writer_hold_seconds=0):
+    def run_builder(
+        self,
+        *,
+        expected=None,
+        output=None,
+        writer_hold_seconds=0,
+        handover=False,
+    ):
         command = [
                 sys.executable,
                 str(SCRIPT),
@@ -71,6 +78,8 @@ class ChildWriteProbeHookOverlayTests(unittest.TestCase):
             ]
         if writer_hold_seconds:
             command.extend(["--writer-hold-seconds", str(writer_hold_seconds)])
+        if handover:
+            command.append("--handover")
         return subprocess.run(
             command,
             text=True,
@@ -126,6 +135,34 @@ class ChildWriteProbeHookOverlayTests(unittest.TestCase):
                 )
                 self.assertEqual(result.returncode, 2)
                 self.assertFalse(output.exists())
+
+    def test_handover_overlay_uses_a_distinct_existing_target_ceiling(self):
+        self.target.write_text("G4_CHILD_WRITE_QUALIFIED\n", encoding="utf-8")
+        result = self.run_builder(handover=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        report = json.loads(result.stdout)
+        self.assertTrue(report["handover"])
+        self.assertEqual(
+            report["authorization_ceiling"],
+            "exact_post_quiescence_handover",
+        )
+        overlay = json.loads(self.output.read_text(encoding="utf-8"))
+        command = next(
+            command["command"]
+            for matcher in overlay["hooks"]["PreToolUse"]
+            for command in matcher["hooks"]
+            if "g4_qualification_probe_worker" in command.get("command", "")
+        )
+        self.assertIn("--child-handover-write-probe", command)
+        self.assertNotIn(" --child-write-probe ", f" {command} ")
+
+        rejected = self.run_builder(
+            output=self.root / "handover-hold.json",
+            writer_hold_seconds=2,
+            handover=True,
+        )
+        self.assertEqual(rejected.returncode, 2)
+        self.assertFalse((self.root / "handover-hold.json").exists())
 
     def test_hash_drift_and_existing_target_fail_closed(self):
         drift = self.run_builder(expected="0" * 64)

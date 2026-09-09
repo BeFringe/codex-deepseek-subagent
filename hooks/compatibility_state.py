@@ -2185,6 +2185,7 @@ class StateStore:
         with self.locked():
             conflicts: list[dict] = []
             ownership_handover: list[dict] = []
+            active_child_handovers: list[dict] | None = None
             actor_has_path_authority = (
                 actor["canonical_agent_path"] == "/root"
                 and actor["agent_type"] == "root"
@@ -2245,6 +2246,16 @@ class StateStore:
                     )
                     if exact_active_owner:
                         actor_has_path_authority = True
+                        if active_child_handovers is not None:
+                            conflicts.append(
+                                {
+                                    "kind": "ambiguous_active_owner",
+                                    "assignment_id": capsule["assignment_id"],
+                                    "owned_paths": capsule["owned_paths"],
+                                }
+                            )
+                            continue
+                        active_child_handovers = list(capsule["ownership_handover"])
                         continue
                     conflicts.append(
                         {
@@ -2287,14 +2298,23 @@ class StateStore:
                         and actor["thread_id"] == capsule["parent_thread_id"]
                         and barrier["snapshot_sha256"] == _snapshot_sha256(before_snapshot)
                     )
-                    if parent_reclaim_is_exact:
-                        ownership_handover.append(
-                            {
-                                "prior_assignment_id": capsule["assignment_id"],
-                                "barrier_sha256": barrier["barrier_sha256"],
-                                "snapshot_sha256": barrier["snapshot_sha256"],
-                            }
-                        )
+                    barrier_binding = (
+                        {
+                            "prior_assignment_id": capsule["assignment_id"],
+                            "barrier_sha256": barrier["barrier_sha256"],
+                            "snapshot_sha256": barrier["snapshot_sha256"],
+                        }
+                        if barrier is not None
+                        else None
+                    )
+                    child_handover_is_exact = (
+                        barrier_binding is not None
+                        and active_child_handovers is not None
+                        and barrier_binding in active_child_handovers
+                        and barrier["snapshot_sha256"] == _snapshot_sha256(before_snapshot)
+                    )
+                    if parent_reclaim_is_exact or child_handover_is_exact:
+                        ownership_handover.append(barrier_binding)
                         continue
                     binding = envelope.get("binding")
                     conflicts.append(

@@ -191,6 +191,7 @@ def dispatch(
     parent_non_git_writer_roots: Sequence[Path] = (),
     child_sandbox_probes: Mapping[str, Path] | None = None,
     child_write_probes: Mapping[str, Path] | None = None,
+    child_handover_write_probes: Mapping[str, Path] | None = None,
 ) -> dict:
     event = hook_input.get("hook_event_name")
     child_is_target = hook_input.get("agent_type") in plaintext_agent_types
@@ -201,6 +202,7 @@ def dispatch(
                 hook_input,
                 qualification_sandbox_probes=child_sandbox_probes,
                 qualification_write_probes=child_write_probes,
+                qualification_handover_write_probes=child_handover_write_probes,
             )
             specific = authority.get("hookSpecificOutput")
             denied = isinstance(specific, dict) and specific.get("permissionDecision") == "deny"
@@ -224,6 +226,7 @@ def dispatch(
             hook_input,
             plaintext_agent_types=plaintext_agent_types,
             qualification_write_probes=child_write_probes,
+            qualification_handover_write_probes=child_handover_write_probes,
         )
         return captured or guard_writer_lease(
             store,
@@ -259,6 +262,7 @@ def dispatch_with_receipts(
     parent_non_git_writer_roots: Sequence[Path] = (),
     child_sandbox_probes: Mapping[str, Path] | None = None,
     child_write_probes: Mapping[str, Path] | None = None,
+    child_handover_write_probes: Mapping[str, Path] | None = None,
 ) -> dict:
     event = hook_input.get("hook_event_name")
     observation_root = pretool_schema_observation_root
@@ -307,6 +311,7 @@ def dispatch_with_receipts(
         parent_non_git_writer_roots=parent_non_git_writer_roots,
         child_sandbox_probes=child_sandbox_probes,
         child_write_probes=child_write_probes,
+        child_handover_write_probes=child_handover_write_probes,
     )
     if is_parent_writer and event == "PreToolUse":
         specific = output.get("hookSpecificOutput")
@@ -332,6 +337,7 @@ def run_dispatch(
     parent_non_git_writer_roots: Sequence[Path] = (),
     child_sandbox_probes: Mapping[str, Path] | None = None,
     child_write_probes: Mapping[str, Path] | None = None,
+    child_handover_write_probes: Mapping[str, Path] | None = None,
 ) -> dict:
     try:
         return dispatch_with_receipts(
@@ -342,6 +348,7 @@ def run_dispatch(
             parent_non_git_writer_roots=parent_non_git_writer_roots,
             child_sandbox_probes=child_sandbox_probes,
             child_write_probes=child_write_probes,
+            child_handover_write_probes=child_handover_write_probes,
         )
     except (OSError, StateError) as error:
         return fail_closed_output(hook_input.get("hook_event_name"), error)
@@ -379,6 +386,13 @@ def main() -> int:
         dest="child_write_probe_specs",
     )
     parser.add_argument(
+        "--child-handover-write-probe",
+        action="append",
+        default=[],
+        type=child_write_probe_spec,
+        dest="child_handover_write_probe_specs",
+    )
+    parser.add_argument(
         "--qualification-writer-hold-seconds",
         type=qualification_writer_hold_seconds,
         default=0,
@@ -394,6 +408,13 @@ def main() -> int:
         if task_name in child_write_probes:
             parser.error("child write probe task name is duplicated")
         child_write_probes[task_name] = target
+    child_handover_write_probes: dict[str, Path] = {}
+    for task_name, target in arguments.child_handover_write_probe_specs:
+        if task_name in child_handover_write_probes:
+            parser.error("child handover write probe task name is duplicated")
+        if task_name in child_write_probes:
+            parser.error("write probe task has two qualification ceilings")
+        child_handover_write_probes[task_name] = target
     if arguments.qualification_writer_hold_seconds and len(child_write_probes) != 1:
         parser.error("qualification writer hold requires one exact child write probe")
     try:
@@ -413,6 +434,7 @@ def main() -> int:
         parent_non_git_writer_roots=arguments.parent_non_git_writer_roots,
         child_sandbox_probes=child_sandbox_probes,
         child_write_probes=child_write_probes,
+        child_handover_write_probes=child_handover_write_probes,
     )
     try:
         hold_exact_qualification_writer_lease(

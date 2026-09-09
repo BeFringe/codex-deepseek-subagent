@@ -23,6 +23,10 @@ reconciler = load_module(
     "reconcile_g4_write_then_close",
     ROOT / "probes" / "reconcile_g4_write_then_close.py",
 )
+handover_reconciler = load_module(
+    "reconcile_g4_handover_then_close",
+    ROOT / "probes" / "reconcile_g4_handover_then_close.py",
+)
 
 
 class G4WriteThenCloseReconciliationTests(unittest.TestCase):
@@ -197,13 +201,23 @@ class G4WriteThenCloseReconciliationTests(unittest.TestCase):
     def writer_receipt(self):
         return {"tool_use_id": self.write_id}
 
-    def child_records(self):
-        expected_patch = (
-            "*** Begin Patch\n"
-            f"*** Add File: {self.target}\n"
-            "+G4_CHILD_WRITE_QUALIFIED\n"
-            "*** End Patch\n"
-        )
+    def child_records(self, *, handover=False):
+        if handover:
+            expected_patch = (
+                "*** Begin Patch\n"
+                f"*** Update File: {self.target}\n"
+                "@@\n"
+                "-G4_CHILD_WRITE_QUALIFIED\n"
+                "+G4_HANDOVER_WRITE_QUALIFIED\n"
+                "*** End Patch\n"
+            )
+        else:
+            expected_patch = (
+                "*** Begin Patch\n"
+                f"*** Add File: {self.target}\n"
+                "+G4_CHILD_WRITE_QUALIFIED\n"
+                "*** End Patch\n"
+            )
         return [
             {
                 "timestamp": "2026-09-09T00:00:00.2Z",
@@ -320,6 +334,37 @@ class G4WriteThenCloseReconciliationTests(unittest.TestCase):
                 self.assignment,
                 self.final_text(),
                 dt.datetime.fromisoformat("2026-09-09T00:00:03.050+00:00"),
+            )
+
+    def test_handover_lifecycle_requires_one_exact_update_before_second_close(self):
+        self.target.write_text(
+            handover_reconciler.TARGET_CONTENT,
+            encoding="utf-8",
+        )
+        self.attestation["changed_paths"][0]["sha256"] = reconciler.sha256_file(
+            self.target
+        )
+        lifecycle = handover_reconciler.validate_child_lifecycle(
+            self.child_records(handover=True),
+            self.capsule(),
+            self.attestation,
+            self.writer_receipt(),
+            self.target,
+            dt.datetime.fromisoformat("2026-09-09T00:00:07+00:00"),
+        )
+        self.assertEqual(lifecycle["final_text"], self.final_text())
+
+        with self.assertRaisesRegex(
+            reconciler.ReconciliationError,
+            "replacement apply_patch",
+        ):
+            handover_reconciler.validate_child_lifecycle(
+                self.child_records(),
+                self.capsule(),
+                self.attestation,
+                self.writer_receipt(),
+                self.target,
+                dt.datetime.fromisoformat("2026-09-09T00:00:07+00:00"),
             )
 
     def test_unconfirmed_process_and_second_child_tool_fail_closed(self):

@@ -528,6 +528,24 @@ class AssignmentTransportTests(unittest.TestCase):
                 tool_input={"message": self.message(authority=authority)},
             )
 
+            foreign = self.repository / "foreign.txt"
+            foreign.write_text("not part of the ceiling\n", encoding="utf-8")
+            dirty_denial = assignment_transport.capture_spawn(
+                self.store,
+                hook,
+                plaintext_agent_types={"fixture_worker"},
+                qualification_write_probes={"qualified_write": target},
+            )
+            self.assertEqual(
+                dirty_denial["hookSpecificOutput"]["permissionDecision"],
+                "deny",
+            )
+            self.assertIn(
+                "root is not clean",
+                dirty_denial["hookSpecificOutput"]["permissionDecisionReason"],
+            )
+            foreign.unlink()
+
             result = assignment_transport.capture_spawn(
                 self.store,
                 hook,
@@ -575,6 +593,7 @@ class AssignmentTransportTests(unittest.TestCase):
             self.assertIn(
                 "WRITER.LEASED",
                 pretool["hookSpecificOutput"]["additionalContext"],
+                pretool,
             )
             target.write_text("qualified bytes\n", encoding="utf-8")
             posttool = compatibility_hook.dispatch_with_receipts(
@@ -672,6 +691,172 @@ class AssignmentTransportTests(unittest.TestCase):
                     ("PostToolUse", "target_child"),
                 ],
             )
+        self.repository = original_repository
+
+    def test_handover_ceiling_requires_and_preserves_one_exact_prior_barrier(self):
+        original_repository = self.repository
+        with tempfile.TemporaryDirectory(
+            prefix="codex-g4-p5b-write-termination.", dir="/private/tmp"
+        ) as temporary_root:
+            self.repository = Path(temporary_root).resolve()
+            self.git("init", "-b", "main")
+            self.git("config", "user.name", "Fixture")
+            self.git("config", "user.email", "fixture@example.invalid")
+            (self.repository / "baseline.txt").write_text("baseline\n", encoding="utf-8")
+            self.git("add", "baseline.txt")
+            self.git("commit", "-m", "baseline")
+            self.write_meta(
+                self.parent_transcript,
+                session_id="runtime-session",
+                thread_id="runtime-session",
+                agent_path=None,
+                parent_thread_id=None,
+                agent_role=None,
+            )
+            target = self.repository / "qualified.txt"
+
+            prior_authority = json.loads(
+                self.message().split("BEGIN CODEX WORKER AUTHORITY\n", 1)[1].split(
+                    "\nEND CODEX WORKER AUTHORITY", 1
+                )[0]
+            )
+            prior_authority["owned_paths"] = ["qualified.txt"]
+            prior_authority["excluded_paths"] = []
+            prior_hook = self.spawn_hook(
+                "prior_write",
+                tool_input={"message": self.message(authority=prior_authority)},
+            )
+            assignment_transport.capture_spawn(
+                self.store,
+                prior_hook,
+                plaintext_agent_types={"fixture_worker"},
+            )
+            assignment_transport.subagent_start(self.store, self.child_hook("prior_write"))
+            target.write_text("G4_CHILD_WRITE_QUALIFIED\n", encoding="utf-8")
+            prior_assignment_id, barrier_path = self.freeze_active_and_record_barrier(
+                "prior_write"
+            )
+            barrier = json.loads(barrier_path.read_text(encoding="utf-8"))
+
+            replacement_authority = json.loads(
+                self.message().split("BEGIN CODEX WORKER AUTHORITY\n", 1)[1].split(
+                    "\nEND CODEX WORKER AUTHORITY", 1
+                )[0]
+            )
+            replacement_authority["owned_paths"] = ["qualified.txt"]
+            replacement_authority["excluded_paths"] = []
+            replacement_authority["verification"] = [
+                assignment_transport.QUALIFICATION_HANDOVER_WRITE_PROBE_VERIFICATION
+            ]
+            replacement_authority["execution_contract"]["required_invariants"] = [
+                runtime_guard.HASH_BOUND_POST_MUTATION_RECEIPT_INVARIANT,
+                assignment_transport.QUALIFICATION_HANDOVER_INVARIANT,
+            ]
+            replacement_hook = self.spawn_hook(
+                "replacement_write",
+                tool_input={"message": self.message(authority=replacement_authority)},
+            )
+
+            ordinary = assignment_transport.capture_spawn(
+                self.store,
+                replacement_hook,
+                plaintext_agent_types={"fixture_worker"},
+                qualification_write_probes={"replacement_write": target},
+            )
+            self.assertEqual(
+                ordinary["hookSpecificOutput"]["permissionDecision"],
+                "deny",
+            )
+            self.assertIn(
+                "not absent",
+                ordinary["hookSpecificOutput"]["permissionDecisionReason"],
+            )
+
+            replacement = assignment_transport.capture_spawn(
+                self.store,
+                replacement_hook,
+                plaintext_agent_types={"fixture_worker"},
+                qualification_handover_write_probes={"replacement_write": target},
+            )
+            self.assertNotIn("permissionDecision", replacement["hookSpecificOutput"])
+            pending = next((self.store.root / "pending").glob("*.json"))
+            capsule = json.loads(pending.read_text(encoding="utf-8"))["capsule"]
+            self.assertEqual(
+                capsule["ownership_handover"],
+                [
+                    {
+                        "prior_assignment_id": prior_assignment_id,
+                        "barrier_sha256": barrier["barrier_sha256"],
+                        "snapshot_sha256": barrier["snapshot_sha256"],
+                    }
+                ],
+            )
+            self.assertEqual(
+                capsule["preexisting_dirty"],
+                [
+                    {
+                        "kind": "file",
+                        "path": "qualified.txt",
+                        "sha256": hashlib.sha256(target.read_bytes()).hexdigest(),
+                        "status": "?? qualified.txt\0",
+                    }
+                ],
+            )
+            self.assertEqual(
+                capsule["ownership_handover"][0]["snapshot_sha256"],
+                capsule["capture_snapshot_sha256"],
+            )
+            self.assertEqual(
+                capsule["trusted_host_user_write_consent"]["status"],
+                "verified",
+            )
+
+            replacement_child = self.child_hook("replacement_write")
+            assignment_transport.subagent_start(self.store, replacement_child)
+            patch = self.parent_patch_hook(
+                "qualified.txt", tool_use_id="handover-child-patch"
+            )
+            patch.update(
+                {
+                    "agent_id": "child-replacement_write",
+                    "agent_type": "fixture_worker",
+                    "transcript_path": replacement_child["transcript_path"],
+                }
+            )
+            pretool = compatibility_hook.dispatch_with_receipts(
+                self.store,
+                patch,
+                plaintext_agent_types={"fixture_worker"},
+                child_handover_write_probes={"replacement_write": target},
+            )
+            self.assertIn("additionalContext", pretool["hookSpecificOutput"], pretool)
+            self.assertIn(
+                "WRITER.LEASED",
+                pretool["hookSpecificOutput"]["additionalContext"],
+            )
+            claim = json.loads(
+                next((self.store.root / "writer_claim").glob("*.json")).read_text(
+                    encoding="utf-8"
+                )
+            )
+            self.assertEqual(claim["ownership_handover"], capsule["ownership_handover"])
+            target.write_text("G4_HANDOVER_WRITE_QUALIFIED\n", encoding="utf-8")
+            compatibility_hook.dispatch_with_receipts(
+                self.store,
+                dict(
+                    patch,
+                    hook_event_name="PostToolUse",
+                    tool_response={"status": "completed"},
+                ),
+                plaintext_agent_types={"fixture_worker"},
+                child_handover_write_probes={"replacement_write": target},
+            )
+            receipt = json.loads(
+                next((self.store.root / "writer_receipt").glob("*.json")).read_text(
+                    encoding="utf-8"
+                )
+            )
+            self.assertEqual(receipt["ownership_handover"], capsule["ownership_handover"])
         self.repository = original_repository
 
     def test_invalid_authority_or_fork_mode_blocks_spawn(self):

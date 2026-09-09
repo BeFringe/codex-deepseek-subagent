@@ -61,6 +61,10 @@ QUALIFICATION_SANDBOX_PROBE_VERIFICATION = (
     "code-mode nested Bash read-only sandbox denial probe"
 )
 QUALIFICATION_WRITE_PROBE_VERIFICATION = "exact-path child apply_patch qualification probe"
+QUALIFICATION_HANDOVER_WRITE_PROBE_VERIFICATION = (
+    "exact-path post-quiescence child handover qualification probe"
+)
+QUALIFICATION_HANDOVER_INVARIANT = "exact prior quiescence barrier handover"
 HASH_BOUND_POST_MUTATION_RECEIPT_INVARIANT = (
     "hash-bound trusted PostToolUse observation for final Git snapshot"
 )
@@ -456,6 +460,8 @@ def _qualification_write_probe_authorized(
     hook_input: Mapping[str, object],
     identity: Mapping[str, str],
     probe_targets: Mapping[str, Path],
+    *,
+    handover: bool = False,
 ) -> bool:
     capsule = envelope["capsule"]
     task_name = capsule["requested_task_name"]
@@ -468,8 +474,12 @@ def _qualification_write_probe_authorized(
         raise AuthorityViolation("qualification write probe root is not canonical temporary root")
     if not target.is_absolute() or target.parent.resolve() != root:
         raise AuthorityViolation("qualification write probe target is not an exact root child")
-    if target.resolve(strict=False) != target or target.exists() or target.is_symlink():
-        raise AuthorityViolation("qualification write probe target is not canonical and absent")
+    if target.resolve(strict=False) != target or target.is_symlink():
+        raise AuthorityViolation("qualification write probe target is not canonical")
+    if not handover and target.exists():
+        raise AuthorityViolation("qualification write probe target is not absent")
+    if handover and not target.is_file():
+        raise AuthorityViolation("handover write probe target is not an existing regular file")
     relative_target = target.relative_to(root).as_posix()
     if capsule["assignment_mutation_mode"] != "write":
         raise AuthorityViolation("qualification write probe requires write authority")
@@ -477,8 +487,44 @@ def _qualification_write_probe_authorized(
         raise AuthorityViolation("qualification write probe ownership is not exact")
     if any(capsule["git_authority"].values()):
         raise AuthorityViolation("qualification write probe cannot carry Git authority")
-    if capsule["verification"] != [QUALIFICATION_WRITE_PROBE_VERIFICATION]:
+    expected_verification = (
+        QUALIFICATION_HANDOVER_WRITE_PROBE_VERIFICATION
+        if handover
+        else QUALIFICATION_WRITE_PROBE_VERIFICATION
+    )
+    if capsule["verification"] != [expected_verification]:
         raise AuthorityViolation("qualification write probe verification is not exact")
+    has_handover_invariant = QUALIFICATION_HANDOVER_INVARIANT in capsule[
+        "execution_contract"
+    ]["required_invariants"]
+    if has_handover_invariant != handover:
+        raise AuthorityViolation("handover write probe invariant is not exact")
+    if handover:
+        status = _git(
+            root,
+            "status",
+            "--porcelain=v1",
+            "-z",
+            "--untracked-files=all",
+            "--",
+            relative_target,
+        ).decode("utf-8")
+        dirty = {
+            "kind": "file",
+            "path": relative_target,
+            "sha256": hashlib.sha256(target.read_bytes()).hexdigest(),
+            "status": status,
+        }
+        handovers = capsule["ownership_handover"]
+        if (
+            status != f"?? {relative_target}\0"
+            or len(handovers) != 1
+            or handovers[0]["snapshot_sha256"] != capsule["capture_snapshot_sha256"]
+            or capsule["preexisting_dirty"] != [dirty]
+        ):
+            raise AuthorityViolation("handover write probe lacks one exact frozen frontier")
+    elif capsule["ownership_handover"] or capsule["preexisting_dirty"]:
+        raise AuthorityViolation("absent-target write probe inherited prior ownership")
     expected_consent = {
         "schema": 1,
         "status": "verified",
@@ -502,6 +548,7 @@ def pre_tool_use(
     now: dt.datetime | None = None,
     qualification_sandbox_probes: Mapping[str, Path] | None = None,
     qualification_write_probes: Mapping[str, Path] | None = None,
+    qualification_handover_write_probes: Mapping[str, Path] | None = None,
 ) -> dict:
     try:
         if hook_input.get("hook_event_name") != "PreToolUse":
@@ -521,13 +568,30 @@ def pre_tool_use(
         ):
             return {}
         qualified_tool_name = qualified_read_only_tool_name(tool_name)
+        task_name = envelope["capsule"]["requested_task_name"]
+        ordinary_write = bool(
+            qualification_write_probes and task_name in qualification_write_probes
+        )
+        handover_write = bool(
+            qualification_handover_write_probes
+            and task_name in qualification_handover_write_probes
+        )
+        if ordinary_write and handover_write:
+            raise AuthorityViolation("write probe task has two qualification ceilings")
+        selected_write_probes = (
+            qualification_handover_write_probes
+            if handover_write
+            else qualification_write_probes
+        )
         qualification_write = bool(
-            qualification_write_probes
+            (ordinary_write or handover_write)
+            and selected_write_probes
             and _qualification_write_probe_authorized(
                 envelope,
                 hook_input,
                 identity,
-                qualification_write_probes,
+                selected_write_probes,
+                handover=handover_write,
             )
         )
         if qualified_tool_name is None and not qualification_write:

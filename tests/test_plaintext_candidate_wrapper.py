@@ -8,6 +8,7 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 WRAPPER = ROOT / "probes" / "codex_plaintext_candidate_wrapper.sh"
+HANDOVER_WRAPPER = ROOT / "probes" / "codex_plaintext_handover_candidate_wrapper.sh"
 
 
 class PlaintextCandidateWrapperTests(unittest.TestCase):
@@ -511,6 +512,114 @@ class PlaintextCandidateWrapperTests(unittest.TestCase):
                 "stderr-v2-parent-child-closed",
             )
 
+    def test_p5b_handover_guard_accepts_only_the_exact_frozen_frontier(self):
+        with tempfile.TemporaryDirectory() as candidate_dir, tempfile.TemporaryDirectory(
+            prefix="codex-g4-p5b-write-termination.", dir="/private/tmp"
+        ) as root_dir:
+            directory = Path(candidate_dir)
+            root = Path(root_dir).resolve()
+            candidate, digest = self._fake_candidate(directory)
+            subprocess.run(
+                ["git", "-C", str(root), "init", "-b", "main"],
+                check=True,
+                capture_output=True,
+            )
+            subprocess.run(
+                [
+                    "git", "-C", str(root), "-c", "user.name=Phase1 Probe",
+                    "-c", "user.email=phase1-probe@invalid", "commit", "--allow-empty",
+                    "-m", "initial",
+                ],
+                check=True,
+                capture_output=True,
+            )
+            (root / "qualified.txt").write_text(
+                "G4_CHILD_WRITE_QUALIFIED\n", encoding="utf-8"
+            )
+            arg_log = directory / "p5b-handover-args.txt"
+            env_log = directory / "p5b-handover-env.txt"
+            environment = self._environment(candidate, digest, arg_log)
+            environment.update(
+                {
+                    "ENV_LOG": str(env_log),
+                    "CODEX_G4_SESSIONMETA_PROBE_AUTHORIZED": "schema1-headless-stateful",
+                    "CODEX_G4_SESSIONMETA_PROBE_ROOT": str(root),
+                    "CODEX_G4_P5B_TRACKED_TERMINATION_PROBE_AUTHORIZED": (
+                        "schema1-exact-write-then-close"
+                    ),
+                    "CODEX_G4_P5B_HANDOVER_PROBE_AUTHORIZED": (
+                        "schema1-exact-barrier-replacement"
+                    ),
+                }
+            )
+            result = subprocess.run(
+                [
+                    str(HANDOVER_WRAPPER), "exec", "--ignore-user-config", "--ignore-rules",
+                    "--dangerously-bypass-hook-trust", "--json", "-C", str(root),
+                    "Return READY.",
+                ],
+                env=environment,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            arguments = arg_log.read_text(encoding="utf-8").splitlines()
+            self.assertIn("features.code_mode_host=false", arguments)
+            self.assertEqual(arguments[arguments.index("-s") + 1], "workspace-write")
+            self.assertEqual(
+                env_log.read_text(encoding="utf-8").strip(),
+                "stderr-v2-parent-child-closed",
+            )
+
+            (root / "qualified.txt").write_text("drifted\n", encoding="utf-8")
+            drift_log = directory / "p5b-handover-drift.txt"
+            drift_environment = dict(environment, ARG_LOG=str(drift_log))
+            drift = subprocess.run(
+                [
+                    str(HANDOVER_WRAPPER), "exec", "--ignore-user-config", "--ignore-rules",
+                    "--dangerously-bypass-hook-trust", "--json", "-C", str(root),
+                    "Return READY.",
+                ],
+                env=drift_environment,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(drift.returncode, 78)
+            self.assertIn("frozen prior bytes", drift.stderr)
+            self.assertFalse(drift_log.exists())
+
+            gui_log = directory / "p5b-handover-gui.txt"
+            gui = subprocess.run(
+                [str(HANDOVER_WRAPPER), "app-server"],
+                env=dict(environment, ARG_LOG=str(gui_log)),
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(gui.returncode, 78)
+            self.assertIn("only headless exec", gui.stderr)
+            self.assertFalse(gui_log.exists())
+
+            missing_log = directory / "p5b-handover-missing.txt"
+            missing_environment = dict(environment, ARG_LOG=str(missing_log))
+            missing_environment.pop("CODEX_G4_P5B_HANDOVER_PROBE_AUTHORIZED")
+            missing = subprocess.run(
+                [
+                    str(HANDOVER_WRAPPER), "exec", "--ignore-user-config",
+                    "--ignore-rules", "--dangerously-bypass-hook-trust", "--json",
+                    "-C", str(root), "Return READY.",
+                ],
+                env=missing_environment,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(missing.returncode, 78)
+            self.assertIn("handover probe guard is absent", missing.stderr)
+            self.assertFalse(missing_log.exists())
+
     def test_auto_compact_guard_injects_fixed_limit_into_stateful_read_only_probe(self):
         with tempfile.TemporaryDirectory() as candidate_dir, tempfile.TemporaryDirectory(
             prefix="codex-g4-compact-wrapper-", dir="/private/tmp"
@@ -647,9 +756,16 @@ class PlaintextCandidateWrapperTests(unittest.TestCase):
             self.assertFalse(arg_log.exists())
 
     def test_wrapper_has_no_provider_or_credential_configuration(self):
-        source = WRAPPER.read_text(encoding="utf-8")
-        for forbidden in ("API_KEY", "base_url", "model_provider", "OPENAI_API_KEY"):
-            self.assertNotIn(forbidden, source)
+        for wrapper in (WRAPPER, HANDOVER_WRAPPER):
+            with self.subTest(wrapper=wrapper.name):
+                source = wrapper.read_text(encoding="utf-8")
+                for forbidden in (
+                    "API_KEY",
+                    "base_url",
+                    "model_provider",
+                    "OPENAI_API_KEY",
+                ):
+                    self.assertNotIn(forbidden, source)
 
 
 if __name__ == "__main__":

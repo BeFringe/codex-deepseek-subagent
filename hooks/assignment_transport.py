@@ -59,6 +59,10 @@ GIT_OID_RE = re.compile(r"^(?:[0-9a-f]{40}|[0-9a-f]{64})$")
 PLAINTEXT_COMPAT_TOOL_NAMESPACE = "g4_assignment"
 PLAINTEXT_COMPAT_SPAWN_TOOL_NAME = f"{PLAINTEXT_COMPAT_TOOL_NAMESPACE}spawn_agent"
 QUALIFICATION_WRITE_PROBE_VERIFICATION = "exact-path child apply_patch qualification probe"
+QUALIFICATION_HANDOVER_WRITE_PROBE_VERIFICATION = (
+    "exact-path post-quiescence child handover qualification probe"
+)
+QUALIFICATION_HANDOVER_INVARIANT = "exact prior quiescence barrier handover"
 SPAWN_TOOL_NAMES = {
     "spawn_agent",
     "Agent",
@@ -334,6 +338,7 @@ def capture_spawn(
     plaintext_agent_types: Collection[str],
     now: dt.datetime | None = None,
     qualification_write_probes: Mapping[str, Path] | None = None,
+    qualification_handover_write_probes: Mapping[str, Path] | None = None,
 ) -> dict:
     if hook_input.get("hook_event_name") != "PreToolUse":
         return {}
@@ -368,6 +373,14 @@ def capture_spawn(
             if qualification_write_probes
             else None
         )
+        handover_target = (
+            qualification_handover_write_probes.get(requested_task_name)
+            if qualification_handover_write_probes
+            else None
+        )
+        if qualification_target is not None and handover_target is not None:
+            raise GuardError("write probe task has two qualification ceilings")
+        qualification_target = qualification_target or handover_target
         if qualification_target is not None:
             root_path = Path(snapshot["root"])
             target = Path(qualification_target)
@@ -375,8 +388,12 @@ def capture_spawn(
                 raise GuardError("qualification write probe root is not canonical temporary Git root")
             if not target.is_absolute() or target.parent.resolve() != root_path:
                 raise GuardError("qualification write probe target is not a direct root child")
-            if target.resolve(strict=False) != target or target.exists() or target.is_symlink():
-                raise GuardError("qualification write probe target is not canonical and absent")
+            if target.resolve(strict=False) != target or target.is_symlink():
+                raise GuardError("qualification write probe target is not canonical")
+            if handover_target is None and target.exists():
+                raise GuardError("qualification write probe target is not absent")
+            if handover_target is not None and not target.is_file():
+                raise GuardError("handover write probe target is not an existing regular file")
             relative_target = target.relative_to(root_path).as_posix()
             if declaration["assignment_mutation_mode"] != "write":
                 raise GuardError("qualification write probe requires write mode")
@@ -384,8 +401,38 @@ def capture_spawn(
                 raise GuardError("qualification write probe ownership is not exact")
             if any(declaration["git_authority"].values()):
                 raise GuardError("qualification write probe cannot grant Git operations")
-            if declaration["verification"] != [QUALIFICATION_WRITE_PROBE_VERIFICATION]:
+            expected_verification = (
+                QUALIFICATION_HANDOVER_WRITE_PROBE_VERIFICATION
+                if handover_target is not None
+                else QUALIFICATION_WRITE_PROBE_VERIFICATION
+            )
+            if declaration["verification"] != [expected_verification]:
                 raise GuardError("qualification write probe verification is not exact")
+            has_handover_invariant = QUALIFICATION_HANDOVER_INVARIANT in declaration[
+                "execution_contract"
+            ]["required_invariants"]
+            if has_handover_invariant != (handover_target is not None):
+                raise GuardError("handover write probe invariant is not exact")
+            if handover_target is not None:
+                expected_handover_frontier = [
+                    {
+                        "kind": "file",
+                        "path": relative_target,
+                        "sha256": hashlib.sha256(target.read_bytes()).hexdigest(),
+                    }
+                ]
+                if (
+                    snapshot["changed_paths"] != expected_handover_frontier
+                    or snapshot["index_changed"]
+                    or snapshot["git_status_short"] != f"?? {relative_target}"
+                ):
+                    raise GuardError("handover write probe root is not the exact prior frontier")
+            elif (
+                snapshot["changed_paths"]
+                or snapshot["index_changed"]
+                or snapshot["git_status_short"]
+            ):
+                raise GuardError("qualification write probe root is not clean")
         created_at = now or dt.datetime.now(dt.timezone.utc)
         if created_at.tzinfo is None or created_at.utcoffset() is None:
             raise GuardError("capture time must include a UTC offset")
@@ -397,6 +444,15 @@ def capture_spawn(
                 declaration["execution_contract"]["posture"] == "strict_read_only"
             ),
         )
+        if qualification_target is not None:
+            if handover_target is not None and len(ownership_handover) != 1:
+                raise GuardError("handover write probe lacks one exact quiescence barrier")
+            if handover_target is not None and ownership_handover[0][
+                "snapshot_sha256"
+            ] != git_snapshot_sha256(snapshot):
+                raise GuardError("handover barrier does not bind the capture snapshot")
+            if handover_target is None and ownership_handover:
+                raise GuardError("absent-target write probe unexpectedly inherited ownership")
         assignment_id = str(uuid.uuid4())
         handoff_id = str(uuid.uuid4())
         git_authority = declaration["git_authority"]

@@ -31,7 +31,13 @@ class G4WriteProbePromptTests(unittest.TestCase):
             self.output.unlink()
         self.directory.cleanup()
 
-    def run_builder(self, *, parent_conflict_probe=False, p5b_close_after_write=False):
+    def run_builder(
+        self,
+        *,
+        parent_conflict_probe=False,
+        p5b_close_after_write=False,
+        p5b_handover_after_barrier=False,
+    ):
         command = [
             sys.executable,
             str(SCRIPT),
@@ -48,6 +54,8 @@ class G4WriteProbePromptTests(unittest.TestCase):
             command.append("--parent-conflict-probe")
         if p5b_close_after_write:
             command.append("--p5b-close-after-write")
+        if p5b_handover_after_barrier:
+            command.append("--p5b-handover-after-barrier")
         return subprocess.run(
             command,
             text=True,
@@ -111,11 +119,56 @@ class G4WriteProbePromptTests(unittest.TestCase):
         self.assertLess(prompt.index("wait_agent exactly once"), prompt.index("followup_task exactly once"))
         self.assertLess(prompt.index("followup_task exactly once"), prompt.index("close_agent exactly once"))
 
+    def test_p5b_handover_prompt_binds_replacement_and_second_close(self):
+        self.target.write_text("G4_CHILD_WRITE_QUALIFIED\n", encoding="utf-8")
+        result = self.run_builder(p5b_handover_after_barrier=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        prompt = self.output.read_text(encoding="utf-8")
+        declaration = json.loads(
+            prompt.split("BEGIN CODEX WORKER AUTHORITY\n", 1)[1].split(
+                "\nEND CODEX WORKER AUTHORITY", 1
+            )[0]
+        )
+        self.assertEqual(
+            declaration["verification"],
+            ["exact-path post-quiescence child handover qualification probe"],
+        )
+        self.assertIn(
+            "exact prior quiescence barrier handover",
+            declaration["execution_contract"]["required_invariants"],
+        )
+        self.assertIn("replace the exact frozen prior", declaration["stop_condition"])
+        self.assertEqual(
+            declaration["execution_contract"]["capsule_feasibility_attestation"]
+            ["bounded_completion"]["proposed_mechanism"],
+            "exact Hook handover ceiling plus writer lease",
+        )
+        self.assertIn("*** Update File:", prompt)
+        self.assertIn("-G4_CHILD_WRITE_QUALIFIED", prompt)
+        self.assertIn("+G4_HANDOVER_WRITE_QUALIFIED", prompt)
+        self.assertNotIn("*** Add File:", prompt)
+        self.assertIn("same-path replacement-and-close", prompt)
+        self.assertIn("exactly one identical ownership_handover", prompt)
+        self.assertIn("native close_agent exactly once", prompt)
+
     def test_write_modes_are_mutually_exclusive(self):
         result = self.run_builder(
             parent_conflict_probe=True,
             p5b_close_after_write=True,
         )
+        self.assertEqual(result.returncode, 2)
+        self.assertFalse(self.output.exists())
+
+        result = self.run_builder(
+            p5b_close_after_write=True,
+            p5b_handover_after_barrier=True,
+        )
+        self.assertEqual(result.returncode, 2)
+        self.assertFalse(self.output.exists())
+
+    def test_handover_requires_exact_prior_frontier(self):
+        self.target.write_text("wrong prior bytes\n", encoding="utf-8")
+        result = self.run_builder(p5b_handover_after_barrier=True)
         self.assertEqual(result.returncode, 2)
         self.assertFalse(self.output.exists())
 
