@@ -2638,6 +2638,76 @@ P6c cost/latency, candidate exit-code gap, or strong global quiescence.
 `phase1_complete=false`, `direct_write_qualified=false`, and Phases 2/3 remain
 closed.
 
+## Read-only close joined to tracked exits and a durable barrier
+
+The current-source P5b candidate replaces synthetic process termination with a
+bounded observed-exit join. Each unified-exec manager enters a closing state,
+waits for already registered process starts, rejects later starts, and reports
+exact tracked, confirmed-exit, unconfirmed-exit, and unresolved-start process
+sets. Local PTYs require the real `exit_rx`; ExecServer processes require
+`ExecProcessEvent::Exited`. A kill or RPC acknowledgement is not treated as an
+exit. The incremental 13-path patch is
+`probes/current-signed-runtime-g4-p5b-tracked-termination-source-candidate.patch`,
+SHA-256
+`b752625e7757333e0024e56aa6e0a3a8dbb38c6223eeff023513115a93a15e22`.
+It reconstructs predecessor tree
+`67dab4e252002e8e543088f2ada7517ffc125a9d` to candidate tree
+`5363700be8484a3befa06fbe96bcccfd3b16d844`. The candidate binary SHA-256 is
+`b9f3cbae2d6b63ec9c8b5555f879a489b4370ec4feed45983b7fdf651d818de6`;
+it was used only headlessly and was never selected as the GUI App Server.
+Focused Rust verification passed 5 process tests, 18 process-manager tests, 33
+unified-exec tests, two V2 close tests, and two exact tool-family/catalog tests.
+
+Two timing controls failed closed. In the first, the child exhausted its final
+attempts before close and `previous_status` was completed. In the second, close
+observed the child running and returned exact empty process maps, but it occurred
+before SubagentStart, so the identity chain was incomplete. Neither run was
+promoted.
+
+The accepted read-only sample used disposable root
+`/private/tmp/codex-g4-p5b-termination.PKX2Vk`, clean full HEAD
+`d0eccad1e5c2b10a8cffab4a3b1ade3b4c74d2aa`, and tree
+`99aa151945d79ba8deee6a45cae4ef65d2aded1c`. Real SessionMeta bound child
+`01a084c2-8f0a-7cc3-aa59-db63d53618b9`, turn
+`01a084c2-8f70-7251-a3e8-91fdb6041004`, and canonical AgentPath
+`/root/g4_p5b_termination_3` to its exact parent, assignment, handoff, and
+capsule. Spawn PreToolUse sequence 2669 and SubagentStart sequence 2670 were
+contiguous. The finalized child catalog exposed only `apply_patch`,
+`g4_assignment.list_agents`, and `view_image`; the child issued no tool call or
+assistant final and its turn aborted as interrupted.
+
+The parent observed the child running, called close by exact identity, and then
+observed it absent. The close receipt reported
+`session_loop_terminated=true`, zero tracked processes, exact empty confirmed,
+unconfirmed, and unresolved-start maps, and
+`closed_catalog_actor_quiescence_claimed=true`. It truthfully retained
+`process_tree_quiescence_claimed=false`. The candidate exited zero. The fresh
+reconciler in `probes/reconcile_g4_read_only_close.py` verified the exact tool
+order, Hook identity, closed catalog, zero child tools/final, clean Git
+frontier, zero writer claims, and no open candidate executable. It moved the
+durable assignment from active to unresolved and created a hash-bound
+`child_terminated_and_mutations_quiesced` barrier. Two later observations at
+nanoseconds `1788934570216564000` and `1788934572380045000` retained the same
+HEAD, tree, clean status, and zero candidate open-file count.
+
+The privacy-minimized live receipt is
+`probes/g4-live-read-only-tracked-termination-20260909.json`, SHA-256
+`b303ecf9ff4f4a0f4151c542655d5a4d4cfa2a08016aae55614372eaafb67302`,
+with executable assertions in
+`tests/test_g4_live_read_only_tracked_termination.py` and
+`tests/test_reconcile_g4_read_only_close.py`. This qualifies exact read-only
+actor session termination, tracked-process quiescence, durable reconciliation,
+and its post-termination disk barrier. It does not qualify a mutation-capable
+actor, detached or untracked descendants, later descendants outside the close
+capture set, global process-tree quiescence, or before/mid/after ownership
+handover races. P5b stays `partial`; `phase1_complete=false`,
+`direct_write_qualified=false`, and Phases 2/3 remain closed.
+
+Fresh verification passed all 714 provider-free tests in 54.705 seconds plus
+agent-template checks. The normal Phase 1, thirteen-surface mutation,
+same-UID, and runtime-index checks returned zero; the three promotion forms
+returned 2, preserving the fail-closed verdict.
+
 ## Root-and-child closed catalog with completed mutation lifecycle
 
 An opt-in current-source qualification seam now projects the final tool

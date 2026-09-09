@@ -438,9 +438,15 @@
           "probes/g4-live-parent-child-closed-catalog-parent-adjudication-20260909.json",
           "tests/test_g4_live_parent_child_closed_catalog.py",
           "probes/g4-current-app-failed-patch-callback-regression-20260909.json",
-          "tests/test_g4_current_app_failed_patch_callback_regression.py"
+          "tests/test_g4_current_app_failed_patch_callback_regression.py",
+          "probes/current-signed-runtime-g4-p5b-tracked-termination-source-candidate.json",
+          "probes/current-signed-runtime-g4-p5b-tracked-termination-source-candidate.patch",
+          "probes/g4-live-read-only-tracked-termination-20260909.json",
+          "probes/reconcile_g4_read_only_close.py",
+          "tests/test_g4_live_read_only_tracked_termination.py",
+          "tests/test_reconcile_g4_read_only_close.py"
         ],
-          "blocker": "The installed 0.153.4 App Server still omits PostToolUse when apply_patch fails handler-level context verification: exact PreToolUse created a claim, the target stayed byte-identical, and exact unchanged recovery was required. This is a single-parent callback regression, not multi-agent contention. The parent/child closed-catalog run removes every known model-callable process bootstrap surface for both actors, exits zero, leaves no exact candidate process/open executable/live assignment/writer claim, and shows no target write across a two-second barrier. It ends naturally rather than through a joined close_agent/confirmed-exit receipt, so it is a necessary P5b prerequisite and narrow target barrier, not strong termination or global quiescence. The repeated same-path overlap now adds one complete narrow lifecycle: parent pre-execution denial, child hash-bound PostToolUse, accepted SubagentStop, exact callback, zero candidate exit, delayed target barrier, and fresh-owner consumption. Its target-local barrier deliberately does not claim global process-tree quiescence. Current-runtime read-only OpenAI and external-ZHIPU children have per-target clean disk barriers and fresh consumed-state transitions. Parent-only non-Git apply_patch has an exact successful claim/callback/release receipt; child apply_patch and Bash denials plus the one-shot Seatbelt probe exercise blocked paths. One exact child apply_patch now adds a successful child claim/callback/release receipt, zero matching target claims, and a two-second no-late-write disk barrier followed by fresh-owner consumption. A separate in-flight overlap denies the parent's same-path apply_patch while both the child assignment and writer claim are active, then preserves only the child's target bytes. Its repeated unaccepted SubagentStop attempts, missing callback, unknown candidate exit, and quarantined active envelope are retained as a P5b negative rather than promoted. Serial and concurrent samples add ordered and overlapping callbacks, while the parent-exit orphan proves callback absence remains possible. One real auto-compaction run preserves exact read-only authority through a post-compact tool, callback, disk barrier, and fresh-owner consumption; its strong_global_quiescence claim remains deliberately false. The no-event first-attestation path holds the timeout-terminal final until native interrupt observes running and a later exact list observes interrupted. The current-source V2 close probe advances one layer: it resolves a still-running child by exact ThreadId/AgentPath, waits for target and live-descendant session loops, returns session_loop_terminated=true, and then observes the child absent from the live tree. Its truthful process_tree_quiescence_claimed=false and unresolved authority keep P5b partial. A narrow current-source candidate closes the known handler-failed apply_patch callback gap: Rust regression tests and one live root run prove same-id PostToolUse, unchanged snapshots, and automatic lease release without manual recovery. Baseline signed runtime and all other unsuccessful mutation surfaces retain their prior behavior. Tracked process confirmed-exit joins, detached/untracked descendants, closed all-surface mutation mediation, exact Hook/state reconciliation, and before/mid/after late-write handover races remain unproved. The App Server host-control negative also proves server exit alone is not a process-tree barrier"
+          "blocker": "The installed 0.153.4 App Server still omits PostToolUse when apply_patch fails handler-level context verification: exact PreToolUse created a claim, the target stayed byte-identical, and exact unchanged recovery was required. This is a single-parent callback regression, not multi-agent contention. Exact parent/child same-path apply_patch now has one accepted hash-bound lifecycle and fresh-owner consumption, while the unsuccessful overlap remains quarantined negative evidence. The current-source close candidate adds a bounded observed-exit join: unified-exec managers close admission, wait pending starts, reject later starts, require true local PTY or ExecServer exit witnesses, and return exact tracked/confirmed/unconfirmed/unresolved maps. One real read-only child joins exact SessionMeta/SubagentStart, a closed tool catalog with zero child tool calls, previous_status=running, target absence after close, durable active-to-unresolved reconciliation, zero writer claims, no open candidate executable, and two stable disk observations. This qualifies termination and mutation quiescence only for that exact read-only actor; process_tree_quiescence_claimed remains false. Mutation-capable actor termination, detached/untracked and later descendants outside the close capture set, closed all-surface mutation mediation, before/mid/after ownership-handover races, and strong global process-tree quiescence remain unproved. The App Server host-control negative also proves server exit alone is not a process-tree barrier"
       },
       {
         "id": "P6",
@@ -683,7 +689,11 @@
           "probes/p1-live-plaintext-message-delivery-20260908.json",
           "tests/test_p1_live_plaintext_message_delivery.py",
           "probes/p1-live-plaintext-same-message-pairs-20260909.json",
-          "tests/test_p1_live_plaintext_same_message_pairs.py"
+          "tests/test_p1_live_plaintext_same_message_pairs.py",
+          "probes/current-signed-runtime-g4-p5b-tracked-termination-source-candidate.json",
+          "probes/g4-live-read-only-tracked-termination-20260909.json",
+          "tests/test_g4_live_read_only_tracked_termination.py",
+          "tests/test_reconcile_g4_read_only_close.py"
         ]
       },
       {
@@ -813,7 +823,13 @@
           "tests/test_g4_live_concurrent_identity.py",
           "probes/g4-live-nested-identity-20260908.json",
           "probes/g4-live-nested-identity-parent-adjudication-result-20260908.json",
-          "tests/test_g4_live_nested_identity.py"
+          "tests/test_g4_live_nested_identity.py",
+          "probes/current-signed-runtime-g4-p5b-tracked-termination-source-candidate.json",
+          "probes/current-signed-runtime-g4-p5b-tracked-termination-source-candidate.patch",
+          "probes/g4-live-read-only-tracked-termination-20260909.json",
+          "probes/reconcile_g4_read_only_close.py",
+          "tests/test_g4_live_read_only_tracked_termination.py",
+          "tests/test_reconcile_g4_read_only_close.py"
         ]
       },
       {

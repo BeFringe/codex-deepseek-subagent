@@ -163,6 +163,18 @@ case "$mode" in
         ;;
       *) fail "parent/child writer conflict probe authorization guard is invalid" ;;
     esac
+    case "${CODEX_G4_P5B_TRACKED_TERMINATION_PROBE_AUTHORIZED-}" in
+      "") ;;
+      schema1-exact-idle-child)
+        [ "$saw_ephemeral" = false ] || fail "P5b termination probe must retain SessionMeta"
+        case "$requested_cd" in
+          /private/tmp/codex-g4-p5b-termination.*) ;;
+          *) fail "P5b termination probe root is outside the fixed temporary namespace" ;;
+        esac
+        catalog_receipt_mode=stderr-v2-parent-child-closed
+        ;;
+      *) fail "P5b termination probe authorization guard is invalid" ;;
+    esac
     ;;
   *)
     fail "only headless exec or login status is allowed"

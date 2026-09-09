@@ -458,17 +458,28 @@ mutation quiescence，也不能授权立即把相同 owned paths 交给新 child
 `interrupt_agent` 的既有语义。它按 exact ThreadId 或 canonical AgentPath 解析 target，调用
 `AgentControl.close_agent -> shutdown_agent_tree -> Op::Shutdown -> wait_until_terminated`，并只在
 target 及其仍 live 的 descendant session loop 均终止后返回
-`session_loop_terminated=true`。返回同时固定
-`process_tree_quiescence_claimed=false`：tracked unified-exec 的 termination 是 kill request，当前
-实现没有逐进程 confirmed-exit join，且 detached/untracked descendant 不在 session-tree 证明域内。
-因此 native session close 是强于 interrupt ack、弱于 mutation quiescence 的独立 host primitive。
+`session_loop_terminated=true`。每个 unified-exec manager 先进入 closing state，等待已登记但未决议的
+process start，拒绝后来 start，并发起并行 termination；local PTY 必须观测 `exit_rx`，
+ExecServer 必须观测 `ExecProcessEvent::Exited`，不得把 kill/RPC acknowledgement 合成为
+exit。返回的 exact per-thread maps 区分 tracked、confirmed-exit、unconfirmed-exit 与
+unresolved-start process id；有任何 pending/unconfirmed 或最终 tracked 非零都 fail closed。
+
+只有在 exact `g4_qualification_probe_worker`/`SessionSource::Exec` 选通、本次 close 捕获的
+session loops 全部终止、所有 tracked exit 均有真实 witness、且没有 unresolved start 时，
+才可返回 `closed_catalog_actor_quiescence_claimed=true`。它仍固定
+`process_tree_quiescence_claimed=false`：detached/untracked descendant，以及 close 开始时捕获集合之外
+才产生的 descendant，不在证明域内。因此该 primitive 已强于单纯 session-loop close，
+但仍不是全局 process-tree quiescence。
 
 把该 primitive 升为 P5b handover receipt 还必须证明：本次 assignment 的 mutation-surface catalog
 闭合，所有不允许的 process/bootstrap surface 均未启动，target 的 in-flight writer claim 为零，
 Hook/state event 已按 exact ThreadId/tool-use identity 对账，而且在 close 返回后重新采集的
 root/branch/full HEAD/index/status/path hashes 与冻结 frontier 一致。任一项缺失时只可记录
 `host_session_terminated_mutation_quiescence_unproven`，不得创建 quiescence barrier 或释放
-overlapping ownership。
+overlapping ownership。一次真实只读 child 运行已把 exact SessionMeta/SubagentStart、闭合工具目录、
+零 child tool call、真实 exit maps、durable active→unresolved reconciliation 与两次稳定磁盘观测连接起来。
+该样本只证明其 exact read-only actor 的 termination/mutation quiescence；mutation-capable actor、全局
+process tree 与 ownership handover race 仍须独立资格证明。
 
 mutation-capable assignment 从 pending/claimed/active 到 reported/unresolved 期间，其
 `owned_paths` 必须处于包含 parent 与所有 sibling child 的 single-writer 域。parent 在已交给

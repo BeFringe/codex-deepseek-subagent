@@ -340,12 +340,23 @@ V2 without changing `interrupt_agent` semantics. It resolves an exact ThreadId
 or canonical AgentPath, calls
 `AgentControl.close_agent -> shutdown_agent_tree -> Op::Shutdown -> wait_until_terminated`,
 and returns `session_loop_terminated=true` only after the target and its still-
-live descendant session loops have terminated. The result also fixes
-`process_tree_quiescence_claimed=false`: termination of tracked unified-exec
-entries is a kill request without a per-process confirmed-exit join, and
-detached or untracked descendants are outside the session-tree proof domain.
-Native session close is therefore a distinct host primitive stronger than an
-interrupt acknowledgement and weaker than mutation quiescence.
+live descendant session loops have terminated. Each unified-exec manager first
+enters a closing state, waits for registered but unresolved process starts,
+rejects later starts, and initiates termination concurrently. A local PTY must
+produce its `exit_rx`, and an ExecServer process must produce
+`ExecProcessEvent::Exited`; a kill or RPC acknowledgement is never synthesized
+as an exit. Exact per-thread maps distinguish tracked, confirmed-exit,
+unconfirmed-exit, and unresolved-start process ids. Any pending or unconfirmed
+entry, or a non-empty final tracked set, fails closed.
+
+`closed_catalog_actor_quiescence_claimed=true` is available only under the
+exact `g4_qualification_probe_worker`/`SessionSource::Exec` opt-in, when every
+session loop captured by close has terminated, every tracked exit has a real
+witness, and no process start remains unresolved. The result still fixes
+`process_tree_quiescence_claimed=false`: detached or untracked descendants, and
+descendants created after the close capture set was formed, are outside the
+proof domain. The primitive is therefore stronger than session-loop close but
+is not global process-tree quiescence.
 
 Promotion of that primitive into a P5b handover receipt additionally requires
 a closed mutation-surface catalog for the assignment, proof that every
@@ -355,6 +366,13 @@ identity, and a fresh post-close root/branch/full-HEAD/index/status/path-hash
 snapshot equal to the frozen frontier. If any component is missing, the only
 valid record is `host_session_terminated_mutation_quiescence_unproven`; it must
 not create a quiescence barrier or release overlapping ownership.
+
+One real read-only child run now joins exact SessionMeta/SubagentStart, a closed
+tool catalog, zero child tool calls, true exit maps, durable active-to-unresolved
+reconciliation, and two stable disk observations. That sample proves
+termination and mutation quiescence only for its exact read-only actor.
+Mutation-capable actors, the global process tree, and ownership-handover races
+still require independent qualification.
 
 While a mutation-capable assignment is pending, claimed, active, reported, or
 unresolved, its `owned_paths` must be in one single-writer domain that includes

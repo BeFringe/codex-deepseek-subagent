@@ -1,0 +1,85 @@
+{
+  "schema": 1,
+  "as_of": "2026-09-09",
+  "purpose": "Replace synthetic terminate acknowledgement with a bounded observed-exit barrier for the exact closed-catalog G4 actor and expose exact tracked, confirmed, unconfirmed, and unresolved-start process sets without claiming detached or global process-tree quiescence.",
+  "source": {
+    "repository": "https://github.com/openai/codex",
+    "commit": "3d2ee51ca2d5db578f328aa75e20aa22c0197c9a",
+    "semantic_runtime_version": "codex-cli 0.153.4",
+    "tree": "/private/tmp/codex-current-plaintext.aTU9C2/source"
+  },
+  "predecessor": {
+    "receipt": "probes/current-signed-runtime-g4-parent-child-closed-catalog-source-candidate.json",
+    "receipt_sha256": "bc60258ea2f45b2f1793078c0c8408c26e841bfa6f6ce80089a95f3ea8be1c92",
+    "incremental_patch": "probes/current-signed-runtime-g4-parent-child-closed-catalog-source-candidate.patch",
+    "incremental_patch_sha256": "2f932e542a181861266ecb50c778d45eaa73c89037f964617687e19e05df9944",
+    "reconstructed_tree": "67dab4e252002e8e543088f2ada7517ffc125a9d"
+  },
+  "candidate": {
+    "path": "/private/tmp/codex-current-plaintext.aTU9C2/candidate-p5b-exit-observed/codex",
+    "sha256": "b9f3cbae2d6b63ec9c8b5555f879a489b4370ec4feed45983b7fdf651d818de6",
+    "size_bytes": 590259832,
+    "build_profile": "dev",
+    "selected_as_gui_app_server": false,
+    "installed_live": false
+  },
+  "reconstruction": {
+    "patch": "probes/current-signed-runtime-g4-p5b-tracked-termination-source-candidate.patch",
+    "patch_sha256": "b752625e7757333e0024e56aa6e0a3a8dbb38c6223eeff023513115a93a15e22",
+    "patch_bytes": 51099,
+    "patch_lines": 1199,
+    "changed_path_count": 13,
+    "resulting_tree": "5363700be8484a3befa06fbe96bcccfd3b16d844",
+    "cargo_lock_included": false,
+    "all_changed_paths_match_candidate_worktree": true
+  },
+  "host_contract": {
+    "close_tool": "g4_assignment.close_agent",
+    "scope": "target plus descendants captured when close starts",
+    "admission_gate": "each unified-exec manager enters closing state before draining and rejects a later start",
+    "pending_start_wait": "bounded and fail closed",
+    "termination_witness": "local PTY exit_rx or ExecServer ExecProcessEvent::Exited",
+    "synthetic_exit_after_kill_or_rpc_ack": false,
+    "result_fields": [
+      "tracked_process_ids_by_thread",
+      "confirmed_exit_process_ids_by_thread",
+      "unconfirmed_exit_process_ids_by_thread",
+      "unresolved_start_process_ids_by_thread",
+      "tracked_process_termination_confirmed",
+      "closed_catalog_actor_quiescence_claimed",
+      "process_tree_quiescence_claimed"
+    ],
+    "closed_catalog_actor_quiescence_requires": [
+      "exact SessionSource::Exec qualification opt-in",
+      "exact g4_qualification_probe_worker role",
+      "all captured session loops terminated",
+      "all tracked process exits observed",
+      "no unresolved process start",
+      "zero tracked process ids"
+    ],
+    "detached_or_untracked_descendants_covered": false,
+    "later_spawned_descendants_outside_captured_catalog_covered": false,
+    "global_process_tree_quiescence_claimed": false
+  },
+  "verification": {
+    "format_and_diff": [
+      "cargo fmt --all: pass",
+      "git diff --check: pass"
+    ],
+    "rust": [
+      "unified_exec::process_tests: pass 5",
+      "unified_exec::process_manager::tests: pass 18",
+      "unified_exec::tests: pass 33",
+      "multi_agent_v2_close_agent_: pass 2",
+      "multi_agent_feature_selects_one_agent_tool_family: pass 1",
+      "exact_g4_qualification_parent_has_direct_closed_tool_catalog: pass 1"
+    ],
+    "preexisting_unrelated_warning": "unused wiremock::matchers::body_json in core/tests/suite/openai_file_mcp.rs"
+  },
+  "live_probe": {
+    "evidence": "probes/g4-live-read-only-tracked-termination-20260909.json",
+    "state": "bounded_read_only_actor_barrier_observed",
+    "direct_write_qualified": false,
+    "phase1_complete": false
+  }
+}
