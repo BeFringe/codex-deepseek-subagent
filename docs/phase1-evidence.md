@@ -3814,3 +3814,87 @@ Therefore the existing Gate D bundle, implementation notes, and passing
 acceptance/fault/release matrices remain contribution evidence only. P6c
 stays `partial`; `phase1_complete=false`, `direct_write_qualified=false`, and
 Phases 2/3 remain closed.
+
+## Hash-bound parent/child same-path completion
+
+The first live same-path overlap proved that a root parent `apply_patch` was
+denied while an exact child assignment and writer claim were both active, but
+that run never produced an accepted SubagentStop, callback, or known candidate
+exit. It remains a useful P4/P5b negative. A new provider-free repeat at clean
+disposable root `/private/tmp/codex-g4-write-parent-conflict.XwVX2t`, branch
+`main`, full HEAD `da01a14efeb159a937f638f4f53f311cef9673c8`, and tree
+`437d2c15abdb54d5710d7ce8e756123b8d32a2de` closes the same-path
+`apply_patch` subgate through the downstream lifecycle.
+
+Real SessionMeta bound child
+`01a08408-c12e-7951-a482-94198977e5f5` and turn
+`01a08408-c19c-7452-9bae-d88bbaf4e6a5` to canonical AgentPath
+`/root/g4_parent_conflict_final_1` under parent/runtime session
+`01a08408-0f03-7e40-8d44-9096f67c221a`. The finalized runtime catalog was
+emitted twice with the same canonical receipt hash
+`4afc0668f8409630908724c4bafbdaf0b4cb22793555cc70d07aa3d6a29a64ef`.
+It exposed only `apply_patch`, `g4_assignment.list_agents`, and `view_image`;
+the code-mode map was empty and child management was false.
+
+Hook sequences 2520 through 2525 are contiguous: target spawn PreToolUse,
+SubagentStart, child `apply_patch` PreToolUse, parent `apply_patch` denial,
+child `apply_patch` PostToolUse, and accepted SubagentStop. The parent denial
+at `02:39:39.088593Z` observed both child writer claim
+`f135a892-0671-47ad-b27f-962b3d045b6f` and active assignment
+`d60eb350-3808-474d-bad4-f5fdac95b817`, returned
+`TASK.WRITER_LEASE_BLOCKED` before execution, and preceded the child's release
+at `02:39:43.016930Z`. The parent did not retry.
+
+The child's PostToolUse receipt is schema 2 and hash-bound to the final disk
+snapshot. Receipt SHA-256
+`a41128efdc35897fdb8936594202cf81a86d40147cf7a457a4dc2bd0f47a6fa8`
+is exactly the final provenance derivation receipt. The child final and parent
+callback are byte-identical with SHA-256
+`cfd3df779e53c9c313cedcd8542d46d011216ca28fef8dbe996bed598e37432e`.
+The candidate exited zero. A delayed fresh disk observation found only the
+25-byte child file, SHA-256
+`4fd8e8f97e640e495fefed6d4fdb0467c4e5835d9bd006173da14af37698ac8c`,
+with clean index, no exact candidate process or open executable, no matching
+live assignment or writer claim, and no late write. This is a narrow target
+barrier, not strong global process-tree quiescence.
+
+While freezing that evidence, the installed live G4 Hook bundle exposed a
+separate version-skew failure: its older validator accepted only unavailable
+host consent and quarantined the new exact qualification receipt written by
+the current repository Hook source. The failed evidence patch left no writer
+claim or repository file. Before repair, `hooks.json`, the installed source
+bundle, and the exact quarantined envelope were backed up under
+`/Users/pearly/.codex/backups/codex-deepseek-subagent-g4-schema-skew-20260909.XDtvKl`.
+Only six stale installed Python sources were atomically refreshed from the
+current repository. `hooks.json` stayed byte-identical at SHA-256
+`82c8aa0bc4d739628646864578de6c078884c21413855ed3db448d4365a8668e`;
+the v4 Hook, GUI App Server selection, and LocalCAT were unchanged. A fresh
+process then validated all 43 stored capsules. The affected envelope moved
+from quarantine back to reported with its original SHA-256
+`f3153581845d9d23b3571f641e3110e83edd061a18eeb07d00abeabc2b3a591b`.
+This is exact schema reconciliation with rollback material, not a claim that
+functional live reload or the P7 install/rollback gate is qualified.
+
+The immutable adjudication input is
+`probes/g4-live-hash-bound-parent-child-conflict-20260909.json`, SHA-256
+`3a76d811e8cbe404a4c7401dc0f1505c383bbe78e11a5e55d2d517ef07eded1a`.
+A fresh owner passed location, mutation scope, verification freshness,
+derivation provenance, and feasibility integrity against that exact hash, then
+moved the durable record from reported to consumed. The consumed envelope
+SHA-256 is
+`390fed8d24b03cc4d87e7d63e15e03459e2fd1d7adeeb0be1d07a8cfa15d6608`.
+The result and executable assertions are
+`probes/g4-live-hash-bound-parent-child-conflict-parent-adjudication-20260909.json`
+and `tests/test_g4_live_hash_bound_parent_child_conflict.py`.
+
+Fresh focused verification passed 23 tests. The complete provider-free suite
+passed all 692 tests in 52.881 seconds plus agent-template checks. Normal Phase
+1, mutation-surface, and same-UID checks returned zero; their promotion forms
+returned 2. Thirteen mutation surfaces remain blockers, and same-UID rollout
+and state protection remain false. This advances P4 and P5b for exact parent
+versus child `apply_patch` serialization and advances P6/P6a/P6b for one
+freshly consumed mutation contribution. It does not qualify sibling or opaque
+shell/Git/MCP/PTY surfaces, strong global quiescence, representative P6c,
+Windows, DeepSeek regression, or functional live rollback.
+`phase1_complete=false`, `direct_write_qualified=false`, and Phases 2/3 remain
+closed.
