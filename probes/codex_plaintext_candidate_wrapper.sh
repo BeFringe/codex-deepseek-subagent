@@ -222,6 +222,21 @@ case "$mode" in
         catalog_receipt_mode=stderr-v2-parent-child-closed
         required_pretool_config=features.hooks=false
         ;;
+      schema1-exact-failed-handler-child)
+        [ "$saw_ephemeral" = false ] || fail "required PreToolUse probe must retain SessionMeta"
+        [ -z "${CODEX_G4_EXACT_WRITE_PROBE_AUTHORIZED-}" ] ||
+          fail "required PreToolUse probe cannot combine with a write probe"
+        [ -z "${CODEX_G4_PARENT_CHILD_WRITER_CONFLICT_PROBE_AUTHORIZED-}" ] ||
+          fail "required PreToolUse probe cannot combine with a writer-conflict probe"
+        [ -z "${CODEX_G4_P5B_TRACKED_TERMINATION_PROBE_AUTHORIZED-}" ] ||
+          fail "required PreToolUse probe cannot combine with a termination probe"
+        case "$requested_cd" in
+          /private/tmp/codex-g4-required-pretool.*) ;;
+          *) fail "required PreToolUse probe root is outside the fixed temporary namespace" ;;
+        esac
+        catalog_receipt_mode=stderr-v2-parent-child-closed
+        required_pretool_config='hooks.PreToolUse=[{matcher="^apply_patch$",hooks=[{type="command",command="/usr/bin/false",timeout=5}]}]'
+        ;;
       *) fail "required PreToolUse probe authorization guard is invalid" ;;
     esac
     ;;

@@ -317,6 +317,86 @@ class PlaintextCandidateWrapperTests(unittest.TestCase):
             self.assertEqual(denied.returncode, 78)
             self.assertFalse(denied_log.exists())
 
+    def test_required_pretool_failed_handler_guard_injects_exact_inline_hook(self):
+        with tempfile.TemporaryDirectory() as candidate_dir, tempfile.TemporaryDirectory(
+            prefix="codex-g4-required-pretool.", dir="/private/tmp"
+        ) as root_dir:
+            directory = Path(candidate_dir)
+            root = Path(root_dir).resolve()
+            candidate, digest = self._fake_candidate(directory)
+            subprocess.run(
+                ["git", "-C", str(root), "init", "-b", "main"],
+                check=True,
+                capture_output=True,
+            )
+            subprocess.run(
+                [
+                    "git", "-C", str(root), "-c", "user.name=Phase1 Probe",
+                    "-c", "user.email=phase1-probe@invalid", "commit", "--allow-empty",
+                    "-m", "initial",
+                ],
+                check=True,
+                capture_output=True,
+            )
+            arg_log = directory / "failed-handler-args.txt"
+            env_log = directory / "failed-handler-env.txt"
+            environment = self._environment(candidate, digest, arg_log)
+            environment.update(
+                {
+                    "ENV_LOG": str(env_log),
+                    "CODEX_G4_SESSIONMETA_PROBE_AUTHORIZED": "schema1-headless-stateful",
+                    "CODEX_G4_SESSIONMETA_PROBE_ROOT": str(root),
+                    "CODEX_G4_REQUIRED_PRETOOL_PROBE_AUTHORIZED": (
+                        "schema1-exact-failed-handler-child"
+                    ),
+                }
+            )
+            result = subprocess.run(
+                [
+                    str(WRAPPER), "exec", "--ignore-user-config", "--ignore-rules",
+                    "--dangerously-bypass-hook-trust", "--json", "-C", str(root),
+                    "Return READY.",
+                ],
+                env=environment,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            arguments = arg_log.read_text(encoding="utf-8").splitlines()
+            self.assertNotIn("features.hooks=false", arguments)
+            self.assertIn(
+                'hooks.PreToolUse=[{matcher="^apply_patch$",hooks=['
+                '{type="command",command="/usr/bin/false",timeout=5}]}]',
+                arguments,
+            )
+            self.assertEqual(arguments[arguments.index("-s") + 1], "read-only")
+            self.assertEqual(
+                env_log.read_text(encoding="utf-8").strip(),
+                "stderr-v2-parent-child-closed",
+            )
+
+            denied_log = directory / "combined-write-args.txt"
+            denied_environment = dict(environment)
+            denied_environment["ARG_LOG"] = str(denied_log)
+            denied_environment["CODEX_G4_EXACT_WRITE_PROBE_AUTHORIZED"] = (
+                "schema1-exact-temporary-git-root"
+            )
+            denied = subprocess.run(
+                [
+                    str(WRAPPER), "exec", "--ignore-user-config", "--ignore-rules",
+                    "--dangerously-bypass-hook-trust", "--json", "-C", str(root),
+                    "Return READY.",
+                ],
+                env=denied_environment,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(denied.returncode, 78)
+            self.assertFalse(denied_log.exists())
+
     def test_failed_patch_callback_guard_narrowly_enables_code_mode_host(self):
         with tempfile.TemporaryDirectory() as candidate_dir, tempfile.TemporaryDirectory(
             prefix="codex-g4-write-posttool-", dir="/private/tmp"

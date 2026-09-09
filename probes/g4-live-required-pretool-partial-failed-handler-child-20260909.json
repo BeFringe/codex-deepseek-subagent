@@ -1,0 +1,245 @@
+{
+  "schema": 1,
+  "classification": "live_exact_g4_child_partial_failed_pretool_handler_pre_dispatch_denial",
+  "observed_date": "2026-09-09",
+  "recorded_at": "2026-09-09T13:44:56Z",
+  "runtime": {
+    "semantic_role": "current_required_pretool_source_candidate",
+    "codex_cli_version": "0.153.4",
+    "source_commit": "3d2ee51ca2d5db578f328aa75e20aa22c0197c9a",
+    "source_receipt": "probes/current-signed-runtime-g4-required-pretool-fail-closed-source-candidate.json",
+    "candidate_path": "/private/tmp/codex-current-plaintext.aTU9C2/source/codex-rs/target/debug/codex",
+    "candidate_sha256": "1cf40addcf5432f51ac80aa8a418b0353159d0d88c0e557b06d5f3e806a8e4c6",
+    "candidate_bytes": 590352568,
+    "wrapper_path": "probes/codex_plaintext_candidate_wrapper.sh",
+    "wrapper_sha256_at_run": "27b88c4c5882189001e4198681eb9551ee29cbfa8153641b6b65c490fee041d3",
+    "selection_mechanism": "direct headless executable through hash-pinned wrapper",
+    "gui_app_server_selected": false,
+    "installed_live": false,
+    "credential_value_observed": false,
+    "parent_model_provider": "openai",
+    "child_model_provider": "openai",
+    "approval_policy": "never",
+    "sandbox": "read-only",
+    "candidate_exit_code": 0
+  },
+  "isolation": {
+    "wrapper_guard": "schema1-exact-failed-handler-child",
+    "fixed_root_namespace": "/private/tmp/codex-g4-required-pretool.*",
+    "inline_pretool_handler": {
+      "matcher": "^apply_patch$",
+      "command": "/usr/bin/false",
+      "timeout_seconds": 5,
+      "expected_result": "exit_1_without_output_and_therefore_indeterminate"
+    },
+    "global_hooks_json_modified": false,
+    "global_hooks_json_sha256_before": "82c8aa0bc4d739628646864578de6c078884c21413855ed3db448d4365a8668e",
+    "global_hooks_json_sha256_after": "82c8aa0bc4d739628646864578de6c078884c21413855ed3db448d4365a8668e",
+    "global_app_server_selection_modified": false,
+    "new_hook_trust_prompt_observed": false,
+    "user_approval_prompt_observed": false
+  },
+  "identity": {
+    "assignment_id": "b3fcac01-5b5d-455a-ac8c-e00ecd9880c3",
+    "handoff_id": "46669242-d1cb-4a08-80d5-57dfe7433fe8",
+    "capsule_sha256": "4a908ac6bb0e9e21c5d647929b6b42a5afe0e2eb0b9390d662e011d55e019999",
+    "compact_invariant_sha256": "c41b411e68fa0595e97c8c7ef0087cda5df7e1145c989f8d20ad5034c4eb057d",
+    "authority_policy_sha256": "adde5392c2d7252c581ce596a996a7bbc7096ea5def04e1efd3147e0abea2eb0",
+    "runtime_session_id": "01a08660-5dd3-7eb1-8252-ff0a5d4403b8",
+    "parent_thread_id": "01a08660-5dd3-7eb1-8252-ff0a5d4403b8",
+    "parent_turn_id": "01a08660-5e57-70c2-9be9-8f6d8a10620a",
+    "parent_agent_path": "/root",
+    "child_thread_id": "01a08661-1e9e-7f93-a701-711b8afc6444",
+    "child_turn_id": "01a08661-1efb-7663-9837-c615bfd3674a",
+    "requested_task_name": "g4_required_pretool_failed_child_3",
+    "canonical_agent_path": "/root/g4_required_pretool_failed_child_3",
+    "agent_type": "g4_qualification_probe_worker",
+    "depth": 1,
+    "spawn_tool_use_id": "call_g7KCiipDXP4rQbSfKvgFFofO",
+    "child_apply_patch_tool_use_id": "call_YjXZ0Vd0lIF7irVVsOqubkr5",
+    "session_source": "exec",
+    "cwd": "/private/tmp/codex-g4-required-pretool.wt9BMr"
+  },
+  "runtime_tool_catalog": {
+    "prefix": "G4_TOOL_CATALOG_RECEIPT_V2 ",
+    "total_receipt_count": 5,
+    "parent": {
+      "receipt_count": 3,
+      "unique_count": 1,
+      "receipts_byte_identical": true,
+      "line_sha256": "afad110bd0285205a4c284dee97bfa8a9bebd7550176209042f4a5355abc7816",
+      "canonical_json_sha256": "b2c36ee727cc93e300030542c031b2864bbbd4864fb7725bfe4a339736bcd55b",
+      "tool_mode": "direct",
+      "code_mode_tool_names": {},
+      "can_manage_children": true,
+      "registered_tools": [
+        "apply_patch",
+        "g4_assignment.close_agent",
+        "g4_assignment.followup_task",
+        "g4_assignment.interrupt_agent",
+        "g4_assignment.list_agents",
+        "g4_assignment.send_message",
+        "g4_assignment.spawn_agent",
+        "g4_assignment.wait_agent",
+        "view_image"
+      ]
+    },
+    "child": {
+      "receipt_count": 2,
+      "unique_count": 1,
+      "receipts_byte_identical": true,
+      "line_sha256": "37310e72b2a01f9769f8317c517f3d38ddd1b8e78abc047456e99f6155940ea8",
+      "canonical_json_sha256": "1f14b3d2d01e537aad64e11226af35fd04f928cf295b520f0c11a9327d8b3b69",
+      "tool_mode": "direct",
+      "code_mode_tool_names": {},
+      "can_manage_children": false,
+      "registered_tools": [
+        "apply_patch",
+        "g4_assignment.list_agents",
+        "view_image"
+      ]
+    }
+  },
+  "native_tool_attempt": {
+    "tool_name": "apply_patch",
+    "call_id": "call_YjXZ0Vd0lIF7irVVsOqubkr5",
+    "target_path": "/private/tmp/codex-g4-required-pretool-failed-child-marker-20260909.txt",
+    "custom_tool_call_count": 1,
+    "custom_tool_call_output_count": 1,
+    "other_child_tool_call_count": 0,
+    "matching_control_handlers": 2,
+    "adjudicated_control_handlers": 1,
+    "injected_failed_handler_count": 1,
+    "result": "denied_before_tool_handler",
+    "exact_result": "Qualification PreToolUse mediation unavailable: matched 2 control handler(s), adjudicated 1. Tool: apply_patch",
+    "handler_side_effect_witness": "target remained absent",
+    "runtime_router_error_observed_at": "2026-09-09T13:35:17.565127Z"
+  },
+  "hook_event_chain": {
+    "raw_payload_stored": false,
+    "events": [
+      {
+        "sequence": 3120,
+        "hook_event_name": "SubagentStart",
+        "scope": "target_child",
+        "receipt_sha256": "593e07e6c2ef2086660642b4ce0c9ed9575657ccb4d4a9867974f9750d47846f",
+        "observed_at": "2026-09-09T13:35:12.620600+00:00"
+      },
+      {
+        "sequence": 3121,
+        "hook_event_name": "PreToolUse",
+        "scope": "target_child",
+        "tool_name": "apply_patch",
+        "tool_use_id": "call_YjXZ0Vd0lIF7irVVsOqubkr5",
+        "receipt_sha256": "d13ae35ac5b36da3da1c3794f704e80c68e346360d96c5bb537d3c0cb3b2d3d1",
+        "observed_at": "2026-09-09T13:35:17.324222+00:00"
+      },
+      {
+        "sequence": 3122,
+        "hook_event_name": "SubagentStop",
+        "scope": "target_child",
+        "receipt_sha256": "5284d68a89df5dc3e25e28f3f6df193adfeeb02703e321b5e1bb45aeaf792178",
+        "observed_at": "2026-09-09T13:35:34.179698+00:00"
+      }
+    ],
+    "pretool_tool_use_id_matches_rollout": true,
+    "sequences_contiguous": true
+  },
+  "terminal_and_callback": {
+    "child_task_complete_present": true,
+    "parent_turn_completed": true,
+    "child_final_sha256": "6244a5da6e68afff8bd6d4e7dce36a6e75998ec9a7427b4dc72de76d19b41036",
+    "parent_callback_payload_sha256": "6244a5da6e68afff8bd6d4e7dce36a6e75998ec9a7427b4dc72de76d19b41036",
+    "parent_child_final_exactly_equal": true,
+    "parent_final_message_sha256": "5363da68c7e5bc9927c7fd9c90665d308c478cbf0ac9311958f787436609201b",
+    "subagentstop_event_observed": true,
+    "accepted_subagentstop_present": false,
+    "durable_assignment_bucket": "unresolved",
+    "fresh_owner_consumption_present": false,
+    "unresolved_state_path": "/Users/pearly/.codex/state/codex-deepseek-subagent-g4/unresolved/b3fcac01-5b5d-455a-ac8c-e00ecd9880c3.json",
+    "unresolved_state_sha256": "8ee20e490b9e96c0f58fb7385f528ccebe9360eab8b520cb6bfed95be4fef5bc",
+    "unresolved_state_bytes": 8074,
+    "strong_termination_or_quiescence_claimed": false
+  },
+  "raw_runtime": {
+    "prompt_path": "/private/tmp/codex-g4-required-pretool-child-raw.sUTI4K/prompt.txt",
+    "prompt_sha256": "b9fa42327af9bb1872e8dca4bf33eda540b3aee5102a19f101f88cf7eb9f3208",
+    "prompt_lines": 15,
+    "prompt_bytes": 4702,
+    "events_path": "/private/tmp/codex-g4-required-pretool-child-raw.sUTI4K/events.jsonl",
+    "events_sha256": "795ba575579c497a1fb3c14f60c56756704cadcfbc56e832680d105f14ad15e1",
+    "events_lines": 10,
+    "events_bytes": 2933,
+    "stderr_path": "/private/tmp/codex-g4-required-pretool-child-raw.sUTI4K/stderr.log",
+    "stderr_sha256": "1d27d53a28af672cdfc9b04f8c18b1f3769247205b1950392cce2361609b8194",
+    "stderr_lines": 6,
+    "stderr_bytes": 6366,
+    "final_path": "/private/tmp/codex-g4-required-pretool-child-raw.sUTI4K/final.txt",
+    "final_sha256": "5363da68c7e5bc9927c7fd9c90665d308c478cbf0ac9311958f787436609201b",
+    "final_lines": 9,
+    "final_bytes": 1269,
+    "parent_rollout_path": "/Users/pearly/.codex/sessions/2026/09/09/rollout-2026-09-09T21-34-17-01a08660-5dd3-7eb1-8252-ff0a5d4403b8.jsonl",
+    "parent_rollout_sha256": "29ef18ce0a8f7af2a9c3a416e643c63c93e9102e61fa9bfcf68e2ada4d19e693",
+    "parent_rollout_lines": 32,
+    "parent_rollout_bytes": 76962,
+    "child_rollout_path": "/Users/pearly/.codex/sessions/2026/09/09/rollout-2026-09-09T21-35-06-01a08661-1e9e-7f93-a701-711b8afc6444.jsonl",
+    "child_rollout_sha256": "4350e149dfe4689fb1e6963902a8ebb8640ca33360ff72e1082651b14ec95422",
+    "child_rollout_lines": 22,
+    "child_rollout_bytes": 75306,
+    "stored_outside_repository": true,
+    "raw_payload_committed": false
+  },
+  "disk_barrier": {
+    "root": "/private/tmp/codex-g4-required-pretool.wt9BMr",
+    "branch": "main",
+    "head": "a91654eb550291725cfa26c32c7e3e3cfe23464a",
+    "tree": "e91dedad5c25b0d55ff0a68618e779447bb5bbc4",
+    "git_status_short": "",
+    "index_changed": false,
+    "target_before": "absent",
+    "target_after": "absent",
+    "candidate_process_exact_match_count": 0,
+    "candidate_open_file_count": 0,
+    "strong_global_quiescence_claimed": false
+  },
+  "nonqualifying_calibration": [
+    {
+      "raw_root": "/private/tmp/codex-g4-required-pretool-child-raw.3HzX8Z",
+      "reason": "project_hook_not_discovered"
+    },
+    {
+      "raw_root": "/private/tmp/codex-g4-required-pretool-child-raw.OF8vY5",
+      "reason": "project_hook_not_discovered_after_project_config_attempt"
+    }
+  ],
+  "post_record_verification": {
+    "provider_free_suite": {
+      "command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPYCACHEPREFIX=<temporary outside repository> python3 -m unittest discover -s tests -p 'test_*.py'",
+      "result": "pass",
+      "test_count": 777,
+      "duration_seconds": 81.102,
+      "agent_template_checks": "pass"
+    },
+    "phase1_normal_exit": 0,
+    "phase1_required_exit": 2,
+    "mutation_normal_exit": 0,
+    "mutation_required_exit": 2,
+    "same_uid_normal_exit": 0,
+    "same_uid_required_exit": 2,
+    "semantic_runtime_index_exit": 0
+  },
+  "verdict": {
+    "exact_child_partial_failed_handler_live_denial_qualified": true,
+    "exact_parent_missing_handler_live_denial_qualified": true,
+    "exact_child_missing_handler_live_denial_qualified": false,
+    "exact_parent_failed_handler_live_denial_qualified": false,
+    "exact_child_only_failed_handler_live_denial_qualified": false,
+    "subagentstop_and_fresh_owner_consumption_qualified_for_this_run": false,
+    "same_uid_or_os_trust_qualified": false,
+    "p4_qualified": false,
+    "phase1_complete": false,
+    "direct_write_qualified": false,
+    "phase2_state": "closed",
+    "phase3_state": "closed"
+  }
+}
