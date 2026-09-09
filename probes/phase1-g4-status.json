@@ -700,7 +700,7 @@
           "probes/run_p7_isolated_install_rollback.py",
           "tests/test_p7_isolated_install_rollback.py"
         ],
-        "blocker": "Only native Windows parity remains open. POSIX native lifecycle, callback continuity, the existing DeepSeek one-shot Hook route, and isolated headless install/reload/rollback are qualified with product-independent live receipts. The independent App Server Broker remains terminology-only and cannot substitute this native lifecycle."
+        "blocker": "Only native Windows parity remains open. POSIX native lifecycle, callback continuity, the existing DeepSeek one-shot Hook route, and isolated headless install/reload/rollback are qualified with product-independent live receipts."
       }
     ],
     "exit_receipts": [

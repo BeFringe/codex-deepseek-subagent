@@ -105,10 +105,3 @@ callback continuity 与隔离的 headless install/reload/rollback 已由产品�
 5. 当前执行面只剩 P7 的 native Windows parity。
 6. 仅当所有 gate 与 exit receipt 均 qualified，才允许一次独立提交把 Phase 1 和 direct
    write 置真并打开 Phase 2；Phase 3 仍需 Phase 2 完成。
-
-## Broker 参照的使用边界
-
-[Utopia Broker](https://github.com/Utopia-V/mixagents/blob/main/packages/broker/README.zh-CN.md)
-提供了产品无关的多 agent 术语：route、spawn、send、wait、interrupt，以及默认只读和显式
-workspace-write。这里可复用这些职责名称，但不复用它的独立 App Server worker 生命周期；
-本项目的裁决对象始终是 Codex native spawn、AgentPath、Multi-Agent V2、wait/callback/cancel。
