@@ -1,0 +1,68 @@
+{
+  "schema": 1,
+  "classification": "isolated_headless_install_reload_rollback_qualified",
+  "adjudicated_at": "2026-09-09T17:03:49.942252+00:00",
+  "fresh_adjudicator_pid": 15396,
+  "runtime": {
+    "semantic_role": "current_signed_runtime",
+    "codex_version": "0.153.4",
+    "source_commit": "3d2ee51ca2d5db578f328aa75e20aa22c0197c9a",
+    "candidate_sha256": "abe80df563067cf9ebb856cbb85fe5f55d2624523eb0ae9700ef39f0e5e70b20",
+    "code_mode_host_sha256": "d8a2222e017342718d16a5dbe092921c628961f812f62f42036b8d960e1ffe56",
+    "parent_provider": "openai",
+    "gui_app_server_selected": false,
+    "codex_cli_path_modified": false
+  },
+  "functional_reload": {
+    "positive_thread_id": "01a0871f-39d2-7990-ac2b-f53a473fdc68",
+    "canonical_agent_path": "/root",
+    "tool_name": "apply_patch",
+    "tool_use_id": "exec-488e4133-dcaf-4e17-9b8d-7eb61e1ac587",
+    "pretool_authorized": true,
+    "posttool_callback_observed": true,
+    "writer_claim_released": true,
+    "failed_patch_left_disk_unchanged": true
+  },
+  "rollback": {
+    "negative_thread_id": "01a0871f-b383-7761-89f7-b95d33400436",
+    "fresh_process_after_rollback": true,
+    "removed_hook_state_recreated": false,
+    "managed_install_paths_absent": true,
+    "diagnostic_state_archived": true,
+    "live_app_and_v4_hashes_unchanged": true,
+    "candidate_processes_after_barrier": 0
+  },
+  "credential_boundary": {
+    "current_chatgpt_login_reused_by_symlink": true,
+    "credential_value_read": false,
+    "credential_value_printed": false,
+    "credential_value_hashed": false,
+    "credential_value_committed": false
+  },
+  "harness": {
+    "runner_sha256": "d126fe52367666cc32ea0eac5e7f6a05b64e7f9b4614d8b1c66391bf1da6740d",
+    "adjudicator_sha256": "9d318a5a89027726edfa7e1fc6a80dc3b9380407a7f4d57e09ca493fe2f41dd8",
+    "wrapper_sha256": "0f92eda7a4b9c90185750ebfc06651c52058d5f3e9695df6596d9643858eba9f",
+    "source_receipt_sha256": "31fed9c4aec1c6f6df4c9c94d9adb7ca5325ea1df45844d0776f111b785e4eb1",
+    "source_patch_sha256": "65bd5117fa205f2014a0e07578e7e48daa73f2f985a8e74269db4a1759532d7a"
+  },
+  "raw_artifacts": {
+    "manifest_path": "/private/tmp/codex-p7-isolated-install.iibhwy44/artifacts/run-manifest.json",
+    "manifest_sha256": "4da90d2152826b1fccaca4eb3bda4d2895df6436c485318f7dec8c83b7895c77",
+    "positive_rollout_path": "/private/tmp/codex-p7-isolated-install.iibhwy44/codex-home/sessions/2026/09/10/rollout-2026-09-10T01-02-45-01a0871f-39d2-7990-ac2b-f53a473fdc68.jsonl",
+    "positive_rollout_sha256": "e4dc9becddf3c10c7461c1b7eddd895d396810ec6fcfb7ccef332bbe99fd6afd",
+    "negative_rollout_path": "/private/tmp/codex-p7-isolated-install.iibhwy44/codex-home/sessions/2026/09/10/rollout-2026-09-10T01-03-16-01a0871f-b383-7761-89f7-b95d33400436.jsonl",
+    "negative_rollout_sha256": "3df84583871d7eefca61d4db71c945e3a791398f146103ba366a67ae706e033c",
+    "hook_chain_sha256": "9df63fdac55fbb776abb3ee57da2a25aa1986b3062e384400e19f49782c61b20",
+    "writer_receipt_sha256": "ea1b2b0ad881c43427ce79bfe34c5a5383faeaf512add3c44da74005dfcc8c50"
+  },
+  "verdict": {
+    "isolated_install_reload_rollback_qualified": true,
+    "installed_failed_posttool_callback_regression_qualified": true,
+    "install_rollback_exit_receipt_qualified": true,
+    "phase1_complete": false,
+    "direct_write_qualified": false,
+    "phase2_state": "closed",
+    "phase3_state": "closed"
+  }
+}

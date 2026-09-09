@@ -96,7 +96,7 @@ class P7LiveDeepSeekRegressionTests(unittest.TestCase):
         for field in ("assignment_sha256", "marker_sha256"):
             self.assertRegex(self.receipt["transport"][field], SHA256)
 
-    def test_only_deepseek_receipt_advances_and_later_phases_stay_closed(self):
+    def test_deepseek_and_later_install_receipts_advance_while_phases_stay_closed(self):
         verdict = self.receipt["verdict"]
         self.assertTrue(verdict["deepseek_regression_qualified"])
         self.assertFalse(verdict["phase1_complete"])
@@ -112,7 +112,7 @@ class P7LiveDeepSeekRegressionTests(unittest.TestCase):
         self.assertEqual(receipts["callback_continuity"]["state"], "qualified")
         self.assertEqual(receipts["posix_live"]["state"], "qualified")
         self.assertEqual(receipts["windows_live"]["state"], "pending")
-        self.assertEqual(receipts["install_rollback"]["state"], "partial")
+        self.assertEqual(receipts["install_rollback"]["state"], "qualified")
 
 
 if __name__ == "__main__":

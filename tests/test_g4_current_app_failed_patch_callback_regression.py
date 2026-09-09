@@ -88,8 +88,12 @@ class G4CurrentAppFailedPatchCallbackRegressionTests(unittest.TestCase):
         self.assertFalse(verdict["phase1_complete"])
         self.assertFalse(verdict["direct_write_qualified"])
 
-    def test_status_assigns_installed_callback_regression_to_p7(self) -> None:
+    def test_status_keeps_regression_in_p7_and_accepts_the_later_rollback_receipt(self) -> None:
         gates = {gate["id"]: gate for gate in self.status["phase1"]["gates"]}
+        receipts = {
+            receipt["id"]: receipt
+            for receipt in self.status["phase1"]["exit_receipts"]
+        }
         rel = "probes/g4-current-app-failed-patch-callback-regression-20260909.json"
         test_rel = "tests/test_g4_current_app_failed_patch_callback_regression.py"
 
@@ -100,8 +104,10 @@ class G4CurrentAppFailedPatchCallbackRegressionTests(unittest.TestCase):
         self.assertEqual(gates["P5b"]["state"], "qualified")
         self.assertEqual(gates["P7"]["state"], "partial")
         blocker = gates["P7"]["blocker"]
-        self.assertIn("failed-PostToolUse callback", blocker)
-        self.assertIn("installed-runtime candidate reload/rollback", blocker)
+        self.assertEqual(receipts["install_rollback"]["state"], "qualified")
+        self.assertNotIn("failed-PostToolUse callback", blocker)
+        self.assertNotIn("installed-runtime candidate reload/rollback", blocker)
+        self.assertIn("native Windows parity", blocker)
         self.assertNotRegex(blocker, r"installed \d+\.\d+\.\d+")
 
 

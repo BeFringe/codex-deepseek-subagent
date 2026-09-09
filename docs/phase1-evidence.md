@@ -4792,3 +4792,63 @@ install/rollback receipts open. The deliberately broader host mutation inventory
 and same-UID mode-bit probes also returned two in qualification-required mode;
 they remain explicit non-authoritative host boundaries rather than being
 silently relabeled as native child guarantees.
+
+## Isolated headless install, functional reload, and rollback
+
+The remaining P7 install receipt was closed without changing the GUI App
+Server. `probes/run_p7_isolated_install_rollback.py` created a private
+`CODEX_HOME`, a clean disposable Git root, and managed paths that were all
+absent at baseline. It installed exact copies of the failed-PostToolUse source
+candidate and adjacent code-mode host, plus the repository Hook scripts and a
+two-event `hooks.json`. The isolated home reused the existing ChatGPT login by
+an auth-file symlink. No credential content was read, printed, hashed, retained
+in evidence, or committed.
+
+The installed candidate process retained provider `openai` and root AgentPath
+`/root`. Its deliberately stale `apply_patch` failed context verification on
+`baseline.txt`. Hook sequence one authorized PreToolUse and sequence two
+recorded PostToolUse for the same tool-use id
+`exec-488e4133-dcaf-4e17-9b8d-7eb61e1ac587`. The matching writer receipt has
+identical before/after snapshots, an empty changed-path set, and no surviving
+claim. The disposable root remained on branch `main`, full HEAD
+`18ba5040905f70711e418bcc6ad96bcef3adaa32`, with empty status and the original
+file hash.
+
+Rollback moved the installed candidate, code-mode host, Hook registry, Hook
+scripts, and diagnostic state into a recoverable archive. Every managed install
+path returned to its absent baseline. A distinct post-rollback process, thread
+`01a0871f-b383-7761-89f7-b95d33400436`, reused the same login and executed the
+same failed tool contract, but the removed Hook state was not recreated. No
+candidate or code-mode-host process remained at the final barrier. The official
+App binary, live `hooks.json`, installed v4 agent, and installed v4 Hook all
+retained their exact pre-run hashes; `CODEX_CLI_PATH` was not changed.
+
+A distinct process, PID 15396, recomputed the install/source/harness hashes,
+both native rollouts, SessionMeta, nested tool call/results, Hook chain, writer
+receipt, Git disk, rollback absence, process barrier, and live hashes. The raw
+manifest SHA-256 is
+`4da90d2152826b1fccaca4eb3bda4d2895df6436c485318f7dec8c83b7895c77`;
+the fresh output SHA-256 is
+`1fce24cfe59d3b4278da27c257061a68b9ff39b4ebb96a10f3db7a39a79e70ae`.
+The committed decision is
+`probes/p7-live-isolated-install-rollback-20260910.json`, with off-host static
+checks and originating-host replay in
+`tests/test_p7_isolated_install_rollback.py`.
+
+One excluded calibration omitted the adjacent code-mode host. The model's outer
+code-mode call then failed before nested `apply_patch`, so it produced no Hook
+chain or writer receipt. The runner now requires both artifacts before even a
+preliminary success. Only the final hash-bound run above is qualification
+evidence.
+
+This promotes `install_rollback` to `qualified`. P7 remains `partial` solely for
+native Windows parity. Phase 1 and direct write remain false, and Phases 2/3
+remain closed.
+
+Fresh provider-free verification passed all 813 tests in 65.654 seconds,
+including agent-template checks. The normal Phase 1, mutation-surface,
+same-UID, and semantic runtime-index checks returned zero. Phase 1 promotion
+mode returned two with exactly P7 and `windows_live` open. The broader host
+mutation inventory and same-UID mode-bit probes retained their explicit
+qualification-required exit two; no host guarantee was inferred from the
+isolated install receipt.

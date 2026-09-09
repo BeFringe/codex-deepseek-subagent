@@ -556,7 +556,12 @@ contribution evidence; the fresh parent/disk owner is authoritative. Native
 Windows parity remains open. Finally perform an isolated install/rollback drill
 that restores every pre-install Hook/skill/state hash and exercises the fixed
 failed-PostToolUse callback path without selecting the candidate as the GUI App
-Server.
+Server. This drill is now qualified by
+`probes/p7-live-isolated-install-rollback-20260910.json`: an installed headless
+process observed exact failed-`apply_patch` Pre/Post identity and released its
+lease, all managed paths were archived, and a distinct post-rollback process
+did not recreate removed Hook state. The live App and v4 hashes remained exact.
+Only native Windows parity remains open.
 
 Only after P1–P7, including P5a/P5b/P6a/P6b/P6c, are green with raw live evidence
 may a separate adjudication change `direct_write_qualified`. Until then:

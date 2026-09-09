@@ -31,8 +31,8 @@ P1–P7 的有限职责如下：
 
 当前有限矩阵是：P1、P2、P3、P4、P5、P5a、P5b、P6、P6a、P6b、P6c 已
 `qualified`；P7 仍为 `partial`。因此不是阻塞在 P1，也不需要“前面一通才全部通”。
-P7 的剩余问题只有 native Windows parity，以及安全的安装态 candidate reload/rollback；
-既有 DeepSeek 路径、POSIX native lifecycle 与 callback continuity 已由产品无关 live receipt
+P7 的剩余问题只有 native Windows parity。既有 DeepSeek 路径、POSIX native lifecycle、
+callback continuity 与隔离的 headless install/reload/rollback 已由产品无关 live receipt
 闭合。任何业务仓库、workload 规模或业务侧完成结论都不参与 Phase 1 裁决。
 
 ## 三阶段主线
@@ -81,6 +81,11 @@ P7 的剩余问题只有 native Windows parity，以及安全的安装态 candid
    SubagentStart plaintext delivery 驱动一个只读 native tool call，并取得精确 wait/callback、
    consumed state、clean disk 与 fresh-process adjudication。它只晋级 P7 的 DeepSeek、POSIX 和
    callback receipts，不授予 direct write，也不打开 Phase 2/3。
+8. 安装/回滚不再要求选择 GUI App Server。最终运行在独立 `CODEX_HOME` 中安装 hash-pinned
+   candidate、code-mode host 和 Hook scripts，复用当前 ChatGPT 登录但不读取 auth 内容；安装态
+   失败 `apply_patch` 取得同一 tool-use-id 的 Pre/Post callback 并释放 lease。随后所有 managed
+   paths 移入可恢复归档，第二个新进程执行同一失败调用且不重建 Hook state，live App 与 v4
+   hashes 前后不变。该有限 receipt 已闭合 install/rollback。
 
 ## 修正后的执行顺序
 
@@ -97,8 +102,7 @@ P7 的剩余问题只有 native Windows parity，以及安全的安装态 candid
    失败回调由 P7 处理。
 4. P6b/P6c 已由 disposable product-independent root 的同一次 invocation/phase/race/live
    bundle及 distinct fresh-process disk owner 消费闭合。
-5. 当前执行面只剩 P7 的 native Windows，以及不替换 GUI App Server 的安全安装态
-   candidate reload/rollback；后者必须覆盖已修复的 failed-PostToolUse callback 路径。
+5. 当前执行面只剩 P7 的 native Windows parity。
 6. 仅当所有 gate 与 exit receipt 均 qualified，才允许一次独立提交把 Phase 1 和 direct
    write 置真并打开 Phase 2；Phase 3 仍需 Phase 2 完成。
 
