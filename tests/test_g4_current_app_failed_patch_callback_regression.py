@@ -99,8 +99,10 @@ class G4CurrentAppFailedPatchCallbackRegressionTests(unittest.TestCase):
             self.assertIn(test_rel, gate["evidence"])
         self.assertEqual(gates["P5b"]["state"], "qualified")
         self.assertEqual(gates["P7"]["state"], "partial")
-        self.assertIn("PostToolUse", gates["P7"]["blocker"])
-        self.assertIn("installed 0.153.4", gates["P7"]["blocker"])
+        blocker = gates["P7"]["blocker"]
+        self.assertIn("failed-PostToolUse callback", blocker)
+        self.assertIn("installed-runtime candidate reload/rollback", blocker)
+        self.assertNotRegex(blocker, r"installed \d+\.\d+\.\d+")
 
 
 if __name__ == "__main__":

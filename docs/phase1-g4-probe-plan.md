@@ -547,9 +547,16 @@ without reference to any business repository or workload.
 ## VI. Platform and regression exit sequence
 
 Run the full provider-free suite and isolated protocol probes on POSIX and native
-Windows/PowerShell. Then run the existing DeepSeek path as a regression only;
-its worker output remains contribution evidence. Finally perform an isolated
-install/rollback drill that restores every pre-install Hook/skill/state hash.
+Windows/PowerShell. The POSIX lifecycle and existing DeepSeek path have now run
+as product-independent live regressions: the OpenAI parent remained native, the
+DeepSeek child received the one-shot plaintext assignment, performed one
+read-only native tool call, and returned through native wait/callback with a
+clean disk barrier and fresh-process adjudication. Worker output remains
+contribution evidence; the fresh parent/disk owner is authoritative. Native
+Windows parity remains open. Finally perform an isolated install/rollback drill
+that restores every pre-install Hook/skill/state hash and exercises the fixed
+failed-PostToolUse callback path without selecting the candidate as the GUI App
+Server.
 
 Only after P1–P7, including P5a/P5b/P6a/P6b/P6c, are green with raw live evidence
 may a separate adjudication change `direct_write_qualified`. Until then:

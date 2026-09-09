@@ -1,0 +1,90 @@
+{
+  "schema": 1,
+  "classification": "product_independent_native_deepseek_readonly_regression_qualified",
+  "adjudicated_at": "2026-09-09T16:24:41.879472+00:00",
+  "fresh_adjudicator_pid": 2606,
+  "runtime": {
+    "semantic_role": "current_signed_runtime",
+    "codex_version": "0.153.4",
+    "source_commit": "3d2ee51ca2d5db578f328aa75e20aa22c0197c9a",
+    "candidate_path": "/private/tmp/codex-current-plaintext.aTU9C2/source/codex-rs/target/debug/codex",
+    "candidate_sha256": "49b45f5571a3c8966aa7dd6192583c88ff3df05e840208734ee51df8e1b3104e",
+    "candidate_installed_or_selected_by_gui": false,
+    "live_config_modified": false
+  },
+  "credential_boundary": {
+    "credential_name": "DEEPSEEK_API_KEY",
+    "credential_present": true,
+    "credential_value_read": false,
+    "credential_value_printed": false,
+    "credential_value_hashed": false,
+    "credential_value_retained": false,
+    "credential_value_committed": false
+  },
+  "transport": {
+    "assignment_transport": "one-shot plaintext SubagentStart Hook",
+    "wire_transport": "responses-direct",
+    "request_normalization": "none",
+    "handoff_id": "5f96f6a3-441d-4312-992a-927ccd53b337",
+    "assignment_sha256": "05d9dc25550a8fecbe5d5265528744f2d4f60a4a1bf12d873378d3cacbf5ed85",
+    "marker_sha256": "797c923c050c095d6900568c8020fbfa1ef2fd65d6aeec3a94e03a6daeb520a4",
+    "marker_absent_from_parent_prompt_and_spawn_message": true,
+    "handoff_consumed": true
+  },
+  "identity": {
+    "parent_thread_id": "01a086f6-7a5e-7e31-9c39-6135134a4c8a",
+    "parent_provider": "openai",
+    "child_thread_id": "01a086f6-aaf5-72b3-b4ad-ad22c03f57e0",
+    "child_provider": "deepseek",
+    "child_model": "deepseek-v4-flash",
+    "agent_type": "v4_flash_worker",
+    "requested_task_name": "p7_deepseek_readonly_3",
+    "canonical_agent_path": "/root/p7_deepseek_readonly_3",
+    "depth": 1
+  },
+  "native_loop": {
+    "spawn_call_id": "call_tLS7pVGXjPB6uxz6YVPTVMkg",
+    "wait_call_id": "call_TYuduNHa1Hx7MXItr3ptB8He",
+    "wait_timed_out": false,
+    "child_tool_name": "exec_command",
+    "child_tool_call_id": "call_00_ET_eYEi9yPTRz2sRIVnIHEc9592",
+    "child_tool_call_count": 1,
+    "third_nonempty_line": "responses",
+    "fixture_sha256": "b7383fea044646d48d597239385c40246df3ef511a3486053d4711d171589bc1",
+    "callback_byte_exact": true
+  },
+  "disk_barrier": {
+    "root": "/private/tmp/codex-p7-deepseek-regression.l5wgndne",
+    "branch": "main",
+    "full_head": "d4b950f158c9f0c6f879a7e7cb289c63eebacee9",
+    "git_status_short": "",
+    "handoff_state_names": [
+      ".v4_flash_worker.lock"
+    ]
+  },
+  "raw_artifacts": {
+    "manifest_path": "/private/tmp/codex-p7-deepseek-artifacts.jsvudc18/run-manifest.json",
+    "manifest_sha256": "eeeb573cc243af5d3e5cec1e7ca2924264af1868bfdad3e66684889e2c0e059b",
+    "parent_rollout_path": "/Users/pearly/.codex/sessions/2026/09/10/rollout-2026-09-10T00-18-15-01a086f6-7a5e-7e31-9c39-6135134a4c8a.jsonl",
+    "parent_rollout_sha256": "08182016612b4ff3cf6cea1fb899c9960c043fa0b04d08d3cfa3ad1b970ad4f0",
+    "child_rollout_path": "/Users/pearly/.codex/sessions/2026/09/10/rollout-2026-09-10T00-18-27-01a086f6-aaf5-72b3-b4ad-ad22c03f57e0.jsonl",
+    "child_rollout_sha256": "103513ad693adde0ead803220b9e431482aab3a162aadf98ddded62e356d6692",
+    "candidate_stdout_path": "/private/tmp/codex-p7-deepseek-artifacts.jsvudc18/candidate.stdout.jsonl",
+    "candidate_stdout_sha256": "95aeadbefc97f454db0d5f49ede2f4796916c13ab645053b292e56eb7b1e52c4",
+    "candidate_stderr_path": "/private/tmp/codex-p7-deepseek-artifacts.jsvudc18/candidate.stderr",
+    "candidate_stderr_sha256": "b3be11a549f4efe30e31d56d2443f3f0a384405ff24aa9434b9283a6a3ea0319"
+  },
+  "verdict": {
+    "native_openai_parent_preserved": true,
+    "native_deepseek_child_observed": true,
+    "one_shot_hook_delivery_observed": true,
+    "native_tool_result_observed": true,
+    "native_wait_and_callback_observed": true,
+    "read_only_disk_barrier_clean": true,
+    "deepseek_regression_qualified": true,
+    "phase1_complete": false,
+    "direct_write_qualified": false,
+    "phase2_state": "closed",
+    "phase3_state": "closed"
+  }
+}

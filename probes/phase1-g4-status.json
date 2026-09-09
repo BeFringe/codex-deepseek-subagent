@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "as_of": "2026-09-09",
+  "as_of": "2026-09-10",
   "goal_contract": {
     "state": "active_fail_closed",
     "terminal_acceptance_unchanged": true,
@@ -692,9 +692,11 @@
           "probes/g4-live-parent-child-closed-catalog-parent-adjudication-20260909.json",
           "tests/test_g4_live_parent_child_closed_catalog.py",
           "probes/g4-current-app-failed-patch-callback-regression-20260909.json",
-          "tests/test_g4_current_app_failed_patch_callback_regression.py"
+          "tests/test_g4_current_app_failed_patch_callback_regression.py",
+          "probes/p7-live-deepseek-regression-20260910.json",
+          "tests/test_p7_live_deepseek_regression.py"
         ],
-          "blocker": "The installed 0.153.4 App Server reproduces the missing PostToolUse path that the isolated headless candidate fixes, so source/candidate success is not yet deployed-runtime qualification. The new 0.153.4 POSIX headless run keeps the GUI App Server untouched, preserves v4 entries, and restores hooks.json to its exact pre-run hash after the qualification overlay. This is another exact overlay rollback, not functional live install/rollback qualification. A current POSIX same-path run completed with zero candidate exit and exact overlay rollback while preserving v4. A later six-file installed Hook source refresh repaired schema skew under a byte-identical hooks.json and preserved explicit rollback material, but no functional reload/rollback qualification is inferred from that repair. A narrow exact child-role/provider source seam and two live OpenAI-parent to ZHIPU-child read-only native-tool loops, including one fresh consumed record, prove that the current provider-inheritance boundary can be crossed without replacing the parent provider or App Server. Provider-free POSIX serial and concurrent pairs also completed without selecting the candidate as the GUI App Server; the concurrent run has a known zero candidate exit and actual overlap, while its parent projection omitted child thread ids. A provider-free POSIX depth-two run additionally completed with a known zero candidate exit, exact root/explorer/G4 identities, target Hook mediation, two-level callback, and fresh-owner consumption. A separate POSIX idle-child run completed with zero candidate exit and empty stderr while delivering send_message and followup_task as exact plaintext user-message wires. One exact-path POSIX child write then completed under the same headless-only selection, and the hash-pinned Hook overlay returned to its original bytes immediately afterward. The earlier one-shot sandbox overlay also has an exact hash-pinned rollback: live config and scripts returned to their prior bytes, an in-process cached Hook definition failed closed rather than reloading, and a full App restart restored the prior trusted Hook set with zero warnings or errors. These are narrow positive receipts, not broad upgrade compatibility. The legacy Utopia DeepSeek route, Windows parity, DeepSeek regression, and broader external-child lifecycle and rollback cohorts remain missing; the independent App Server Broker replacement still cannot satisfy this project's native AgentPath lifecycle contract"
+        "blocker": "POSIX native lifecycle, callback continuity, and the existing DeepSeek one-shot Hook route are now qualified with product-independent live receipts. P7 remains open only for native Windows parity and a safe installed-runtime candidate reload/rollback that proves the fixed failed-PostToolUse callback path without selecting the candidate as the GUI App Server. The independent App Server Broker remains terminology-only and cannot substitute this native lifecycle."
       }
     ],
     "exit_receipts": [
@@ -800,7 +802,7 @@
       },
       {
         "id": "callback_continuity",
-        "state": "partial",
+        "state": "qualified",
         "evidence": [
           "probes/g4-live-postcompact-scope-drift-denial-20260908.json",
           "probes/g4-live-postcompact-scope-drift-parent-adjudication-20260908.json",
@@ -843,7 +845,9 @@
           "probes/p1-live-plaintext-same-message-pairs-20260909.json",
           "tests/test_p1_live_plaintext_same_message_pairs.py",
           "probes/g4-live-handover-cleanup-close-20260909.json",
-          "tests/test_g4_live_handover_cleanup_close.py"
+          "tests/test_g4_live_handover_cleanup_close.py",
+          "probes/p7-live-deepseek-regression-20260910.json",
+          "tests/test_p7_live_deepseek_regression.py"
         ]
       },
       {
@@ -908,7 +912,7 @@
       },
       {
         "id": "posix_live",
-        "state": "partial",
+        "state": "qualified",
         "evidence": [
           "probes/g4-live-postcompact-scope-drift-denial-20260908.json",
           "probes/g4-live-postcompact-scope-drift-parent-adjudication-20260908.json",
@@ -951,7 +955,9 @@
           "tests/test_p1_live_plaintext_same_message_pairs.py",
           "probes/g4-live-nonempty-tracked-process-termination-20260909.json",
           "probes/reconcile_g4_nonempty_tracked_process_close.py",
-          "tests/test_g4_live_nonempty_tracked_process_termination.py"
+          "tests/test_g4_live_nonempty_tracked_process_termination.py",
+          "probes/p7-live-deepseek-regression-20260910.json",
+          "tests/test_p7_live_deepseek_regression.py"
         ]
       },
       {
@@ -961,11 +967,19 @@
       },
       {
         "id": "deepseek_regression",
-        "state": "partial",
+        "state": "qualified",
         "evidence": [
           "docs/phase1-g4-probe-plan.md#vi-platform-and-regression-exit-sequence",
           "probes/provider-inheritance-boundary-20260907.json",
-          "probes/check_provider_inheritance_boundary.py"
+          "probes/check_provider_inheritance_boundary.py",
+          "probes/p7-live-deepseek-regression-20260910.json",
+          "probes/adjudicate_p7_deepseek_regression_live.py",
+          "probes/run_p7_deepseek_regression.py",
+          "probes/build_p7_deepseek_regression_prompt.py",
+          "probes/codex_deepseek_regression_candidate_wrapper.sh",
+          "tests/test_p7_live_deepseek_regression.py",
+          "tests/test_p7_deepseek_regression_prompt.py",
+          "tests/test_deepseek_regression_candidate_wrapper.py"
         ]
       },
       {

@@ -4729,3 +4729,66 @@ entry reachable by the exact native qualification actors. P4,
 installed callback/platform/regression receipts remain partial, so
 `phase1_complete=false`, `direct_write_qualified=false`, and Phases 2/3 remain
 closed.
+
+## Product-independent native DeepSeek regression
+
+P7 now has a real product-independent OpenAI-parent to DeepSeek-child regression
+receipt. The run deliberately used the repository's generic read-only
+`agents/v4-flash-worker.toml`, not the installed business-specific role. It ran
+under a narrow headless-only wrapper in a disposable Git root and an isolated
+handoff directory. The current-source candidate was neither installed nor
+selected as the GUI App Server, and live Codex configuration was not modified.
+The DeepSeek credential was checked only for presence; its value was never read,
+printed, hashed, retained, or committed.
+
+The native parent thread
+`01a086f6-7a5e-7e31-9c39-6135134a4c8a` retained provider `openai`. It spawned
+the real `v4_flash_worker` child thread
+`01a086f6-aaf5-72b3-b4ad-ad22c03f57e0`, provider `deepseek`, model
+`deepseek-v4-flash`, at canonical AgentPath
+`/root/p7_deepseek_readonly_3`. The one-shot SubagentStart Hook delivered the
+exact staged assignment; its child-only marker was absent from both the parent
+prompt and native spawn message. The handoff moved to consumed state.
+
+The child made exactly one native `exec_command` call in the disposable root.
+It read the third nonempty fixture line as `responses` and computed the complete
+file SHA-256
+`b7383fea044646d48d597239385c40246df3ef511a3486053d4711d171589bc1`.
+Its three-line final answer is byte-identical to the callback payload observed
+by the parent. Native wait did not time out. The root retained full HEAD
+`d4b950f158c9f0c6f879a7e7cb289c63eebacee9`, empty Git status, and no handoff
+state other than the role lock.
+
+A distinct process, PID 2606, re-read the raw manifest, parent and child
+rollouts, candidate output, staged assignment, Hook delivery, tool call/result,
+callback, handoff state, runtime/source pins, and final disk. Its canonical
+output SHA-256 is
+`76d24b5e06c6bb87c0a3415e08fab7adbd4c23fa6141860064f4250d5fbe700c`;
+the raw manifest SHA-256 is
+`eeeb573cc243af5d3e5cec1e7ca2924264af1868bfdad3e66684889e2c0e059b`.
+The committed decision, originating-host replay test, and reusable harness are
+`probes/p7-live-deepseek-regression-20260910.json` and
+`tests/test_p7_live_deepseek_regression.py`. A clean clone without the frozen
+out-of-repository raw rollouts verifies their exact hashes and skips only the
+originating-host re-adjudication; it does not silently synthesize live evidence.
+
+Two harness calibration runs are not counted as qualification samples. The
+first exposed an implicit skill-read dependency while code mode was disabled;
+the second exposed ambiguity between the third-line digest and whole-file
+digest. The final contract removed both ambiguities and succeeded; no broader
+or workload-derived cohort is required.
+
+This qualifies `deepseek_regression`, `posix_live`, and
+`callback_continuity`. P7 remains `partial` only because native Windows parity
+and safe installed-runtime candidate reload/rollback remain open. Consequently
+`phase1_complete=false`, `direct_write_qualified=false`, and Phases 2/3 remain
+closed.
+
+After the promotion, the complete provider-free suite passed all 805 tests in
+70.265 seconds, including agent-template checks. The normal Phase 1,
+mutation-surface, same-UID, and semantic runtime-index checks returned zero.
+Phase 1 promotion mode returned two with exactly P7 plus the Windows and
+install/rollback receipts open. The deliberately broader host mutation inventory
+and same-UID mode-bit probes also returned two in qualification-required mode;
+they remain explicit non-authoritative host boundaries rather than being
+silently relabeled as native child guarantees.
