@@ -38,6 +38,7 @@ requested_cd=
 expect_cd=false
 sandbox_mode=read-only
 code_mode_host=false
+catalog_receipt_mode=
 auto_compact_config=
 for argument in "$@"; do
   if [ "$expect_cd" = true ]; then
@@ -158,6 +159,7 @@ case "$mode" in
           *) fail "parent/child writer conflict root is outside the fixed temporary namespace" ;;
         esac
         code_mode_host=true
+        catalog_receipt_mode=stderr-v2-parent-child-closed
         ;;
       *) fail "parent/child writer conflict probe authorization guard is invalid" ;;
     esac
@@ -166,6 +168,13 @@ case "$mode" in
     fail "only headless exec or login status is allowed"
     ;;
 esac
+
+if [ -n "$catalog_receipt_mode" ]; then
+  CODEX_G4_TOOL_CATALOG_RECEIPT=$catalog_receipt_mode
+  export CODEX_G4_TOOL_CATALOG_RECEIPT
+else
+  unset CODEX_G4_TOOL_CATALOG_RECEIPT
+fi
 
 if [ -n "$auto_compact_config" ]; then
   exec "$candidate" \

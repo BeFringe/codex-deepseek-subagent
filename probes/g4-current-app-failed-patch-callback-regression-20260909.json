@@ -1,0 +1,78 @@
+{
+  "schema": 1,
+  "evidence_kind": "current_app_failed_apply_patch_missing_posttooluse_regression",
+  "observed_at": "2026-09-09T04:02:58.006387+00:00",
+  "recovered_at": "2026-09-09T04:04:31.938415+00:00",
+  "runtime": {
+    "surface": "installed_codex_desktop_app_server",
+    "codex_cli_semver": "0.153.4",
+    "binary_path": "/Applications/Codex.app/Contents/Resources/codex",
+    "binary_sha256": "a30ec314bbd0e3721632234d07db7c99855db3b9f1e32dbe8c791947f07e7629",
+    "binary_size_bytes": 220585024,
+    "gui_app_server_replaced": false,
+    "credential_value_observed": false
+  },
+  "actor": {
+    "thread_id": "01a00147-39cb-7b50-b78d-7baed910eb45",
+    "runtime_session_id": "01a00147-39cb-7b50-b78d-7baed910eb45",
+    "agent_type": "root",
+    "canonical_agent_path": "/root"
+  },
+  "git": {
+    "root": "/Users/pearly/文档/CAT/codex-deepseek-subagent",
+    "branch": "main",
+    "full_head": "2fc15e7ba06568f96a237ee3a5c48eee5a93aa05",
+    "index_changed": false
+  },
+  "trigger": {
+    "tool_name": "apply_patch",
+    "tool_use_id": "exec-a94db284-a50d-4a58-8ce6-8dc60efe2a6f",
+    "target_paths": [
+      "probes/phase1-g4-status.json"
+    ],
+    "failure_stage": "apply_patch_context_verification",
+    "pretooluse_sequence": 2575,
+    "pretooluse_stage": "authorized",
+    "pretooluse_receipt_sha256": "c7876388e90a0339127cb7578770a812d0cd2b860516861f831c2e9f204ec519",
+    "posttooluse_callback_observed": false,
+    "target_bytes_changed": false,
+    "multi_agent_competition_involved": false,
+    "child_writer_involved": false
+  },
+  "writer_claim": {
+    "claim_id": "d3443784-cc70-4e6f-b815-9df3796f237e",
+    "claim_sha256": "af048cd58b4c05bf85fac9509c7b210436810b039a2aa901839850febccd1a95",
+    "persisted_after_handler_failure": true,
+    "blocked_following_overlapping_patch": true,
+    "absent_after_exact_recovery": true
+  },
+  "exact_recovery": {
+    "tool": "probes/recover_writer_claim.py",
+    "reason": "missing_posttooluse_after_tool_failure",
+    "classification": "aborted_unchanged_after_missing_callback",
+    "before_path_snapshot_sha256": "ac5657d73e9c0dd07012635c9284fe008cf1730e08373173d3adad50ab128102",
+    "after_path_snapshot_sha256": "ac5657d73e9c0dd07012635c9284fe008cf1730e08373173d3adad50ab128102",
+    "before_snapshot_sha256": "ad44300896a21b27ccafe058c210f497333bcba89f583a9321f48ec9c01ba8dd",
+    "after_snapshot_sha256": "ad44300896a21b27ccafe058c210f497333bcba89f583a9321f48ec9c01ba8dd",
+    "abort_sha256": "255d6e92f9cd630f5917475c2fad1ced598d75d44285498413876e9dd51c92ad",
+    "abort_file_sha256": "979ae29a0922fac85f64e23691c04a48d2510ab2aa940e84861d1c5e0b8e58d8",
+    "raw_payload_stored": false
+  },
+  "comparison": {
+    "headless_candidate_fix_evidence": "probes/g4-live-failed-apply-patch-posttool-callback-20260908.json",
+    "headless_candidate_source_patch": "probes/current-signed-runtime-failed-apply-patch-posttool-source-candidate.patch",
+    "headless_candidate_emitted_same_id_posttooluse": true,
+    "installed_app_emitted_same_id_posttooluse": false,
+    "installed_app_still_needs_fix_or_equivalent_reconciliation": true
+  },
+  "scope_verdict": {
+    "single_parent_handler_failure_callback_gap": true,
+    "shared_worktree_writer_race": false,
+    "lease_failed_closed_until_exact_recovery": true,
+    "automatic_failed_tool_callback_complete": false,
+    "p5b_complete": false,
+    "p7_complete": false,
+    "phase1_complete": false,
+    "direct_write_qualified": false
+  }
+}

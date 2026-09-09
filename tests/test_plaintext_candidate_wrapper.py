@@ -14,7 +14,11 @@ class PlaintextCandidateWrapperTests(unittest.TestCase):
     def _fake_candidate(self, directory):
         candidate = directory / "candidate"
         candidate.write_text(
-            "#!/bin/sh\nprintf '%s\\n' \"$@\" > \"$ARG_LOG\"\n",
+            "#!/bin/sh\n"
+            "printf '%s\\n' \"$@\" > \"$ARG_LOG\"\n"
+            "if [ -n \"${ENV_LOG-}\" ]; then\n"
+            "  printf '%s\\n' \"${CODEX_G4_TOOL_CATALOG_RECEIPT-}\" > \"$ENV_LOG\"\n"
+            "fi\n",
             encoding="utf-8",
         )
         candidate.chmod(0o700)
@@ -143,8 +147,10 @@ class PlaintextCandidateWrapperTests(unittest.TestCase):
             )
             arg_log = directory / "stateful-args.txt"
             environment = self._environment(candidate, digest, arg_log)
+            env_log = directory / "parent-conflict-env.txt"
             environment.update(
                 {
+                    "ENV_LOG": str(env_log),
                     "CODEX_G4_SESSIONMETA_PROBE_AUTHORIZED": "schema1-headless-stateful",
                     "CODEX_G4_SESSIONMETA_PROBE_ROOT": str(root),
                 }
@@ -282,7 +288,6 @@ class PlaintextCandidateWrapperTests(unittest.TestCase):
             arguments = arg_log.read_text(encoding="utf-8").splitlines()
             self.assertIn("features.code_mode_host=true", arguments)
             self.assertEqual(arguments[arguments.index("-s") + 1], "workspace-write")
-
     def test_parent_child_conflict_guard_is_exact_and_enables_parent_patch_host(self):
         with tempfile.TemporaryDirectory() as candidate_dir, tempfile.TemporaryDirectory(
             prefix="codex-g4-write-parent-conflict.", dir="/private/tmp"
@@ -305,9 +310,11 @@ class PlaintextCandidateWrapperTests(unittest.TestCase):
                 capture_output=True,
             )
             arg_log = directory / "parent-conflict-args.txt"
+            env_log = directory / "parent-conflict-env.txt"
             environment = self._environment(candidate, digest, arg_log)
             environment.update(
                 {
+                    "ENV_LOG": str(env_log),
                     "CODEX_G4_SESSIONMETA_PROBE_AUTHORIZED": "schema1-headless-stateful",
                     "CODEX_G4_SESSIONMETA_PROBE_ROOT": str(root),
                     "CODEX_G4_EXACT_WRITE_PROBE_AUTHORIZED": (
@@ -334,6 +341,10 @@ class PlaintextCandidateWrapperTests(unittest.TestCase):
             arguments = arg_log.read_text(encoding="utf-8").splitlines()
             self.assertIn("features.code_mode_host=true", arguments)
             self.assertEqual(arguments[arguments.index("-s") + 1], "workspace-write")
+            self.assertEqual(
+                env_log.read_text(encoding="utf-8").strip(),
+                "stderr-v2-parent-child-closed",
+            )
 
             denied_log = directory / "missing-exact-write-args.txt"
             denied_environment = self._environment(candidate, digest, denied_log)
@@ -360,6 +371,35 @@ class PlaintextCandidateWrapperTests(unittest.TestCase):
             self.assertEqual(denied.returncode, 78)
             self.assertIn("requires the exact write guard", denied.stderr)
             self.assertFalse(denied_log.exists())
+
+    def test_unrelated_probe_cannot_inherit_parent_catalog_closure_opt_in(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            directory = Path(temp_dir)
+            candidate, digest = self._fake_candidate(directory)
+            arg_log = directory / "args.txt"
+            env_log = directory / "env.txt"
+            environment = self._environment(candidate, digest, arg_log)
+            environment.update(
+                {
+                    "ENV_LOG": str(env_log),
+                    "CODEX_G4_TOOL_CATALOG_RECEIPT": (
+                        "stderr-v2-parent-child-closed"
+                    ),
+                }
+            )
+            result = subprocess.run(
+                [
+                    str(WRAPPER), "exec", "--ephemeral", "--ignore-user-config",
+                    "--ignore-rules", "--json", "Return READY.",
+                ],
+                env=environment,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(env_log.read_text(encoding="utf-8"), "\n")
 
     def test_auto_compact_guard_injects_fixed_limit_into_stateful_read_only_probe(self):
         with tempfile.TemporaryDirectory() as candidate_dir, tempfile.TemporaryDirectory(

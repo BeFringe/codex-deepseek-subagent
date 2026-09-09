@@ -107,6 +107,12 @@ class CandidateLiveSelectionIncidentTests(unittest.TestCase):
                 "guarded_parent_child_writer_conflict_code_mode_host"
             ]
         )
+        self.assertEqual(
+            hardened["forced_posture"][
+                "guarded_parent_child_writer_conflict_catalog_receipt"
+            ],
+            "CODEX_G4_TOOL_CATALOG_RECEIPT=stderr-v2-parent-child-closed",
+        )
         self.assertFalse(hardened["forced_posture"]["code_mode_host"])
         self.assertEqual(hardened["forced_posture"]["caller_config_override"], "deny")
 

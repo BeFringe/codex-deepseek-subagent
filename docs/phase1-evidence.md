@@ -2638,6 +2638,132 @@ P6c cost/latency, candidate exit-code gap, or strong global quiescence.
 `phase1_complete=false`, `direct_write_qualified=false`, and Phases 2/3 remain
 closed.
 
+## Root-and-child closed catalog with completed mutation lifecycle
+
+An opt-in current-source qualification seam now projects the final tool
+catalog for both actors in the same native run. It is enabled only for a
+production `SessionSource::Exec` process with the exact environment value
+`CODEX_G4_TOOL_CATALOG_RECEIPT=stderr-v2-parent-child-closed`. The root keeps
+only direct `apply_patch`, `view_image`, and the configured Multi-Agent V2
+lifecycle/control functions; the exact G4 child keeps only direct
+`apply_patch`, `view_image`, and `g4_assignment.list_agents`. The projection
+runs after core, MCP, extension, dynamic, hosted, code-mode, and collaboration
+contributors, so it is a final registry restriction rather than an inference
+from role text. Unrelated wrapper modes explicitly remove an inherited opt-in.
+
+The incremental source patch is
+`probes/current-signed-runtime-g4-parent-child-closed-catalog-source-candidate.patch`,
+SHA-256
+`2f932e542a181861266ecb50c778d45eaa73c89037f964617687e19e05df9944`.
+It changes three non-lock source paths after the pinned predecessor and
+reproduces all 29 cumulative non-lock candidate source paths byte for byte
+when applied in order to pristine upstream commit
+`3d2ee51ca2d5db578f328aa75e20aa22c0197c9a`. Forward and reverse patch checks
+passed. The source test deliberately enables shell, permission requests,
+Code Mode/Only, apps/plugins/web, MCP, extensions, dynamic tools, tool
+suggestion, and Multi-Agent V2 at once, then proves the root allowlist and
+absence of exec/code/MCP/extension/dynamic entries. All 60 `spec_plan` tests
+and formatting passed.
+
+The headless-only candidate is Codex 0.153.4 at
+`/private/tmp/codex-current-plaintext.aTU9C2/candidate-parent-child-closed/codex`,
+SHA-256
+`d0fecc0b8b220fbae3a695d81847b014ec166fd054d8b236eb504bf5e3fad031`.
+It used the existing ChatGPT login and was never selected as the GUI App
+Server. The disposable Git root was
+`/private/tmp/codex-g4-write-parent-conflict.Xv3ohg`, branch `main`, full HEAD
+`2fc15e7ba06568f96a237ee3a5c48eee5a93aa05`. The live Hook overlay preserved
+the v4 entry and restored `hooks.json` to its exact pre-run SHA-256
+`82c8aa0bc4d739628646864578de6c078884c21413855ed3db448d4365a8668e`.
+
+Real SessionMeta bound parent/runtime ThreadId
+`01a08441-2659-7140-9625-5f9b5a61ed79` and parent turn
+`01a08441-26ec-73e3-8f4b-9809556ee931` to child ThreadId
+`01a08441-ce6a-7520-96be-bcae2c78bf84`, child turn
+`01a08441-cecb-7371-8906-50406729b88a`, requested task
+`g4_parent_closed_catalog_1`, and canonical AgentPath
+`/root/g4_parent_closed_catalog_1`. Six parent runtime-final receipts were
+byte-identical with canonical SHA-256
+`8f0243c10016b4578892b2d43f22138f7c60c1d821dd073ec6cfa7d8e34bada8`.
+They contain exactly root `apply_patch`, `view_image`, and the configured
+`g4_assignment` spawn/message/follow-up/close/interrupt/list/wait functions,
+with direct mode and an empty code-mode map. Two child receipts were
+byte-identical with canonical SHA-256
+`96e32ae168a81dd113360b5086fb8cadda8ece099353544ca2a5b5125f250d0d`;
+they contain exactly child `apply_patch`, `view_image`, and
+`g4_assignment.list_agents`, also direct with an empty code-mode map.
+
+Hook sequences 2559 through 2564 are contiguous: spawn PreToolUse,
+SubagentStart, child `apply_patch` PreToolUse, parent `apply_patch` denial,
+child `apply_patch` PostToolUse, and accepted SubagentStop. The parent denial
+occurred while child assignment
+`d12d82cc-b31f-4083-91fd-383907a2566f` and writer claim
+`db3c6087-12af-40b8-8178-31c6608de8d4` were both active. It returned
+`TASK.WRITER_LEASE_BLOCKED` before execution. The child's schema-2 writer
+receipt SHA-256
+`9725f09ac885879fafccc1cc755409e90e079c31df312a2c1b0a60cc0d0a7d81`
+is also the final derivation receipt. The child final and parent callback are
+byte-identical with SHA-256
+`3366440a437c60a6178a5c9be29013b514230e1c82e4c769fd63652971a5b5a5`.
+The candidate exited zero. The final target contains only the child's
+25-byte payload, SHA-256
+`4fd8e8f97e640e495fefed6d4fdb0467c4e5835d9bd006173da14af37698ac8c`.
+No matching candidate process, open executable, live assignment, or writer
+claim remained, and two delayed observations had identical hash and mtime.
+This is an exact target-local barrier, not a claim of global process-tree
+quiescence.
+
+The immutable live receipt is
+`probes/g4-live-parent-child-closed-catalog-20260909.json`, SHA-256
+`bc21e22734bc4363a240ada77137e2bf85f3b099b0085527cab413b6a1089a1e`.
+A fresh owner passed location, mutation scope, verification freshness,
+derivation provenance, and feasibility integrity against that exact hash and
+moved the durable envelope from reported to consumed. The consumed envelope
+SHA-256 is
+`f6722a6a542560879ddbb0aca7784af577fa7f5f247e845234b9cbf3e4563723`.
+Adjudication and executable assertions are
+`probes/g4-live-parent-child-closed-catalog-parent-adjudication-20260909.json`
+and `tests/test_g4_live_parent_child_closed_catalog.py`.
+
+This closes the formerly open-ended model-callable parent surface for this
+exact qualification run and joins it to the already closed child catalog and
+one complete same-path mutation lifecycle. It is the credible P4 prerequisite
+for the next P5b termination work; it does not close independent App Server,
+daemon, proxy/control-client, same-UID, sibling, already-open PTY, or detached
+process surfaces. Strong confirmed termination, representative P6c, Windows,
+legacy DeepSeek regression, and functional live install/rollback therefore
+remain open.
+
+While recording this result, the installed Codex 0.153.4 App Server exposed a
+separate version-skew regression. A root `apply_patch` with stale context was
+authorized at Hook sequence 2575 and created writer claim
+`d3443784-cc70-4e6f-b815-9df3796f237e`, but handler-level context verification
+failed and the App Server emitted no same-id PostToolUse. The target file was
+unchanged. The exact recovery tool classified the claim as
+`aborted_unchanged_after_missing_callback`; before and after path snapshots
+both have SHA-256
+`ac5657d73e9c0dd07012635c9284fe008cf1730e08373173d3adad50ab128102`,
+and the claim was removed. This involved one parent and no child or competing
+writer. It explains this occurrence of the apparent patch/context problem as
+a handler-failure callback gap, distinct from the earlier real shared-worktree
+multi-agent collisions.
+
+The current App regression is frozen in
+`probes/g4-current-app-failed-patch-callback-regression-20260909.json` with
+assertions in
+`tests/test_g4_current_app_failed_patch_callback_regression.py`. The isolated
+candidate source already has a successful same-id failure PostToolUse proof,
+but that success is not silently promoted to the installed App runtime. Until
+the fix or an equivalent reconciliation is qualified on the deployed
+surface, P5b and P7 stay partial. `phase1_complete=false`,
+`direct_write_qualified=false`, and Phases 2/3 remain closed.
+
+Fresh verification passed 43 focused tests and the complete 704-test
+provider-free suite, including agent-template checks. Normal Phase 1,
+mutation-surface, and same-UID checks returned zero. Their promotion-required
+forms returned 2 as designed; the mutation matrix retains thirteen blockers,
+and same-UID rollout/state protection remains false.
+
 ## Live hash-bound final mutation receipt
 
 A current signed-runtime headless probe now closes one narrower mutation

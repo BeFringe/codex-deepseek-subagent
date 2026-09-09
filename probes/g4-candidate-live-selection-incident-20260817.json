@@ -39,7 +39,7 @@
   },
   "hardened_wrapper": {
     "path": "probes/codex_plaintext_candidate_wrapper.sh",
-    "sha256": "5a248bc6eccf4e08403b0e4e532360fae21a10c03bec774798fb55ce451ff25f",
+    "sha256": "dc426820cdd02657880fe655fb149779d036a1a0081e65ab48e4dfc7f8050055",
     "historical_wrapper_disabled_by_replacement": true,
     "allowed_entry_points": ["login status", "exec"],
     "required_exec_flags": ["--ignore-user-config", "--ignore-rules"],
@@ -64,6 +64,7 @@
       "guarded_parent_child_writer_conflict_authorization": "CODEX_G4_PARENT_CHILD_WRITER_CONFLICT_PROBE_AUTHORIZED=schema1-exact-active-child-claim",
       "guarded_parent_child_writer_conflict_root_namespace": "/private/tmp/codex-g4-write-parent-conflict.*",
       "guarded_parent_child_writer_conflict_code_mode_host": true,
+      "guarded_parent_child_writer_conflict_catalog_receipt": "CODEX_G4_TOOL_CATALOG_RECEIPT=stderr-v2-parent-child-closed",
       "caller_config_override": "deny",
       "approval_policy": "never",
       "code_mode_host": false
