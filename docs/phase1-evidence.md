@@ -4300,3 +4300,81 @@ live P6c. The canonical Feature 5 evidence still cannot supply the required
 same-run joins, and no fresh product owner/disk barrier has adjudicated such a
 bundle. P6c stays `partial`; `phase1_complete=false`,
 `direct_write_qualified=false`, and Phases 2/3 remain closed.
+
+## Native nonempty tracked-process termination contribution
+
+The current-source P5b candidate now has one live nonempty process-exit result,
+rather than only the preceding closed-catalog empty-process result. The probe
+used a fresh disposable Git root
+`/private/tmp/codex-g4-p5b-tracked-process.BcGhBk`, branch `main`, full HEAD
+`f41e8dd68dab4751b21fcd97abd387c13896fb57`, and empty tree
+`4b825dc642cb6eb9a060e54bf8d69288fbee4904`. The wrapper admitted only the
+exact `schema1-exact-tracked-process` guard in that namespace, retained the
+read-only sandbox and `approval_policy=never`, and hash-bound both the
+590259832-byte candidate and its sibling `codex-code-mode-host`. The sidecar
+resolved to the installed standalone semantic runtime, not the Codex App
+bundle. The candidate reported its semantic version as `0.153.4` at capture;
+the reconciler discovers this from `codex --version` and contains no hardcoded
+runtime version. The candidate was never selected as the GUI App Server.
+
+Real parent SessionMeta `01a085a7-8625-7f51-9fb5-59767af43ec1` and child
+SessionMeta `01a085a7-cfe4-7483-ba06-c72b4049a82c` join the same runtime
+session, root, branch, full HEAD, native OpenAI provider, requested task
+`p5b_tracked_process_7`, canonical AgentPath
+`/root/p5b_tracked_process_7`, and standard native `worker` role. The parent
+performed exactly spawn, a 30000 ms timed wait, live-tree inspection, close,
+and final live-tree inspection through `g4_assignment`. The child performed
+exactly one code-mode process start and one 60000 ms poll. Its bounded,
+nonwriting Python sleep returned unified-exec session/PID `75764`; the close
+receipt placed that sole positive id in both the exact-child tracked and
+confirmed-exit sets, with empty unconfirmed-exit and unresolved-start sets.
+
+The timing join is material: the parent called close at
+`10:13:20.440Z`; the child's blocked poll returned exit 137 at
+`10:13:20.530Z`; the child turn recorded `interrupted` at `10:13:20.539Z`;
+and close returned only afterward at `10:13:20.637Z`. The receipt also reports
+`session_loop_terminated=true` and
+`tracked_process_termination_confirmed=true`. The next native live-tree result
+omits the child. The candidate itself exited zero. Two later host observations
+retained the exact clean Git frontier, found neither PID nor exact command
+marker, and found zero open candidate executable handles.
+
+The strict reconciler rejects a changed prompt, nonzero or absent candidate
+exit, ambiguous SessionMeta, reordered or extra parent/child tool calls,
+non-singleton or unequal tracked/confirmed sets, synthetic acknowledgement
+without exit 137, exit outside the close interval, a surviving PID/marker,
+dirty Git bytes, or an unstable parent catalog. Raw prompt, headless events,
+stderr catalogs, final message, exit receipt, and both rollout files remain
+outside Git and are path/hash/line-count bound in
+`probes/g4-live-nonempty-tracked-process-termination-20260909.json`, SHA-256
+`4e903e6941347be9437806be560d126a9021aab81ab13ffb2766ffff799bdec5`.
+The executable intake is
+`probes/reconcile_g4_nonempty_tracked_process_close.py`; provider-free
+assertions and a confirmed-set negative mutation are in
+`tests/test_g4_live_nonempty_tracked_process_termination.py`.
+
+Earlier attempts remain negative or calibration evidence, not promoted runs.
+They exposed, in order, a missing spawn-time child ThreadId projection, an
+incorrect wait signature, disabled code-mode hosting, a missing sibling
+code-mode host, an outer zsh exit-recorder variable error, and a probe-requested
+300000 ms poll that conflicted with the 60-second wait ceiling. Each stopped
+without product mutation or a surviving marker; only the final run combines
+the legal 60000 ms child call, exact identity/process join, candidate exit zero,
+and two-point host barrier.
+
+Fresh provider-free verification passed all 758 tests in 79.218 seconds plus
+agent-template checks. The normal Phase 1, thirteen-surface mutation, same-UID
+trust, and semantic runtime-index checks returned zero. Phase 1, mutation, and
+same-UID promotion modes returned 2 as designed. The semantic runtime index
+remains valid for the current signed runtime and source commit; same-UID state
+and rollout protection remain false.
+
+This is a native standard-worker process-lifecycle contribution, not a G4
+closed-catalog process-surface qualification: the child intentionally had
+process capability, did not consume an immutable G4 mutation capsule, and made
+no product mutation. It proves only a process captured by the candidate's
+manager. Detached, untracked, later descendants and global process-tree
+quiescence remain unproved; mutation-capable actor coverage remains bounded to
+the earlier exact `apply_patch` run. P5b stays `partial`;
+`phase1_complete=false`, `direct_write_qualified=false`, and Phases 2/3 remain
+closed.

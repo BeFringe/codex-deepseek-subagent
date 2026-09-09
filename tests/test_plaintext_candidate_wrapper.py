@@ -457,6 +457,109 @@ class PlaintextCandidateWrapperTests(unittest.TestCase):
                 "stderr-v2-parent-child-closed",
             )
 
+    def test_p5b_tracked_process_guard_is_read_only_and_exact(self):
+        with tempfile.TemporaryDirectory() as candidate_dir, tempfile.TemporaryDirectory(
+            prefix="codex-g4-p5b-tracked-process.", dir="/private/tmp"
+        ) as root_dir:
+            directory = Path(candidate_dir)
+            root = Path(root_dir).resolve()
+            candidate, digest = self._fake_candidate(directory)
+            code_mode_host = directory / "codex-code-mode-host"
+            code_mode_host.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+            code_mode_host.chmod(0o700)
+            code_mode_host_digest = hashlib.sha256(
+                code_mode_host.read_bytes()
+            ).hexdigest()
+            subprocess.run(
+                ["git", "-C", str(root), "init", "-b", "main"],
+                check=True,
+                capture_output=True,
+            )
+            subprocess.run(
+                [
+                    "git", "-C", str(root), "-c", "user.name=Phase1 Probe",
+                    "-c", "user.email=phase1-probe@invalid", "commit", "--allow-empty",
+                    "-m", "initial",
+                ],
+                check=True,
+                capture_output=True,
+            )
+            arg_log = directory / "p5b-tracked-process-args.txt"
+            env_log = directory / "p5b-tracked-process-env.txt"
+            environment = self._environment(candidate, digest, arg_log)
+            environment.update(
+                {
+                    "ENV_LOG": str(env_log),
+                    "CODEX_G4_SESSIONMETA_PROBE_AUTHORIZED": "schema1-headless-stateful",
+                    "CODEX_G4_SESSIONMETA_PROBE_ROOT": str(root),
+                    "CODEX_G4_P5B_TRACKED_TERMINATION_PROBE_AUTHORIZED": (
+                        "schema1-exact-tracked-process"
+                    ),
+                    "CODEX_G4_CODE_MODE_HOST_SHA256": code_mode_host_digest,
+                }
+            )
+            result = subprocess.run(
+                [
+                    str(WRAPPER), "exec", "--ignore-user-config", "--ignore-rules",
+                    "--dangerously-bypass-hook-trust", "--json", "-C", str(root),
+                    "Return READY.",
+                ],
+                env=environment,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            arguments = arg_log.read_text(encoding="utf-8").splitlines()
+            self.assertIn("features.code_mode_host=true", arguments)
+            self.assertEqual(arguments[arguments.index("-s") + 1], "read-only")
+            self.assertEqual(
+                env_log.read_text(encoding="utf-8").strip(),
+                "stderr-v2-parent-child-closed",
+            )
+
+            digest_denied_log = directory / "p5b-tracked-process-bad-host.txt"
+            digest_denied_environment = dict(
+                environment,
+                ARG_LOG=str(digest_denied_log),
+                CODEX_G4_CODE_MODE_HOST_SHA256="0" * 64,
+            )
+            digest_denied = subprocess.run(
+                [
+                    str(WRAPPER), "exec", "--ignore-user-config", "--ignore-rules",
+                    "--dangerously-bypass-hook-trust", "--json", "-C", str(root),
+                    "Return READY.",
+                ],
+                env=digest_denied_environment,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(digest_denied.returncode, 78)
+            self.assertIn("code-mode host digest mismatch", digest_denied.stderr)
+            self.assertFalse(digest_denied_log.exists())
+
+            denied_log = directory / "p5b-tracked-process-denied.txt"
+            denied_environment = dict(environment, ARG_LOG=str(denied_log))
+            denied_environment[
+                "CODEX_G4_P5B_TRACKED_TERMINATION_PROBE_AUTHORIZED"
+            ] = "schema1-unbounded-process"
+            denied = subprocess.run(
+                [
+                    str(WRAPPER), "exec", "--ignore-user-config", "--ignore-rules",
+                    "--dangerously-bypass-hook-trust", "--json", "-C", str(root),
+                    "Return READY.",
+                ],
+                env=denied_environment,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(denied.returncode, 78)
+            self.assertIn("authorization guard is invalid", denied.stderr)
+            self.assertFalse(denied_log.exists())
+
     def test_p5b_write_then_close_guard_has_exact_temporary_write_ceiling(self):
         with tempfile.TemporaryDirectory() as candidate_dir, tempfile.TemporaryDirectory(
             prefix="codex-g4-p5b-write-termination.", dir="/private/tmp"

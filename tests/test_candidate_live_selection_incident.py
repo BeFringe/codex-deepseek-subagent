@@ -134,6 +134,29 @@ class CandidateLiveSelectionIncidentTests(unittest.TestCase):
         )
         self.assertEqual(
             hardened["forced_posture"][
+                "guarded_p5b_nonempty_tracked_process_authorization"
+            ],
+            "CODEX_G4_P5B_TRACKED_TERMINATION_PROBE_AUTHORIZED="
+            "schema1-exact-tracked-process",
+        )
+        self.assertEqual(
+            hardened["forced_posture"][
+                "guarded_p5b_nonempty_tracked_process_root_namespace"
+            ],
+            "/private/tmp/codex-g4-p5b-tracked-process.*",
+        )
+        self.assertTrue(
+            hardened["forced_posture"][
+                "guarded_p5b_nonempty_tracked_process_code_mode_host"
+            ]
+        )
+        self.assertTrue(
+            hardened["forced_posture"][
+                "guarded_p5b_nonempty_tracked_process_code_mode_host_sha256_required"
+            ]
+        )
+        self.assertEqual(
+            hardened["forced_posture"][
                 "guarded_p5b_write_then_close_authorization"
             ],
             "CODEX_G4_P5B_TRACKED_TERMINATION_PROBE_AUTHORIZED="

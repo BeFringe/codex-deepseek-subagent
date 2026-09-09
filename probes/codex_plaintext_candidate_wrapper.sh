@@ -173,6 +173,26 @@ case "$mode" in
         esac
         catalog_receipt_mode=stderr-v2-parent-child-closed
         ;;
+      schema1-exact-tracked-process)
+        [ "$saw_ephemeral" = false ] || fail "P5b tracked-process probe must retain SessionMeta"
+        case "$requested_cd" in
+          /private/tmp/codex-g4-p5b-tracked-process.*) ;;
+          *) fail "P5b tracked-process probe root is outside the fixed temporary namespace" ;;
+        esac
+        code_mode_host_candidate=${candidate%/*}/codex-code-mode-host
+        expected_code_mode_host_sha256=${CODEX_G4_CODE_MODE_HOST_SHA256-}
+        [ -f "$code_mode_host_candidate" ] || fail "P5b code-mode host is missing beside candidate"
+        [ -x "$code_mode_host_candidate" ] || fail "P5b code-mode host is not executable"
+        [ "${#expected_code_mode_host_sha256}" -eq 64 ] || fail "P5b code-mode host digest is invalid"
+        case "$expected_code_mode_host_sha256" in
+          *[!0-9a-f]*) fail "P5b code-mode host digest is invalid" ;;
+        esac
+        actual_code_mode_host_sha256=$(/usr/bin/shasum -a 256 "$code_mode_host_candidate" | /usr/bin/awk '{print $1}')
+        [ "$actual_code_mode_host_sha256" = "$expected_code_mode_host_sha256" ] ||
+          fail "P5b code-mode host digest mismatch"
+        code_mode_host=true
+        catalog_receipt_mode=stderr-v2-parent-child-closed
+        ;;
       schema1-exact-write-then-close)
         [ "$saw_ephemeral" = false ] || fail "P5b write-then-close probe must retain SessionMeta"
         case "$requested_cd" in

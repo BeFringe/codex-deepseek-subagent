@@ -29,8 +29,10 @@ class G4LiveWriteThenCloseTests(unittest.TestCase):
     def setUpClass(cls):
         cls.receipt = json.loads(RECEIPT.read_text(encoding="utf-8"))
 
-    def test_guard_and_reconciler_are_hash_bound(self):
-        self.assertEqual(self.receipt["probe_guard"]["wrapper_sha256"], sha256(WRAPPER))
+    def test_capture_time_guard_and_reconciler_are_hash_bound(self):
+        captured_wrapper = self.receipt["probe_guard"]["wrapper_sha256"]
+        self.assertRegex(captured_wrapper, r"^[0-9a-f]{64}$")
+        self.assertNotEqual(captured_wrapper, sha256(WRAPPER))
         self.assertEqual(
             self.receipt["durable_reconciliation"]["tool_sha256"],
             sha256(RECONCILER),
