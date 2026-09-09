@@ -44,6 +44,15 @@ Codex `0.149.0+` 的 standalone agent role 本身仍只能做受边界约束的�
 未完成 P1–P7 与平台/provider 回归的 candidate 能力，不等于打开 Phase 2。Utopia
 MixAgents Broker 的独立 App Server lifecycle 仍不是本项目的 native lifecycle 替代品。
 
+## Broker 参考边界
+
+[Utopia MixAgents Broker](https://github.com/Utopia-V/mixagents/blob/main/packages/broker/README.zh-CN.md)
+提供了可复用的产品无关词汇：route 精确声明 provider、model、workspace 与访问能力上限；
+每次 dispatch 默认 read-only；provider/model/workspace/access 不能原样满足时失败，不暗中换
+route。Phase 2 可借用这些 profile/ceiling/fail-closed 语义，但不借用它的独立 App Server
+backend。这里的实际 child 仍必须保留 Codex native spawn、canonical AgentPath、Multi-Agent
+V2 lifecycle、wait/callback/cancel 与 parent-owned adjudication。
+
 ## 不可变边界
 
 - OpenAI parent 始终使用当前 Codex native OpenAI provider、模型与 ChatGPT 登录；profile

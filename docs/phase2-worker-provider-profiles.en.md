@@ -51,6 +51,18 @@ P1–P7 and platform/provider regression, so it does not open Phase 2. Utopia's
 separate App Server lifecycle remains an alternative architecture, not a
 substitute for this project's native lifecycle.
 
+## Broker reference boundary
+
+[Utopia MixAgents Broker](https://github.com/Utopia-V/mixagents/blob/main/packages/broker/README.zh-CN.md)
+provides useful product-neutral vocabulary: a route declares the exact
+provider, model, workspace, and maximum access ceiling; each dispatch defaults
+to read-only; and an inability to preserve provider/model/workspace/access
+fails instead of silently substituting another route. Phase 2 may reuse those
+profile, ceiling, and fail-closed semantics, but not the Broker's independent
+App Server backend. The actual child here must retain Codex-native spawn,
+canonical AgentPath, the Multi-Agent V2 lifecycle, wait/callback/cancel, and
+parent-owned adjudication.
+
 ## Invariants
 
 - The OpenAI parent always remains on its current Codex-native OpenAI provider,
