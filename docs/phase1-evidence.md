@@ -851,10 +851,8 @@ SubagentStop, byte-identical callback, stable disk bytes, and fresh-owner
 consumption. Representative scale and mixed-frontier continuity remain P6b/P6c,
 while broader mutation and termination surfaces remain P4/P5b.
 
-The same calibration removes LocalCAT as a required P6c authority. A disposable
-product-independent live bundle and fresh parent/disk adjudication remain
-required; Feature 5 may contribute optional external workload regression or raw
-runtime incidents but cannot promote global direct write.
+A disposable product-independent live bundle and fresh parent/disk
+adjudication remain required for P6c.
 
 During this edit, one failed multi-file patch reproduced the
 installed App Server's known missing PostToolUse callback. Claim
@@ -4040,47 +4038,6 @@ and same-UID rollout/state protection remains false.
 `phase1_complete=false`, `direct_write_qualified=false`, and Phases 2/3 remain
 closed.
 
-## P6c external-owner read-only gap adjudication
-
-A fresh read-only adjudication of the LocalCAT Feature 5 owner evidence used
-exact root `/Users/pearly/文档/CAT/localcat-feature5`, branch `feature5`, and
-full HEAD `dd7c9fdb268b4ee8ac3545f43e3f5f19e715ff3b`. It observed zero tracked
-changes, did not inspect the diagnostic directory, changed no LocalCAT, Hook,
-configuration, Git, or index state, and read or recorded no credential value.
-The privacy-minimized result is
-`probes/p6c-feature5-readonly-gap-adjudication-20260909.json` with executable
-assertions in `tests/test_p6c_feature5_readonly_gap_adjudication.py`.
-
-The canonical 100k Gate D bundle is real contribution evidence. Its frozen
-contract has 1,200 exact and 240 fuzzy samples (200 near-edit plus 40 miss),
-100 warmups per cohort, one measured repeat, per-query `perf_counter_ns`, and
-nearest-rank p95. FTS5 and fallback fuzzy p95 are respectively 275.832958 ms
-and 279.756833 ms against the 500 ms gate. The bundle SHA-256 is
-`7f33c553f0c6fa5f10a802049a2bca3f4457bf3adba5fdc001aa31eab3d1ac96`
-and its internal bundle digest is
-`071f2787f452c9f07635a85e0626e8538bdb79a1b4f46ea3a37a06d47cf5be7e`.
-Separate source fixtures also cover a 2,048-call budget, 300 exact-fold classes
-over 3,000 identities with 300 actual scorer callbacks, mathematical bound
-relations, and real SQLite append seams before, during, and after phase work.
-
-Those facts do not form the P6c join required by the design. The canonical
-bundle has no dense owner-cohort identity or traversal-mode identity and does
-not join each raw latency sample to its actual invocation and proof partitions.
-The current production refinement chain is U1 to owner-derived R to U3 and
-optional U4/P3; there is no representative same-cohort U1/R/U2/true receipt.
-No artifact freezes coarse/refine/materialize input/output identities,
-conservation, and real elapsed values together. Public proof metadata omits
-the complete item frontier by design, so top-10 equality cannot substitute
-exact authoritative/materialized cardinality, order, and item identity. Race
-tests define real mutation seams, but there is no persistent raw run receipt
-with timestamps and hashes. The q1/q61/q28-short/q183/q226/q240 task note is
-summary-only and cannot authorize these missing dimensions.
-
-Therefore the existing Gate D bundle, implementation notes, and passing
-acceptance/fault/release matrices remain contribution evidence only. P6c
-stays `partial`; `phase1_complete=false`, `direct_write_qualified=false`, and
-Phases 2/3 remain closed.
-
 ## Hash-bound parent/child same-path completion
 
 The first live same-path overlap proved that a root parent `apply_patch` was
@@ -4341,13 +4298,11 @@ trust, and semantic runtime-index commands returned zero. Phase 1, mutation,
 and same-UID promotion forms returned 2 as designed. The current semantic
 runtime remains Codex `0.153.4` at pinned source
 `3d2ee51ca2d5db578f328aa75e20aa22c0197c9a`; same-UID rollout and state files
-remain unprotected. No LocalCAT product file or live App Server selection was
-changed.
+remain unprotected. No live App Server selection was changed.
 
 This closes the reusable P6c capture/validation contract, not representative
-live P6c. The canonical Feature 5 evidence still cannot supply the required
-same-run joins, and no fresh product owner/disk barrier has adjudicated such a
-bundle. P6c stays `partial`; `phase1_complete=false`,
+live P6c. No disposable-root live bundle with the required same-run joins and
+fresh parent/disk adjudication exists yet. P6c stays `partial`; `phase1_complete=false`,
 `direct_write_qualified=false`, and Phases 2/3 remain closed.
 
 ## Native nonempty tracked-process termination contribution
@@ -4427,3 +4382,41 @@ quiescence remain unproved; mutation-capable actor coverage remains bounded to
 the earlier exact `apply_patch` run. P5b stays `partial`;
 `phase1_complete=false`, `direct_write_qualified=false`, and Phases 2/3 remain
 closed.
+
+## Trusted-runtime origin binding for the finalized G4 catalog
+
+The exact G4 parent and child catalogs previously retained runtimes by
+allowlisted tool name after all contributors had registered. That closed the
+visible name set, but name equality did not prove runtime origin: if a trusted
+core runtime was absent, an earlier extension, MCP, or dynamic contributor
+could occupy the same allowlisted name.
+
+The current-source candidate now records exact names only when trusted core
+registration succeeds. Qualification finalization uses `retain_trusted`, which
+requires both trusted membership and the actor-specific allowlist predicate;
+removing a runtime also removes its trusted membership. Non-qualification
+catalogs retain their existing registration behavior.
+
+Two new source negatives disable trusted `apply_patch`, pre-register same-name
+external runtimes, and exercise both actors. The child rejects external
+`functions.apply_patch` and `g4_assignment.list_agents`; the parent rejects
+external `functions.apply_patch` and `g4_assignment.spawn_agent`. Together with
+the two existing closed-catalog positives, the focused Rust run passed four
+tests. `cargo fmt --all -- --check`, forward apply, reverse apply, and
+byte-for-byte reconstruction also passed.
+
+The three-file incremental patch and receipt are
+`probes/current-signed-runtime-g4-trusted-catalog-origin-source-candidate.patch`
+and
+`probes/current-signed-runtime-g4-trusted-catalog-origin-source-candidate.json`;
+their executable product-repository assertions are in
+`tests/test_current_g4_trusted_catalog_origin_source_candidate.py`. Fresh
+provider-free verification passed all 761 tests plus agent-template checks.
+Normal Phase 1, mutation-surface, same-UID trust, and semantic runtime-index
+checks passed; their qualification-required forms returned 2 as designed.
+
+No candidate was rebuilt, installed, or selected as the GUI App Server. This
+qualifies the source-level trusted-origin invariant only. Required-Hook fail-closed behavior,
+independent host-control mediation, same-UID hostile mutation containment, and
+strong quiescence remain open, so P4 stays `partial`,
+`phase1_complete=false`, and `direct_write_qualified=false`.

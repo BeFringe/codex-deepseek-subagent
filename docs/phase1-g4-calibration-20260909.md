@@ -9,8 +9,8 @@ P1–P7 验收，也不开放 Phase 2/3；它只移除无界样本要求、产�
 
 ## 这条主线实际在证明什么
 
-Phase 1 不是为 LocalCAT 做性能优化，也不是单独调好一组 Hook。它要证明：在 OpenAI
-parent 继续使用 Codex native provider、ChatGPT 登录和 Multi-Agent V2 lifecycle 的前提下，
+Phase 1 要证明：在 OpenAI parent 继续使用 Codex native provider、ChatGPT 登录和
+Multi-Agent V2 lifecycle 的前提下，
 一个异构 child 能收到精确 plaintext assignment，并在 immutable capsule、真实
 SessionMeta/canonical AgentPath、mutation mediation、resume、callback、termination 与最终
 parent/disk adjudication 的共同约束下安全贡献；未闭合时只能 read-only。
@@ -36,9 +36,10 @@ P1–P7 的有限职责如下：
    的后续 message、精确 callback/consumption，以及 expiry/orphan/watchdog 恢复；Windows
    absolute transcript-path 等价 fixture 另由 checker 固定。因此 P2/P3 可独立关闭，剩余
    mutation/quiescence 不再错误挂到这两个 gate。
-2. P6c 曾把 LocalCAT 的 100k workload 当成必需资格来源。正确边界是：P6c 的协议与
-   live reference cohort 必须能在 disposable product-independent root 内闭合。LocalCAT
-   只可提供外部 workload regression；它不是兼容层的权威或必需验收者。
+2. P6c 的有限验收对象是同一个 disposable product-independent live root 内的
+   joinable bundle：一组共享 invocation/phase identity 的 dense samples、U1→R→U2、
+   mixed frontier 和十个 ordered race seams。不相关应用的数据规模或独立 workload
+   运行不属于该 gate。
 3. P4 的主要阻点不是继续微调 Hook matcher。exact G4 headless candidate 已能在所有 tool
    contributor 之后删除非 allowlist runtime；但 Hook 错误仍可能 fail open，普通 GUI parent、
    App Server/daemon/control client、同 UID state/rollout 改写和独立进程仍在 ToolRouter 之外。
@@ -46,25 +47,11 @@ P1–P7 的有限职责如下：
    更多 after-the-fact hash 代替。
 4. Phase 3 不能继续默认等同于“建 ZHIPU bridge”。ZHIPU direct Responses 已有官方候选与
    live wire feasibility；bridge 只在 direct 语义不够时作为可删除 fallback。
-5. Git remote 不属于阶段阻点：本仓库位于 `CAT/codex-deepseek-subagent`，与 `CAT/CAT`
-   平级，保留现有 `github.com` origin 并使用可认证的 `github2` key。`github.com-new` 只属于
-   `localcat-feature5`，不得迁移到本仓库。
-6. P6/P6a 曾继续等待未定义的 broader mutation/cross-owner cohort。原始 P6 只要求错误
+5. P6/P6a 曾继续等待未定义的 broader mutation/cross-owner cohort。原始 P6 只要求错误
    final narrative/slice/disk hash 被拒绝并由 fresh owner消费；P6a 要求 forged provenance、
    test-only seam 和 owner-internal derivation 不能自授权。现有 provider-free 与 exact-path
    live mutation evidence 已闭合这些有限门。Mixed-frontier/representative scale 仍归 P6b/P6c，
    mutation breadth 与 termination 仍归 P4/P5b。
-
-## Feature 5 的正确角色
-
-Feature 5 没有必须替 Phase 1 裁决的项目。它可以只读提供三类可选贡献：
-
-- 再现 native spawn/identity/Hook/resume/wait/cancel/termination 异常时，冻结最小原始
-  identity、tool、timing、hash 和 final disk barrier；
-- 不修改产品代码即可导出的代表性 workload bundle，可作为 P6c 外部回归，不是
-  product-independent gate 的唯一输入；
-- 只有在声称“该次 LocalCAT 改动可集成”时，由 LocalCAT fresh owner 对其产品 bytes
-  做独立 disk/adjudication。该裁决不提升兼容层全局 `direct_write_qualified`。
 
 ## 修正后的执行顺序
 
@@ -74,7 +61,7 @@ Feature 5 没有必须替 Phase 1 裁决的项目。它可以只读提供三类�
 3. P5b 把现有 tracked-process positive 扩展为 admission freeze、descendant/detached
    boundary 与稳定 disk barrier，不再把 `close_agent` acknowledgement 当全局 quiescence。
 4. P6–P6c 在 disposable product-independent root 形成同一次 invocation/phase/race/live
-   bundle，由 fresh parent/disk owner消费；LocalCAT 只做可选外部回归。
+   bundle，由 fresh parent/disk owner消费。
 5. P7 才运行 native Windows 与 DeepSeek regression，以及完整 live install/rollback。
 6. 仅当所有 gate 与 exit receipt 均 qualified，才允许一次独立提交把 Phase 1 和 direct
    write 置真并打开 Phase 2；Phase 3 仍需 Phase 2 完成。
