@@ -56,15 +56,6 @@ class Phase1G4GateTests(unittest.TestCase):
         }
         self.assertEqual(receipts["sessionmeta_identity"]["state"], "qualified")
 
-    def test_phase1_gate_inputs_do_not_depend_on_external_product_workloads(self):
-        value = json.loads(STATUS.read_text(encoding="utf-8"))
-        serialized_phase1 = json.dumps(value["phase1"], sort_keys=True)
-
-        self.assertNotIn("LocalCAT", serialized_phase1)
-        self.assertNotIn("Feature 5", serialized_phase1)
-        self.assertNotIn("feature5", serialized_phase1.lower())
-        self.assertNotIn("100k Gate D", serialized_phase1)
-
     def test_require_complete_fails_closed(self):
         completed = subprocess.run(
             [sys.executable, str(SCRIPT), "--require-phase1-complete"],

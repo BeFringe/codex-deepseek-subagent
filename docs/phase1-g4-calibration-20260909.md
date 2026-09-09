@@ -56,8 +56,9 @@ P1–P7 的有限职责如下：
 ## 修正后的执行顺序
 
 1. 关闭已满足的有限 P2/P3/P6/P6a，保留 P1/P5/P5a 已 qualified 的事实。
-2. P4 优先修复 finalized G4 catalog 的 trusted-runtime origin binding 与 required-hook
-   fail-closed 语义；并明确同 UID hostile host 所需的 OS/privilege boundary。
+2. P4 的 finalized G4 catalog 已完成 trusted-runtime origin binding；required PreToolUse
+   fail-closed 已形成 source contract，下一步只验证 missing/failed handler 的真实
+   pre-dispatch denial，并明确同 UID hostile host 所需的 OS/privilege boundary。
 3. P5b 把现有 tracked-process positive 扩展为 admission freeze、descendant/detached
    boundary 与稳定 disk barrier，不再把 `close_agent` acknowledgement 当全局 quiescence。
 4. P6–P6c 在 disposable product-independent root 形成同一次 invocation/phase/race/live

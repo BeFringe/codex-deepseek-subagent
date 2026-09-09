@@ -4420,3 +4420,45 @@ qualifies the source-level trusted-origin invariant only. Required-Hook fail-clo
 independent host-control mediation, same-UID hostile mutation containment, and
 strong quiescence remain open, so P4 stays `partial`,
 `phase1_complete=false`, and `direct_write_qualified=false`.
+
+## Required PreToolUse adjudication for exact G4 actors
+
+The current-source candidate now makes synchronous PreToolUse control
+adjudication mandatory only for the exact headless G4 parent and exact
+`g4_qualification_probe_worker` child. Every Hook-visible tool in either closed
+catalog requires at least one matching synchronous control handler, and every
+selected handler must produce a supported decisive result before the tool
+handler can run. A valid JSON no-op such as `{}`, an `additionalContext`-only
+result, or exit 2 with a nonempty blocking reason is decisive. Missing handlers,
+spawn/timeout/execution errors, empty or plain stdout, malformed or unsupported
+JSON, other nonzero exits, and incomplete multi-handler adjudication are
+indeterminate and therefore blocked for those exact actors.
+
+Ordinary Codex sessions retain the upstream Hook-failure behavior. The new
+gate neither grants mutation authority nor establishes same-UID or OS-level
+trust; it only prevents the designated qualification actors from reaching a
+closed-catalog tool handler without a complete PreToolUse control result.
+
+The incremental three-file patch and receipt are
+`probes/current-signed-runtime-g4-required-pretool-fail-closed-source-candidate.patch`
+and
+`probes/current-signed-runtime-g4-required-pretool-fail-closed-source-candidate.json`;
+their product-repository assertions are in
+`tests/test_current_g4_required_pretool_fail_closed_source_candidate.py`.
+Forward/reverse reconstruction and byte equality passed. Focused Rust
+verification passed 17 Hook event tests, two Hook-engine tests, nine core
+runtime tests, and four closed-catalog regressions; `cargo check -p codex-core
+--tests` and formatting also passed. The only compile warning was a pre-existing
+unused test import.
+
+No candidate was rebuilt, installed, or selected as the GUI App Server. Live
+missing-handler and failed-handler pre-dispatch denials are still unqualified,
+as are independent host control, same-UID hostile mutation containment, and
+strong quiescence. P4 remains `partial`; `phase1_complete=false`,
+`direct_write_qualified=false`, and Phases 2/3 remain closed.
+
+Fresh product-repository verification passed all 764 provider-free tests in
+75.395 seconds, including agent-template checks. Normal Phase 1,
+mutation-surface, same-UID trust, and semantic runtime-index checks returned
+zero. Phase 1, mutation, and same-UID qualification-required modes returned 2
+as designed.

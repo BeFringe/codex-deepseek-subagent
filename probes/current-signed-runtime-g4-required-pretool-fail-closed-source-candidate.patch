@@ -1,0 +1,254 @@
+--- a/codex-rs/hooks/src/events/pre_tool_use.rs
++++ b/codex-rs/hooks/src/events/pre_tool_use.rs
+@@ -44,0 +45,6 @@
++    /// Synchronous handlers selected for this request. Only synchronous
++    /// handlers can apply control effects.
++    pub control_handlers_matched: usize,
++    /// Selected control handlers that returned a valid JSON control output, or
++    /// an explicit exit-code-2 denial with a non-empty reason.
++    pub control_handlers_adjudicated: usize,
+@@ -52,0 +59 @@
++    control_output_valid: bool,
+@@ -81,0 +89,4 @@
++    let control_handlers_matched = matched
++        .iter()
++        .filter(|handler| handler.can_apply_control_effects())
++        .count();
+@@ -88,0 +100,2 @@
++            control_handlers_matched,
++            control_handlers_adjudicated: 0,
+@@ -101 +114 @@
+-            return serialization_failure_outcome(hook_events);
++            return serialization_failure_outcome(hook_events, control_handlers_matched);
+@@ -133,0 +147,4 @@
++    let control_handlers_adjudicated = results
++        .iter()
++        .filter(|result| result.data.control_output_valid)
++        .count();
+@@ -145,0 +163,2 @@
++        control_handlers_matched,
++        control_handlers_adjudicated,
+@@ -203,0 +223 @@
++    let mut control_output_valid = false;
+@@ -241,0 +262 @@
++                            control_output_valid = true;
+@@ -249,0 +271 @@
++                            control_output_valid = true;
+@@ -262,0 +285 @@
++                    control_output_valid = true;
+@@ -306,0 +330 @@
++            control_output_valid,
+@@ -312 +336,4 @@
+-fn serialization_failure_outcome(hook_events: Vec<HookCompletedEvent>) -> PreToolUseOutcome {
++fn serialization_failure_outcome(
++    hook_events: Vec<HookCompletedEvent>,
++    control_handlers_matched: usize,
++) -> PreToolUseOutcome {
+@@ -318,0 +346,2 @@
++        control_handlers_matched,
++        control_handlers_adjudicated: 0,
+@@ -374,0 +404 @@
++                control_output_valid: true,
+@@ -405,0 +436 @@
++                control_output_valid: true,
+@@ -412,0 +444,14 @@
++    fn empty_json_object_is_a_valid_control_noop() {
++        let parsed = parse_completed(
++            &handler(),
++            run_result(Some(0), "{}", ""),
++            Some("turn-1".to_string()),
++        );
++
++        assert_eq!(parsed.completed.run.status, HookRunStatus::Completed);
++        assert!(parsed.data.control_output_valid);
++        assert!(!parsed.data.should_block);
++        assert_eq!(parsed.data.updated_input, None);
++    }
++
++    #[test]
+@@ -456,0 +502 @@
++                control_output_valid: false,
+@@ -502,0 +549 @@
++                control_output_valid: true,
+@@ -536,0 +584 @@
++                control_output_valid: true,
+@@ -573,0 +622 @@
++                control_output_valid: false,
+@@ -600,0 +650 @@
++                control_output_valid: false,
+@@ -636,0 +687 @@
++                control_output_valid: true,
+@@ -669,0 +721 @@
++                control_output_valid: false,
+@@ -690,0 +743 @@
++                control_output_valid: false,
+@@ -703,0 +757,17 @@
++    fn handler_execution_failure_is_not_a_control_adjudication() {
++        let mut result = run_result(None, "", "");
++        result.error = Some("failed to start policy handler".to_string());
++        let parsed = parse_completed(&handler(), result, Some("turn-1".to_string()));
++
++        assert_eq!(parsed.completed.run.status, HookRunStatus::Failed);
++        assert!(!parsed.data.control_output_valid);
++        assert_eq!(
++            parsed.completed.run.entries,
++            vec![HookOutputEntry {
++                kind: HookOutputEntryKind::Error,
++                text: "failed to start policy handler".to_string(),
++            }]
++        );
++    }
++
++    #[test]
+@@ -717,0 +788 @@
++                control_output_valid: true,
+--- a/codex-rs/hooks/src/engine/mod_tests.rs
++++ b/codex-rs/hooks/src/engine/mod_tests.rs
+@@ -568,0 +569 @@
++print(json.dumps(dict()))
+@@ -671,0 +673,2 @@
++    assert_eq!(outcome.control_handlers_matched, 1);
++    assert_eq!(outcome.control_handlers_adjudicated, 1);
+@@ -745,0 +749,2 @@
++    assert_eq!(outcome.control_handlers_matched, 1);
++    assert_eq!(outcome.control_handlers_adjudicated, 0);
+--- a/codex-rs/core/src/hook_runtime.rs
++++ b/codex-rs/core/src/hook_runtime.rs
+@@ -81,0 +82,4 @@
++const G4_QUALIFICATION_PROBE_ROLE: &str = "g4_qualification_probe_worker";
++const G4_PARENT_CHILD_CATALOG_RECEIPT_ENV: &str = "CODEX_G4_TOOL_CATALOG_RECEIPT";
++const G4_PARENT_CHILD_CATALOG_RECEIPT_OPT_IN: &str = "stderr-v2-parent-child-closed";
++
+@@ -214,0 +219,2 @@
++        control_handlers_matched,
++        control_handlers_adjudicated,
+@@ -218,0 +225,15 @@
++    // Qualification actors intentionally have a closed tool catalog. Every
++    // tool on that catalog must also cross at least one synchronous PreToolUse
++    // policy handler, and every selected control handler must return a valid
++    // control result. Stock sessions retain the upstream fail-open behavior.
++    if g4_pre_tool_use_mediation_incomplete(
++        turn_context,
++        control_handlers_matched,
++        control_handlers_adjudicated,
++    ) {
++        return PreToolUseHookResult::Blocked(format!(
++            "Qualification PreToolUse mediation unavailable: matched {control_handlers_matched} control handler(s), adjudicated {control_handlers_adjudicated}. Tool: {}",
++            tool_name.name()
++        ));
++    }
++
+@@ -239,0 +261,15 @@
++    }
++}
++
++fn exact_g4_qualification_actor(turn_context: &TurnContext) -> bool {
++    if turn_context.session_source.get_agent_role().as_deref() == Some(G4_QUALIFICATION_PROBE_ROLE)
++    {
++        return true;
++    }
++    if cfg!(test)
++        && matches!(
++            &turn_context.session_source,
++            SessionSource::Custom(source) if source == "g4_qualification_parent_test"
++        )
++    {
++        return true;
+@@ -240,0 +277,13 @@
++    matches!(turn_context.session_source, SessionSource::Exec)
++        && std::env::var(G4_PARENT_CHILD_CATALOG_RECEIPT_ENV).as_deref()
++            == Ok(G4_PARENT_CHILD_CATALOG_RECEIPT_OPT_IN)
++}
++
++fn g4_pre_tool_use_mediation_incomplete(
++    turn_context: &TurnContext,
++    control_handlers_matched: usize,
++    control_handlers_adjudicated: usize,
++) -> bool {
++    exact_g4_qualification_actor(turn_context)
++        && (control_handlers_matched == 0
++            || control_handlers_adjudicated != control_handlers_matched)
+@@ -1049,0 +1099 @@
++    use codex_protocol::ThreadId;
+@@ -1056,0 +1107,2 @@
++    use codex_protocol::protocol::SessionSource;
++    use codex_protocol::protocol::SubAgentSource;
+@@ -1063,0 +1116,2 @@
++    use super::G4_QUALIFICATION_PROBE_ROLE;
++    use super::PreToolUseHookResult;
+@@ -1066,0 +1121 @@
++    use super::g4_pre_tool_use_mediation_incomplete;
+@@ -1068,0 +1124 @@
++    use super::run_pre_tool_use_hooks;
+@@ -1070,0 +1127 @@
++    use crate::tools::hook_names::HookToolName;
+@@ -1109,0 +1167,21 @@
++    }
++
++    #[tokio::test]
++    async fn exact_g4_parent_blocks_when_pre_tool_use_has_no_control_handler() {
++        let (session, mut turn_context) = make_session_and_context().await;
++        turn_context.session_source =
++            SessionSource::Custom("g4_qualification_parent_test".to_string());
++        let result = run_pre_tool_use_hooks(
++            &Arc::new(session),
++            &Arc::new(turn_context),
++            "call-required-hook".to_string(),
++            &HookToolName::new("apply_patch"),
++            &serde_json::json!({ "command": "*** Begin Patch\n*** End Patch" }),
++        )
++        .await;
++
++        let PreToolUseHookResult::Blocked(message) = result else {
++            panic!("exact G4 parent must fail closed without PreToolUse mediation");
++        };
++        assert!(message.contains("matched 0 control handler(s), adjudicated 0"));
++        assert!(message.contains("Tool: apply_patch"));
+@@ -1112,0 +1191,46 @@
++    async fn ordinary_actor_keeps_no_handler_pre_tool_use_behavior() {
++        let (session, mut turn_context) = make_session_and_context().await;
++        turn_context.session_source = SessionSource::Custom("ordinary_test".to_string());
++        let result = run_pre_tool_use_hooks(
++            &Arc::new(session),
++            &Arc::new(turn_context),
++            "call-ordinary".to_string(),
++            &HookToolName::new("view_image"),
++            &serde_json::json!({ "path": "/tmp/example.png" }),
++        )
++        .await;
++
++        assert!(matches!(
++            result,
++            PreToolUseHookResult::Continue {
++                updated_input: None
++            }
++        ));
++    }
++
++    #[tokio::test]
++    async fn exact_g4_child_requires_every_control_handler_to_adjudicate() {
++        let (_session, mut turn_context) = make_session_and_context().await;
++        turn_context.session_source = SessionSource::SubAgent(SubAgentSource::ThreadSpawn {
++            parent_thread_id: ThreadId::new(),
++            depth: 1,
++            agent_path: None,
++            agent_nickname: None,
++            agent_role: Some(G4_QUALIFICATION_PROBE_ROLE.to_string()),
++        });
++
++        assert!(g4_pre_tool_use_mediation_incomplete(&turn_context, 1, 0));
++        assert!(g4_pre_tool_use_mediation_incomplete(&turn_context, 2, 1));
++        assert!(!g4_pre_tool_use_mediation_incomplete(&turn_context, 2, 2));
++
++        turn_context.session_source = SessionSource::SubAgent(SubAgentSource::ThreadSpawn {
++            parent_thread_id: ThreadId::new(),
++            depth: 1,
++            agent_path: None,
++            agent_nickname: None,
++            agent_role: Some("ordinary_worker".to_string()),
++        });
++        assert!(!g4_pre_tool_use_mediation_incomplete(&turn_context, 1, 0));
++    }
++
++    #[tokio::test]
+
