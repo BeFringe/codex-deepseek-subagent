@@ -448,9 +448,13 @@
           "probes/g4-live-write-then-close-20260909.json",
           "probes/reconcile_g4_write_then_close.py",
           "tests/test_g4_live_write_then_close.py",
-          "tests/test_reconcile_g4_write_then_close.py"
+          "tests/test_reconcile_g4_write_then_close.py",
+          "probes/g4-live-handover-cleanup-close-20260909.json",
+          "probes/codex_plaintext_handover_candidate_wrapper.sh",
+          "probes/reconcile_g4_handover_then_close.py",
+          "tests/test_g4_live_handover_cleanup_close.py"
         ],
-          "blocker": "The installed 0.153.4 App Server still omits PostToolUse when apply_patch fails handler-level context verification: exact PreToolUse created a claim, the target stayed byte-identical, and exact unchanged recovery was required. This is a single-parent callback regression, not multi-agent contention. Exact parent/child same-path apply_patch now has one accepted hash-bound lifecycle and fresh-owner consumption, while the unsuccessful overlap remains quarantined negative evidence. The current-source close candidate adds a bounded observed-exit join: unified-exec managers close admission, wait pending starts, reject later starts, require true local PTY or ExecServer exit witnesses, and return exact tracked/confirmed/unconfirmed/unresolved maps. One real read-only child joins exact SessionMeta/SubagentStart, a closed tool catalog with zero child tool calls, previous_status=running, target absence after close, durable active-to-unresolved reconciliation, zero writer claims, no open candidate executable, and two stable disk observations. A second live run now joins one exact leased child apply_patch, its PostToolUse-derived accepted report and byte-identical callback, a new read-only hold turn, previous_status=running close, empty tracked process maps, target absence, reported-to-unresolved freeze, and a stable post-close dirty-byte barrier. This qualifies bounded termination and mutation quiescence for that exact mutation-capable actor as well, while process_tree_quiescence_claimed remains false. Detached/untracked and later descendants outside the close capture set, closed all-surface mutation mediation, before/mid/after ownership-handover races, and strong global process-tree quiescence remain unproved. The App Server host-control negative also proves server exit alone is not a process-tree barrier"
+          "blocker": "The installed 0.153.4 App Server still omits PostToolUse when apply_patch fails handler-level context verification: exact PreToolUse created a claim, the target stayed byte-identical, and exact unchanged recovery was required. This is a single-parent callback regression, not multi-agent contention. Exact parent/child same-path apply_patch now has one accepted hash-bound lifecycle and fresh-owner consumption, while the unsuccessful overlap remains quarantined negative evidence. The current-source close candidate adds a bounded observed-exit join: unified-exec managers close admission, wait pending starts, reject later starts, require true local PTY or ExecServer exit witnesses, and return exact tracked/confirmed/unconfirmed/unresolved maps. One real read-only child joins exact SessionMeta/SubagentStart, a closed tool catalog with zero child tool calls, previous_status=running, target absence after close, durable active-to-unresolved reconciliation, zero writer claims, no open candidate executable, and two stable disk observations. A second live run joins one exact leased child apply_patch, its PostToolUse-derived accepted report and byte-identical callback, a new read-only hold turn, previous_status=running close, empty tracked process maps, target absence, reported-to-unresolved freeze, and a stable post-close dirty-byte barrier. A third live run consumes that exact prior actor barrier and dirty snapshot, binds a distinct replacement SessionMeta/AgentPath, performs one exact same-path replacement under a distinct handover ceiling and lease, receives the accepted callback, then cleanup-closes the already completed child and publishes a new stable barrier. This qualifies exact sequential ownership handover for those two actors, but the third close is explicitly completed_cleanup_close rather than a resumed-running termination. Detached/untracked and later descendants outside the close capture set, closed all-surface mutation mediation, before/mid/after ownership-handover races, and strong global process-tree quiescence remain unproved. The App Server host-control negative also proves server exit alone is not a process-tree barrier"
       },
       {
         "id": "P6",
@@ -700,7 +704,9 @@
           "tests/test_reconcile_g4_read_only_close.py",
           "probes/g4-live-write-then-close-20260909.json",
           "tests/test_g4_live_write_then_close.py",
-          "tests/test_reconcile_g4_write_then_close.py"
+          "tests/test_reconcile_g4_write_then_close.py",
+          "probes/g4-live-handover-cleanup-close-20260909.json",
+          "tests/test_g4_live_handover_cleanup_close.py"
         ]
       },
       {
@@ -728,7 +734,9 @@
           "tests/test_g4_child_read_only_sandbox_denial.py",
           "probes/current-signed-runtime-failed-apply-patch-posttool-source-candidate.patch",
           "probes/g4-live-failed-apply-patch-posttool-callback-20260908.json",
-          "tests/test_g4_live_failed_apply_patch_posttool_callback.py"
+          "tests/test_g4_live_failed_apply_patch_posttool_callback.py",
+          "probes/g4-live-handover-cleanup-close-20260909.json",
+          "tests/test_g4_live_handover_cleanup_close.py"
         ]
       },
       {
@@ -785,7 +793,9 @@
           "probes/p1-live-plaintext-message-delivery-20260908.json",
           "tests/test_p1_live_plaintext_message_delivery.py",
           "probes/p1-live-plaintext-same-message-pairs-20260909.json",
-          "tests/test_p1_live_plaintext_same_message_pairs.py"
+          "tests/test_p1_live_plaintext_same_message_pairs.py",
+          "probes/g4-live-handover-cleanup-close-20260909.json",
+          "tests/test_g4_live_handover_cleanup_close.py"
         ]
       },
       {
@@ -840,7 +850,10 @@
           "probes/g4-live-write-then-close-20260909.json",
           "probes/reconcile_g4_write_then_close.py",
           "tests/test_g4_live_write_then_close.py",
-          "tests/test_reconcile_g4_write_then_close.py"
+          "tests/test_reconcile_g4_write_then_close.py",
+          "probes/g4-live-handover-cleanup-close-20260909.json",
+          "probes/reconcile_g4_handover_then_close.py",
+          "tests/test_g4_live_handover_cleanup_close.py"
         ]
       },
       {

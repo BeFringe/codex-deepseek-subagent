@@ -30,7 +30,9 @@ from compatibility_state import (  # noqa: E402
 )
 from reconcile_g4_read_only_close import (  # noqa: E402
     AGENT_TYPE,
+    CLOSE_FIELDS,
     ReconciliationError,
+    json_object,
     parse_timestamp,
     read_json,
     read_jsonl,
@@ -54,6 +56,8 @@ PRIOR_TARGET_CONTENT = "G4_CHILD_WRITE_QUALIFIED\n"
 TARGET_CONTENT = "G4_HANDOVER_WRITE_QUALIFIED\n"
 VERIFICATION = "exact-path post-quiescence child handover qualification probe"
 HANDOVER_INVARIANT = "exact prior quiescence barrier handover"
+CLEANUP_PARENT_CALLS = ["spawn_agent", "wait_agent", "close_agent"]
+TOOL_NAMESPACE = "g4_assignment"
 
 
 def capture_snapshot(capsule: Mapping[str, Any]) -> dict[str, Any]:
@@ -182,6 +186,20 @@ def validate_prior_handover(
     prior_binding = prior.get("binding")
     expected_prior_snapshot = capture_snapshot(capsule)
     termination = prior.get("termination_evidence")
+    accepted_termination = (
+        (
+            "native_close_agent_after_accepted_write_report",
+            "closed_catalog_write_actor_terminated_and_mutations_quiesced",
+        ),
+        (
+            "native_close_agent_after_completed_handover_report",
+            "completed_handover_actor_cleanup_close_and_mutations_quiesced",
+        ),
+        (
+            "native_close_agent_after_accepted_handover_report",
+            "closed_catalog_handover_actor_terminated_and_mutations_quiesced",
+        ),
+    )
     if not (
         prior_capsule["assignment_id"] == expected_prior_assignment_id
         and prior_capsule["root"]["path"] == capsule["root"]["path"]
@@ -189,9 +207,11 @@ def validate_prior_handover(
         and isinstance(prior_binding, dict)
         and isinstance(prior_final, dict)
         and isinstance(termination, dict)
-        and termination.get("reason") == "native_close_agent_after_accepted_write_report"
-        and termination.get("classification")
-        == "closed_catalog_write_actor_terminated_and_mutations_quiesced"
+        and (
+            termination.get("reason"),
+            termination.get("classification"),
+        )
+        in accepted_termination
         and barrier["prior_assignment_id"] == expected_prior_assignment_id
         and barrier["barrier_sha256"] == expected_prior_barrier_sha256
         and barrier["snapshot_sha256"] == handover["snapshot_sha256"]
@@ -239,8 +259,9 @@ def validate_writer_evidence(
         and receipt["paths"] == capsule["owned_paths"]
         and receipt["tool_name"] == "apply_patch"
         and receipt["ownership_handover"] == capsule["ownership_handover"]
-        and receipt["before_snapshot"] == capture_snapshot(capsule)
+        and receipt["before_snapshot_sha256"] == capsule["capture_snapshot_sha256"]
         and receipt["after_snapshot"] == expected_snapshot
+        and receipt["after_snapshot_sha256"] == git_snapshot_sha256(expected_snapshot)
         and target.read_text(encoding="utf-8") == TARGET_CONTENT
         and expected_snapshot["changed_paths"]
         == [
@@ -262,6 +283,8 @@ def validate_child_lifecycle(
     writer_receipt: dict[str, Any],
     target: Path,
     close_returned_at: dt.datetime,
+    *,
+    completed_cleanup_close: bool = False,
 ) -> dict[str, Any]:
     calls = response_items(records, "custom_tool_call")
     outputs = response_items(records, "custom_tool_call_output")
@@ -323,6 +346,31 @@ def validate_child_lifecycle(
         if item.get("role") == "user"
         and message_text(item).endswith(f"Payload:\n{FOLLOWUP_HOLD}")
     ]
+    if not task_started or len(task_complete) != 1:
+        raise ReconciliationError("replacement task lifecycle is incomplete")
+    call_at = parse_timestamp(call_record.get("timestamp"), "replacement apply_patch")
+    output_at = parse_timestamp(output_record.get("timestamp"), "replacement output")
+    final_at = parse_timestamp(assistant[0][0].get("timestamp"), "replacement final")
+    complete_at = parse_timestamp(task_complete[0].get("timestamp"), "replacement completion")
+    if completed_cleanup_close:
+        if not (
+            len(task_started) == 1
+            and len(task_complete) == 1
+            and not aborted
+            and not hold_messages
+            and task_started[0]["payload"].get("turn_id")
+            == task_complete[0]["payload"].get("turn_id")
+            and call_at < output_at < final_at <= complete_at <= close_returned_at
+        ):
+            raise ReconciliationError(
+                "completed replacement and direct cleanup close are not exact"
+            )
+        return {
+            "final_text": final_text,
+            "first_turn_completed_at": complete_at,
+            "second_turn_started_at": None,
+            "turn_aborted_at": None,
+        }
     if not (
         len(task_started) == 2
         and len(task_complete) == 1
@@ -337,10 +385,6 @@ def validate_child_lifecycle(
         != task_started[1]["payload"].get("turn_id")
     ):
         raise ReconciliationError("replacement completion and interrupted close hold are not exact")
-    call_at = parse_timestamp(call_record.get("timestamp"), "replacement apply_patch")
-    output_at = parse_timestamp(output_record.get("timestamp"), "replacement output")
-    final_at = parse_timestamp(assistant[0][0].get("timestamp"), "replacement final")
-    complete_at = parse_timestamp(task_complete[0].get("timestamp"), "replacement completion")
     hold_at = parse_timestamp(hold_messages[0][0].get("timestamp"), "replacement close hold")
     second_start_at = parse_timestamp(task_started[1].get("timestamp"), "replacement second start")
     aborted_at = parse_timestamp(aborted[0].get("timestamp"), "replacement abort")
@@ -357,6 +401,135 @@ def validate_child_lifecycle(
     }
 
 
+def validate_completed_cleanup_parent_lifecycle(
+    records: list[dict[str, Any]],
+    capsule: dict[str, Any],
+    binding: dict[str, Any],
+    assignment: str,
+    child_final: str,
+    child_first_completed_at: dt.datetime,
+) -> dict[str, Any]:
+    calls = response_items(records, "function_call")
+    selected = [
+        (record, item)
+        for record, item in calls
+        if item.get("namespace") == TOOL_NAMESPACE
+    ]
+    if len(calls) != len(selected) or [
+        item.get("name") for _, item in selected
+    ] != CLEANUP_PARENT_CALLS:
+        raise ReconciliationError("parent cleanup tool order is not exact spawn/wait/close")
+    outputs = {
+        item.get("call_id"): (record, item)
+        for record, item in response_items(records, "function_call_output")
+    }
+    if any(item.get("call_id") not in outputs for _, item in selected):
+        raise ReconciliationError("parent cleanup lifecycle has a missing output")
+    canonical_path = capsule["canonical_agent_path"]
+    child_thread = binding["child_thread_id"]
+
+    spawn_record, spawn = selected[0]
+    if not (
+        spawn.get("call_id") == capsule["spawn_tool_use_id"]
+        and json_object(spawn.get("arguments"), "spawn arguments")
+        == {
+            "agent_type": AGENT_TYPE,
+            "task_name": capsule["requested_task_name"],
+            "fork_turns": "none",
+            "message": assignment,
+        }
+    ):
+        raise ReconciliationError("parent cleanup spawn does not match the durable assignment")
+    spawn_output_record, spawn_output = outputs[spawn["call_id"]]
+    if json_object(spawn_output.get("output"), "spawn output") != {
+        "task_name": canonical_path
+    }:
+        raise ReconciliationError("parent cleanup spawn output is not the canonical AgentPath")
+
+    wait_record, wait_call = selected[1]
+    wait_output_record, wait_output_item = outputs[wait_call["call_id"]]
+    wait_output = json_object(wait_output_item.get("output"), "wait output")
+    if not (
+        json_object(wait_call.get("arguments"), "wait arguments")
+        == {"timeout_ms": 60000}
+        and wait_output == {"message": "Wait completed.", "timed_out": False}
+    ):
+        raise ReconciliationError("parent cleanup did not observe first-turn completion")
+    callbacks = [
+        (record, item)
+        for record, item in response_items(records, "message")
+        if item.get("role") == "user"
+        and message_text(item).startswith("Message Type: FINAL_ANSWER\n")
+    ]
+    expected_callback = (
+        "Message Type: FINAL_ANSWER\n"
+        "Task name: /root\n"
+        f"Sender: {canonical_path}\n"
+        f"Payload:\n{child_final}"
+    )
+    if len(callbacks) != 1 or message_text(callbacks[0][1]) != expected_callback:
+        raise ReconciliationError("parent cleanup callback is not byte-identical")
+
+    close_record, close_call = selected[2]
+    if json_object(close_call.get("arguments"), "close arguments") != {
+        "target": canonical_path
+    }:
+        raise ReconciliationError("parent cleanup close target is not the canonical AgentPath")
+    close_output_record, close_output = outputs[close_call["call_id"]]
+    close = json_object(close_output.get("output"), "close output")
+    empty_map = {child_thread: []}
+    if not (
+        set(close) == CLOSE_FIELDS
+        and close["previous_status"] == {"completed": child_final}
+        and close["target_thread_id"] == child_thread
+        and close["target_agent_path"] == canonical_path
+        and close["session_loop_terminated"] is True
+        and close["model_callable_process_bootstrap_absent"] is True
+        and close["tracked_background_processes_before_close"] == 0
+        and close["tracked_process_ids_by_thread"] == empty_map
+        and close["confirmed_exit_process_ids_by_thread"] == empty_map
+        and close["unconfirmed_exit_process_ids_by_thread"] == empty_map
+        and close["unresolved_start_process_ids_by_thread"] == empty_map
+        and close["tracked_process_termination_confirmed"] is True
+        and close["closed_catalog_actor_quiescence_claimed"] is True
+        and close["process_tree_quiescence_claimed"] is False
+    ):
+        raise ReconciliationError("completed-child cleanup close receipt is not exact")
+    callback_at = parse_timestamp(callbacks[0][0].get("timestamp"), "parent callback")
+    spawn_at = parse_timestamp(spawn_record.get("timestamp"), "parent spawn")
+    spawn_returned_at = parse_timestamp(
+        spawn_output_record.get("timestamp"),
+        "parent spawn output",
+    )
+    wait_at = parse_timestamp(wait_record.get("timestamp"), "parent wait")
+    wait_returned_at = parse_timestamp(
+        wait_output_record.get("timestamp"),
+        "parent wait output",
+    )
+    close_at = parse_timestamp(close_record.get("timestamp"), "parent cleanup close")
+    close_returned_at = parse_timestamp(
+        close_output_record.get("timestamp"),
+        "parent cleanup close output",
+    )
+    if not (
+        spawn_at
+        < spawn_returned_at
+        < wait_at
+        < child_first_completed_at
+        <= wait_returned_at
+        <= callback_at
+        < close_at
+        < close_returned_at
+    ):
+        raise ReconciliationError("parent completed-child cleanup ordering is invalid")
+    return {
+        "close_tool_use_id": close_call["call_id"],
+        "close_receipt": close,
+        "close_receipt_sha256": sha256_json(close),
+        "terminated_at": close_returned_at,
+    }
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--state-directory", type=Path, required=True)
@@ -370,6 +543,7 @@ def main() -> int:
     parser.add_argument("--candidate", type=Path, required=True)
     parser.add_argument("--expected-candidate-sha256", required=True)
     parser.add_argument("--barrier-delay-seconds", type=float, default=2.0)
+    parser.add_argument("--completed-cleanup-close", action="store_true")
     arguments = parser.parse_args()
     try:
         if not 0 <= arguments.barrier_delay_seconds <= 10:
@@ -411,44 +585,49 @@ def main() -> int:
         )
 
         first = observe_barrier(Path(capsule["root"]["path"]), candidate)
-        parent_preview = validate_parent_lifecycle(
-            parent_records,
-            capsule,
-            binding,
-            envelope["assignment"],
-            message_text(
-                next(
-                    item
-                    for _, item in response_items(child_records, "message")
-                    if item.get("role") == "assistant"
-                )
-            ),
-            parse_timestamp(
-                next(
-                    record.get("timestamp")
-                    for record in child_records
-                    if record.get("type") == "event_msg"
-                    and isinstance(record.get("payload"), dict)
-                    and record["payload"].get("type") == "task_complete"
-                ),
-                "replacement first completion",
-            ),
+        child_final = message_text(
+            next(
+                item
+                for _, item in response_items(child_records, "message")
+                if item.get("role") == "assistant"
+            )
         )
+        child_first_completed_at = parse_timestamp(
+            next(
+                record.get("timestamp")
+                for record in child_records
+                if record.get("type") == "event_msg"
+                and isinstance(record.get("payload"), dict)
+                and record["payload"].get("type") == "task_complete"
+            ),
+            "replacement first completion",
+        )
+        if arguments.completed_cleanup_close:
+            lifecycle = validate_completed_cleanup_parent_lifecycle(
+                parent_records,
+                capsule,
+                binding,
+                envelope["assignment"],
+                child_final,
+                child_first_completed_at,
+            )
+        else:
+            lifecycle = validate_parent_lifecycle(
+                parent_records,
+                capsule,
+                binding,
+                envelope["assignment"],
+                child_final,
+                child_first_completed_at,
+            )
         child_lifecycle = validate_child_lifecycle(
             child_records,
             capsule,
             attestation,
             writer_receipt,
             target,
-            parent_preview["terminated_at"],
-        )
-        lifecycle = validate_parent_lifecycle(
-            parent_records,
-            capsule,
-            binding,
-            envelope["assignment"],
-            child_lifecycle["final_text"],
-            child_lifecycle["first_turn_completed_at"],
+            lifecycle["terminated_at"],
+            completed_cleanup_close=arguments.completed_cleanup_close,
         )
         hook_events = validate_hook_chain(
             read_json(arguments.hook_chain),
@@ -472,10 +651,26 @@ def main() -> int:
 
         parent_sha256 = sha256_file(arguments.parent_rollout)
         child_sha256 = sha256_file(arguments.child_rollout)
+        close_mode = (
+            "completed_cleanup_close"
+            if arguments.completed_cleanup_close
+            else "resumed_running_close"
+        )
+        if arguments.completed_cleanup_close:
+            reason = "native_close_agent_after_completed_handover_report"
+            classification = (
+                "completed_handover_actor_cleanup_close_and_mutations_quiesced"
+            )
+        else:
+            reason = "native_close_agent_after_accepted_handover_report"
+            classification = (
+                "closed_catalog_handover_actor_terminated_and_mutations_quiesced"
+            )
         evidence = {
             "schema": 1,
-            "reason": "native_close_agent_after_accepted_handover_report",
-            "classification": "closed_catalog_handover_actor_terminated_and_mutations_quiesced",
+            "reason": reason,
+            "classification": classification,
+            "close_mode": close_mode,
             "prior_assignment_id": arguments.expected_prior_assignment_id,
             "prior_barrier_sha256": prior_barrier["barrier_sha256"],
             "runtime_session_id": capsule["runtime_session_id"],
@@ -488,8 +683,16 @@ def main() -> int:
             "child_rollout_sha256": child_sha256,
             "hook_sequences": [event["sequence"] for event in hook_events],
             "first_turn_completed_at": child_lifecycle["first_turn_completed_at"].isoformat(),
-            "second_turn_started_at": child_lifecycle["second_turn_started_at"].isoformat(),
-            "child_turn_aborted_at": child_lifecycle["turn_aborted_at"].isoformat(),
+            "second_turn_started_at": (
+                child_lifecycle["second_turn_started_at"].isoformat()
+                if child_lifecycle["second_turn_started_at"] is not None
+                else None
+            ),
+            "child_turn_aborted_at": (
+                child_lifecycle["turn_aborted_at"].isoformat()
+                if child_lifecycle["turn_aborted_at"] is not None
+                else None
+            ),
             "terminated_at": lifecycle["terminated_at"].isoformat(),
             "process_tree_quiescence_claimed": False,
         }
@@ -528,6 +731,7 @@ def main() -> int:
             "parent_rollout_sha256": parent_sha256,
             "child_rollout_sha256": child_sha256,
             "hook_sequences": evidence["hook_sequences"],
+            "close_mode": close_mode,
             "process_tree_quiescence_claimed": False,
             "direct_write_qualified": False,
         }

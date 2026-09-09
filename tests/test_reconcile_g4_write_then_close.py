@@ -152,6 +152,11 @@ class G4WriteThenCloseReconciliationTests(unittest.TestCase):
             "process_tree_quiescence_claimed": False,
         }
 
+    def completed_cleanup_close_receipt(self):
+        receipt = self.close_receipt()
+        receipt["previous_status"] = {"completed": self.final_text()}
+        return receipt
+
     def parent_records(self, *, close=None, callback=None):
         close = close or self.close_receipt()
         callback = callback or (
@@ -198,10 +203,38 @@ class G4WriteThenCloseReconciliationTests(unittest.TestCase):
             self.output("post-list", post, "2026-09-09T00:00:08.1Z"),
         ]
 
+    def completed_cleanup_parent_records(self, *, close=None, callback=None):
+        close = close or self.completed_cleanup_close_receipt()
+        callback = callback or (
+            "Message Type: FINAL_ANSWER\n"
+            "Task name: /root\n"
+            f"Sender: {self.agent_path}\n"
+            f"Payload:\n{self.final_text()}"
+        )
+        spawn_arguments = {
+            "agent_type": reconciler.AGENT_TYPE,
+            "task_name": "g4_p5b_write_close_test",
+            "fork_turns": "none",
+            "message": self.assignment,
+        }
+        return [
+            self.call("spawn_agent", self.spawn_id, spawn_arguments, "2026-09-09T00:00:00Z"),
+            self.output(self.spawn_id, {"task_name": self.agent_path}, "2026-09-09T00:00:00.1Z"),
+            self.call("wait_agent", "wait-call", {"timeout_ms": 60000}, "2026-09-09T00:00:01Z"),
+            self.output(
+                "wait-call",
+                {"message": "Wait completed.", "timed_out": False},
+                "2026-09-09T00:00:03.1Z",
+            ),
+            self.message("user", callback, "2026-09-09T00:00:03.2Z"),
+            self.call("close_agent", "close-call", {"target": self.agent_path}, "2026-09-09T00:00:04Z"),
+            self.output("close-call", close, "2026-09-09T00:00:05Z"),
+        ]
+
     def writer_receipt(self):
         return {"tool_use_id": self.write_id}
 
-    def child_records(self, *, handover=False):
+    def child_records(self, *, handover=False, completed_cleanup=False):
         if handover:
             expected_patch = (
                 "*** Begin Patch\n"
@@ -218,7 +251,7 @@ class G4WriteThenCloseReconciliationTests(unittest.TestCase):
                 "+G4_CHILD_WRITE_QUALIFIED\n"
                 "*** End Patch\n"
             )
-        return [
+        records = [
             {
                 "timestamp": "2026-09-09T00:00:00.2Z",
                 "type": "event_msg",
@@ -249,6 +282,10 @@ class G4WriteThenCloseReconciliationTests(unittest.TestCase):
                 "type": "event_msg",
                 "payload": {"type": "task_complete", "turn_id": "first-turn"},
             },
+        ]
+        if completed_cleanup:
+            return records
+        return records + [
             {
                 "timestamp": "2026-09-09T00:00:04.2Z",
                 "type": "event_msg",
@@ -365,6 +402,65 @@ class G4WriteThenCloseReconciliationTests(unittest.TestCase):
                 self.writer_receipt(),
                 self.target,
                 dt.datetime.fromisoformat("2026-09-09T00:00:07+00:00"),
+            )
+
+    def test_completed_handover_cleanup_close_is_distinct_and_exact(self):
+        self.target.write_text(
+            handover_reconciler.TARGET_CONTENT,
+            encoding="utf-8",
+        )
+        self.attestation["changed_paths"][0]["sha256"] = reconciler.sha256_file(
+            self.target
+        )
+        completed_at = dt.datetime.fromisoformat("2026-09-09T00:00:03.050+00:00")
+        parent = handover_reconciler.validate_completed_cleanup_parent_lifecycle(
+            self.completed_cleanup_parent_records(),
+            self.capsule(),
+            self.binding(),
+            self.assignment,
+            self.final_text(),
+            completed_at,
+        )
+        child = handover_reconciler.validate_child_lifecycle(
+            self.child_records(handover=True, completed_cleanup=True),
+            self.capsule(),
+            self.attestation,
+            self.writer_receipt(),
+            self.target,
+            parent["terminated_at"],
+            completed_cleanup_close=True,
+        )
+        self.assertEqual(parent["close_receipt"]["previous_status"], {"completed": self.final_text()})
+        self.assertIsNone(child["second_turn_started_at"])
+        self.assertIsNone(child["turn_aborted_at"])
+
+        wrong = self.close_receipt()
+        with self.assertRaisesRegex(
+            reconciler.ReconciliationError,
+            "completed-child cleanup close receipt",
+        ):
+            handover_reconciler.validate_completed_cleanup_parent_lifecycle(
+                self.completed_cleanup_parent_records(close=wrong),
+                self.capsule(),
+                self.binding(),
+                self.assignment,
+                self.final_text(),
+                completed_at,
+            )
+
+        early_wait = self.completed_cleanup_parent_records()
+        early_wait[3]["timestamp"] = "2026-09-09T00:00:02.9Z"
+        with self.assertRaisesRegex(
+            reconciler.ReconciliationError,
+            "cleanup ordering",
+        ):
+            handover_reconciler.validate_completed_cleanup_parent_lifecycle(
+                early_wait,
+                self.capsule(),
+                self.binding(),
+                self.assignment,
+                self.final_text(),
+                completed_at,
             )
 
     def test_unconfirmed_process_and_second_child_tool_fail_closed(self):

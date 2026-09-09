@@ -4159,3 +4159,73 @@ process-tree quiescence remain open. The accepted contribution remains
 unresolved rather than integrated. P5b stays `partial`;
 `phase1_complete=false`, `direct_write_qualified=false`, and Phases 2/3 remain
 closed.
+
+## Live exact post-quiescence child handover and completed-actor cleanup close
+
+The next isolated headless run consumed the mutation actor barrier above instead
+of recapturing or silently replacing its dirty frontier. The replacement
+capsule bound prior assignment
+`e80799bf-584e-45b6-8bb2-d1ab39ebc51b`, barrier
+`d4632de6ab1468b34ffb4bd0e1e606e053164945bf0aa694183c9fc896e5cf39`,
+and snapshot
+`7604313a214ba5f3deae0649c79ae06b79c7b4127e35a1e20c3f9098365ad691`.
+The capsule capture had the same snapshot hash and the exact preexisting target
+hash `4fd8e8f97e640e495fefed6d4fdb0467c4e5835d9bd006173da14af37698ac8c`.
+No writer hold or overlapping writer was synthesized.
+
+Real SessionMeta then bound replacement child
+`01a0854b-3746-7221-afbf-66f6e2e51050` to canonical AgentPath
+`/root/g4_p5b_handover_close_2` under parent/runtime session
+`01a0854a-793c-7c30-8c58-70cd5115b8ce`. The distinct handover Hook ceiling
+allowed only one existing regular target under the fixed temporary namespace.
+Hook sequences 2819 through 2823 were contiguous: spawn PreToolUse,
+SubagentStart, child `apply_patch` PreToolUse, same-id PostToolUse, and accepted
+SubagentStop. Writer receipt
+`37fe946aec067c899be6f22bbac1dcb39cc9e1b32f9d062f603fd3f5195bc5c1`
+joins the replacement identity, the prior barrier, the exact owned path, before
+snapshot hash, after snapshot hash, tool-use id, and new target hash
+`a8f1339e5606929e1b7b1ef503d539da952becc5ea19cd94b4a749a0240860e8`.
+No stage, commit, branch, or push authority was granted.
+
+The child completed its only turn and the parent received a byte-identical
+callback payload. The parent did not successfully trigger the intended
+read-only hold turn; it called `close_agent` after completion for cleanup. The
+receipt therefore had a completed-status object containing the exact child
+final, rather than `previous_status=running`. It still bound the exact child and
+canonical AgentPath, reported an absent process bootstrap, zero tracked
+background processes, four empty exact-child process maps, confirmed tracked
+process termination, and closed-catalog actor quiescence. It truthfully retained
+`process_tree_quiescence_claimed=false`. This run is classified only as
+`completed_cleanup_close`; it does not borrow the earlier running-actor close
+semantics.
+
+`probes/reconcile_g4_handover_then_close.py` independently required the prior
+unresolved record and barrier, immutable replacement capsule, both real
+SessionMeta records, one exact update patch, schema-2 writer receipt, accepted
+attestation, exact callback, completed-child cleanup receipt, five-event Hook
+chain, target bytes, absence of an in-root writer claim, executable candidate
+hash, and two stable post-close disk observations. Only after every join passed
+did it move assignment `f03919cd-6418-4adc-b989-ca1eb75b45be` from `reported`
+to `unresolved` and publish replacement barrier
+`13adabfadc392654e3531a1c4c45a5a335158ecb8d35aad16ecc8c13cf2ddad1`.
+Raw rollouts and tool payloads remain outside Git; the privacy-minimized record
+is `probes/g4-live-handover-cleanup-close-20260909.json`.
+
+The first attempted handover run had failed before child spawn because its stop
+condition did not bind the exact bounded completion wording. The target and
+durable state were unchanged. That fail-closed result led to a prompt-only
+wording correction, not a relaxation of the handover ceiling.
+
+Fresh executable verification passed all 742 provider-free tests in 57.377
+seconds, including agent-template checks. Normal Phase 1, thirteen-surface
+mutation, same-UID trust, and semantic runtime-index checks returned zero. Their
+Phase 1, mutation, and same-UID promotion forms returned 2 as designed.
+
+This is a positive exact sequential ownership-handover result for the two named
+actors and one path. It does not cover an in-flight handover, a parent/sibling
+claim race before, during, or after transfer, an already-open PTY, other
+mutation surfaces, detached descendants, or strong global process-tree
+quiescence. It also does not add a second resumed-running termination result;
+that property remains supported only by the preceding bounded actor run. P5b
+stays `partial`; `phase1_complete=false`, `direct_write_qualified=false`, and
+Phases 2/3 remain closed.
