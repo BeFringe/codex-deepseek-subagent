@@ -93,14 +93,16 @@ class G4LiveHashBoundFinalReceiptTests(unittest.TestCase):
         self.assertFalse(verification["same_uid_rollout_protected"])
         self.assertFalse(verification["same_uid_state_protected"])
 
-    def test_partial_gates_reference_the_frozen_receipt(self):
+    def test_gates_reference_the_frozen_receipt_without_opening_phase1(self):
         status = json.loads(STATUS.read_text(encoding="utf-8"))
         gates = {gate["id"]: gate for gate in status["phase1"]["gates"]}
         receipt_path = "probes/g4-live-hash-bound-final-receipt-20260909.json"
         for gate_id in ("P1", "P2", "P3", "P4", "P5b", "P6", "P6a", "P6b", "P7"):
             self.assertIn(receipt_path, gates[gate_id]["evidence"])
         self.assertEqual(gates["P1"]["state"], "qualified")
-        for gate_id in ("P2", "P3", "P4", "P5b", "P6", "P6a", "P6b", "P7"):
+        for gate_id in ("P2", "P3", "P6", "P6a"):
+            self.assertEqual(gates[gate_id]["state"], "qualified")
+        for gate_id in ("P4", "P5b", "P6b", "P7"):
             self.assertEqual(gates[gate_id]["state"], "partial")
 
 

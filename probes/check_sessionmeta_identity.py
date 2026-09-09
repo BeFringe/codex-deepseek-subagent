@@ -8,7 +8,7 @@ import argparse
 import datetime as dt
 import hashlib
 import json
-from pathlib import Path
+from pathlib import Path, PurePosixPath, PureWindowsPath
 import re
 import sys
 import uuid
@@ -137,14 +137,21 @@ def _timestamp(value, label: str) -> dt.datetime:
     return parsed
 
 
+def _absolute_path_flavor(value: str, label: str) -> str:
+    if PureWindowsPath(value).is_absolute():
+        return "windows"
+    if PurePosixPath(value).is_absolute():
+        return "posix"
+    raise IdentityEvidenceError(f"{label} must be an absolute POSIX or Windows path")
+
+
 def _session_meta(
     rollout, label: str, *, codex_version: str
-) -> tuple[str, dict, str]:
+) -> tuple[str, str, dict, str]:
     rollout = _object(rollout, label)
     _exact_fields(rollout, {"path", "session_meta_line"}, set(), label)
     path = _string(rollout["path"], f"{label}.path")
-    if not Path(path).is_absolute():
-        raise IdentityEvidenceError(f"{label}.path must be absolute")
+    path_flavor = _absolute_path_flavor(path, f"{label}.path")
     line = _string(rollout["session_meta_line"], f"{label}.session_meta_line")
     encoded = line.encode("utf-8")
     if len(encoded) > MAX_SESSION_META_LINE or not line.endswith("\n"):
@@ -180,7 +187,7 @@ def _session_meta(
         raise IdentityEvidenceError(
             f"{label} SessionMeta payload timestamp is later than its rollout record"
         )
-    return path, payload, hashlib.sha256(encoded).hexdigest()
+    return path, path_flavor, payload, hashlib.sha256(encoded).hexdigest()
 
 
 def _thread_spawn(meta: dict, label: str) -> dict:
@@ -293,12 +300,12 @@ def _observation(value: dict, *, codex_version: str) -> dict:
     if start["agent_type"] != agent_type:
         raise IdentityEvidenceError(f"{case_id} start role does not match spawn role")
 
-    parent_path, parent_meta, parent_line_sha256 = _session_meta(
+    parent_path, parent_path_flavor, parent_meta, parent_line_sha256 = _session_meta(
         value["parent_rollout"],
         f"{case_id}.parent_rollout",
         codex_version=codex_version,
     )
-    child_path, child_meta, child_line_sha256 = _session_meta(
+    child_path, child_path_flavor, child_meta, child_line_sha256 = _session_meta(
         value["child_rollout"],
         f"{case_id}.child_rollout",
         codex_version=codex_version,
@@ -309,6 +316,10 @@ def _observation(value: dict, *, codex_version: str) -> dict:
         raise IdentityEvidenceError(f"{case_id} start transcript path is not the child rollout")
     if parent_path == child_path:
         raise IdentityEvidenceError(f"{case_id} parent and child transcripts are identical")
+    if parent_path_flavor != child_path_flavor:
+        raise IdentityEvidenceError(
+            f"{case_id} parent and child transcript path flavors do not match"
+        )
 
     parent_session = _uuid7(parent_meta.get("session_id"), f"{case_id}.parent session_id")
     parent_id = _uuid7(parent_meta.get("id"), f"{case_id}.parent id")
@@ -388,6 +399,7 @@ def _observation(value: dict, *, codex_version: str) -> dict:
         "start_turn_id": start_turn_id,
         "parent_transcript_path": parent_path,
         "child_transcript_path": child_path,
+        "path_flavor": child_path_flavor,
         "parent_session_meta_line_sha256": parent_line_sha256,
         "child_session_meta_line_sha256": child_line_sha256,
     }
@@ -461,6 +473,10 @@ def validate_bundle(value, *, minimum_per_case: int = 2) -> dict:
         "evidence_origin": value["evidence_origin"],
         "minimum_per_case": minimum_per_case,
         "case_counts": counts,
+        "path_flavors": {
+            flavor: sum(receipt["path_flavor"] == flavor for receipt in receipts)
+            for flavor in ("posix", "windows")
+        },
         "observations": sorted(receipts, key=lambda receipt: receipt["case_id"]),
     }
     return {
@@ -468,6 +484,7 @@ def validate_bundle(value, *, minimum_per_case: int = 2) -> dict:
         "mechanically_exact": True,
         "matrix_complete": matrix_complete,
         "case_counts": counts,
+        "path_flavors": normalized["path_flavors"],
         "observation_count": len(receipts),
         "agent_type": next(iter(roles)),
         "bundle_sha256": _canonical_sha256(value),

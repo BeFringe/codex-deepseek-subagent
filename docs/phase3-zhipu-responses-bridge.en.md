@@ -1,12 +1,13 @@
-# Phase 3: Optional Responses Bridge for a ZHIPU Child
+# Phase 3: ZHIPU Child Responses Qualification and Optional Bridge Fallback
 
 [简体中文](phase3-zhipu-responses-bridge.md) ·
 [Phase 2](phase2-worker-provider-profiles.en.md) ·
 [Phase 1 / G4 probe plan](phase1-g4-probe-plan.md)
 
-Status: **closed and not approved for implementation or installation**. The user
-approved one isolated direct-Responses feasibility probe only; that does not
-open Phase 3. Passing Phase 1 G4 is not sufficient. Work may start only after
+Status: **closed and not approved for productization or installation**. Isolated
+direct-Responses feasibility and a native cross-provider child have each been
+established, but they are not yet one end-to-end Phase 3 qualification and do
+not open Phase 3. Passing Phase 1 G4 is not sufficient. Work may start only after
 the Phase 2 profile is stable, its regression and rollback evidence closes, and
 a separate adjudication marks it complete. This file contains no credential or
 runnable bridge configuration.
@@ -24,11 +25,13 @@ The current official ZHIPU Coding Plan instructions for Codex now specify a
 direct Responses configuration: `base_url = "https://open.bigmodel.cn/api/v1"`
 and `wire_api = "responses"`. This removes “a protocol bridge is necessarily
 required” as a default assumption, but establishes only a candidate wire. The
-official manual configuration switches the global `model_provider`, which does
-not satisfy this project's unchanged-OpenAI-parent boundary. Codex `0.149.0+`
-also prevents a child role from overriding its inherited parent provider. The
-native `zhipu_plan_worker` provider entry seam therefore remains unavailable,
-and Phase 3 stays closed.
+official manual configuration switches the global `model_provider`, which by
+itself does not satisfy this project's unchanged-OpenAI-parent boundary. The
+current source candidate now uses a parent-owned exact-child provider seam for
+one isolated native ZHIPU child path. Phase 3 remains closed because that seam
+and direct Responses have not yet passed one joined streaming/tool
+continuation/cancellation/termination/platform/rollback qualification, not
+because a provider entry is categorically absent.
 
 ```text
 OpenAI parent ─────────────────────────────→ native OpenAI

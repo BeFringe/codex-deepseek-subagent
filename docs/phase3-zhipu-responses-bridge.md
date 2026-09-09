@@ -1,11 +1,12 @@
-# Phase 3：ZHIPU child optional Responses bridge 阶段契约
+# Phase 3：ZHIPU child Responses 资格与 optional bridge fallback
 
 [English](phase3-zhipu-responses-bridge.en.md) ·
 [Phase 2](phase2-worker-provider-profiles.md) ·
 [Phase 1 / G4 probe plan](phase1-g4-probe-plan.md)
 
-状态：**关闭，未获准设计实现或安装**。用户只批准了一个隔离的 direct-Responses
-feasibility probe；这不等于打开 Phase 3。Phase 1 G4 通过还不够；只有 Phase 2 profile
+状态：**关闭，未获准产品化或安装**。隔离 direct-Responses feasibility 和 native
+cross-provider child 已分别成立；两者仍未组成完整 Phase 3 qualification，也不等于打开
+Phase 3。Phase 1 G4 通过还不够；只有 Phase 2 profile
 稳定、回归与回滚证据闭合并被独立裁决完成后，才能开始本阶段。本文不包含 credential
 或可运行 bridge 配置。
 
@@ -19,9 +20,11 @@ ZHIPU 当前 endpoint 是否已直接满足 Codex 所需 Responses 语义；若�
 当前 ZHIPU Coding Plan 官方 Codex 文档已给出 Responses direct 配置：
 `base_url = "https://open.bigmodel.cn/api/v1"` 与 `wire_api = "responses"`。这使
 “必须建 protocol bridge”不再是默认假设，但只证明 wire 候选。官方手动配置是
-全局切换 `model_provider`，不满足本项目 OpenAI parent 保持不变的边界；同时
-Codex `0.149.0+` 的 child role 无法覆盖继承的 parent provider。因此 native
-`zhipu_plan_worker` 的 provider 入口仍然不可用，Phase 3 继续关闭。
+全局切换 `model_provider`，本身不满足 OpenAI parent 保持不变的边界；但当前 source
+candidate 已通过 parent-owned exact-child provider seam 建立一条隔离的 native ZHIPU
+child 路径。Phase 3 继续关闭的原因现在是这条 seam 与 direct Responses 尚未完成
+streaming/tool continuation/cancel/termination/platform/rollback 的同一端到端资格，不再是
+“provider 入口绝对不存在”。
 
 ```text
 OpenAI parent ─────────────────────────────→ native OpenAI

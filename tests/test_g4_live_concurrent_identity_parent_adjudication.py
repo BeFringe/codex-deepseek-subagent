@@ -145,7 +145,7 @@ class G4LiveConcurrentIdentityParentAdjudicationTests(unittest.TestCase):
         self.assertEqual(verdict["phase3_state"], "closed")
         self.assertFalse(self.result["credential_values_stored"])
 
-    def test_status_keeps_required_gates_partial(self) -> None:
+    def test_status_accumulates_this_receipt_without_opening_phase1(self) -> None:
         status = json.loads(STATUS_PATH.read_text(encoding="utf-8"))
         gates = {gate["id"]: gate for gate in status["phase1"]["gates"]}
         result_path = (
@@ -155,8 +155,10 @@ class G4LiveConcurrentIdentityParentAdjudicationTests(unittest.TestCase):
         self.assertEqual(gates["P1"]["state"], "qualified")
         self.assertIn(result_path, gates["P1"]["evidence"])
         for gate_id in ("P2", "P3", "P6", "P6a", "P6b"):
-            self.assertEqual(gates[gate_id]["state"], "partial")
             self.assertIn(result_path, gates[gate_id]["evidence"])
+        for gate_id in ("P2", "P3", "P6", "P6a"):
+            self.assertEqual(gates[gate_id]["state"], "qualified")
+        self.assertEqual(gates["P6b"]["state"], "partial")
         self.assertFalse(status["phase1"]["declared_complete"])
         self.assertFalse(status["phase1"]["declared_direct_write_qualified"])
 

@@ -183,6 +183,39 @@ class SessionMetaIdentityTests(unittest.TestCase):
         self.assertEqual(result["adjudication_authority"], "none")
         self.assertFalse(result["p2_live_qualified"])
 
+    def test_exact_matrix_accepts_windows_absolute_transcript_paths(self):
+        bundle = copy.deepcopy(self.bundle)
+        for index, item in enumerate(bundle["observations"]):
+            parent_path = rf"C:\Codex\rollouts\parent-{index}.jsonl"
+            child_path = rf"C:\Codex\rollouts\child-{index}.jsonl"
+            cwd = r"C:\work\compatibility-probe"
+            item["capture_hook"]["transcript_path"] = parent_path
+            item["capture_hook"]["cwd"] = cwd
+            item["start_hook"]["transcript_path"] = child_path
+            item["start_hook"]["cwd"] = cwd
+            item["parent_rollout"]["path"] = parent_path
+            item["child_rollout"]["path"] = child_path
+            for rollout_name in ("parent_rollout", "child_rollout"):
+                rollout = item[rollout_name]
+                line = json.loads(rollout["session_meta_line"])
+                line["payload"]["cwd"] = cwd
+                rollout["session_meta_line"] = json.dumps(line) + "\n"
+
+        result = identity_probe.validate_bundle(bundle)
+
+        self.assertTrue(result["matrix_complete"])
+        self.assertEqual(result["path_flavors"], {"posix": 0, "windows": 8})
+        self.assertFalse(result["p2_live_qualified"])
+
+    def test_mixed_parent_child_transcript_path_flavors_fail(self):
+        bundle = copy.deepcopy(self.bundle)
+        item = bundle["observations"][0]
+        windows_path = r"C:\Codex\rollouts\child.jsonl"
+        item["start_hook"]["transcript_path"] = windows_path
+        item["child_rollout"]["path"] = windows_path
+
+        self.assert_invalid(bundle, "path flavors do not match")
+
     def test_wrong_start_child_id_fails(self):
         bundle = copy.deepcopy(self.bundle)
         bundle["observations"][0]["start_hook"]["agent_id"] = uuid7(999)

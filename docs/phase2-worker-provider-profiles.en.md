@@ -35,20 +35,21 @@ The three transport dimensions remain orthogonal:
 ZHIPU is a provider and GLM is a model family. The candidate profile name is
 therefore `glm-thinking`; it must not conflate those concepts.
 
-## Current upstream entry blocker
+## Current entry state
 
-Codex `0.149.0+` agent roles permit bounded model-behavior overrides and
-capability reductions only; the child retains the parent's model provider.
-Exact-source oracles for `0.150.0-alpha.8` and `0.153.4` both establish this
-boundary. The profile model must therefore not assume that `model_provider` in
-a standalone agent TOML can still switch a native child's provider.
+Codex `0.149.0+` standalone agent roles still permit bounded behavior overrides
+and capability reductions only; a role TOML cannot replace the parent's
+provider. The current source candidate now adds a parent-owned, exact-child-role
+`multi_agent_v2.child_model_providers` seam. One isolated headless live sample
+kept the OpenAI parent's provider/auth unchanged while a ZHIPU child completed
+real SessionMeta/AgentPath binding, a native tool loop, callback, and fresh-owner
+consumption.
 
-In addition to complete Phase 1 evidence, entering Phase 2 now requires a new
-upstream seam: bounded native per-child provider/profile selection, or explicit
-user approval to change this project's architectural contract that Codex-native
-lifecycle remains authoritative. Utopia's current MixAgents Broker uses an
-independent App Server lifecycle. It is a relevant alternative architecture,
-but not an entry seam for this Phase 2 or evidence that P7 passes.
+The former conclusion that native cross-provider children have no entry seam is
+therefore stale. This remains an unreleased candidate capability without full
+P1–P7 and platform/provider regression, so it does not open Phase 2. Utopia's
+separate App Server lifecycle remains an alternative architecture, not a
+substitute for this project's native lifecycle.
 
 ## Invariants
 
@@ -91,7 +92,7 @@ This illustrates the design shape only; it is not installable configuration:
     "provider": "zhipu-coding-plan",
     "model": "<qualified GLM model>",
     "assignment_transport": "plaintext-v2",
-    "wire_transport": "responses-bridge",
+    "wire_transport": "responses-direct",
     "request_profile": "glm-thinking"
   },
   "native_worker": {

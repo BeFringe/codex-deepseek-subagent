@@ -824,6 +824,55 @@ the latter cannot stand in for process-death evidence. Missing boundaries,
 same-process observation, primitive drift, or durable-resolution drift fail
 closed.
 
+## Phase 1 scope calibration and finite P2/P3 closure
+
+The 2026-09-09 calibration in
+`docs/phase1-g4-calibration-20260909.md` removes two accidental open-ended
+requirements without weakening G4. P2 no longer waits for an undefined
+"broader cohort": current-runtime live evidence already contains exact root,
+depth-two nested, serial, concurrent, and continued-message identity joins with
+fresh-owner consumption. The provider-free SessionMeta checker now recognizes
+both POSIX and Windows absolute transcript paths, reports the observed path
+flavor, accepts a complete eight-observation Windows-equivalent matrix, and
+rejects a mixed parent/child path flavor. Native Windows live parity remains a
+separate P7 requirement.
+
+P3 is also qualified independently. Existing evidence covers the full keyed
+pending-to-consumed lifecycle, expiry, crash/orphan watchdog recovery,
+first-attestation timeout, compact recovery, invalid-final correction, and
+post-compact drift denial. Strong host mutation/process quiescence remains P4/
+P5b work and is no longer duplicated as an unbounded P3 cohort blocker.
+
+P6 and P6a are likewise closed against their original finite matrices. The
+provider-free negatives reject missing-assignment narrative, slice overclaim,
+disk-hash mismatch, digest-valid forged provenance, and test-only completion;
+the exact-path live child then joins schema-2 PostToolUse provenance, accepted
+SubagentStop, byte-identical callback, stable disk bytes, and fresh-owner
+consumption. Representative scale and mixed-frontier continuity remain P6b/P6c,
+while broader mutation and termination surfaces remain P4/P5b.
+
+The same calibration removes LocalCAT as a required P6c authority. A disposable
+product-independent live bundle and fresh parent/disk adjudication remain
+required; Feature 5 may contribute optional external workload regression or raw
+runtime incidents but cannot promote global direct write.
+
+During this edit, one failed multi-file patch reproduced the
+installed App Server's known missing PostToolUse callback. Claim
+`d1f83a31-1d91-4fa5-9b13-39f54448a071` was recovered only after exact actor
+identity and unchanged before/after path snapshots matched; the resulting
+classification was `aborted_unchanged_after_missing_callback`. No authority or
+bytes were inferred from the failed call. This confirms P5b's callback blocker
+rather than attributing the failure to multi-agent contention.
+
+After updating historical contribution tests so they no longer freeze the
+global gate at the state it had when each receipt was created, the complete
+provider-free suite passed 761 tests in 82.041 seconds plus agent-template
+checks. Normal Phase 1, mutation-surface, same-UID trust, and semantic runtime
+index commands returned zero. Phase 1, mutation, and same-UID promotion modes
+returned 2 as designed. The remaining gate blockers are exactly P4, P5b, P6b,
+P6c, and P7; the SessionMeta exit receipt is qualified, while Phase 1 and direct
+write remain false and Phases 2/3 remain closed.
+
 `hooks/evidence_binding.py` preflights executed root, hashed root, Git source
 identity, and canonical output before invoking the expensive callback. It opens
 each output component using directory fds and no-follow flags, requires a

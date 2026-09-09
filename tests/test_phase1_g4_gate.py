@@ -35,6 +35,27 @@ class Phase1G4GateTests(unittest.TestCase):
         self.assertTrue(result["gate_blockers"])
         self.assertTrue(result["exit_receipt_blockers"])
 
+    def test_finite_identity_lifecycle_final_and_provenance_gates_are_closed(self):
+        value = json.loads(STATUS.read_text(encoding="utf-8"))
+        gates = {gate["id"]: gate for gate in value["phase1"]["gates"]}
+
+        self.assertEqual(gates["P2"]["state"], "qualified")
+        self.assertEqual(gates["P2"]["provider_free"], "pass")
+        self.assertNotIn("blocker", gates["P2"])
+        self.assertEqual(gates["P3"]["state"], "qualified")
+        self.assertEqual(gates["P3"]["provider_free"], "pass")
+        self.assertNotIn("blocker", gates["P3"])
+        self.assertEqual(gates["P6"]["state"], "qualified")
+        self.assertEqual(gates["P6"]["provider_free"], "pass")
+        self.assertNotIn("blocker", gates["P6"])
+        self.assertEqual(gates["P6a"]["state"], "qualified")
+        self.assertEqual(gates["P6a"]["provider_free"], "pass")
+        self.assertNotIn("blocker", gates["P6a"])
+        receipts = {
+            receipt["id"]: receipt for receipt in value["phase1"]["exit_receipts"]
+        }
+        self.assertEqual(receipts["sessionmeta_identity"]["state"], "qualified")
+
     def test_require_complete_fails_closed(self):
         completed = subprocess.run(
             [sys.executable, str(SCRIPT), "--require-phase1-complete"],

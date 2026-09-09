@@ -32,17 +32,17 @@ Worker Profile
 ZHIPU 是 provider，GLM 是 model family，因此候选名称使用 `glm-thinking`，不得把两者
 混成一个含混的 profile 名称。
 
-## 当前上游入口阻断
+## 当前入口状态
 
-Codex `0.149.0+` 的 agent role 只允许受边界约束的模型行为覆盖与能力缩减，
-child 保留 parent 的 model provider。`0.150.0-alpha.8` 和 `0.153.4` 的 exact-source
-oracle 均证明这一点。因此本 profile 模型不得假定 standalone agent TOML 中的
-`model_provider` 仍能为 native child 切换 provider。
+Codex `0.149.0+` 的 standalone agent role 本身仍只能做受边界约束的行为覆盖与能力
+缩减，不能用 role TOML 覆盖 parent provider。当前 source candidate 已增加由 parent
+配置拥有、按 exact child role 选择的 `multi_agent_v2.child_model_providers` seam；一条
+隔离 headless live 样本已证明 OpenAI parent 保持原 provider/auth，而 ZHIPU child 通过
+真实 SessionMeta/AgentPath、native tool loop、callback 和 fresh-owner consumption。
 
-Phase 2 除了要求 Phase 1 完整通过，还需要新的上游入口：受边界约束的 native
-per-child provider/profile 选择，或用户明确批准修改本项目“Codex native lifecycle
-始终保持权威”的架构合同。Utopia 当前的 MixAgents Broker 使用独立 App Server
-lifecycle，是可参考的替代架构，但不是现有 Phase 2 入口或 P7 通过证据。
+因此旧的“跨 provider native child 完全没有入口”结论已过期，但该 seam 仍是未上游发布、
+未完成 P1–P7 与平台/provider 回归的 candidate 能力，不等于打开 Phase 2。Utopia
+MixAgents Broker 的独立 App Server lifecycle 仍不是本项目的 native lifecycle 替代品。
 
 ## 不可变边界
 
@@ -80,7 +80,7 @@ lifecycle，是可参考的替代架构，但不是现有 Phase 2 入口或 P7 �
     "provider": "zhipu-coding-plan",
     "model": "<qualified GLM model>",
     "assignment_transport": "plaintext-v2",
-    "wire_transport": "responses-bridge",
+    "wire_transport": "responses-direct",
     "request_profile": "glm-thinking"
   },
   "native_worker": {

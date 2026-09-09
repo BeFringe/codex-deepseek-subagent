@@ -74,7 +74,8 @@ class P6cFeature5ReadonlyGapAdjudicationTests(unittest.TestCase):
         )
         self.assertEqual(gate["state"], "partial")
         self.assertEqual(gate["provider_free"], "pass")
-        self.assertIn("dense owner cohort identity", gate["blocker"])
+        self.assertIn("disposable product-independent live root", gate["blocker"])
+        self.assertIn("Feature 5 is not a Phase 1 authority", gate["blocker"])
 
 
 if __name__ == "__main__":

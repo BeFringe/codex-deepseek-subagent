@@ -1,5 +1,10 @@
 # Phase 1 / G4 executable probe plan
 
+2026-09-09 的范围与验收校准见
+[Phase 1/G4 主线校准](phase1-g4-calibration-20260909.md)。该附录移除无界 cohort 与
+LocalCAT 硬依赖，但不降低本计划的 P1–P7、same-UID、sandbox、termination、Windows 或
+DeepSeek 退出条件。
+
 Status: **read-only qualification only**. `direct_write_qualified=false` remains
 mandatory until every live/platform gate below closes. After explicit user
 authorization, a qualification-only live candidate may be installed and trusted

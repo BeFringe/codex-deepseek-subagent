@@ -149,8 +149,10 @@ class P1LivePlaintextMessageDeliveryTests(unittest.TestCase):
         self.assertIn(evidence_path, gates["P1"]["evidence"])
         self.assertNotIn("blocker", gates["P1"])
         for gate_id in ("P2", "P3", "P7"):
-            self.assertEqual(gates[gate_id]["state"], "partial")
             self.assertIn(evidence_path, gates[gate_id]["evidence"])
+        for gate_id in ("P2", "P3"):
+            self.assertEqual(gates[gate_id]["state"], "qualified")
+        self.assertEqual(gates["P7"]["state"], "partial")
         self.assertFalse(status["phase1"]["declared_complete"])
         self.assertFalse(status["phase1"]["declared_direct_write_qualified"])
 
