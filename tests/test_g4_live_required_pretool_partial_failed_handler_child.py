@@ -168,6 +168,8 @@ class G4LiveRequiredPreToolPartialFailedHandlerChildTests(unittest.TestCase):
         self.assertEqual(verification["same_uid_required_exit"], 2)
         self.assertEqual(verification["semantic_runtime_index_exit"], 0)
         verdict = self.receipt["verdict"]
+        self.assertTrue(verdict["required_pretool_runtime_boundary_qualified"])
+        self.assertFalse(verdict["full_actor_by_failure_cross_product_required"])
         self.assertTrue(verdict["exact_child_partial_failed_handler_live_denial_qualified"])
         self.assertTrue(verdict["exact_parent_missing_handler_live_denial_qualified"])
         self.assertFalse(verdict["exact_child_missing_handler_live_denial_qualified"])
@@ -186,6 +188,11 @@ class G4LiveRequiredPreToolPartialFailedHandlerChildTests(unittest.TestCase):
         gates = {gate["id"]: gate for gate in self.status["phase1"]["gates"]}
         self.assertEqual(gates["P4"]["state"], "partial")
         self.assertIn(str(RECEIPT.relative_to(ROOT)), gates["P4"]["evidence"])
+        self.assertIn(
+            "full actor-by-failure cross product is not required",
+            gates["P4"]["source_progress"],
+        )
+        self.assertIn("do not add unbounded actor cohorts", gates["P4"]["finite_remaining_boundary"])
 
 
 if __name__ == "__main__":

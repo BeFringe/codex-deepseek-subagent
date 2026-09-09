@@ -57,10 +57,10 @@ P1–P7 的有限职责如下：
 
 1. 关闭已满足的有限 P2/P3/P6/P6a，保留 P1/P5/P5a 已 qualified 的事实。
 2. P4 的 finalized G4 catalog 已完成 trusted-runtime origin binding；required PreToolUse
-   fail-closed 已形成 source contract，并取得 exact parent missing-handler 与 exact child
-   partial multi-handler failure 的真实 pre-dispatch denial。下一步只补 exact child missing、
-   parent failed-handler、child only-failed-handler，并明确同 UID hostile host 所需的
-   OS/privilege boundary；它们是有限的边界格，不是无界样本扩张。
+   fail-closed 由 parent/child 共用的源码谓词、exact parent missing-handler live denial 与
+   exact child partial multi-handler failure live denial 共同闭合。无需再跑 actor×failure
+   笛卡尔积。P4 下一步只处理 ToolRouter 外的同 UID hostile host、独立 App Server/daemon/
+   control client、已打开进程输入和 external worker bootstrap 的 OS/privilege boundary。
 3. P5b 把现有 tracked-process positive 扩展为 admission freeze、descendant/detached
    boundary 与稳定 disk barrier，不再把 `close_agent` acknowledgement 当全局 quiescence。
 4. P6–P6c 在 disposable product-independent root 形成同一次 invocation/phase/race/live

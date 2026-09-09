@@ -229,6 +229,9 @@
     "semantic_runtime_index_exit": 0
   },
   "verdict": {
+    "required_pretool_runtime_boundary_qualified": true,
+    "qualification_basis": "one shared exact-parent-and-child source predicate plus live parent missing-handler and live child incomplete-multi-handler denial",
+    "full_actor_by_failure_cross_product_required": false,
     "exact_child_partial_failed_handler_live_denial_qualified": true,
     "exact_parent_missing_handler_live_denial_qualified": true,
     "exact_child_missing_handler_live_denial_qualified": false,

@@ -254,7 +254,8 @@
         "id": "P4",
         "state": "partial",
         "provider_free": "partial",
-        "source_progress": "The exact G4 parent and child now require at least one matching synchronous PreToolUse control handler and complete supported adjudication before a closed-catalog tool handler can run. Missing, failed, malformed, or incomplete control results deny at source. One real exact-parent missing-handler call and one real exact-child partial multi-handler failure now prove pre-dispatch denial with unchanged disk barriers. Exact-child missing-handler, parent failed-handler, child only-failed-handler, same-UID hostile-host containment, and independent host-control mediation remain unqualified.",
+        "source_progress": "The required PreToolUse runtime boundary is qualified by one shared exact-parent-and-child source predicate plus live exact-parent missing-handler and exact-child incomplete-multi-handler pre-dispatch denials with unchanged disk barriers. A full actor-by-failure cross product is not required. P4 remains partial only for mutation/control paths outside that closed runtime boundary: independent App Server, daemon and control clients, already-open process input, same-UID state or rollout mutation, external worker bootstrap, and their OS or privilege confinement.",
+        "finite_remaining_boundary": "deny or OS-confine each ToolRouter-external mutation/control path and produce an independent trusted-host receipt; do not add unbounded actor cohorts",
         "evidence": [
           "probes/current-signed-runtime-g4-live-catalog-receipt-source-candidate.json",
           "probes/current-signed-runtime-g4-live-catalog-receipt-source-candidate.patch",

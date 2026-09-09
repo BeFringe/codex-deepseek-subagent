@@ -4545,3 +4545,13 @@ Fresh provider-free verification passed all 777 tests in 81.102 seconds,
 including agent-template checks. Normal Phase 1, mutation-surface, same-UID,
 and semantic runtime-index checks returned zero; Phase 1, mutation, and
 same-UID qualification-required modes returned 2 as designed.
+
+The source predicate is shared by the exact parent and exact child, and its
+focused regressions already cover no-handler and incomplete-adjudication
+semantics. Combined with the two live runs above, both exact actors and both
+failure classes have crossed the real runtime boundary. The required
+PreToolUse subgate is therefore qualified without demanding every redundant
+actor-by-failure permutation. Remaining P4 work is confined to mutation and
+control paths outside that ToolRouter boundary and the independent OS or
+privilege trust receipt; no broader workload or unbounded actor cohort is part
+of this gate.
