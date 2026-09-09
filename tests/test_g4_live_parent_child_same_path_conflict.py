@@ -105,7 +105,8 @@ class G4LiveParentChildSamePathConflictTests(unittest.TestCase):
         evidence = "probes/g4-live-parent-child-same-path-conflict-20260909.json"
         for gate_id in ("P4", "P5b"):
             self.assertIn(evidence, gates[gate_id]["evidence"])
-            self.assertEqual(gates[gate_id]["state"], "partial")
+        self.assertEqual(gates["P4"]["state"], "partial")
+        self.assertEqual(gates["P5b"]["state"], "qualified")
         self.assertFalse(status["phase1"]["declared_complete"])
         self.assertFalse(status["phase1"]["declared_direct_write_qualified"])
 

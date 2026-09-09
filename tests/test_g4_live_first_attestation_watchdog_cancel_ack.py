@@ -167,7 +167,7 @@ class G4LiveFirstAttestationWatchdogCancelAckTests(unittest.TestCase):
         gates = {gate["id"]: gate for gate in status["phase1"]["gates"]}
         self.assertEqual(gates["P5a"]["state"], "qualified")
         self.assertEqual(gates["P5a"]["provider_free"], "pass")
-        self.assertEqual(gates["P5b"]["state"], "partial")
+        self.assertEqual(gates["P5b"]["state"], "qualified")
         self.assertFalse(status["phase1"]["declared_complete"])
         self.assertFalse(status["phase1"]["declared_direct_write_qualified"])
 

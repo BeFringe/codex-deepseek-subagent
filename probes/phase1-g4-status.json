@@ -379,8 +379,8 @@
       },
       {
         "id": "P5b",
-        "state": "partial",
-        "provider_free": "partial",
+        "state": "qualified",
+        "provider_free": "pass",
         "evidence": [
           "probes/g4-live-postcompact-scope-drift-denial-20260908.json",
           "probes/g4-live-postcompact-scope-drift-parent-adjudication-20260908.json",
@@ -469,9 +469,11 @@
           "probes/g4-live-handover-cleanup-close-20260909.json",
           "probes/codex_plaintext_handover_candidate_wrapper.sh",
           "probes/reconcile_g4_handover_then_close.py",
-          "tests/test_g4_live_handover_cleanup_close.py"
+          "tests/test_g4_live_handover_cleanup_close.py",
+          "probes/g4-p5b-closed-catalog-quiescence-adjudication-20260909.json",
+          "tests/test_g4_p5b_closed_catalog_quiescence_adjudication.py"
         ],
-          "blocker": "The installed 0.153.4 App Server still omits PostToolUse when apply_patch fails handler-level context verification: exact PreToolUse created a claim, the target stayed byte-identical, and exact unchanged recovery was required. This is a single-parent callback regression, not multi-agent contention. Exact parent/child same-path apply_patch now has one accepted hash-bound lifecycle and fresh-owner consumption, while the unsuccessful overlap remains quarantined negative evidence. The current-source close candidate adds a bounded observed-exit join: unified-exec managers close admission, wait pending starts, reject later starts, require true local PTY or ExecServer exit witnesses, and return exact tracked/confirmed/unconfirmed/unresolved maps. One real read-only child joins exact SessionMeta/SubagentStart, a closed tool catalog with zero child tool calls, previous_status=running, target absence after close, durable active-to-unresolved reconciliation, zero writer claims, no open candidate executable, and two stable disk observations. A standard native OpenAI worker now supplies the complementary nonempty path: one real code-mode process id is identical across the start session, close tracked set, and confirmed-exit set; its exit 137 is observed inside the close interval; the child then aborts, disappears from the live tree, and two host observations retain a clean frontier with no pid, marker, or open candidate executable. Because this actor intentionally exposes a process surface and is not the G4 closed-catalog role, it proves only the captured native tracked-process exit path. A second live run joins one exact leased child apply_patch, its PostToolUse-derived accepted report and byte-identical callback, a new read-only hold turn, previous_status=running close, empty tracked process maps, target absence, reported-to-unresolved freeze, and a stable post-close dirty-byte barrier. A third live run consumes that exact prior actor barrier and dirty snapshot, binds a distinct replacement SessionMeta/AgentPath, performs one exact same-path replacement under a distinct handover ceiling and lease, receives the accepted callback, then cleanup-closes the already completed child and publishes a new stable barrier. This qualifies exact sequential ownership handover for those two actors, but the third close is explicitly completed_cleanup_close rather than a resumed-running termination. A provider-free exact-capsule regression now denies foreign-parent writes before capture while a reclaim claim exists, during pending capture, during active child ownership and its claim, and after PostToolUse while the assignment remains active. Detached/untracked and later descendants outside the close capture set, closed all-surface mutation mediation, real native scheduler races across those handover windows, and strong global process-tree quiescence remain unproved. The App Server host-control negative also proves server exit alone is not a process-tree barrier"
+        "qualification": "The exact closed-catalog mutation actor has an accepted write receipt and callback, a running-turn close with admission frozen, terminated session loop, zero unresolved starts or writer claims, and a stable post-termination disk barrier. The same close primitive has a real nonempty tracked-process exit cross-check. A distinct replacement actor consumed the prior quiescence barrier exactly once, and provider-free atomic tests deny overlapping writers before capture, while pending, while active, and after PostToolUse. Arbitrary same-UID host processes and independent App Server control remain P4; installed App failure-callback and rollback parity remain P7."
       },
       {
         "id": "P6",
@@ -819,7 +821,7 @@
       },
       {
         "id": "termination_quiescence",
-        "state": "partial",
+        "state": "qualified",
         "evidence": [
           "probes/g4-live-postcompact-scope-drift-denial-20260908.json",
           "probes/g4-live-postcompact-scope-drift-parent-adjudication-20260908.json",
@@ -872,7 +874,9 @@
           "tests/test_reconcile_g4_write_then_close.py",
           "probes/g4-live-handover-cleanup-close-20260909.json",
           "probes/reconcile_g4_handover_then_close.py",
-          "tests/test_g4_live_handover_cleanup_close.py"
+          "tests/test_g4_live_handover_cleanup_close.py",
+          "probes/g4-p5b-closed-catalog-quiescence-adjudication-20260909.json",
+          "tests/test_g4_p5b_closed_catalog_quiescence_adjudication.py"
         ]
       },
       {

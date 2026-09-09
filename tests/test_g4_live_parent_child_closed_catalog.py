@@ -196,8 +196,10 @@ class G4LiveParentChildClosedCatalogTests(unittest.TestCase):
         }
         for gate_id in ("P4", "P5b", "P7"):
             gate = gates[gate_id]
-            self.assertEqual(gate["state"], "partial")
             self.assertTrue(catalog_evidence.issubset(set(gate["evidence"])))
+        self.assertEqual(gates["P5b"]["state"], "qualified")
+        for gate_id in ("P4", "P7"):
+            self.assertEqual(gates[gate_id]["state"], "partial")
         for gate_id in ("P6", "P6a", "P6b"):
             gate = gates[gate_id]
             self.assertTrue(lifecycle_evidence.issubset(set(gate["evidence"])))

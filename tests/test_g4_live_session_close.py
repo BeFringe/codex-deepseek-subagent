@@ -107,7 +107,7 @@ class G4LiveSessionCloseTests(unittest.TestCase):
         self.assertEqual(verdict["phase2_state"], "closed")
         self.assertEqual(verdict["phase3_state"], "closed")
 
-    def test_status_keeps_p5b_and_termination_receipt_partial(self):
+    def test_current_adjudication_qualifies_p5b_and_termination_receipt(self):
         phase1 = self.status["phase1"]
         p5b = next(row for row in phase1["gates"] if row["id"] == "P5b")
         termination = next(
@@ -117,7 +117,7 @@ class G4LiveSessionCloseTests(unittest.TestCase):
         )
 
         for row in (p5b, termination):
-            self.assertEqual(row["state"], "partial")
+            self.assertEqual(row["state"], "qualified")
             self.assertIn("probes/g4-live-session-close-20260908.json", row["evidence"])
             self.assertIn("tests/test_g4_live_session_close.py", row["evidence"])
         self.assertFalse(phase1["declared_complete"])

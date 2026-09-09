@@ -88,18 +88,19 @@ class G4CurrentAppFailedPatchCallbackRegressionTests(unittest.TestCase):
         self.assertFalse(verdict["phase1_complete"])
         self.assertFalse(verdict["direct_write_qualified"])
 
-    def test_status_keeps_p5b_and_p7_partial_with_this_evidence(self) -> None:
+    def test_status_assigns_installed_callback_regression_to_p7(self) -> None:
         gates = {gate["id"]: gate for gate in self.status["phase1"]["gates"]}
         rel = "probes/g4-current-app-failed-patch-callback-regression-20260909.json"
         test_rel = "tests/test_g4_current_app_failed_patch_callback_regression.py"
 
         for gate_id in ("P5b", "P7"):
             gate = gates[gate_id]
-            self.assertEqual(gate["state"], "partial")
             self.assertIn(rel, gate["evidence"])
             self.assertIn(test_rel, gate["evidence"])
-            self.assertIn("PostToolUse", gate["blocker"])
-            self.assertIn("installed 0.153.4", gate["blocker"])
+        self.assertEqual(gates["P5b"]["state"], "qualified")
+        self.assertEqual(gates["P7"]["state"], "partial")
+        self.assertIn("PostToolUse", gates["P7"]["blocker"])
+        self.assertIn("installed 0.153.4", gates["P7"]["blocker"])
 
 
 if __name__ == "__main__":

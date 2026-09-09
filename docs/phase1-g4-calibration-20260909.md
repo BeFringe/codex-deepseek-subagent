@@ -55,14 +55,16 @@ P1–P7 的有限职责如下：
 
 ## 修正后的执行顺序
 
-1. 关闭已满足的有限 P2/P3/P6/P6a，保留 P1/P5/P5a 已 qualified 的事实。
+1. 关闭已满足的有限 P2/P3/P5b/P6/P6a，保留 P1/P5/P5a 已 qualified 的事实。
 2. P4 的 finalized G4 catalog 已完成 trusted-runtime origin binding；required PreToolUse
    fail-closed 由 parent/child 共用的源码谓词、exact parent missing-handler live denial 与
    exact child partial multi-handler failure live denial 共同闭合。无需再跑 actor×failure
    笛卡尔积。P4 下一步只处理 ToolRouter 外的同 UID hostile host、独立 App Server/daemon/
    control client、已打开进程输入和 external worker bootstrap 的 OS/privilege boundary。
-3. P5b 把现有 tracked-process positive 扩展为 admission freeze、descendant/detached
-   boundary 与稳定 disk barrier，不再把 `close_agent` acknowledgement 当全局 quiescence。
+3. P5b 以 exact closed-catalog actor 为证明域：现有 source admission freeze、真实
+   tracked-exit witness、运行中 write actor close、稳定 disk barrier、唯一 handover 与四个
+   原子 writer window 已闭合该门。任意宿主进程的全局 quiescence 不重复挂到 P5b；独立
+   host-control 与同 UID 攻击仍由 P4 处理，安装态失败回调由 P7 处理。
 4. P6–P6c 在 disposable product-independent root 形成同一次 invocation/phase/race/live
    bundle，由 fresh parent/disk owner消费。
 5. P7 才运行 native Windows 与 DeepSeek regression，以及完整 live install/rollback。

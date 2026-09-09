@@ -136,7 +136,14 @@ class G4LiveFailedApplyPatchPostToolCallbackTests(unittest.TestCase):
             )
             self.assertIn(evidence, gate["evidence"])
             self.assertIn(patch, gate["evidence"])
-            self.assertEqual(gate["state"], "partial")
+        self.assertEqual(
+            next(item for item in self.status["phase1"]["gates"] if item["id"] == "P4")["state"],
+            "partial",
+        )
+        self.assertEqual(
+            next(item for item in self.status["phase1"]["gates"] if item["id"] == "P5b")["state"],
+            "qualified",
+        )
 
         verdict = self.receipt["verdict"]
         self.assertTrue(verdict["failed_apply_patch_posttool_callback_qualified"])

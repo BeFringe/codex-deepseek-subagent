@@ -4555,3 +4555,39 @@ actor-by-failure permutation. Remaining P4 work is confined to mutation and
 control paths outside that ToolRouter boundary and the independent OS or
 privilege trust receipt; no broader workload or unbounded actor cohort is part
 of this gate.
+
+## P5b finite closed-catalog termination and handover adjudication
+
+P5b is now adjudicated over the exact G4 actor and authority epoch rather than
+over every process owned by the login user. The current-source close primitive
+freezes process admission, rejects later starts, waits for unresolved starts,
+and accepts only local PTY `exit_rx` or ExecServer `Exited` events as termination
+witnesses. A separate live standard-worker run proves the nonempty tracked-exit
+path is real; it does not add process tools to the G4 child.
+
+The decisive live G4 run uses the closed child catalog
+`apply_patch`, `view_image`, and `g4_assignment.list_agents`, so the child has no
+model-callable process or host-control bootstrap. Its exact leased write,
+accepted SubagentStop, byte-identical callback, running-turn close, terminated
+session loop, empty tracked/unconfirmed/unresolved process maps, zero remaining
+writer claim, durable freeze, and two stable post-termination disk observations
+form the strong actor-scoped quiescence receipt. A distinct child then consumed
+that exact barrier once, performed the replacement exact-path write, completed
+its callback and cleanup close, and published the next stable barrier.
+Provider-free atomic tests independently deny overlapping parent writes before
+replacement capture, while pending, while active, and after PostToolUse until
+the authority epoch closes.
+
+The fresh adjudication is
+`probes/g4-p5b-closed-catalog-quiescence-adjudication-20260909.json`, with
+executable checks in
+`tests/test_g4_p5b_closed_catalog_quiescence_adjudication.py`. This qualifies
+P5b. It does not claim arbitrary host process-tree quiescence: independent App
+Server/control clients and same-UID host mutation remain P4, while the installed
+App's failed-tool PostToolUse regression and install/rollback parity remain P7.
+Phase 1 and direct write therefore remain false, and Phases 2/3 remain closed.
+
+Fresh provider-free verification passed all 782 tests in 83.630 seconds,
+including agent-template checks. Normal Phase 1, mutation-surface, same-UID,
+and semantic runtime-index checks returned zero; Phase 1, mutation, and
+same-UID qualification-required modes returned 2 as designed.
