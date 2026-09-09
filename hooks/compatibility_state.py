@@ -2567,6 +2567,26 @@ class StateStore:
             active.unlink()
             return unresolved
 
+    def freeze_reported_after_termination(
+        self,
+        assignment_id: str,
+        termination_evidence: Mapping[str, object],
+    ) -> pathlib.Path:
+        """Freeze an unadjudicated report before overlapping ownership handover."""
+        reported = self.path("reported", assignment_id)
+        with self.locked():
+            envelope = self._validated_envelope(reported)
+            final_attestation = envelope.get("final_attestation")
+            if not isinstance(final_attestation, Mapping):
+                raise CorruptState("reported assignment has no final attestation")
+            if "termination_evidence" in envelope:
+                raise StateError("reported assignment already has termination evidence")
+            envelope["termination_evidence"] = dict(termination_evidence)
+            unresolved = self.path("unresolved", assignment_id)
+            self._publish(unresolved, envelope)
+            reported.unlink()
+            return unresolved
+
     def record_quiescence_barrier(
         self,
         prior_assignment_id: str,

@@ -1248,6 +1248,52 @@ class AssignmentTransportTests(unittest.TestCase):
         self.assertEqual(replacement["hookSpecificOutput"]["permissionDecision"], "deny")
         self.assertIn("no host termination", replacement["hookSpecificOutput"]["permissionDecisionReason"])
 
+    def test_reported_contribution_freezes_before_termination_barrier(self):
+        self.capture(self.spawn_hook())
+        child = self.child_hook()
+        assignment_transport.subagent_start(self.store, child)
+        active = next((self.store.root / "active").glob("*.json"))
+        assignment_id = json.loads(active.read_text(encoding="utf-8"))["capsule"][
+            "assignment_id"
+        ]
+        self.store.finalize(
+            assignment_id,
+            {"assigned_slice_complete": True, "fixture": "reported-before-close"},
+            complete=True,
+        )
+
+        frozen = self.store.freeze_reported_after_termination(
+            assignment_id,
+            {
+                "schema": 1,
+                "reason": "native_close_agent",
+                "classification": "reported_actor_terminated_and_mutations_quiesced",
+            },
+        )
+
+        self.assertEqual(frozen.parent.name, "unresolved")
+        self.assertFalse(self.store.path("reported", assignment_id).exists())
+        envelope = json.loads(frozen.read_text(encoding="utf-8"))
+        self.assertTrue(envelope["final_attestation"]["assigned_slice_complete"])
+        self.assertEqual(
+            envelope["termination_evidence"]["classification"],
+            "reported_actor_terminated_and_mutations_quiesced",
+        )
+        observed_at = dt.datetime.now(dt.timezone.utc)
+        barrier = self.store.record_quiescence_barrier(
+            assignment_id,
+            {
+                "receipt_id": "reported-native-close",
+                "runtime_session_id": "runtime-session",
+                "child_thread_id": "child-bounded_task",
+                "guarantee": "child_terminated_and_mutations_quiesced",
+                "terminated_at": observed_at.isoformat(),
+            },
+            runtime_guard.collect_git_snapshot(str(self.repository)),
+            observed_at=observed_at,
+        )
+        self.assertTrue(barrier.is_file())
+
     def test_frozen_old_child_is_blocked_and_barrier_allows_linked_reassignment(self):
         self.capture(self.spawn_hook())
         old_child = self.child_hook()

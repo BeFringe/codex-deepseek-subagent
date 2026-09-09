@@ -478,8 +478,14 @@ root/branch/full HEAD/index/status/path hashes 与冻结 frontier 一致。任�
 `host_session_terminated_mutation_quiescence_unproven`，不得创建 quiescence barrier 或释放
 overlapping ownership。一次真实只读 child 运行已把 exact SessionMeta/SubagentStart、闭合工具目录、
 零 child tool call、真实 exit maps、durable active→unresolved reconciliation 与两次稳定磁盘观测连接起来。
-该样本只证明其 exact read-only actor 的 termination/mutation quiescence；mutation-capable actor、全局
-process tree 与 ownership handover race 仍须独立资格证明。
+该样本只证明其 exact read-only actor 的 termination/mutation quiescence。第二次真实运行覆盖一个
+exact mutation-capable actor：child 以 writer lease 执行唯一一次 `apply_patch`，把可信 PostToolUse
+receipt 写入 accepted attestation 与 byte-identical parent callback，随后进入新的 read-only hold turn。
+exact `close_agent` 中断这个 running turn，返回空 tracked/confirmed/unconfirmed/unresolved process maps，
+让 child 从 live tree 消失，并在稳定 dirty-byte barrier 之前完成。reconciler 在发布 barrier 前先把
+accepted report 冻结回 unresolved，因此该 receipt 不会静默变成 integration 或 handover authority。
+这只证明该 exact write actor 的 bounded termination/mutation quiescence；detached/untracked descendant、
+全局 process tree、其他 mutation surface 与 ownership handover race 仍须独立资格证明。
 
 mutation-capable assignment 从 pending/claimed/active 到 reported/unresolved 期间，其
 `owned_paths` 必须处于包含 parent 与所有 sibling child 的 single-writer 域。parent 在已交给

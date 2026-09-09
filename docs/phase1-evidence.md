@@ -4094,3 +4094,68 @@ shell/Git/MCP/PTY surfaces, strong global quiescence, representative P6c,
 Windows, DeepSeek regression, or functional live rollback.
 `phase1_complete=false`, `direct_write_qualified=false`, and Phases 2/3 remain
 closed.
+
+## Live mutation actor accepted-report termination barrier
+
+A new isolated headless run extends the current-source P5b close primitive from
+an idle read-only child to a child that actually performed its one authorized
+mutation. The disposable root was
+`/private/tmp/codex-g4-p5b-write-termination.xy1PJw`, branch `main`, full HEAD
+`0041570f2938e897ba6abdd8699c89558fb9a77b`. The wrapper admitted only the
+exact `schema1-exact-write-then-close` authorization under that fixed temporary
+namespace, selected `workspace-write`, preserved the closed parent/child tool
+catalog and v4 Hook, and never selected the candidate as the GUI App Server.
+
+Real SessionMeta bound child
+`01a084f3-6c61-7492-8a26-1d890de45a23` to canonical AgentPath
+`/root/g4_p5b_write_close_1` under parent/runtime session
+`01a084f2-a42f-7061-95e3-49fb60f6e91b`. Hook sequences 2720 through 2724 were
+contiguous: spawn PreToolUse, SubagentStart, child `apply_patch` PreToolUse,
+the same tool-use PostToolUse, and accepted SubagentStop. The child created only
+`qualified.txt`, exactly 25 bytes with SHA-256
+`4fd8e8f97e640e495fefed6d4fdb0467c4e5835d9bd006173da14af37698ac8c`.
+Writer receipt
+`bccba29b563a70a746327d991379fee906b8dc92756da43085062a6acefe5558`
+binds the same child identity, path, tool-use id, and final snapshot. No Git
+stage, commit, branch, or push authority was granted.
+
+The first turn completed with one accepted attestation. Its payload was
+byte-identical inside the parent callback. The parent then sent one exact
+read-only host-close hold as a new turn; this did not renew mutation authority.
+The child was observed running and made no second-turn tool call or final.
+Exact `close_agent` interrupted that turn, returned `previous_status=running`,
+empty tracked/confirmed/unconfirmed/unresolved process maps for the exact child,
+`tracked_process_termination_confirmed=true`, and
+`closed_catalog_actor_quiescence_claimed=true`. The child rollout recorded
+`turn_aborted(reason=interrupted)` before close returned, and the next live-tree
+observation omitted the child. The receipt truthfully retained
+`process_tree_quiescence_claimed=false`.
+
+`probes/reconcile_g4_write_then_close.py` independently joined the immutable
+write capsule, trusted user ceiling, exact SessionMeta, writer receipt, target
+bytes, accepted callback, second-turn interrupt, close receipt, Hook chain, and
+stable post-close Git snapshot. Only after those checks did it freeze the
+unadjudicated record from `reported` to `unresolved`, preserving the final
+attestation and adding termination evidence, then publish the host-owned
+`child_terminated_and_mutations_quiesced` barrier. Two later observations
+retained the same HEAD, tree, `?? qualified.txt` status, and target hash, with no
+open candidate executable. The candidate exited zero. Raw rollouts and tool
+payloads remain outside Git; the privacy-minimized evidence is
+`probes/g4-live-write-then-close-20260909.json`.
+
+Focused executable verification passed 38 tests, including byte-exact callback,
+nonempty/unconfirmed process-map, second-turn mutation, extra/noncontiguous Hook,
+wrapper guard, and durable-state negative cases. The complete provider-free
+suite then passed all 729 tests in 72.190 seconds, including agent-template
+checks. Normal Phase 1, mutation-surface, same-UID trust, and semantic runtime
+index commands returned zero. Phase 1, mutation, and same-UID promotion forms
+returned 2 as designed.
+
+This is the first positive P5b signal for a real mutation-capable actor, not
+merely a read-only actor. Its scope is deliberately bounded to this one exact
+`apply_patch` catalog and child. Detached/untracked descendants, other mutation
+surfaces, before/mid/after ownership-handover races, and strong global
+process-tree quiescence remain open. The accepted contribution remains
+unresolved rather than integrated. P5b stays `partial`;
+`phase1_complete=false`, `direct_write_qualified=false`, and Phases 2/3 remain
+closed.

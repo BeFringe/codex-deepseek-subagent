@@ -173,6 +173,15 @@ case "$mode" in
         esac
         catalog_receipt_mode=stderr-v2-parent-child-closed
         ;;
+      schema1-exact-write-then-close)
+        [ "$saw_ephemeral" = false ] || fail "P5b write-then-close probe must retain SessionMeta"
+        case "$requested_cd" in
+          /private/tmp/codex-g4-p5b-write-termination.*) ;;
+          *) fail "P5b write-then-close root is outside the fixed temporary namespace" ;;
+        esac
+        sandbox_mode=workspace-write
+        catalog_receipt_mode=stderr-v2-parent-child-closed
+        ;;
       *) fail "P5b termination probe authorization guard is invalid" ;;
     esac
     ;;

@@ -371,8 +371,17 @@ One real read-only child run now joins exact SessionMeta/SubagentStart, a closed
 tool catalog, zero child tool calls, true exit maps, durable active-to-unresolved
 reconciliation, and two stable disk observations. That sample proves
 termination and mutation quiescence only for its exact read-only actor.
-Mutation-capable actors, the global process tree, and ownership-handover races
-still require independent qualification.
+A second real run now covers one exact mutation-capable actor: the child used
+one leased `apply_patch`, bound its trusted PostToolUse receipt into an accepted
+attestation and byte-identical parent callback, then entered a new read-only
+hold turn. Exact `close_agent` interrupted that running turn, returned empty
+tracked/confirmed/unconfirmed/unresolved process maps, removed the child from
+the live tree, and preceded a stable dirty-byte barrier. The reconciler freezes
+the accepted report back to unresolved before publishing that barrier, so the
+receipt cannot silently become integration or handover authority. This proves
+bounded termination and mutation quiescence for that exact write actor only.
+Detached or untracked descendants, the global process tree, all other mutation
+surfaces, and ownership-handover races still require independent qualification.
 
 While a mutation-capable assignment is pending, claimed, active, reported, or
 unresolved, its `owned_paths` must be in one single-writer domain that includes

@@ -132,6 +132,31 @@ class CandidateLiveSelectionIncidentTests(unittest.TestCase):
             ],
             "CODEX_G4_TOOL_CATALOG_RECEIPT=stderr-v2-parent-child-closed",
         )
+        self.assertEqual(
+            hardened["forced_posture"][
+                "guarded_p5b_write_then_close_authorization"
+            ],
+            "CODEX_G4_P5B_TRACKED_TERMINATION_PROBE_AUTHORIZED="
+            "schema1-exact-write-then-close",
+        )
+        self.assertEqual(
+            hardened["forced_posture"][
+                "guarded_p5b_write_then_close_root_namespace"
+            ],
+            "/private/tmp/codex-g4-p5b-write-termination.*",
+        )
+        self.assertEqual(
+            hardened["forced_posture"][
+                "guarded_p5b_write_then_close_sandbox"
+            ],
+            "workspace-write",
+        )
+        self.assertEqual(
+            hardened["forced_posture"][
+                "guarded_p5b_write_then_close_catalog_receipt"
+            ],
+            "CODEX_G4_TOOL_CATALOG_RECEIPT=stderr-v2-parent-child-closed",
+        )
         self.assertFalse(hardened["forced_posture"]["code_mode_host"])
         self.assertEqual(hardened["forced_posture"]["caller_config_override"], "deny")
 

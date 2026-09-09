@@ -39,7 +39,7 @@
   },
   "hardened_wrapper": {
     "path": "probes/codex_plaintext_candidate_wrapper.sh",
-    "sha256": "0da29b12d90f1b504897f9cbd72ec802c59538a30b7b144a07ef11f318b4cd82",
+    "sha256": "321c3177e0f1ae148b3df7c65d9c1ef4ba9335a89488cbe34e2b0934865ca4dc",
     "historical_wrapper_disabled_by_replacement": true,
     "allowed_entry_points": ["login status", "exec"],
     "required_exec_flags": ["--ignore-user-config", "--ignore-rules"],
@@ -68,6 +68,10 @@
       "guarded_p5b_tracked_termination_authorization": "CODEX_G4_P5B_TRACKED_TERMINATION_PROBE_AUTHORIZED=schema1-exact-idle-child",
       "guarded_p5b_tracked_termination_root_namespace": "/private/tmp/codex-g4-p5b-termination.*",
       "guarded_p5b_tracked_termination_catalog_receipt": "CODEX_G4_TOOL_CATALOG_RECEIPT=stderr-v2-parent-child-closed",
+      "guarded_p5b_write_then_close_authorization": "CODEX_G4_P5B_TRACKED_TERMINATION_PROBE_AUTHORIZED=schema1-exact-write-then-close",
+      "guarded_p5b_write_then_close_root_namespace": "/private/tmp/codex-g4-p5b-write-termination.*",
+      "guarded_p5b_write_then_close_sandbox": "workspace-write",
+      "guarded_p5b_write_then_close_catalog_receipt": "CODEX_G4_TOOL_CATALOG_RECEIPT=stderr-v2-parent-child-closed",
       "caller_config_override": "deny",
       "approval_policy": "never",
       "code_mode_host": false

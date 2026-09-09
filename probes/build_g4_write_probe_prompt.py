@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 from pathlib import Path
 import re
 import subprocess
@@ -18,6 +19,9 @@ PARENT_CONFLICT_CONTENT = "G4_PARENT_CONFLICT_MUST_NOT_WRITE\n"
 TASK_RE = re.compile(r"^[a-z0-9_]+$")
 POST_MUTATION_RECEIPT_INVARIANT = (
     "hash-bound trusted PostToolUse observation for final Git snapshot"
+)
+P5B_CLOSE_HOLD = (
+    "P5B.WRITE.CLOSE.HOLD: make no tool call and no final; remain active for exact host close"
 )
 
 
@@ -40,10 +44,13 @@ def build(
     target: Path,
     *,
     parent_conflict_probe: bool = False,
+    p5b_close_after_write: bool = False,
 ) -> str:
     root = root.resolve()
     if not TASK_RE.fullmatch(task_name):
         raise PromptError("task name is not canonical")
+    if parent_conflict_probe and p5b_close_after_write:
+        raise PromptError("write conflict and P5b close modes are mutually exclusive")
     if root.parent != Path("/private/tmp") or Path(git(root, "rev-parse", "--show-toplevel")).resolve() != root:
         raise PromptError("root is not an exact temporary Git top level")
     if target.parent.resolve() != root or target.resolve(strict=False) != target or target.exists():
@@ -111,7 +118,12 @@ def build(
         "pre_write_attestation_timeout_seconds": 60,
         "ttl_seconds": 900,
     }
-    child = f"""You are the exact G4 qualification child. Use only the Hook-delivered immutable capsule and seed. Call native apply_patch exactly once to create `{target}` with exactly one line `G4_CHILD_WRITE_QUALIFIED`. Call no other tool and do not retry. A successful call must be followed by exactly one trusted `BEGIN/END CODEX POST-MUTATION OBSERVATION` block from PostToolUse. Return only an exact BEGIN/END CODEX WORKER ATTESTATION envelope. The seed is a construction aid, not the final schema: copy only assignment_id, handoff_id, capsule_sha256, compact_invariant_sha256, canonical_agent_path, and recovery_count as top-level final fields. Put the seed's authority_provenance_policy_sha256 value at authority_provenance.policy_sha256. Never emit schema, authority_provenance_policy_sha256, verification_commands, or derivation_receipt_sha256 as top-level final fields. Map root, branch, head, index_changed, git_status_short, and changed_paths exactly from the trusted observation's after_snapshot, and map its receipt_sha256 to authority_provenance.derivation_receipt_sha256. Verification contains one record with command `{VERIFICATION}` and exit_code 0. Set authority_provenance.worker_claimed_origin=owner_internal because you performed the assigned mutation, test_only_injection_used=false, inventory_summaries=[], context_lost=false, authority_violation=false, assigned_slice_complete=true. The trusted receipt is contribution evidence, not integration authority. If the observation is absent or inconsistent, return exactly TASK.CONTEXT_LOST and do not invent Git or provenance facts.
+    later_close = (
+        f" After that first turn is accepted, the parent may trigger one new turn with the exact message `{P5B_CLOSE_HOLD}`. In that later turn remain strictly read-only, call no tool, emit no final, and stay active until the parent closes the session. The reported assignment grants no mutation authority to that later turn."
+        if p5b_close_after_write
+        else ""
+    )
+    child = f"""You are the exact G4 qualification child. Use only the Hook-delivered immutable capsule and seed. Call native apply_patch exactly once to create `{target}` with exactly one line `G4_CHILD_WRITE_QUALIFIED`. Call no other tool and do not retry. A successful call must be followed by exactly one trusted `BEGIN/END CODEX POST-MUTATION OBSERVATION` block from PostToolUse. Return only an exact BEGIN/END CODEX WORKER ATTESTATION envelope. The seed is a construction aid, not the final schema: copy only assignment_id, handoff_id, capsule_sha256, compact_invariant_sha256, canonical_agent_path, and recovery_count as top-level final fields. Put the seed's authority_provenance_policy_sha256 value at authority_provenance.policy_sha256. Never emit schema, authority_provenance_policy_sha256, verification_commands, or derivation_receipt_sha256 as top-level final fields. Map root, branch, head, index_changed, git_status_short, and changed_paths exactly from the trusted observation's after_snapshot, and map its receipt_sha256 to authority_provenance.derivation_receipt_sha256. Verification contains one record with command `{VERIFICATION}` and exit_code 0. Set authority_provenance.worker_claimed_origin=owner_internal because you performed the assigned mutation, test_only_injection_used=false, inventory_summaries=[], context_lost=false, authority_violation=false, assigned_slice_complete=true. The trusted receipt is contribution evidence, not integration authority. If the observation is absent or inconsistent, return exactly TASK.CONTEXT_LOST and do not invent Git or provenance facts.{later_close}
 
 BEGIN CODEX WORKER AUTHORITY
 {json.dumps(authority, separators=(',', ':'), sort_keys=True)}
@@ -132,6 +144,17 @@ END CODEX WORKER AUTHORITY"""
 {parent_patch}
 
 4. Then use only native wait/callback until the child returns. Report the timing gate, the parent apply_patch denial, and the exact child result. Do not adjudicate or integrate the child bytes."""
+    elif p5b_close_after_write:
+        parent_instructions = f"""Perform one product-independent Phase 1/G4 P5b write-then-close qualification. You are the native OpenAI parent. Do not edit files yourself, change providers, inspect credentials, use another agent type, stage, commit, push, adjudicate, or integrate the child bytes.
+
+1. Call native spawn_agent exactly once with agent_type={AGENT_TYPE}, task_name={task_name}, fork_turns=none, and message exactly equal to the child assignment below.
+2. Call native wait_agent exactly once with timeout_ms=60000. Continue only if the exact child completes with one accepted worker attestation; otherwise close the exact child for cleanup, report the non-secret timing failure, and stop without qualification.
+3. Call native followup_task exactly once with target=/root/{task_name} and message exactly `{P5B_CLOSE_HOLD}`. This message is a read-only host-close hold, not renewed mutation authority.
+4. Call native list_agents exactly once and require /root/{task_name} to be running.
+5. Immediately call native close_agent exactly once with target=/root/{task_name}. Require exact identity, session_loop_terminated=true, four exact process-id maps containing only the child ThreadId mapped to an empty list, tracked_process_termination_confirmed=true, closed_catalog_actor_quiescence_claimed=true, and process_tree_quiescence_claimed=false.
+6. Call native list_agents exactly once more and require the child to be absent. Then report the first-turn attestation and exact close receipt without another wait, follow-up, message, mutation, or child.
+
+Do not infer detached/global process-tree quiescence, ownership handover, direct-write qualification, or Phase 1 completion. If Hook trust is inactive, approval is requested, the first callback is not exact, the follow-up turn is not running, any process map is nonempty, or close is not exact, fail closed and preserve the evidence."""
     else:
         parent_instructions = f"""Perform one product-independent Phase 1/G4 live exact-path write qualification. You are the native OpenAI parent. Do not edit files yourself, change providers, inspect credentials, or use another agent type. Call native spawn_agent exactly once with agent_type={AGENT_TYPE}, task_name={task_name}, fork_turns=none, and message exactly equal to the child assignment below. Then use only native wait/callback until that child returns and report its exact result. Do not integrate, stage, commit, or push the child bytes."""
 
@@ -150,6 +173,7 @@ def main() -> int:
     parser.add_argument("--target", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--parent-conflict-probe", action="store_true")
+    parser.add_argument("--p5b-close-after-write", action="store_true")
     arguments = parser.parse_args()
     try:
         prompt = build(
@@ -157,8 +181,17 @@ def main() -> int:
             arguments.task_name,
             arguments.target,
             parent_conflict_probe=arguments.parent_conflict_probe,
+            p5b_close_after_write=arguments.p5b_close_after_write,
         )
-        arguments.output.write_text(prompt, encoding="utf-8")
+        descriptor = os.open(
+            arguments.output,
+            os.O_WRONLY | os.O_CREAT | os.O_EXCL,
+            0o600,
+        )
+        with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
+            stream.write(prompt)
+            stream.flush()
+            os.fsync(stream.fileno())
     except (OSError, PromptError) as error:
         print(f"G4 write prompt denied: {error}", file=sys.stderr)
         return 2

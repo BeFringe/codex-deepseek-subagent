@@ -31,7 +31,7 @@ class G4WriteProbePromptTests(unittest.TestCase):
             self.output.unlink()
         self.directory.cleanup()
 
-    def run_builder(self, *, parent_conflict_probe=False):
+    def run_builder(self, *, parent_conflict_probe=False, p5b_close_after_write=False):
         command = [
             sys.executable,
             str(SCRIPT),
@@ -46,6 +46,8 @@ class G4WriteProbePromptTests(unittest.TestCase):
         ]
         if parent_conflict_probe:
             command.append("--parent-conflict-probe")
+        if p5b_close_after_write:
+            command.append("--p5b-close-after-write")
         return subprocess.run(
             command,
             text=True,
@@ -90,6 +92,38 @@ class G4WriteProbePromptTests(unittest.TestCase):
         self.assertIn("must be denied before execution with TASK.WRITER_LEASE_BLOCKED", prompt)
         self.assertIn("G4_CHILD_WRITE_QUALIFIED", prompt)
         self.assertIn("Then use only native wait/callback", prompt)
+
+    def test_p5b_prompt_completes_write_then_reopens_only_for_exact_close(self):
+        result = self.run_builder(p5b_close_after_write=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        prompt = self.output.read_text(encoding="utf-8")
+        self.assertIn("native wait_agent exactly once with timeout_ms=60000", prompt)
+        self.assertIn("native followup_task exactly once", prompt)
+        self.assertIn(
+            "P5B.WRITE.CLOSE.HOLD: make no tool call and no final; remain active for exact host close",
+            prompt,
+        )
+        self.assertIn("reported assignment grants no mutation authority", prompt)
+        self.assertIn("four exact process-id maps", prompt)
+        self.assertIn("tracked_process_termination_confirmed=true", prompt)
+        self.assertIn("closed_catalog_actor_quiescence_claimed=true", prompt)
+        self.assertIn("process_tree_quiescence_claimed=false", prompt)
+        self.assertLess(prompt.index("wait_agent exactly once"), prompt.index("followup_task exactly once"))
+        self.assertLess(prompt.index("followup_task exactly once"), prompt.index("close_agent exactly once"))
+
+    def test_write_modes_are_mutually_exclusive(self):
+        result = self.run_builder(
+            parent_conflict_probe=True,
+            p5b_close_after_write=True,
+        )
+        self.assertEqual(result.returncode, 2)
+        self.assertFalse(self.output.exists())
+
+    def test_existing_output_fails_closed(self):
+        self.output.write_text("occupied\n", encoding="utf-8")
+        result = self.run_builder()
+        self.assertEqual(result.returncode, 2)
+        self.assertEqual(self.output.read_text(encoding="utf-8"), "occupied\n")
 
     def test_dirty_root_fails_before_prompt_publication(self):
         (self.root / "foreign.txt").write_text("dirty\n", encoding="utf-8")
