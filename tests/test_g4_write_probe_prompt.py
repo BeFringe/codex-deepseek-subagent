@@ -137,7 +137,9 @@ class G4WriteProbePromptTests(unittest.TestCase):
             "exact prior quiescence barrier handover",
             declaration["execution_contract"]["required_invariants"],
         )
-        self.assertIn("replace the exact frozen prior", declaration["stop_condition"])
+        completion = declaration["execution_contract"]["capsule_feasibility_attestation"]
+        completion = completion["bounded_completion"]["completion_condition"]
+        self.assertIn(completion, declaration["stop_condition"])
         self.assertEqual(
             declaration["execution_contract"]["capsule_feasibility_attestation"]
             ["bounded_completion"]["proposed_mechanism"],

@@ -93,7 +93,7 @@ def build(
     if p5b_handover_after_barrier:
         required_invariants.append(HANDOVER_INVARIANT)
     stop_condition = (
-        "replace the exact frozen prior owned-path bytes once and return only the final attestation"
+        "complete one exact frozen-prior owned-path replacement and return only the final attestation"
         if p5b_handover_after_barrier
         else "perform one exact owned-path apply_patch and return only the final attestation"
     )
