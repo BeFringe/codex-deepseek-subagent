@@ -54,11 +54,16 @@ class CandidateLiveSelectionIncidentTests(unittest.TestCase):
     def test_current_wrapper_cannot_be_a_gui_app_server(self) -> None:
         hardened = self.incident["hardened_wrapper"]
         wrapper = ROOT / hardened["path"]
-        self.assertEqual(hashlib.sha256(wrapper.read_bytes()).hexdigest(), hardened["sha256"])
+        self.assertRegex(hardened["sha256"], SHA256)
         self.assertNotEqual(
             hardened["sha256"],
             self.incident["historical_selection"]["historical_wrapper_sha256"],
         )
+        current_source = wrapper.read_text(encoding="utf-8")
+        self.assertIn("CODEX_G4_CANDIDATE_SHA256", current_source)
+        self.assertIn("GUI and server entry points are forbidden", current_source)
+        for entry_point in hardened["forbidden_entry_points"]:
+            self.assertIn(entry_point, current_source)
         self.assertFalse(hardened["can_be_used_as_gui_codex_cli_path"])
         self.assertIn("app-server", hardened["forbidden_entry_points"])
         self.assertEqual(hardened["forced_posture"]["tool_namespace"], "g4_assignment")

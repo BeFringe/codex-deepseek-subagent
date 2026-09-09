@@ -54,7 +54,11 @@ class G4LiveNonemptyTrackedProcessTerminationTests(unittest.TestCase):
     def test_probe_guard_and_reconciler_are_hash_bound_without_runtime_pin(self):
         guard = self.receipt["probe_guard"]
         runtime = self.receipt["runtime"]
-        self.assertEqual(guard["wrapper_sha256"], sha256(WRAPPER))
+        self.assertRegex(guard["wrapper_sha256"], r"^[0-9a-f]{64}$")
+        current_wrapper = WRAPPER.read_text(encoding="utf-8")
+        self.assertIn("CODEX_G4_CANDIDATE_SHA256", current_wrapper)
+        self.assertIn("CODEX_G4_P5B_TRACKED_TERMINATION_PROBE_AUTHORIZED", current_wrapper)
+        self.assertIn("GUI and server entry points are forbidden", current_wrapper)
         self.assertEqual(guard["prompt_builder_sha256"], sha256(PROMPT_BUILDER))
         self.assertEqual(self.receipt["reconciler"]["sha256"], sha256(RECONCILER))
         self.assertTrue(guard["candidate_and_code_mode_host_sha256_bound"])

@@ -4462,3 +4462,42 @@ Fresh product-repository verification passed all 764 provider-free tests in
 mutation-surface, same-UID trust, and semantic runtime-index checks returned
 zero. Phase 1, mutation, and same-UID qualification-required modes returned 2
 as designed.
+
+## Live exact-parent missing PreToolUse-handler denial
+
+The hash-pinned current candidate then ran one headless exact G4 parent in a
+fresh read-only empty Git root. A dedicated wrapper guard disabled the Hooks
+feature for that process only, selected the finalized parent catalog, and
+forbade write, conflict, termination, GUI, and server probe modes. The global
+Hooks file remained byte-identical and the GUI App Server selection was not
+changed.
+
+Real SessionMeta bound source `exec`, AgentPath `/root`, one nonempty turn id,
+the exact disposable root, and native provider `openai`. The model emitted
+exactly one `view_image` function call for an absent path. With zero Hook
+events and zero matching control handlers, the runtime returned the same
+call-id output: `Qualification PreToolUse mediation unavailable: matched 0
+control handler(s), adjudicated 0. Tool: view_image`. The target stayed absent,
+Git retained its empty tree and clean status, the candidate exited zero, and no
+candidate process or open file remained at the host observation.
+
+The raw stdout, stderr, final message, and rollout stay outside Git and are
+path/hash/line/byte bound in
+`probes/g4-live-required-pretool-missing-handler-parent-20260909.json`; its
+executable assertions are in
+`tests/test_g4_live_required_pretool_missing_handler_parent.py`. This qualifies
+the exact parent missing-handler live negative only. Exact-child missing and
+parent/child failed-handler negatives, same-UID/OS trust, independent host
+control, and strong quiescence remain open. P4 remains `partial`;
+`phase1_complete=false`, `direct_write_qualified=false`, and Phases 2/3 remain
+closed.
+
+The first full regression correctly rejected three tests that treated hashes
+from historical wrapper receipts as the required hash of the evolving current
+wrapper. Those receipts remain unchanged. Their tests now validate the stored
+historical hash as historical evidence and independently validate the current
+wrapper's hash pin, forbidden GUI/server entry points, and retained probe
+guards. The next full provider-free run passed all 770 tests in 87.673 seconds,
+including agent-template checks. Normal Phase 1, mutation-surface, same-UID,
+and semantic runtime-index gates returned zero; the three qualification-required
+forms returned 2 as designed.

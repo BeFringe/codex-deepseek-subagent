@@ -40,6 +40,7 @@ sandbox_mode=read-only
 code_mode_host=false
 catalog_receipt_mode=
 auto_compact_config=
+required_pretool_config=
 for argument in "$@"; do
   if [ "$expect_cd" = true ]; then
     requested_cd=$argument
@@ -204,6 +205,25 @@ case "$mode" in
         ;;
       *) fail "P5b termination probe authorization guard is invalid" ;;
     esac
+    case "${CODEX_G4_REQUIRED_PRETOOL_PROBE_AUTHORIZED-}" in
+      "") ;;
+      schema1-exact-missing-handler-parent)
+        [ "$saw_ephemeral" = false ] || fail "required PreToolUse probe must retain SessionMeta"
+        [ -z "${CODEX_G4_EXACT_WRITE_PROBE_AUTHORIZED-}" ] ||
+          fail "required PreToolUse probe cannot combine with a write probe"
+        [ -z "${CODEX_G4_PARENT_CHILD_WRITER_CONFLICT_PROBE_AUTHORIZED-}" ] ||
+          fail "required PreToolUse probe cannot combine with a writer-conflict probe"
+        [ -z "${CODEX_G4_P5B_TRACKED_TERMINATION_PROBE_AUTHORIZED-}" ] ||
+          fail "required PreToolUse probe cannot combine with a termination probe"
+        case "$requested_cd" in
+          /private/tmp/codex-g4-required-pretool.*) ;;
+          *) fail "required PreToolUse probe root is outside the fixed temporary namespace" ;;
+        esac
+        catalog_receipt_mode=stderr-v2-parent-child-closed
+        required_pretool_config=features.hooks=false
+        ;;
+      *) fail "required PreToolUse probe authorization guard is invalid" ;;
+    esac
     ;;
   *)
     fail "only headless exec or login status is allowed"
@@ -224,6 +244,18 @@ if [ -n "$auto_compact_config" ]; then
     -c 'features.multi_agent_v2.tool_namespace="g4_assignment"' \
     -c "features.code_mode_host=$code_mode_host" \
     -c "$auto_compact_config" \
+    -a never \
+    -s "$sandbox_mode" \
+    "$@"
+fi
+
+if [ -n "$required_pretool_config" ]; then
+  exec "$candidate" \
+    -c 'features.multi_agent_v2.enabled=true' \
+    -c 'features.multi_agent_v2.message_delivery="plaintext"' \
+    -c 'features.multi_agent_v2.tool_namespace="g4_assignment"' \
+    -c "features.code_mode_host=$code_mode_host" \
+    -c "$required_pretool_config" \
     -a never \
     -s "$sandbox_mode" \
     "$@"
