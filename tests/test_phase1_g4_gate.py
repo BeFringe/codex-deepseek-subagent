@@ -35,7 +35,7 @@ class Phase1G4GateTests(unittest.TestCase):
         self.assertTrue(result["gate_blockers"])
         self.assertTrue(result["exit_receipt_blockers"])
 
-    def test_finite_identity_lifecycle_final_and_provenance_gates_are_closed(self):
+    def test_finite_identity_lifecycle_final_provenance_and_cost_gates_are_closed(self):
         value = json.loads(STATUS.read_text(encoding="utf-8"))
         gates = {gate["id"]: gate for gate in value["phase1"]["gates"]}
 
@@ -51,6 +51,12 @@ class Phase1G4GateTests(unittest.TestCase):
         self.assertEqual(gates["P6a"]["state"], "qualified")
         self.assertEqual(gates["P6a"]["provider_free"], "pass")
         self.assertNotIn("blocker", gates["P6a"])
+        self.assertEqual(gates["P6b"]["state"], "qualified")
+        self.assertEqual(gates["P6b"]["provider_free"], "pass")
+        self.assertNotIn("blocker", gates["P6b"])
+        self.assertEqual(gates["P6c"]["state"], "qualified")
+        self.assertEqual(gates["P6c"]["provider_free"], "pass")
+        self.assertNotIn("blocker", gates["P6c"])
         receipts = {
             receipt["id"]: receipt for receipt in value["phase1"]["exit_receipts"]
         }

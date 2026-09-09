@@ -568,7 +568,7 @@
       },
       {
         "id": "P6b",
-        "state": "partial",
+        "state": "qualified",
         "provider_free": "pass",
         "evidence": [
           "probes/g4-live-compact-resume-20260908.json",
@@ -600,21 +600,31 @@
           "tests/test_g4_live_hash_bound_parent_child_conflict.py",
           "probes/g4-live-parent-child-closed-catalog-20260909.json",
           "probes/g4-live-parent-child-closed-catalog-parent-adjudication-20260909.json",
-          "tests/test_g4_live_parent_child_closed_catalog.py"
+          "tests/test_g4_live_parent_child_closed_catalog.py",
+          "probes/run_p6c_product_independent_live.py",
+          "probes/adjudicate_p6c_product_independent_live.py",
+          "probes/p6c-product-independent-live-bundle-20260909.json",
+          "probes/p6c-product-independent-live-adjudication-20260909.json",
+          "tests/test_p6c_product_independent_live.py"
         ],
-          "blocker": "The closed-actor-catalog run repeats the exact one-tool/one-path feasibility capsule under a root catalog that has no opaque mutation bypass and passes fresh feasibility adjudication. The repeated one-tool/one-path mutation sample now passes exact-path feasibility together with in-flight parent exclusion and fresh consumption, rather than only isolated child success. Strict read-only null-feasibility passes fresh current-runtime parent adjudication for inherited-OpenAI, external-ZHIPU, the four distinct provider-free serial/concurrent list_agents observations, one depth-two provider-free list_agents observation, and one real post-compact continuation. One exact one-tool/one-path mutation feasibility capsule now passed live execution and fresh adjudication. Representative domain scale, equivalence, dense p95, and staged mixed-frontier feasibility remain missing"
+        "qualification": "Exact-path mutation and read-only feasibility already passed live fresh-owner adjudication. A separate product-independent live run now exhausts a frozen twenty-case dense population across four multiplicities and five semantic equivalence classes, binds every sample to one measured evaluator invocation and proof partition, and carries the same authority epoch through U1, owner refinement, U2, true cardinality, and an exact mixed frontier. A distinct process recomputed every evaluator output, distribution identity, Git source identity, phase operation, and materialized disk artifact."
       },
       {
         "id": "P6c",
-        "state": "partial",
+        "state": "qualified",
         "provider_free": "pass",
         "evidence": [
           "docs/phase1-g4-calibration-20260909.md",
           "docs/phase1-evidence.md#p6c-isolated-end-to-end-cost-and-staged-authority-fixtures",
           "probes/check_p6c_live_bundle.py",
-          "tests/test_p6c_live_bundle.py"
+          "tests/test_p6c_live_bundle.py",
+          "probes/run_p6c_product_independent_live.py",
+          "probes/adjudicate_p6c_product_independent_live.py",
+          "probes/p6c-product-independent-live-bundle-20260909.json",
+          "probes/p6c-product-independent-live-adjudication-20260909.json",
+          "tests/test_p6c_product_independent_live.py"
         ],
-        "blocker": "the product-independent live-bundle verifier enforces one frozen representative-dense cohort of at least twenty samples, exact sample-to-invocation-to-proof-partition joins, same-bundle U1/R/U2/true phase conservation and timing, complete authoritative/materialized frontiers, and all ten ordered mutation seams. Its reference fixture is provider-free mechanics only and cannot self-promote. The next required evidence is one disposable product-independent live root plus fresh parent/disk adjudication. Representative dense live P6c remains unqualified"
+        "qualification": "The live producer executed twenty exhaustive product-independent dense transactions with real perf_counter_ns timings, one exact invocation and proof-partition join per sample, three timed U1/R/U2/materialization phases, and all ten ordered mutation seams against one clean committed disposable Git source. The frozen p95 was 2,429,709 ns under the 500,000,000 ns authority. A distinct fresh process re-read disk, recomputed all source/sample/distribution/phase/frontier identities, and accepted the exact atomic materialization. The mechanics-only checker still cannot self-promote without this separate adjudication."
       },
       {
         "id": "P7",

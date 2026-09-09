@@ -217,10 +217,9 @@ class LiveNestedIdentityEvidenceTests(unittest.TestCase):
         self.assertIn(result_path, gates["P1"]["evidence"])
         for gate_id in ("P2", "P3", "P6", "P6a", "P6b", "P7"):
             self.assertIn(result_path, gates[gate_id]["evidence"])
-        for gate_id in ("P2", "P3", "P6", "P6a"):
+        for gate_id in ("P2", "P3", "P6", "P6a", "P6b"):
             self.assertEqual(gates[gate_id]["state"], "qualified")
-        for gate_id in ("P6b", "P7"):
-            self.assertEqual(gates[gate_id]["state"], "partial")
+        self.assertEqual(gates["P7"]["state"], "partial")
         self.assertFalse(status["phase1"]["declared_complete"])
         self.assertFalse(status["phase1"]["declared_direct_write_qualified"])
 

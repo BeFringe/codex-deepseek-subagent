@@ -4591,3 +4591,71 @@ Fresh provider-free verification passed all 782 tests in 83.630 seconds,
 including agent-template checks. Normal Phase 1, mutation-surface, same-UID,
 and semantic runtime-index checks returned zero; Phase 1, mutation, and
 same-UID qualification-required modes returned 2 as designed.
+
+## Product-independent live P6b/P6c execution and fresh disk adjudication
+
+P6b/P6c no longer depend on an application workload or an external business
+task. `probes/run_p6c_product_independent_live.py` created a fresh disposable
+Git source at `/private/tmp/codex-p6c-product-independent-live.gKXCDQ/source`,
+branch `main`, full HEAD `b8ccbc3ce182b9b868ff8658d9bd44bd540d9546`, tree
+`b538526c91342f36fb07d6b1fc3192ebe5bee7a2`, clean status, and root identity
+`57d06b8756196a4228fffb73ca18f33ae2f07d5ca9968ddcd95252401e54568f`.
+The authority epoch is
+`cec85baaa14fc1c46e3ffa404fa572c15dfebd975360d4517f842cae2c0f7406`.
+No provider, credential, external worker, or product data participated.
+
+The frozen population contains exactly twenty cases and is selected
+exhaustively rather than sampled. It contains four multiplicities (8, 16, 24,
+32; five cases each), five semantic equivalence classes, and four proof
+partitions. Every case performed one real deterministic evaluator invocation.
+Each sample and invocation receipt shares the same `time.perf_counter_ns`
+start/end window plus independently recomputable input and output hashes. The
+nearest-rank p95 was 2,429,709 ns and the maximum was 2,494,542 ns against the
+frozen 500,000,000 ns authority.
+
+The same run executed coarse U1, owner refinement R, refined U2, and exact
+mixed-frontier materialization. Their measured durations were 70,356,500 ns,
+69,022,416 ns, and 68,655,500 ns. The refinement equation is `3 = 5 - 1 - 1`,
+the true cardinality is three, and the authoritative/materialized frontier
+contains the exact ordered owner-derived, worker-contribution, and recovery
+baseline entries. The materialized file was written by atomic `os.replace`.
+Source HEAD/tree/status and every tracked-file hash were captured before,
+inside, and after all three phases plus after final materialization. All ten
+ordered observations retained the same root identity and detected no mutation.
+
+Producer PID 75988 wrote the raw bundle. A distinct process, PID 76073, ran
+`probes/adjudicate_p6c_product_independent_live.py`, re-read the source and
+materialized files, recomputed all twenty evaluator outputs, the population and
+distribution identities, every phase operation, Git root identity, and the
+exact mixed frontier, and accepted P6b/P6c. The raw bundle file SHA-256 is
+`ae48e9bb2e292899bb57b5a49060cc5a4c1093229b406cd561e4010782b9f2a5`;
+its canonical payload SHA-256 is
+`b4248d90ffc7b877226f37bb2eebff80304fed23e0815a8abb272bbad3eb8da6`.
+The committed raw record and decision are
+`probes/p6c-product-independent-live-bundle-20260909.json` and
+`probes/p6c-product-independent-live-adjudication-20260909.json`.
+
+`tests/test_p6c_product_independent_live.py` reruns producer and distinct-owner
+adjudicator in fresh temporary roots. It also proves that a non-clock-derived
+elapsed value, source mutation, materialized-disk drift, or same-process
+self-adjudication fails closed. The mechanics-only checker deliberately still
+reports `p6c_live_qualified=false`; only the separate disk adjudicator may
+promote this finite evidence. P6b and P6c are now `qualified`. Phase 1 and
+direct write remain false because P4 and P7 plus their exit receipts remain
+open.
+
+The current repository baseline is independently unambiguous: branch `main`,
+local HEAD `ec3db0579ae2e29ae830e569d4c0a66c1b184905`, and both remote-tracking and
+read-only `git ls-remote origin refs/heads/main` resolve to
+`076ee0df9aca11fbc0c19a6ccd7cd8befc0051f7`. Origin remains
+`git@github.com:BeFringe/codex-deepseek-subagent.git`. The current SSH Host
+configuration authenticates that URL; no remote rewrite or alternate product
+branch is required. Earlier migration-time authentication failures remain
+historical observations only and are not a Phase 1 gate.
+
+After promotion, the complete provider-free suite passed all 787 tests in
+69.478 seconds and agent-template checks passed. The normal Phase 1,
+mutation-surface, same-UID trust, and semantic runtime-index checks returned
+zero. Their qualification-required Phase 1, mutation-surface, and same-UID
+forms each returned two as designed because P4/P7 and their receipts remain
+open.

@@ -29,6 +29,25 @@ P1–P7 的有限职责如下：
 | P6c | 一个产品无关 live bundle 绑定 invocation/latency authority、dense p95、U1→R→U2、phase conservation、mixed frontier 与十个 race seams |
 | P7 | 同一协议的 POSIX/Windows、既有 DeepSeek 路径和安装/回滚回归 |
 
+当前有限矩阵是：P1、P2、P3、P5、P5a、P5b、P6、P6a、P6b、P6c 已
+`qualified`；P4、P7 仍为 `partial`。因此不是阻塞在 P1，也不需要“前面一通才全部通”。
+P4 的剩余问题是 Hook/ToolRouter 之外的 host-control 与 OS/权限信任根；P7 的剩余问题是
+Windows、既有 DeepSeek 路径以及安装态失败回调/回滚。外部业务会话没有 Phase 1
+裁决职责，只能在自然发生异常时贡献带原始 identity/hash/timeline 的事故样本。
+
+## 三阶段主线
+
+1. **Phase 1 — native lifecycle compatibility and write qualification**：保留 Codex native
+   spawn、AgentPath、permissions、wait/callback/cancel 与 Multi-Agent V2，只补 plaintext
+   assignment、durable authority、mutation mediation 和 fresh-owner adjudication。其标志性
+   节点是 G4：异构 child 能否从 read-only 安全升级为 exact-path direct write。
+2. **Phase 2 — Worker / Provider Profiles**：把 worker identity、assignment transport、wire
+   transport 与 request normalization 分开配置；不得改写 OpenAI parent provider，也不在
+   capsule 中携带 credential。
+3. **Phase 3 — external Responses qualification**：优先验证 provider 的 direct Responses；
+   只有 direct wire 无法满足 tool/callback/cancel 等语义时才启用局部 bridge。bridge 是
+   可删除 fallback，不是默认架构，也不得成为 parent 的全局网关。
+
 ## 本轮确认的计划偏移
 
 1. P2/P3 曾被“更广 cohort”保持为 partial，却没有样本数量或新语义阈值。这是无界验收，
@@ -50,12 +69,17 @@ P1–P7 的有限职责如下：
 5. P6/P6a 曾继续等待未定义的 broader mutation/cross-owner cohort。原始 P6 只要求错误
    final narrative/slice/disk hash 被拒绝并由 fresh owner消费；P6a 要求 forged provenance、
    test-only seam 和 owner-internal derivation 不能自授权。现有 provider-free 与 exact-path
-   live mutation evidence 已闭合这些有限门。Mixed-frontier/representative scale 仍归 P6b/P6c，
-   mutation breadth 与 termination 仍归 P4/P5b。
+   live mutation evidence 已闭合这些有限门。
+6. P6b/P6c 不能靠 SQL-only spike、业务规模或 checker 自报晋级。正式产品无关运行已在同一个
+   disposable Git root 中穷举冻结的二十项 dense population，绑定真实 invocation timing、
+   四档 multiplicity、五个 equivalence class、U1→R→U2、exact mixed frontier 与十个
+   mutation seam；另一个进程从磁盘重算后才晋级。mutation breadth 仍归 P4，platform/
+   install regression 仍归 P7。
 
 ## 修正后的执行顺序
 
-1. 关闭已满足的有限 P2/P3/P5b/P6/P6a，保留 P1/P5/P5a 已 qualified 的事实。
+1. 保留 P1/P2/P3/P5/P5a/P5b/P6/P6a/P6b/P6c 已 `qualified` 的事实，不再用未定义的
+   broader cohort 重新打开它们。
 2. P4 的 finalized G4 catalog 已完成 trusted-runtime origin binding；required PreToolUse
    fail-closed 由 parent/child 共用的源码谓词、exact parent missing-handler live denial 与
    exact child partial multi-handler failure live denial 共同闭合。无需再跑 actor×failure
@@ -65,8 +89,9 @@ P1–P7 的有限职责如下：
    tracked-exit witness、运行中 write actor close、稳定 disk barrier、唯一 handover 与四个
    原子 writer window 已闭合该门。任意宿主进程的全局 quiescence 不重复挂到 P5b；独立
    host-control 与同 UID 攻击仍由 P4 处理，安装态失败回调由 P7 处理。
-4. P6–P6c 在 disposable product-independent root 形成同一次 invocation/phase/race/live
-   bundle，由 fresh parent/disk owner消费。
-5. P7 才运行 native Windows 与 DeepSeek regression，以及完整 live install/rollback。
+4. P6b/P6c 已由 disposable product-independent root 的同一次 invocation/phase/race/live
+   bundle及 distinct fresh-process disk owner 消费闭合。
+5. 当前执行面收束为 P4 的 host/OS trust boundary 与 P7 的 native Windows、DeepSeek
+   regression、安装态失败 callback 和完整 live install/rollback。
 6. 仅当所有 gate 与 exit receipt 均 qualified，才允许一次独立提交把 Phase 1 和 direct
    write 置真并打开 Phase 2；Phase 3 仍需 Phase 2 完成。

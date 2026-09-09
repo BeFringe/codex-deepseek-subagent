@@ -100,9 +100,9 @@ class G4LiveHashBoundFinalReceiptTests(unittest.TestCase):
         for gate_id in ("P1", "P2", "P3", "P4", "P5b", "P6", "P6a", "P6b", "P7"):
             self.assertIn(receipt_path, gates[gate_id]["evidence"])
         self.assertEqual(gates["P1"]["state"], "qualified")
-        for gate_id in ("P2", "P3", "P5b", "P6", "P6a"):
+        for gate_id in ("P2", "P3", "P5b", "P6", "P6a", "P6b"):
             self.assertEqual(gates[gate_id]["state"], "qualified")
-        for gate_id in ("P4", "P6b", "P7"):
+        for gate_id in ("P4", "P7"):
             self.assertEqual(gates[gate_id]["state"], "partial")
 
 

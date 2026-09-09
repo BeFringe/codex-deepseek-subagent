@@ -519,10 +519,10 @@ owner mutation observers before, inside, and after every phase plus after final
 materialization.
 
 These fixtures qualify only the guard's fail-closed mechanics. Live promotion
-additionally requires the same seams to be observable outside an opaque tool
-call, a representative product distribution, real per-phase timing, and fresh
-parent/disk adjudication. If an intermediate seam is opaque, split the mechanism
-into mediated invocations or leave P6c pending.
+requires the same seams to be observable outside an opaque tool call, an
+exhaustive frozen product-independent dense population, real per-phase timing,
+and fresh parent/disk adjudication. If an intermediate seam is opaque, split the
+mechanism into mediated invocations or leave P6c pending.
 
 Capture those dimensions as one raw bundle and validate it with:
 
@@ -540,6 +540,16 @@ materialized mixed frontiers, and all ten ordered mutation seams. Exit zero
 only establishes provider-free mechanical dispatchability. A separate fresh
 parent/disk owner must bind the real root, epoch, raw evidence, and final disk
 state before P6c can become live-qualified.
+
+This finite promotion was executed with
+`probes/run_p6c_product_independent_live.py` and independently consumed by
+`probes/adjudicate_p6c_product_independent_live.py`. The raw bundle and fresh
+decision are frozen in
+`probes/p6c-product-independent-live-bundle-20260909.json` and
+`probes/p6c-product-independent-live-adjudication-20260909.json`; executable
+positive and negative replays are in
+`tests/test_p6c_product_independent_live.py`. P6b/P6c are therefore qualified
+without reference to any business repository or workload.
 
 ## VI. Platform and regression exit sequence
 
