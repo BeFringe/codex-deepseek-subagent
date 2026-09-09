@@ -698,7 +698,10 @@
           "probes/p7-live-isolated-install-rollback-20260910.json",
           "probes/adjudicate_p7_isolated_install_rollback.py",
           "probes/run_p7_isolated_install_rollback.py",
-          "tests/test_p7_isolated_install_rollback.py"
+          "tests/test_p7_isolated_install_rollback.py",
+          "probes/current-signed-runtime-g4-cumulative-source-candidate.json",
+          "probes/current-signed-runtime-g4-cumulative-source-candidate.patch",
+          "tests/test_current_g4_cumulative_source_candidate.py"
         ],
         "blocker": "Only native Windows parity remains open. POSIX native lifecycle, callback continuity, the existing DeepSeek one-shot Hook route, and isolated headless install/reload/rollback are qualified with product-independent live receipts."
       }

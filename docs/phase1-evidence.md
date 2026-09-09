@@ -4852,3 +4852,25 @@ mode returned two with exactly P7 and `windows_live` open. The broader host
 mutation inventory and same-UID mode-bit probes retained their explicit
 qualification-required exit two; no host guarantee was inferred from the
 isolated install receipt.
+
+## Cumulative current-source candidate for Windows replay
+
+The current G4 source candidate is now available as one portable full-index
+patch instead of an ordered stack of incremental probe patches. The exact base
+is upstream `rust-v0.153.4` commit
+`3d2ee51ca2d5db578f328aa75e20aa22c0197c9a`; the 43-path patch is
+`probes/current-signed-runtime-g4-cumulative-source-candidate.patch`, 207474
+bytes with SHA-256
+`f0b0c2dc1f8c4b3167e0b8b4c913a11c0a59f615ddd4df16a5417f428983744a`.
+A fresh detached worktree passed `git apply --check`, applied the patch to the
+index, and reproduced the same full-index diff byte-for-byte. The machine
+receipt and executable static checks are
+`probes/current-signed-runtime-g4-cumulative-source-candidate.json` and
+`tests/test_current_g4_cumulative_source_candidate.py`.
+
+This closes only the reproducible build-input ambiguity that previously made
+multi-patch transfer fragile. It is not a Windows binary, Windows SessionMeta,
+native child, Hook, callback, termination, or disk-barrier observation. P7 and
+`windows_live` therefore remain open; Phase 1 and direct write remain false.
+Fresh provider-free verification passed all 817 tests in 77.805 seconds,
+including agent-template checks.

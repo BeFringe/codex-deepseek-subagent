@@ -563,6 +563,14 @@ lease, all managed paths were archived, and a distinct post-rollback process
 did not recreate removed Hook state. The live App and v4 hashes remained exact.
 Only native Windows parity remains open.
 
+The Windows build input is now one cumulative full-index patch against exact
+`rust-v0.153.4` commit `3d2ee51ca2d5db578f328aa75e20aa22c0197c9a`, rather than an
+ordered stack of incremental probe patches. A fresh detached worktree replayed
+the patch byte-for-byte; the receipt is
+`probes/current-signed-runtime-g4-cumulative-source-candidate.json`. This only
+removes build-input ambiguity. It is not a Windows binary or live-runtime
+receipt and does not change `windows_live=pending`.
+
 Only after P1–P7, including P5a/P5b/P6a/P6b/P6c, are green with raw live evidence
 may a separate adjudication change `direct_write_qualified`. Until then:
 

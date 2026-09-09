@@ -1,0 +1,45 @@
+{
+  "schema": 1,
+  "classification": "current_signed_runtime_g4_cumulative_source_candidate",
+  "captured_at": "2026-09-10T01:29:47+08:00",
+  "source": {
+    "repository": "https://github.com/openai/codex",
+    "tag": "rust-v0.153.4",
+    "base_commit": "3d2ee51ca2d5db578f328aa75e20aa22c0197c9a",
+    "semantic_version": "0.153.4"
+  },
+  "patch": {
+    "path": "probes/current-signed-runtime-g4-cumulative-source-candidate.patch",
+    "sha256": "f0b0c2dc1f8c4b3167e0b8b4c913a11c0a59f615ddd4df16a5417f428983744a",
+    "bytes": 207474,
+    "lines": 5762,
+    "changed_paths": 43,
+    "format": "git diff --binary --full-index HEAD"
+  },
+  "fresh_replay": {
+    "detached_exact_base": true,
+    "git_apply_check_passed": true,
+    "git_apply_index_passed": true,
+    "replayed_patch_sha256": "f0b0c2dc1f8c4b3167e0b8b4c913a11c0a59f615ddd4df16a5417f428983744a",
+    "canonical_diff_byte_exact": true,
+    "changed_paths": 43
+  },
+  "originating_host_build": {
+    "platform": "darwin-arm64",
+    "codex_sha256": "49b45f5571a3c8966aa7dd6192583c88ff3df05e840208734ee51df8e1b3104e",
+    "binary_installed_or_selected_by_gui": false
+  },
+  "portable_boundary": {
+    "product_independent": true,
+    "credential_values_included": false,
+    "incremental_patch_order_required": false,
+    "windows_build_input_ready": true,
+    "windows_native_binary_built": false,
+    "windows_live_runtime_observed": false,
+    "windows_live_qualified": false,
+    "phase1_complete": false,
+    "direct_write_qualified": false,
+    "phase2_state": "closed",
+    "phase3_state": "closed"
+  }
+}
