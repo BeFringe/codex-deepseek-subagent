@@ -89,6 +89,24 @@ class CandidateLiveSelectionIncidentTests(unittest.TestCase):
         self.assertTrue(
             hardened["forced_posture"]["guarded_failed_apply_patch_code_mode_host"]
         )
+        self.assertEqual(
+            hardened["forced_posture"][
+                "guarded_parent_child_writer_conflict_authorization"
+            ],
+            "CODEX_G4_PARENT_CHILD_WRITER_CONFLICT_PROBE_AUTHORIZED="
+            "schema1-exact-active-child-claim",
+        )
+        self.assertEqual(
+            hardened["forced_posture"][
+                "guarded_parent_child_writer_conflict_root_namespace"
+            ],
+            "/private/tmp/codex-g4-write-parent-conflict.*",
+        )
+        self.assertTrue(
+            hardened["forced_posture"][
+                "guarded_parent_child_writer_conflict_code_mode_host"
+            ]
+        )
         self.assertFalse(hardened["forced_posture"]["code_mode_host"])
         self.assertEqual(hardened["forced_posture"]["caller_config_override"], "deny")
 

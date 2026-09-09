@@ -2707,6 +2707,59 @@ The normal Phase 1, current mutation-surface, and same-UID checks returned
 zero; their promotion-required forms returned 2.  The mutation matrix still
 has thirteen blockers, and same-UID rollout/state protection remains false.
 
+## Live parent/child same-path apply-patch lease conflict
+
+Fresh-owner review recovered one previously unfinished headless run instead of
+repeating it.  The current-source candidate remained headless-only with native
+OpenAI parent and child, workspace-write limited to disposable Git root
+`/private/tmp/codex-g4-write-parent-conflict.n9GERa`, and no credential
+inspection.  The exact identity joins parent/runtime session
+`01a08272-d407-79b2-8fa2-6f00a18d9587`, child
+`01a08273-7cc8-7c52-b054-9649740ba0f6`, assignment
+`7760d5d8-c994-4ce4-aa7e-63e42ddb1a98`, and canonical AgentPath
+`/root/g4_parent_conflict_5`.
+
+Child PreToolUse sequence 2290 acquired writer claim
+`d0b31b82-34c1-424d-a490-285461b15a00` for only `qualified.txt`.
+While that claim and its active assignment were both live, root PreToolUse
+sequence 2291 attempted the same path and was denied before execution with
+`TASK.WRITER_LEASE_BLOCKED`.  Conflict receipt
+`4bcd5600-6dd4-4bce-8771-d4a93041becf` names both blockers and the exact root,
+path, parent actor, and parent tool-use id.  The child release followed 284 ms
+later and the target contains only the 25-byte child payload with SHA-256
+`4fd8e8f97e640e495fefed6d4fdb0467c4e5835d9bd006173da14af37698ac8c`;
+the denied parent payload is absent.  This is direct live evidence that the
+structured parent apply-patch surface cannot race through an active child
+same-path lease.
+
+The run is deliberately not a termination success.  It predates the
+hash-bound final-receipt repair, lacks a child PostToolUse event in the
+contiguous audit chain, and produced eleven unaccepted SubagentStop attempts
+at sequences 2292--2302.  No terminal parent callback, parent turn completion,
+or candidate exit code was retained; the old active envelope is quarantined,
+not resolved or consumed.  A later fresh-owner observation finds zero exact
+candidate process/open file, zero matching writer claim or live assignment,
+and unchanged child bytes, but that narrow observation is not strong global
+quiescence.
+
+The temporary Hook overlay restored `hooks.json` to its original SHA-256
+`82c8aa0bc4d739628646864578de6c078884c21413855ed3db448d4365a8668e`,
+preserved v4 entries, and did not overwrite installed Hook sources.  The exact
+headless wrapper guard used by the run is now reproducible in
+`probes/codex_plaintext_candidate_wrapper.sh`: it enables the parent patch
+host only when both the exact-write guard and the fixed
+`/private/tmp/codex-g4-write-parent-conflict.*` namespace are present.
+The minimized receipt and executable assertions are
+`probes/g4-live-parent-child-same-path-conflict-20260909.json` and
+`tests/test_g4_live_parent_child_same_path_conflict.py`.
+
+This qualifies only the parent structured apply-patch overlap subgate.  Sibling
+apply-patch, opaque shell, Git/index, MCP/app, existing PTY continuation,
+callback continuity, durable resolution, process-tree termination, and broad
+quiescence remain open.  P4 and P5b stay partial;
+`phase1_complete=false`, `direct_write_qualified=false`, and Phases 2/3
+remain closed.
+
 ## Provider-free depth-two identity and fresh-owner consumption
 
 The current 0.153.4 source candidate completed one real provider-free nested

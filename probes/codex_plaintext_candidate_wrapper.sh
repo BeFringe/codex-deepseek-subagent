@@ -148,6 +148,19 @@ case "$mode" in
         ;;
       *) fail "failed-patch callback probe authorization guard is invalid" ;;
     esac
+    case "${CODEX_G4_PARENT_CHILD_WRITER_CONFLICT_PROBE_AUTHORIZED-}" in
+      "") ;;
+      schema1-exact-active-child-claim)
+        [ "${CODEX_G4_EXACT_WRITE_PROBE_AUTHORIZED-}" = "schema1-exact-temporary-git-root" ] ||
+          fail "parent/child writer conflict probe requires the exact write guard"
+        case "$requested_cd" in
+          /private/tmp/codex-g4-write-parent-conflict.*) ;;
+          *) fail "parent/child writer conflict root is outside the fixed temporary namespace" ;;
+        esac
+        code_mode_host=true
+        ;;
+      *) fail "parent/child writer conflict probe authorization guard is invalid" ;;
+    esac
     ;;
   *)
     fail "only headless exec or login status is allowed"
