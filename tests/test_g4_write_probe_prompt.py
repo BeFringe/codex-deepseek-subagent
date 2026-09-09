@@ -146,6 +146,8 @@ class G4WriteProbePromptTests(unittest.TestCase):
         self.assertIn("*** Update File:", prompt)
         self.assertIn("-G4_CHILD_WRITE_QUALIFIED", prompt)
         self.assertIn("+G4_HANDOVER_WRITE_QUALIFIED", prompt)
+        self.assertIn("*** End Patch\nCall no other tool", prompt)
+        self.assertNotIn("*** End Patch Call no other tool", prompt)
         self.assertNotIn("*** Add File:", prompt)
         self.assertIn("same-path replacement-and-close", prompt)
         self.assertIn("exactly one identical ownership_handover", prompt)
