@@ -519,6 +519,23 @@ call, a representative product distribution, real per-phase timing, and fresh
 parent/disk adjudication. If an intermediate seam is opaque, split the mechanism
 into mediated invocations or leave P6c pending.
 
+Capture those dimensions as one raw bundle and validate it with:
+
+```text
+python3 probes/check_p6c_live_bundle.py \
+  --bundle /absolute/path/to/p6c-live-bundle.json \
+  --require-dispatchable
+```
+
+The bundle is not an aggregate benchmark summary. It must preserve an exact
+sample-to-invocation-to-proof-partition join for a frozen representative-dense
+cohort of at least twenty samples, same-run U1/R/U2/true phase receipts with
+registry conservation and elapsed values, the full authoritative and
+materialized mixed frontiers, and all ten ordered mutation seams. Exit zero
+only establishes provider-free mechanical dispatchability. A separate fresh
+parent/disk owner must bind the real root, epoch, raw evidence, and final disk
+state before P6c can become live-qualified.
+
 ## VI. Platform and regression exit sequence
 
 Run the full provider-free suite and isolated protocol probes on POSIX and native

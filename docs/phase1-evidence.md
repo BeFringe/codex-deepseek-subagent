@@ -953,6 +953,27 @@ opaque tool event, it must be split into observable invocations or P6c remains
 pending. `feasibility_contract_integrity` is therefore still unverified for
 live multi-phase delivery and direct write remains unqualified.
 
+`probes/check_p6c_live_bundle.py` adds the reusable product-independent intake
+boundary for that missing live evidence. A candidate bundle must contain one
+frozen representative-dense cohort of at least twenty samples; every latency
+sample must join in order to non-orphaned scorer-invocation and proof-partition
+receipts; the declared worst witness must actually be a maximum sample. The
+same bundle must carry the exact coarse-bound, owner-refinement, and
+mixed-materialization results, both complete frontiers, and the ten ordered
+before/mid/after/final mutation observations. All raw evidence slots must be
+present. The verifier then feeds those receipts through the existing owner
+guard rather than accepting precomputed pass booleans.
+
+Eight focused tests cover the mechanically dispatchable reference bundle,
+orphan rejection, the representative cohort floor, mutation catalog/order,
+receipt-evidence/worst-witness/phase-order failures, phase binding drift, exact
+mixed-frontier drift, and distinct CLI exit codes for valid, blocked, and
+malformed inputs. A mechanically dispatchable bundle still
+returns `fresh_parent_disk_adjudication_present=false`,
+`p6c_live_qualified=false`, `phase1_complete=false`, and
+`direct_write_qualified=false`. No synthetic fixture is promoted into live
+product evidence.
+
 ## Phase roadmap recovery and executable G4 stage gate
 
 On 2026-08-16, a complete `git log --all`/tree audit found that independent
@@ -4240,3 +4261,42 @@ replacement child's exact active identity acquires the handover lease. This
 closes the isolated atomic-state matrix for those windows, but it does not turn
 the controlled ordering into real native scheduler-race evidence. The live
 before/mid/after handover-race requirement therefore remains open.
+
+## P6c joined live-bundle intake boundary
+
+The provider-independent P6c evidence seam is now executable rather than an
+open-ended request for more benchmark output. `probes/check_p6c_live_bundle.py`
+accepts exactly one raw bundle and rejects aggregate or cross-run substitution.
+It binds a frozen representative-dense cohort of at least twenty samples to the
+declared population and distribution identities; joins every ordered latency
+sample to actual scorer-invocation and proof-partition receipts; verifies the
+declared worst witness; and requires the exact three phase ids and ten ordered
+mutation seams. The raw phases, frontiers, observations, samples, and
+invocations must all retain evidence. The existing owner guard then recomputes
+invocation cardinality, nearest-rank p95, U1/R/U2/true conservation, phase
+timing/binding, and exact mixed-frontier equivalence without accepting caller
+pass flags.
+
+Eight new executable tests cover the positive provider-free bundle and reject
+orphaned invocation joins, a three-sample cohort, an incomplete/reordered
+mutation catalog, absent receipt evidence, a false worst witness, reordered
+phases, phase-root drift, and mixed-frontier payload substitution. The CLI also
+distinguishes malformed input (exit 1) from a valid but blocked
+bundle (exit 2 under `--require-dispatchable`). Even the positive synthetic
+bundle reports no fresh parent/disk adjudication and keeps P6c live
+qualification, Phase 1, and direct write false.
+
+Fresh full verification passed all 750 provider-free tests in 68.021 seconds,
+including agent-template checks. Normal Phase 1, mutation-surface, same-UID
+trust, and semantic runtime-index commands returned zero. Phase 1, mutation,
+and same-UID promotion forms returned 2 as designed. The current semantic
+runtime remains Codex `0.153.4` at pinned source
+`3d2ee51ca2d5db578f328aa75e20aa22c0197c9a`; same-UID rollout and state files
+remain unprotected. No LocalCAT product file or live App Server selection was
+changed.
+
+This closes the reusable P6c capture/validation contract, not representative
+live P6c. The canonical Feature 5 evidence still cannot supply the required
+same-run joins, and no fresh product owner/disk barrier has adjudicated such a
+bundle. P6c stays `partial`; `phase1_complete=false`,
+`direct_write_qualified=false`, and Phases 2/3 remain closed.

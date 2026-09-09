@@ -591,10 +591,12 @@
         "provider_free": "pass",
         "evidence": [
           "docs/phase1-evidence.md#p6c-isolated-end-to-end-cost-and-staged-authority-fixtures",
+          "probes/check_p6c_live_bundle.py",
+          "tests/test_p6c_live_bundle.py",
           "probes/p6c-feature5-readonly-gap-adjudication-20260909.json",
           "tests/test_p6c_feature5_readonly_gap_adjudication.py"
         ],
-        "blocker": "a fresh external-owner read-only adjudication confirms that the canonical 100k Gate D bundle has 240 raw fuzzy samples, independently defined nearest-rank latency authority, two passing execution-path p95 values, and separate invocation/equivalence and mutation-race source fixtures. It does not define a dense owner cohort identity, join each latency sample to actual scorer invocations and proof partitions, freeze same-cohort U1/R/U2/true cardinalities, expose coarse/refine/materialize identity/conservation/elapsed receipts, publish a complete authoritative-versus-materialized mixed frontier, or retain raw before/mid/after race receipts. Tasks and matrix summaries cannot substitute those joins; representative dense live P6c remains unqualified"
+        "blocker": "the product-independent live-bundle verifier now enforces one frozen representative-dense cohort of at least twenty samples, exact sample-to-invocation-to-proof-partition joins, same-bundle U1/R/U2/true phase conservation and timing, complete authoritative/materialized frontiers, and all ten ordered mutation seams. Its reference fixture is provider-free mechanics only and explicitly cannot self-promote. The fresh external-owner read-only adjudication confirms that the canonical 100k Gate D bundle has 240 raw fuzzy samples, independently defined nearest-rank latency authority, two passing execution-path p95 values, and separate invocation/equivalence and mutation-race source fixtures, but those inputs remain unjoinable into the required bundle: the source still lacks the exact dense owner cohort identity and fresh parent/disk adjudication required by the verifier. Representative dense live P6c remains unqualified"
       },
       {
         "id": "P7",
