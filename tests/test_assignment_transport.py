@@ -757,6 +757,38 @@ class AssignmentTransportTests(unittest.TestCase):
                 tool_input={"message": self.message(authority=replacement_authority)},
             )
 
+            before_handover = self.parent_patch_hook(
+                "qualified.txt",
+                tool_use_id="parent-before-handover",
+            )
+            leased = writer_lease_guard.pre_tool_use(self.store, before_handover)
+            self.assertIn(
+                "WRITER.LEASED",
+                leased["hookSpecificOutput"]["additionalContext"],
+            )
+            blocked_before = assignment_transport.capture_spawn(
+                self.store,
+                replacement_hook,
+                plaintext_agent_types={"fixture_worker"},
+                qualification_handover_write_probes={"replacement_write": target},
+            )
+            self.assertEqual(
+                blocked_before["hookSpecificOutput"]["permissionDecision"],
+                "deny",
+            )
+            self.assertIn(
+                "in-flight",
+                blocked_before["hookSpecificOutput"]["permissionDecisionReason"],
+            )
+            writer_lease_guard.post_tool_use(
+                self.store,
+                dict(
+                    before_handover,
+                    hook_event_name="PostToolUse",
+                    tool_response={"status": "completed"},
+                ),
+            )
+
             ordinary = assignment_transport.capture_spawn(
                 self.store,
                 replacement_hook,
@@ -811,6 +843,18 @@ class AssignmentTransportTests(unittest.TestCase):
                 "verified",
             )
 
+            blocked_pending = writer_lease_guard.pre_tool_use(
+                self.store,
+                self.parent_patch_hook(
+                    "qualified.txt",
+                    tool_use_id="parent-during-pending-handover",
+                ),
+            )
+            self.assertEqual(
+                blocked_pending["hookSpecificOutput"]["permissionDecision"],
+                "deny",
+            )
+
             replacement_child = self.child_hook("replacement_write")
             assignment_transport.subagent_start(self.store, replacement_child)
             patch = self.parent_patch_hook(
@@ -840,6 +884,17 @@ class AssignmentTransportTests(unittest.TestCase):
                 )
             )
             self.assertEqual(claim["ownership_handover"], capsule["ownership_handover"])
+            blocked_active = writer_lease_guard.pre_tool_use(
+                self.store,
+                self.parent_patch_hook(
+                    "qualified.txt",
+                    tool_use_id="parent-during-active-handover",
+                ),
+            )
+            self.assertEqual(
+                blocked_active["hookSpecificOutput"]["permissionDecision"],
+                "deny",
+            )
             target.write_text("G4_HANDOVER_WRITE_QUALIFIED\n", encoding="utf-8")
             compatibility_hook.dispatch_with_receipts(
                 self.store,
@@ -857,6 +912,17 @@ class AssignmentTransportTests(unittest.TestCase):
                 )
             )
             self.assertEqual(receipt["ownership_handover"], capsule["ownership_handover"])
+            blocked_after_write = writer_lease_guard.pre_tool_use(
+                self.store,
+                self.parent_patch_hook(
+                    "qualified.txt",
+                    tool_use_id="parent-after-handover-write",
+                ),
+            )
+            self.assertEqual(
+                blocked_after_write["hookSpecificOutput"]["permissionDecision"],
+                "deny",
+            )
         self.repository = original_repository
 
     def test_invalid_authority_or_fork_mode_blocks_spawn(self):

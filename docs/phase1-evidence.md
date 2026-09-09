@@ -4229,3 +4229,14 @@ quiescence. It also does not add a second resumed-running termination result;
 that property remains supported only by the preceding bounded actor run. P5b
 stays `partial`; `phase1_complete=false`, `direct_write_qualified=false`, and
 Phases 2/3 remain closed.
+
+The provider-free exact-handover regression now exercises four foreign-parent
+write windows against the same frozen prior barrier and replacement capsule.
+An already leased parent path blocks capture before handover. After capture, the
+pending replacement blocks a parent claim; after SubagentStart, the active child
+and its exact writer claim block another; after the child's PostToolUse releases
+that claim, the still-active assignment blocks a fourth parent write. Only the
+replacement child's exact active identity acquires the handover lease. This
+closes the isolated atomic-state matrix for those windows, but it does not turn
+the controlled ordering into real native scheduler-race evidence. The live
+before/mid/after handover-race requirement therefore remains open.
