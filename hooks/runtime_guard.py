@@ -61,6 +61,10 @@ QUALIFICATION_SANDBOX_PROBE_VERIFICATION = (
     "code-mode nested Bash read-only sandbox denial probe"
 )
 QUALIFICATION_WRITE_PROBE_VERIFICATION = "exact-path child apply_patch qualification probe"
+HASH_BOUND_POST_MUTATION_RECEIPT_INVARIANT = (
+    "hash-bound trusted PostToolUse observation for final Git snapshot"
+)
+MAX_FINAL_RETURN_REJECTIONS = 2
 TERMINAL_AUTHORITY_REASONS = frozenset(
     {
         "assignment_timeout",
@@ -71,6 +75,8 @@ TERMINAL_AUTHORITY_REASONS = frozenset(
         "read_only_mutation_attempt",
         "sandbox_probe_dispatched",
         "write_authority_gates_missing",
+        "final_return_context_lost",
+        "final_return_correction_exhausted",
     }
 )
 PARENT_CANCEL_REQUIRED_REASONS = frozenset(
@@ -296,7 +302,13 @@ def read_session_meta(transcript_path: str, *, require_child_fields: bool = True
 
 def child_identity_from_hook(hook_input: Mapping[str, object]) -> dict[str, str]:
     event_name = hook_input.get("hook_event_name")
-    if event_name not in {"SubagentStart", "PreToolUse", "PreCompact", "PostCompact"}:
+    if event_name not in {
+        "SubagentStart",
+        "PreToolUse",
+        "PostToolUse",
+        "PreCompact",
+        "PostCompact",
+    }:
         raise IdentityMismatch("hook event does not carry direct child identity")
     transcript_path = hook_input.get("transcript_path")
     if not isinstance(transcript_path, str):
@@ -776,6 +788,49 @@ def parse_attestation(message: object) -> dict:
     return value
 
 
+def validate_complete_write_observation(
+    store: StateStore,
+    identity: Mapping[str, str],
+    capsule: Mapping[str, object],
+    attestation: Mapping[str, object],
+    snapshot: Mapping[str, object],
+) -> None:
+    invariants = capsule["execution_contract"]["required_invariants"]
+    if HASH_BOUND_POST_MUTATION_RECEIPT_INVARIANT not in invariants:
+        return
+    if capsule["assignment_mutation_mode"] != "write":
+        raise GuardError("post-mutation receipt invariant requires write mode")
+    if not attestation["assigned_slice_complete"]:
+        return
+    receipt_sha256 = attestation["authority_provenance"][
+        "derivation_receipt_sha256"
+    ]
+    if receipt_sha256 is None:
+        raise GuardError("complete write return has no post-mutation receipt")
+    actor = {
+        "runtime_session_id": identity["runtime_session_id"],
+        "thread_id": identity["child_thread_id"],
+        "agent_type": identity["agent_type"],
+        "canonical_agent_path": identity["canonical_agent_path"],
+    }
+    try:
+        receipt = store.find_writer_receipt(actor, receipt_sha256)
+    except StateError as error:
+        raise GuardError(f"complete write receipt is unavailable: {error}") from error
+    if receipt["root"] != capsule["root"]["path"]:
+        raise GuardError("complete write receipt root does not match capsule")
+    if receipt["after_snapshot"] != dict(snapshot):
+        raise GuardError("complete write receipt does not bind final Git snapshot")
+    if any(
+        not any(
+            Path(path) == Path(owner) or Path(owner) in Path(path).parents
+            for owner in capsule["owned_paths"]
+        )
+        for path in receipt["paths"]
+    ):
+        raise GuardError("complete write receipt exceeds exact owned paths")
+
+
 def _git(root: Path, *arguments: str, allow_code_one: bool = False) -> bytes:
     result = subprocess.run(
         ["git", "-C", str(root), *arguments],
@@ -939,6 +994,20 @@ def _termination_evidence(
         classification = "qualification_sandbox_probe_dispatched"
     elif reason == "write_authority_gates_missing":
         classification = "write_authority_gates_missing"
+    elif reason == "final_return_context_lost":
+        if disk_changed is None:
+            classification = "return_context_loss_with_untrusted_location"
+        elif disk_changed:
+            classification = "return_context_loss_with_contribution"
+        else:
+            classification = "return_context_loss_without_contribution"
+    elif reason == "final_return_correction_exhausted":
+        if disk_changed is None:
+            classification = "invalid_final_with_untrusted_location"
+        elif disk_changed:
+            classification = "return_context_loss_with_contribution"
+        else:
+            classification = "invalid_final_without_contribution"
     else:
         classification = "initial_authority_mismatch"
     if classification == "post_attestation_authority_drift":
@@ -1019,7 +1088,68 @@ def sweep_deadlines(
     return results
 
 
+def _final_rejection_result(
+    store: StateStore,
+    assignment_id: str,
+    identity: Mapping[str, str],
+    capsule: Mapping[str, object],
+    snapshot: Mapping[str, object],
+    message: object,
+    error: StateError,
+) -> dict:
+    disk_changed = disk_change_from_baseline(snapshot, capsule)
+    if disk_changed is None:
+        classification = "invalid_final_with_untrusted_location"
+    elif disk_changed:
+        classification = "return_context_loss_with_contribution"
+    else:
+        classification = "invalid_final_without_contribution"
+    canonical_message = json.dumps(
+        message, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+    ).encode("utf-8")
+    canonical_snapshot = json.dumps(
+        dict(snapshot), ensure_ascii=False, sort_keys=True, separators=(",", ":")
+    ).encode("utf-8")
+    rejection = {
+        "schema": 1,
+        "classification": classification,
+        "reason": str(error),
+        "message_sha256": hashlib.sha256(canonical_message).hexdigest(),
+        "snapshot_sha256": hashlib.sha256(canonical_snapshot).hexdigest(),
+        "observed_at": dt.datetime.now(dt.timezone.utc).isoformat(),
+    }
+    rejection_count = store.record_final_rejection(
+        assignment_id,
+        identity,
+        rejection,
+    )
+    if rejection_count >= MAX_FINAL_RETURN_REJECTIONS:
+        evidence = _termination_evidence(
+            capsule,
+            snapshot,
+            reason="final_return_correction_exhausted",
+            observed_at=dt.datetime.now(dt.timezone.utc),
+        )
+        evidence["final_rejection_count"] = rejection_count
+        evidence["last_message_sha256"] = rejection["message_sha256"]
+        evidence["last_snapshot_sha256"] = rejection["snapshot_sha256"]
+        store.terminate_active(assignment_id, evidence)
+        return {}
+    return {
+        "decision": "block",
+        "reason": (
+            f"TASK.FINAL_{classification.upper()}: {error}. "
+            "Disk evidence does not restore missing authority; return a corrected attestation. "
+            f"correction_attempt={rejection_count}/{MAX_FINAL_RETURN_REJECTIONS}"
+        ),
+    }
+
+
 def subagent_stop(store: StateStore, hook_input: Mapping[str, object]) -> dict:
+    assignment_id = None
+    identity = None
+    capsule = None
+    snapshot = None
     try:
         identity = child_identity_from_stop(hook_input)
         try:
@@ -1048,23 +1178,17 @@ def subagent_stop(store: StateStore, hook_input: Mapping[str, object]) -> dict:
             raise
         capsule = envelope["capsule"]
         snapshot = collect_git_snapshot(capsule["root"]["path"])
-        try:
-            attestation = parse_attestation(hook_input.get("last_assistant_message"))
-        except GuardError as error:
-            disk_changed = disk_change_from_baseline(snapshot, capsule)
-            if disk_changed is None:
-                classification = "invalid_final_with_untrusted_location"
-            elif disk_changed:
-                classification = "return_context_loss_with_contribution"
-            else:
-                classification = "invalid_final_without_contribution"
-            return {
-                "decision": "block",
-                "reason": (
-                    f"TASK.FINAL_{classification.upper()}: {error}. "
-                    "Disk evidence does not restore missing authority; return a corrected attestation."
-                ),
-            }
+        message = hook_input.get("last_assistant_message")
+        if isinstance(message, str) and message.strip() == "TASK.CONTEXT_LOST":
+            evidence = _termination_evidence(
+                capsule,
+                snapshot,
+                reason="final_return_context_lost",
+                observed_at=dt.datetime.now(dt.timezone.utc),
+            )
+            store.terminate_active(assignment_id, evidence)
+            return {}
+        attestation = parse_attestation(message)
         violations = _snapshot_authority_violations(snapshot, capsule)
         expected = {
             "assignment_id": assignment_id,
@@ -1128,9 +1252,29 @@ def subagent_stop(store: StateStore, hook_input: Mapping[str, object]) -> dict:
             raise GuardError("complete return includes failed verification")
         if complete and _active_runtime(envelope)["first_git_attested_at"] is None:
             raise GuardError("complete return has no durable first Git attestation")
+        validate_complete_write_observation(
+            store,
+            identity,
+            capsule,
+            attestation,
+            snapshot,
+        )
         store.finalize(assignment_id, attestation, complete=complete)
         return {}
     except StateError as error:
+        if all(
+            value is not None
+            for value in (assignment_id, identity, capsule, snapshot)
+        ):
+            return _final_rejection_result(
+                store,
+                assignment_id,
+                identity,
+                capsule,
+                snapshot,
+                hook_input.get("last_assistant_message"),
+                error,
+            )
         return {
             "decision": "block",
             "reason": (

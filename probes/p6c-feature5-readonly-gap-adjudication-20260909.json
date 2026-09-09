@@ -1,0 +1,94 @@
+{
+  "schema": 1,
+  "recorded_at": "2026-09-08T20:59:00Z",
+  "evidence_kind": "external_owner_read_only_p6c_gap_adjudication",
+  "source_task": {
+    "thread_id": "01a0028e-903e-7a41-9b4e-7b4b9774ceee",
+    "root": "/Users/pearly/文档/CAT/localcat-feature5",
+    "branch": "feature5",
+    "head": "dd7c9fdb268b4ee8ac3545f43e3f5f19e715ff3b",
+    "tracked_change_count": 0,
+    "diagnostic_directory_inspected": false,
+    "credential_values_observed": false
+  },
+  "canonical_sources": [
+    {"path": "benchmark_tm_evidence.json", "sha256": "7f33c553f0c6fa5f10a802049a2bca3f4457bf3adba5fdc001aa31eab3d1ac96"},
+    {"path": "benchmark_tm_contract.json", "sha256": "a476e2ed9e89938bd45d39001d20d8ba397bb9a749c6e25f9af07aa9117a320f"},
+    {"path": "tm_benchmark.py", "sha256": "e33f6753c9d9e0373663436330d47e62ac82fffeec2260b8907f86ad9f2ccc62"},
+    {"path": "tm_benchmark_latency.py", "sha256": "0f500d019e8ddc0fe2f3b50e27fc1388106c185f89c8ceeeba2c244c0d98d0cc"},
+    {"path": "tm_benchmark_query_process.py", "sha256": "5d17f606f09a0e1e8d078f06439843062c331792869e6f695683e9c3f05c8d1a"},
+    {"path": "tests/test_tm_candidate_proof_query.py", "sha256": "d01fa65b07284612804b7bee96faea3d109b0e51f3f2287731f2e6ab5d8cf8fa"},
+    {"path": "tests/test_tm_candidate_proof_index.py", "sha256": "f041e8a40de5d1089ce9b7e9c5567a6dda92ffcd66218dfec4e377176c3847f5"},
+    {"path": ".kiro/specs/tm-storage-retrieval-index/tasks.md", "sha256": "9726390bf62e72cd14c11fd7751fc407f1b5a3d583dbb0cb2d0947b04f53850a"},
+    {"path": "acceptance_matrix_evidence.json", "sha256": "8cfd39dd6f666b7e7438f4cda5b5aa201319bb80588733cf359b2e18399971a0"},
+    {"path": "fault_matrix_evidence.json", "sha256": "8296b189fa293f36127ffcf060304b2ceb86d29d22f14fb03e77d4fc82b0d792"},
+    {"path": "release_criteria_evidence.json", "sha256": "0542fc8c05322e8a92f093236242ad9b29f85c8f923dd6cf46465ebeffebe675"}
+  ],
+  "available_partial_evidence": {
+    "end_to_end_latency": {
+      "bundle_schema": "tm-benchmark-bundle-v2",
+      "bundle_digest": "071f2787f452c9f07635a85e0626e8538bdb79a1b4f46ea3a37a06d47cf5be7e",
+      "contract_digest": "fda4be33a9f73452e978a7a8a122e66b33f39d44e84c942f425ccae1d503a5a4",
+      "corpus_record_count": 100000,
+      "corpus_seed": 20260729,
+      "exact_sample_count": 1200,
+      "fuzzy_sample_count": 240,
+      "near_edit_query_count": 200,
+      "miss_query_count": 40,
+      "warmup_queries_per_cohort": 100,
+      "measured_repeats": 1,
+      "clock": "perf_counter_ns",
+      "statistic": "p95_nearest_rank",
+      "fuzzy_limit_ms": 500,
+      "fts5_fuzzy_p95_ms": 275.832958,
+      "fallback_fuzzy_p95_ms": 279.756833,
+      "fts5_latency_evidence_digest": "9f867c9373899d04d91530382d9af6e2c29daaaaac1b54e34583892b5e5e3519",
+      "fallback_latency_evidence_digest": "b0d330f01b6fbb5430555830782a2376a9a0f0f1a024b9698d5f1868fb392616",
+      "dense_owner_cohort_identity_present": false,
+      "per_sample_invocation_join_present": false
+    },
+    "invocation_and_equivalence": {
+      "candidate_budget": 2048,
+      "multiplicity_fixture_identity_count": 3000,
+      "equivalence_class_count": 300,
+      "observed_scorer_callback_count": 300,
+      "canonical_distribution_receipt_present": false
+    },
+    "phase_and_race_sources": {
+      "current_runtime_refinement_chain": "U1_to_owner_R_to_U3_to_optional_U4_P3",
+      "requested_U1_R_U2_true_same_cohort_receipt_present": false,
+      "per_phase_identity_conservation_elapsed_receipts_present": false,
+      "complete_mixed_frontier_item_receipt_present": false,
+      "before_mid_after_race_definitions_present": true,
+      "before_mid_after_raw_run_receipts_present": false
+    },
+    "matrix_summaries": {
+      "acceptance_passed": 33,
+      "acceptance_total": 33,
+      "fault_passed": 61,
+      "fault_total": 61,
+      "release_passed": 86,
+      "release_total": 86,
+      "raw_phase_join_substitution_allowed": false
+    }
+  },
+  "missing_required_joins": [
+    "dense_owner_cohort_identity",
+    "per_sample_invocation_latency_join",
+    "same_cohort_U1_R_U2_true_cardinalities",
+    "coarse_refine_materialize_identity_conservation_elapsed_receipts",
+    "complete_authoritative_materialized_mixed_frontier_exactness",
+    "before_mid_after_mutation_race_raw_receipts"
+  ],
+  "verdict": {
+    "existing_gate_d_latency_is_contribution_evidence": true,
+    "tasks_summary_can_authorize": false,
+    "matrix_summary_can_authorize": false,
+    "representative_dense_latency_subgate_qualified": false,
+    "p6c_qualified": false,
+    "phase1_complete": false,
+    "direct_write_qualified": false,
+    "phase2_state": "closed",
+    "phase3_state": "closed"
+  }
+}

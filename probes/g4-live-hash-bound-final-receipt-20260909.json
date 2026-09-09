@@ -1,0 +1,143 @@
+{
+  "schema": 1,
+  "evidence_kind": "g4_hash_bound_postmutation_final_receipt_live_prototype",
+  "recorded_at": "2026-09-08T20:22:41Z",
+  "repository_baseline": {
+    "root": "/Users/pearly/文档/CAT/codex-deepseek-subagent",
+    "branch": "main",
+    "head": "f47d1268662a99c6c8a2c0c9de519cd1ffda9272",
+    "prototype_root": "/private/tmp/codex-g4-final-receipt-prototype.FqxIDQ",
+    "prototype_integrated_at_observation": false
+  },
+  "runtime": {
+    "codex_version": "0.153.4",
+    "candidate_path": "/private/tmp/codex-current-plaintext.aTU9C2/candidate-live-catalog-receipt/codex",
+    "candidate_sha256": "6e1f9675f876588786a98dfbe5db34b20572499f476c3cbd653465daa106e816",
+    "parent_model_provider": "openai",
+    "child_model_provider": "openai",
+    "gui_app_server_selected": false,
+    "credential_value_observed": false,
+    "sandbox": "workspace-write",
+    "approval_policy": "never",
+    "exit_code": 0
+  },
+  "overlay": {
+    "base_hooks_sha256": "82c8aa0bc4d739628646864578de6c078884c21413855ed3db448d4365a8668e",
+    "overlay_hooks_sha256": "5646e1c9eccf133d417e5217fef8acbac2a9a123fe7cf70d75b57f290b20ffcc",
+    "restored_hooks_sha256": "82c8aa0bc4d739628646864578de6c078884c21413855ed3db448d4365a8668e",
+    "prompt_sha256": "9789b399b6515dcbebb70f7b0f9e7b5a4dd37448dffb9cbd86d64bbd9215d7aa",
+    "events_sha256": "f4d6fd957185d3ecfb46120f8243b84c822a8a50058e10862981b0090e3642dc",
+    "last_message_sha256": "08ac8a42cbb7d4027da3ff3c8c42b8e99170e11f2750b2060991f6c5a6b846ea",
+    "v4_entries_preserved": true
+  },
+  "identity": {
+    "assignment_id": "be121a3f-cf5e-459f-b5b1-f6d3681ad325",
+    "handoff_id": "83677b2c-55c9-43ab-9da7-7a5a978d4b1e",
+    "parent_thread_id": "01a082ab-475d-7a21-98a4-924a1807b822",
+    "child_thread_id": "01a082ab-e773-7970-9f60-995b01427454",
+    "runtime_session_id": "01a082ab-475d-7a21-98a4-924a1807b822",
+    "canonical_agent_path": "/root/g4_final_receipt_4",
+    "agent_type": "g4_qualification_probe_worker",
+    "parent_rollout_sha256": "647c73ef566a3dfb7e9a65bedd870a8330259bf0feb7b0c797589da381adccb9",
+    "child_rollout_sha256": "582128ccaa740cff41087fe2531fceef5a335813391c527fc9a0020f4d60b556",
+    "child_final_sha256": "08ac8a42cbb7d4027da3ff3c8c42b8e99170e11f2750b2060991f6c5a6b846ea",
+    "parent_callback_sha256": "08ac8a42cbb7d4027da3ff3c8c42b8e99170e11f2750b2060991f6c5a6b846ea",
+    "parent_child_final_exactly_equal": true
+  },
+  "authority": {
+    "capsule_sha256": "792d317181abed484f628159b5b2fa34ad3938c1af1613f1064b1d18c3895fb9",
+    "compact_invariant_sha256": "7f9a07239092ffad6a7a966896e8284c56bbb9bb19ae8324208993c3ed7b155d",
+    "trusted_host_user_write_consent_sha256": "e53b3d3bbc124b23f2a715dbf9c712c5e6783e1e8001c7406f07847e70e21638",
+    "owned_paths": [
+      "qualified.txt"
+    ],
+    "required_invariant": "hash-bound trusted PostToolUse observation for final Git snapshot",
+    "final_rejection_count": 0,
+    "durable_state": "reported",
+    "reported_envelope_sha256": "9904f2168ff74f98bd19f385230693668a66ed4724c1d832aa9c48af02fa3300"
+  },
+  "writer_receipt": {
+    "claim_id": "4eb45d78-6a12-4fa7-9655-a400329d70da",
+    "claim_sha256": "da6a0c84a66001554eb9c7532cdca2cc8aa60aa9b13aacb373b382adf58f01e7",
+    "receipt_sha256": "df369e1490da3a040423baf0870510484998b22c6aeddb43e8ddbfcdcf1053e2",
+    "receipt_file_sha256": "ee489a574b84595fff80e1614582609b381aeadd12e9dd2685a56f2146f147cd",
+    "schema": 2,
+    "tool_use_id": "call_GOQwjNbinNsb5UFadGpo2iZg",
+    "actor_thread_id": "01a082ab-e773-7970-9f60-995b01427454",
+    "actor_agent_path": "/root/g4_final_receipt_4",
+    "paths": [
+      "qualified.txt"
+    ],
+    "after_snapshot_sha256": "a6d169b2579f96e620f0b231d23f175175591f7334a518b21af07be84a2b8405",
+    "final_derivation_receipt_sha256": "df369e1490da3a040423baf0870510484998b22c6aeddb43e8ddbfcdcf1053e2"
+  },
+  "hook_chain": {
+    "event_count": 2414,
+    "chain_sha256": "182a14e79cd7f2c99ccd839736b5d144a5b203da15af216c8e7a665834b3b256",
+    "head_receipt_sha256": "fb3a895fe9496e4c102bfed91d230481520f16a0db66793f14595e6b93c9611a",
+    "sequences": {
+      "spawn_pretool": 2410,
+      "subagent_start": 2411,
+      "child_apply_patch_pretool": 2412,
+      "child_apply_patch_posttool": 2413,
+      "subagent_stop": 2414
+    },
+    "pretool_tool_use_id": "call_GOQwjNbinNsb5UFadGpo2iZg",
+    "posttool_tool_use_id": "call_GOQwjNbinNsb5UFadGpo2iZg",
+    "raw_payload_stored": false
+  },
+  "fresh_owner_disk_barrier": {
+    "root": "/private/tmp/codex-g4-write-final-receipt.eh2PHs",
+    "branch": "main",
+    "head": "aa8e6f8b26f567394820e16457c72fec7d58271d",
+    "index_changed": false,
+    "git_status_short": "?? qualified.txt",
+    "target_sha256": "4fd8e8f97e640e495fefed6d4fdb0467c4e5835d9bd006173da14af37698ac8c",
+    "delayed_observation_seconds": 2,
+    "late_write_observed": false,
+    "candidate_process_count": 0,
+    "matching_writer_claim_count": 0,
+    "strong_global_quiescence_claimed": false
+  },
+  "preceding_negative_samples": [
+    {
+      "task": "g4_final_receipt_1",
+      "classification": "bounded_final_correction_exhausted",
+      "root_causes": [
+        "seed fields were copied outside the exact final schema",
+        "unrelated legacy writer receipt stopped exact schema-2 lookup"
+      ]
+    },
+    {
+      "task": "g4_final_receipt_2",
+      "classification": "spawn_denied_before_child",
+      "root_cause": "relative owned paths were compared across distinct Git roots"
+    }
+  ],
+  "provider_free_verification": {
+    "discovered_test_count": 675,
+    "functional_pass_count": 674,
+    "prototype_location_artifact_count": 1,
+    "artifact": "the pair-guard test intentionally rejects a state directory under its source root; the prototype source root itself is under /private/tmp",
+    "same_test_passes_in_real_repository": true,
+    "phase1_gate_exit_code": 0,
+    "phase1_promotion_exit_code": 2,
+    "mutation_gate_exit_code": 0,
+    "mutation_promotion_exit_code": 2,
+    "same_uid_gate_exit_code": 0,
+    "same_uid_promotion_exit_code": 2,
+    "same_uid_rollout_protected": false,
+    "same_uid_state_protected": false
+  },
+  "verdict": {
+    "hash_bound_postmutation_final_receipt_subgate_qualified": true,
+    "child_posttooluse_audit_visibility_qualified": true,
+    "parent_disk_fresh_owner_adjudication_required": true,
+    "strong_global_quiescence_qualified": false,
+    "all_mutation_surfaces_qualified": false,
+    "phase1_complete": false,
+    "direct_write_qualified": false,
+    "phase2_state": "closed",
+    "phase3_state": "closed"
+  }
+}

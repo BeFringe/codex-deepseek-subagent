@@ -114,7 +114,9 @@
           "tests/test_g4_live_closed_tool_catalog_apply_patch_denial.py",
           "probes/g4-live-exact-path-child-write-20260908.json",
           "probes/g4-live-exact-path-child-write-parent-adjudication-20260908.json",
-          "tests/test_g4_live_exact_path_child_write.py"
+          "tests/test_g4_live_exact_path_child_write.py",
+          "probes/g4-live-hash-bound-final-receipt-20260909.json",
+          "tests/test_g4_live_hash_bound_final_receipt.py"
         ]
       },
       {
@@ -174,7 +176,9 @@
           "tests/test_g4_live_closed_tool_catalog_apply_patch_denial.py",
           "probes/g4-live-exact-path-child-write-20260908.json",
           "probes/g4-live-exact-path-child-write-parent-adjudication-20260908.json",
-          "tests/test_g4_live_exact_path_child_write.py"
+          "tests/test_g4_live_exact_path_child_write.py",
+          "probes/g4-live-hash-bound-final-receipt-20260909.json",
+          "tests/test_g4_live_hash_bound_final_receipt.py"
         ],
         "blocker": "the current signed runtime now has one fresh inherited-OpenAI assignment-to-SessionMeta/canonical-AgentPath join and one exact external-ZHIPU child join, both through consumed state, in addition to one historical root and two older partial concurrent records. One provider-free two-child serial sample proves distinct assignment, handoff, child thread, and canonical AgentPath values under the same parent SessionMeta, with child B starting only after child A's callback; both serial records have exact five-dimension fresh-owner consumption. The first new concurrent attempt proves an orphaned A join; the second proves two distinct exact SessionMeta/canonical-AgentPath joins and a 28.377-second overlap witnessed by B's list_agents result, and both records now have exact five-dimension fresh-owner consumption. A new depth-two sample proves exact direct-parent ThreadId edges, canonical AgentPath derivation, one inherited runtime session, and native self-observation across root, explorer, and G4 child; its inner report is fresh-owner consumed. An idle explorer message-delivery sample additionally preserves the same child ThreadId and canonical AgentPath across two distinct turn ids after a queue-only message and triggered follow-up. The native source parent still cannot see child thread ids in spawn/wait results. Broader nested, serial, concurrent, resumed-message, and mixed-provider cohort scale remain missing"
       },
@@ -240,7 +244,9 @@
           "tests/test_g4_live_closed_tool_catalog_apply_patch_denial.py",
           "probes/g4-live-exact-path-child-write-20260908.json",
           "probes/g4-live-exact-path-child-write-parent-adjudication-20260908.json",
-          "tests/test_g4_live_exact_path_child_write.py"
+          "tests/test_g4_live_exact_path_child_write.py",
+          "probes/g4-live-hash-bound-final-receipt-20260909.json",
+          "tests/test_g4_live_hash_bound_final_receipt.py"
         ],
         "blocker": "a current-runtime inherited-OpenAI assignment and a separate external-ZHIPU child both traverse pending, claimed, active, reported, and consumed with exact keyed identity. The provider-free serial pair separately traverses spawn, SubagentStart, native tool use, SubagentStop, terminal callback, then next spawn; both records reach reported and then fresh-owner consumed state under one exact evidence hash. A provider-free depth-two chain adds root-to-explorer and explorer-to-G4 SessionMeta edges, one target spawn capture, one SubagentStart, one native tool, a rejected then corrected SubagentStop, two terminal callbacks, and fresh-owner consumption. A separate message-delivery run adds one completed initial turn, an idle queue-only message, one follow-up-triggered second turn, and two exact completed parent waits on the same child identity. The first concurrent attempt stopped at active after parent-exit interruption without SubagentStop; an exact TTL watchdog moved that stale identity fail closed to unresolved and left the drifted Git baseline unattributed. The no-event first-attestation timeout adds an exact running-child native interrupt acknowledgement while correctly retaining unresolved authority. A separate current-source V2 close probe joins requested task name, canonical AgentPath, real SessionMeta ThreadId, Hook events, exact close target, and post-close live-tree absence for a still-running child; the host waited for its session loop and returned process_tree_quiescence_claimed=false. The concurrent pair traverses two spawn, two SubagentStart, two native tool calls, repeated mediated SubagentStop attempts, two accepted reports, and two parent waits while execution overlaps; both durable records reach fresh-owner consumed state under one exact evidence hash. One real auto-compaction run joins PreCompact sequence 1906 to a later native PreToolUse at 1907, increments the durable recovery epoch, preserves exact SessionMeta/AgentPath and Git authority, reaches an exact callback, and is fresh-owner consumed; a three-tool timing attempt fails closed and is watchdog-unresolved. A separate post-compact negative serializes a foreign dirty-path injection between PreCompact and the next PreToolUse, denies that tool, records exact unattributed termination evidence, and returns a terminal callback without leaving active authority. Strong mutation/process-tree quiescence, fully qualified orphan reconciliation, and remaining cohort replay are still missing; unsupported public V2 child resurrection is not treated as an identity gate"
       },
@@ -302,6 +308,8 @@
           "probes/g4-live-exact-path-child-write-20260908.json",
           "probes/g4-live-exact-path-child-write-parent-adjudication-20260908.json",
           "tests/test_g4_live_exact_path_child_write.py",
+          "probes/g4-live-hash-bound-final-receipt-20260909.json",
+          "tests/test_g4_live_hash_bound_final_receipt.py",
           "probes/current-signed-runtime-failed-apply-patch-posttool-source-candidate.patch",
           "probes/g4-live-failed-apply-patch-posttool-callback-20260908.json",
           "probes/codex_plaintext_candidate_wrapper.sh",
@@ -402,6 +410,8 @@
           "probes/g4-live-exact-path-child-write-20260908.json",
           "probes/g4-live-exact-path-child-write-parent-adjudication-20260908.json",
           "tests/test_g4_live_exact_path_child_write.py",
+          "probes/g4-live-hash-bound-final-receipt-20260909.json",
+          "tests/test_g4_live_hash_bound_final_receipt.py",
           "probes/current-signed-runtime-failed-apply-patch-posttool-source-candidate.patch",
           "probes/g4-live-failed-apply-patch-posttool-callback-20260908.json",
           "probes/codex_plaintext_candidate_wrapper.sh",
@@ -448,7 +458,9 @@
           "tests/test_g4_live_concurrent_identity_parent_adjudication.py",
           "probes/g4-live-exact-path-child-write-20260908.json",
           "probes/g4-live-exact-path-child-write-parent-adjudication-20260908.json",
-          "tests/test_g4_live_exact_path_child_write.py"
+          "tests/test_g4_live_exact_path_child_write.py",
+          "probes/g4-live-hash-bound-final-receipt-20260909.json",
+          "tests/test_g4_live_hash_bound_final_receipt.py"
         ],
         "blocker": "the current signed runtime has one exact inherited-OpenAI SubagentStop report and one exact external-ZHIPU read-only report consumed after fresh five-dimension parent adjudication. The provider-free serial pair adds two exact consumed attestations under one fresh-owner evidence hash, one mediated invalid-final correction, and two ordered parent callbacks. The live concurrent pair adds two exact consumed attestations under overlapping execution and one fresh-owner evidence hash; the native source parent projection still lacks child thread ids. A depth-two provider-free child now adds one exact consumed attestation after a mediated invalid-final correction and matching callbacks through its scout and root. One exact-path mutation-capable child contribution also reached SubagentStop, byte-identical parent callback, fresh disk adjudication, and consumed state. One real auto-compaction contribution adds durable epoch re-attestation, a mediated invalid-final correction, an exact parent callback, and fresh-owner consumption. The post-compact scope negative adds a state-lock-ordered foreign drift, a pre-execution tool denial, atomic unresolved termination evidence, and an exact marker callback without granting integration authority. Mixed-frontier, broader mutation cohorts, and broader cohort adjudication remain missing"
       },
@@ -481,7 +493,9 @@
           "tests/test_g4_live_concurrent_identity_parent_adjudication.py",
           "probes/g4-live-exact-path-child-write-20260908.json",
           "probes/g4-live-exact-path-child-write-parent-adjudication-20260908.json",
-          "tests/test_g4_live_exact_path_child_write.py"
+          "tests/test_g4_live_exact_path_child_write.py",
+          "probes/g4-live-hash-bound-final-receipt-20260909.json",
+          "tests/test_g4_live_hash_bound_final_receipt.py"
         ],
         "blocker": "current-runtime inherited-OpenAI and external-ZHIPU owner-internal read-only observations pass fresh provenance adjudication; the provider-free serial and concurrent pairs add four distinct identity-bound owner-internal list_agents observations consumed under per-pair fresh-owner evidence hashes. The depth-two sample adds a fifth provider-free owner-internal list_agents observation whose root, direct parent, canonical path, and durable report are independently joined and consumed. One exact-path native child mutation now has independent disk causality and fresh five-dimension consumption. A real compact/resume contribution preserves the same owner-internal provenance policy hash through the incremented recovery epoch and fresh-owner consumption. Cross-owner derivation, mixed-frontier provenance, and broader mutation cohorts remain missing"
       },
@@ -511,7 +525,9 @@
           "tests/test_g4_live_concurrent_identity_parent_adjudication.py",
           "probes/g4-live-exact-path-child-write-20260908.json",
           "probes/g4-live-exact-path-child-write-parent-adjudication-20260908.json",
-          "tests/test_g4_live_exact_path_child_write.py"
+          "tests/test_g4_live_exact_path_child_write.py",
+          "probes/g4-live-hash-bound-final-receipt-20260909.json",
+          "tests/test_g4_live_hash_bound_final_receipt.py"
         ],
         "blocker": "strict read-only null-feasibility passes fresh current-runtime parent adjudication for inherited-OpenAI, external-ZHIPU, the four distinct provider-free serial/concurrent list_agents observations, one depth-two provider-free list_agents observation, and one real post-compact continuation. One exact one-tool/one-path mutation feasibility capsule now passed live execution and fresh adjudication. Representative domain scale, equivalence, dense p95, and staged mixed-frontier feasibility remain missing"
       },
@@ -519,8 +535,12 @@
         "id": "P6c",
         "state": "partial",
         "provider_free": "pass",
-        "evidence": ["docs/phase1-evidence.md#p6c-isolated-end-to-end-cost-and-staged-authority-fixtures"],
-        "blocker": "representative dense live p95 and observable before/mid/after phase races are missing"
+        "evidence": [
+          "docs/phase1-evidence.md#p6c-isolated-end-to-end-cost-and-staged-authority-fixtures",
+          "probes/p6c-feature5-readonly-gap-adjudication-20260909.json",
+          "tests/test_p6c_feature5_readonly_gap_adjudication.py"
+        ],
+        "blocker": "a fresh external-owner read-only adjudication confirms that the canonical 100k Gate D bundle has 240 raw fuzzy samples, independently defined nearest-rank latency authority, two passing execution-path p95 values, and separate invocation/equivalence and mutation-race source fixtures. It does not define a dense owner cohort identity, join each latency sample to actual scorer invocations and proof partitions, freeze same-cohort U1/R/U2/true cardinalities, expose coarse/refine/materialize identity/conservation/elapsed receipts, publish a complete authoritative-versus-materialized mixed frontier, or retain raw before/mid/after race receipts. Tasks and matrix summaries cannot substitute those joins; representative dense live P6c remains unqualified"
       },
       {
         "id": "P7",
@@ -567,6 +587,8 @@
           "probes/g4-live-exact-path-child-write-20260908.json",
           "probes/g4-live-exact-path-child-write-parent-adjudication-20260908.json",
           "tests/test_g4_live_exact_path_child_write.py",
+          "probes/g4-live-hash-bound-final-receipt-20260909.json",
+          "tests/test_g4_live_hash_bound_final_receipt.py",
           "probes/current-signed-runtime-failed-apply-patch-posttool-source-candidate.patch",
           "probes/g4-live-failed-apply-patch-posttool-callback-20260908.json",
           "tests/test_g4_live_failed_apply_patch_posttool_callback.py"

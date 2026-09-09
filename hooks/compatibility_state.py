@@ -186,6 +186,7 @@ STATE_KINDS = (
     "writer_conflict",
     "non_git_writer_claim",
     "non_git_writer_receipt",
+    "non_git_writer_abort",
     "hook_event_chain",
     "pretool_schema_observation",
     "subagentstart_schema_observation",
@@ -453,6 +454,11 @@ def non_git_writer_receipt_sha256(receipt: Mapping[str, object]) -> str:
     return sha256_bytes(canonical_json(unsigned))
 
 
+def writer_receipt_sha256(receipt: Mapping[str, object]) -> str:
+    unsigned = {key: value for key, value in receipt.items() if key != "receipt_sha256"}
+    return sha256_bytes(canonical_json(unsigned))
+
+
 def _validate_writer_actor(actor: object) -> dict:
     if not isinstance(actor, dict) or set(actor) != WRITER_ACTOR_FIELDS:
         raise CorruptState("writer actor fields are not exact")
@@ -619,6 +625,128 @@ def validate_non_git_writer_receipt(receipt: object) -> dict:
     _timestamp(receipt["released_at"], "non_git_writer_receipt.released_at")
     if receipt["receipt_sha256"] != non_git_writer_receipt_sha256(receipt):
         raise CorruptState("non-Git writer receipt hash does not match")
+    return receipt
+
+
+def validate_non_git_writer_abort(receipt: object) -> dict:
+    if not isinstance(receipt, dict) or set(receipt) != {
+        "schema",
+        "classification",
+        "claim_id",
+        "claim_sha256",
+        "actor",
+        "root",
+        "paths",
+        "tool_name",
+        "tool_use_id",
+        "authorization_ceiling",
+        "before_snapshot_sha256",
+        "after_snapshot",
+        "after_snapshot_sha256",
+        "recovery_reason",
+        "recovered_at",
+        "abort_sha256",
+    }:
+        raise CorruptState("non-Git writer abort fields are not exact")
+    if receipt["schema"] != 1:
+        raise CorruptState("non-Git writer abort schema is invalid")
+    if receipt["classification"] != "aborted_unchanged_after_missing_callback":
+        raise CorruptState("non-Git writer abort classification is invalid")
+    _uuid(receipt["claim_id"], "non_git_writer_abort.claim_id")
+    if not isinstance(receipt["claim_sha256"], str) or not SHA256_RE.fullmatch(
+        receipt["claim_sha256"]
+    ):
+        raise CorruptState("non-Git writer abort claim hash is invalid")
+    _validate_root_writer_actor(receipt["actor"])
+    root = pathlib.Path(_nonempty_string(receipt["root"], "non_git_writer_abort.root"))
+    if not root.is_absolute() or str(root.resolve()) != str(root):
+        raise CorruptState("non-Git writer abort root is not canonical and absolute")
+    paths = _relative_paths(receipt["paths"], "non_git_writer_abort.paths")
+    if not paths:
+        raise CorruptState("non-Git writer abort paths are empty")
+    if receipt["tool_name"] != "apply_patch":
+        raise CorruptState("non-Git writer abort tool is not qualified")
+    _nonempty_string(receipt["tool_use_id"], "non_git_writer_abort.tool_use_id")
+    if receipt["authorization_ceiling"] != {
+        "source": "hook_cli_parent_non_git_writer_root",
+        "root": str(root),
+    }:
+        raise CorruptState("non-Git writer abort authorization ceiling is invalid")
+    for field in ("before_snapshot_sha256", "after_snapshot_sha256"):
+        if not isinstance(receipt[field], str) or not SHA256_RE.fullmatch(receipt[field]):
+            raise CorruptState(f"non-Git writer abort {field} is invalid")
+    snapshot = validate_non_git_writer_snapshot(receipt["after_snapshot"])
+    if snapshot["root"] != str(root):
+        raise CorruptState("non-Git writer abort snapshot root does not match")
+    if tuple(state["path"] for state in snapshot["path_states"]) != paths:
+        raise CorruptState("non-Git writer abort snapshot paths do not match")
+    if receipt["after_snapshot_sha256"] != non_git_writer_snapshot_sha256(snapshot):
+        raise CorruptState("non-Git writer abort after snapshot hash does not match")
+    if receipt["before_snapshot_sha256"] != receipt["after_snapshot_sha256"]:
+        raise CorruptState("non-Git writer abort snapshot changed")
+    if receipt["recovery_reason"] != "missing_posttooluse_after_tool_failure":
+        raise CorruptState("non-Git writer abort recovery reason is invalid")
+    _timestamp(receipt["recovered_at"], "non_git_writer_abort.recovered_at")
+    if receipt["abort_sha256"] != writer_abort_sha256(receipt):
+        raise CorruptState("non-Git writer abort hash does not match")
+    return receipt
+
+
+def validate_writer_receipt(receipt: object, *, require_hash: bool = False) -> dict:
+    legacy_fields = {
+        "schema",
+        "claim_id",
+        "claim_sha256",
+        "actor",
+        "root",
+        "paths",
+        "tool_name",
+        "tool_use_id",
+        "ownership_handover",
+        "before_snapshot_sha256",
+        "after_snapshot",
+        "after_snapshot_sha256",
+        "released_at",
+    }
+    if not isinstance(receipt, dict):
+        raise CorruptState("writer receipt must be an object")
+    expected_fields = legacy_fields | ({"receipt_sha256"} if receipt.get("schema") == 2 else set())
+    if set(receipt) != expected_fields:
+        raise CorruptState("writer receipt fields are not exact")
+    if receipt["schema"] not in {1, 2}:
+        raise CorruptState("writer receipt schema is invalid")
+    if require_hash and receipt["schema"] != 2:
+        raise CorruptState("writer receipt is not hash-bound")
+    _uuid(receipt["claim_id"], "writer_receipt.claim_id")
+    if not isinstance(receipt["claim_sha256"], str) or not SHA256_RE.fullmatch(
+        receipt["claim_sha256"]
+    ):
+        raise CorruptState("writer receipt claim hash is invalid")
+    _validate_writer_actor(receipt["actor"])
+    root = pathlib.Path(_nonempty_string(receipt["root"], "writer_receipt.root"))
+    if not root.is_absolute() or str(root.resolve()) != str(root):
+        raise CorruptState("writer receipt root is not canonical and absolute")
+    paths = _relative_paths(receipt["paths"], "writer_receipt.paths")
+    if not paths:
+        raise CorruptState("writer receipt paths are empty")
+    if receipt["tool_name"] != "apply_patch":
+        raise CorruptState("writer receipt tool is not qualified")
+    _nonempty_string(receipt["tool_use_id"], "writer_receipt.tool_use_id")
+    if not isinstance(receipt["ownership_handover"], list):
+        raise CorruptState("writer receipt ownership_handover is invalid")
+    for field in ("before_snapshot_sha256", "after_snapshot_sha256"):
+        if not isinstance(receipt[field], str) or not SHA256_RE.fullmatch(receipt[field]):
+            raise CorruptState(f"writer receipt {field} is invalid")
+    snapshot = _validate_git_snapshot(receipt["after_snapshot"])
+    if pathlib.Path(snapshot["root"]).resolve() != root:
+        raise CorruptState("writer receipt snapshot root does not match")
+    if receipt["after_snapshot_sha256"] != _snapshot_sha256(snapshot):
+        raise CorruptState("writer receipt snapshot hash does not match")
+    _timestamp(receipt["released_at"], "writer_receipt.released_at")
+    if receipt["schema"] == 2 and receipt["receipt_sha256"] != writer_receipt_sha256(
+        receipt
+    ):
+        raise CorruptState("writer receipt hash does not match")
     return receipt
 
 
@@ -1874,6 +2002,18 @@ class StateStore:
             self._publish(target, claim)
             return target
 
+    def read_non_git_writer_claim(self, claim_id: str) -> dict:
+        _uuid(claim_id, "non_git_writer_claim.claim_id")
+        target = self.path("non_git_writer_claim", claim_id)
+        with self.locked():
+            if not target.exists():
+                raise MissingState("non-Git writer claim does not exist")
+            try:
+                return _validate_non_git_writer_claim(self._read(target))
+            except CorruptState:
+                self._quarantine(target)
+                raise
+
     def release_non_git_writer_claim(
         self,
         actor: Mapping[str, str],
@@ -1945,6 +2085,71 @@ class StateStore:
             receipt["receipt_sha256"] = non_git_writer_receipt_sha256(receipt)
             validate_non_git_writer_receipt(receipt)
             target = self.path("non_git_writer_receipt", claim["claim_id"])
+            self._publish(target, receipt)
+            claim_path.unlink()
+            return target
+
+    def abort_unchanged_non_git_writer_claim(
+        self,
+        actor: Mapping[str, str],
+        *,
+        claim_id: str,
+        after_snapshot: Mapping[str, object],
+        recovery_reason: str,
+        observed_at: dt.datetime | None = None,
+    ) -> pathlib.Path:
+        try:
+            _validate_root_writer_actor(dict(actor))
+        except CorruptState as error:
+            raise AuthorityViolation(str(error)) from error
+        _uuid(claim_id, "non_git_writer_abort.claim_id")
+        if recovery_reason != "missing_posttooluse_after_tool_failure":
+            raise AuthorityViolation("non-Git writer abort recovery reason is not qualified")
+        snapshot = validate_non_git_writer_snapshot(dict(after_snapshot))
+        now = observed_at or dt.datetime.now(dt.timezone.utc)
+        if now.tzinfo is None or now.utcoffset() is None:
+            raise StateError("non-Git writer abort time must include a UTC offset")
+
+        claim_path = self.path("non_git_writer_claim", claim_id)
+        with self.locked():
+            if not claim_path.exists():
+                raise MissingState("non-Git writer claim does not exist")
+            try:
+                claim = _validate_non_git_writer_claim(self._read(claim_path))
+            except CorruptState:
+                self._quarantine(claim_path)
+                raise
+            if claim["actor"] != dict(actor):
+                raise AuthorityViolation("non-Git writer abort actor does not match claim")
+            if snapshot["root"] != claim["root"]:
+                raise AuthorityViolation("non-Git writer abort snapshot root does not match")
+            if [state["path"] for state in snapshot["path_states"]] != claim["paths"]:
+                raise AuthorityViolation("non-Git writer abort snapshot paths do not match")
+            after_sha256 = non_git_writer_snapshot_sha256(snapshot)
+            if after_sha256 != claim["before_snapshot_sha256"]:
+                raise AuthorityViolation(
+                    "non-Git writer abort requires every claimed path to be unchanged"
+                )
+            receipt = {
+                "schema": 1,
+                "classification": "aborted_unchanged_after_missing_callback",
+                "claim_id": claim["claim_id"],
+                "claim_sha256": claim["claim_sha256"],
+                "actor": dict(actor),
+                "root": claim["root"],
+                "paths": claim["paths"],
+                "tool_name": claim["tool_name"],
+                "tool_use_id": claim["tool_use_id"],
+                "authorization_ceiling": claim["authorization_ceiling"],
+                "before_snapshot_sha256": claim["before_snapshot_sha256"],
+                "after_snapshot": snapshot,
+                "after_snapshot_sha256": after_sha256,
+                "recovery_reason": recovery_reason,
+                "recovered_at": now.isoformat(),
+            }
+            receipt["abort_sha256"] = writer_abort_sha256(receipt)
+            validate_non_git_writer_abort(receipt)
+            target = self.path("non_git_writer_abort", claim["claim_id"])
             self._publish(target, receipt)
             claim_path.unlink()
             return target
@@ -2168,6 +2373,53 @@ class StateStore:
                 self._quarantine(target)
                 raise
 
+    def read_writer_receipt(self, claim_id: str, *, require_hash: bool = False) -> dict:
+        _uuid(claim_id, "writer_receipt.claim_id")
+        target = self.path("writer_receipt", claim_id)
+        with self.locked():
+            if not target.exists():
+                raise MissingState("writer receipt does not exist")
+            try:
+                return validate_writer_receipt(
+                    self._read(target), require_hash=require_hash
+                )
+            except CorruptState:
+                self._quarantine(target)
+                raise
+
+    def find_writer_receipt(
+        self,
+        actor: Mapping[str, str],
+        receipt_sha256: str,
+    ) -> dict:
+        _validate_writer_actor(dict(actor))
+        if not isinstance(receipt_sha256, str) or not SHA256_RE.fullmatch(
+            receipt_sha256
+        ):
+            raise CorruptState("writer receipt lookup hash is invalid")
+        matches: list[dict] = []
+        with self.locked():
+            directory = self.root / "writer_receipt"
+            if directory.exists():
+                for path in sorted(directory.glob("*.json")):
+                    try:
+                        receipt = validate_writer_receipt(self._read(path))
+                    except CorruptState:
+                        self._quarantine(path)
+                        raise
+                    if receipt["actor"] != dict(actor):
+                        continue
+                    if receipt.get("receipt_sha256") != receipt_sha256:
+                        continue
+                    matches.append(
+                        validate_writer_receipt(receipt, require_hash=True)
+                    )
+        if not matches:
+            raise MissingState("exact hash-bound writer receipt was not found")
+        if len(matches) > 1:
+            raise AmbiguousState("multiple exact hash-bound writer receipts were found")
+        return matches[0]
+
     def abort_unchanged_writer_claim(
         self,
         actor: Mapping[str, str],
@@ -2280,7 +2532,7 @@ class StateStore:
             if pathlib.Path(after_snapshot["root"]).resolve() != pathlib.Path(claim["root"]):
                 raise AuthorityViolation("writer release snapshot root does not match claim")
             receipt = {
-                "schema": 1,
+                "schema": 2,
                 "claim_id": claim["claim_id"],
                 "claim_sha256": claim["claim_sha256"],
                 "actor": dict(actor),
@@ -2294,6 +2546,8 @@ class StateStore:
                 "after_snapshot_sha256": _snapshot_sha256(after_snapshot),
                 "released_at": now.isoformat(),
             }
+            receipt["receipt_sha256"] = writer_receipt_sha256(receipt)
+            validate_writer_receipt(receipt, require_hash=True)
             target = self.path("writer_receipt", claim["claim_id"])
             self._publish(target, receipt)
             claim_path.unlink()
@@ -2422,6 +2676,10 @@ class StateStore:
                     self._quarantine(path)
                     raise
                 prior = envelope["capsule"]
+                if pathlib.Path(prior["root"]["path"]).resolve() != pathlib.Path(
+                    snapshot["root"]
+                ).resolve():
+                    continue
                 if _paths_overlap(owned_paths, prior["owned_paths"]):
                     raise AuthorityViolation(
                         f"owned paths overlap non-quiesced {kind} assignment {prior['assignment_id']}"
@@ -2437,6 +2695,10 @@ class StateStore:
                 self._quarantine(path)
                 raise
             prior = envelope["capsule"]
+            if pathlib.Path(prior["root"]["path"]).resolve() != pathlib.Path(
+                snapshot["root"]
+            ).resolve():
+                continue
             if not _paths_overlap(owned_paths, prior["owned_paths"]):
                 continue
             barrier_path = self.path("quiescence", prior["assignment_id"])
@@ -2610,6 +2872,48 @@ class StateStore:
             self._publish(final, envelope)
             active.unlink()
             return final
+
+    def record_final_rejection(
+        self,
+        assignment_id: str,
+        identity: Mapping[str, str],
+        rejection: Mapping[str, object],
+    ) -> int:
+        expected_fields = {
+            "schema",
+            "classification",
+            "reason",
+            "message_sha256",
+            "snapshot_sha256",
+            "observed_at",
+        }
+        if not isinstance(rejection, Mapping) or set(rejection) != expected_fields:
+            raise StateError("final rejection fields are not exact")
+        if rejection["schema"] != 1:
+            raise StateError("final rejection schema is invalid")
+        for field in ("classification", "reason"):
+            _nonempty_string(rejection[field], f"final_rejection.{field}")
+        for field in ("message_sha256", "snapshot_sha256"):
+            if not isinstance(rejection[field], str) or not SHA256_RE.fullmatch(
+                rejection[field]
+            ):
+                raise StateError(f"final rejection {field} is invalid")
+        _timestamp(rejection["observed_at"], "final_rejection.observed_at")
+        active = self.path("active", assignment_id)
+        with self.locked():
+            envelope = self._validated_envelope(active)
+            self._assert_identity(
+                envelope["capsule"], identity, envelope.get("binding")
+            )
+            rejections = envelope.setdefault("final_rejections", [])
+            if not isinstance(rejections, list):
+                raise CorruptState("final rejection history is invalid")
+            for prior in rejections:
+                if not isinstance(prior, dict) or set(prior) != expected_fields:
+                    raise CorruptState("stored final rejection fields are not exact")
+            rejections.append(dict(rejection))
+            self._publish(active, envelope, replace=True)
+            return len(rejections)
 
     def adjudicate_parent(
         self,

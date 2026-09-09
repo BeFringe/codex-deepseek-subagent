@@ -321,7 +321,12 @@ def observation_from_hook(
         elif is_target_spawn(hook_input, plaintext_agent_types=plaintext_agent_types):
             scope = "target_spawn"
             actor = actor_identity_from_hook(hook_input)
-        elif child_is_target and event in {"SubagentStart", "PreToolUse", "PreCompact"}:
+        elif child_is_target and event in {
+            "SubagentStart",
+            "PreToolUse",
+            "PostToolUse",
+            "PreCompact",
+        }:
             scope = "target_child"
             actor = _actor_from_child(child_identity_from_hook(hook_input))
         elif child_is_target and event == "SubagentStop":

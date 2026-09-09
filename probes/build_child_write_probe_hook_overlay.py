@@ -69,8 +69,17 @@ def validate(task_name: str, target: Path, hook_script: Path) -> None:
         raise OverlayError("Hook script is not an absolute regular file")
 
 
-def build(config: dict, *, task_name: str, target: Path, hook_script: Path) -> tuple[dict, dict]:
+def build(
+    config: dict,
+    *,
+    task_name: str,
+    target: Path,
+    hook_script: Path,
+    writer_hold_seconds: int = 0,
+) -> tuple[dict, dict]:
     validate(task_name, target, hook_script)
+    if writer_hold_seconds and not 1 <= writer_hold_seconds <= 10:
+        raise OverlayError("writer hold must be between 1 and 10 seconds")
     hooks = config.get("hooks")
     if not isinstance(hooks, dict):
         raise OverlayError("configuration has no hooks object")
@@ -101,6 +110,13 @@ def build(config: dict, *, task_name: str, target: Path, hook_script: Path) -> t
             if "--child-write-probe" in value:
                 raise OverlayError("write probe option is already present")
             value.extend(["--child-write-probe", f"{task_name}={target}"])
+            if writer_hold_seconds:
+                value.extend(
+                    [
+                        "--qualification-writer-hold-seconds",
+                        str(writer_hold_seconds),
+                    ]
+                )
         command["command"] = shlex.join(value)
         command_count += 1
         changed.append(event)
@@ -115,6 +131,7 @@ def build(config: dict, *, task_name: str, target: Path, hook_script: Path) -> t
         "hook_script": str(hook_script),
         "changed_events": sorted(changed),
         "changed_command_count": command_count,
+        "writer_hold_seconds": writer_hold_seconds,
         "v4_entries_preserved": True,
     }
 
@@ -136,6 +153,7 @@ def main() -> int:
     parser.add_argument("--task-name", required=True)
     parser.add_argument("--target", type=Path, required=True)
     parser.add_argument("--hook-script", type=Path, required=True)
+    parser.add_argument("--writer-hold-seconds", type=int, default=0)
     arguments = parser.parse_args()
     try:
         if not SHA_RE.fullmatch(arguments.expected_input_sha256):
@@ -149,6 +167,7 @@ def main() -> int:
             task_name=arguments.task_name,
             target=arguments.target,
             hook_script=arguments.hook_script,
+            writer_hold_seconds=arguments.writer_hold_seconds,
         )
         write_new(arguments.output, overlay)
         report["input_sha256"] = observed

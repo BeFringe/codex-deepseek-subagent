@@ -333,6 +333,9 @@ class RuntimeGuardTests(unittest.TestCase):
 
     def test_session_meta_exactly_binds_parent_role_and_canonical_path(self):
         identity = runtime_guard.child_identity_from_hook(self.child_hook("PreToolUse"))
+        post_identity = runtime_guard.child_identity_from_hook(
+            self.child_hook("PostToolUse")
+        )
 
         self.assertEqual(identity["runtime_session_id"], "runtime-session")
         self.assertEqual(identity["child_thread_id"], "child-thread")
@@ -340,6 +343,7 @@ class RuntimeGuardTests(unittest.TestCase):
         self.assertEqual(identity["agent_type"], "fixture_worker")
         self.assertEqual(identity["canonical_agent_path"], "/root/bounded_task")
         self.assertEqual(identity["codex_version"], MIGRATION_HANDOFF_VERSION)
+        self.assertEqual(post_identity, identity)
 
     def test_previous_signed_codex_version_is_accepted_and_bound(self):
         self.write_session_meta(cli_version=PRIOR_SIGNED_VERSION)

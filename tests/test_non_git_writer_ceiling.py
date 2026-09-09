@@ -9,11 +9,15 @@ import unittest
 
 REPO = Path(__file__).resolve().parents[1]
 HOOKS = REPO / "hooks"
+RECOVERY_SCRIPT = REPO / "probes" / "recover_non_git_writer_claim.py"
 if str(HOOKS) not in sys.path:
     sys.path.insert(0, str(HOOKS))
 
 import writer_lease_guard  # noqa: E402
-from compatibility_state import validate_non_git_writer_receipt  # noqa: E402
+from compatibility_state import (  # noqa: E402
+    validate_non_git_writer_abort,
+    validate_non_git_writer_receipt,
+)
 
 
 # Several legacy test modules deliberately reload compatibility_state under the
@@ -166,6 +170,83 @@ class NonGitWriterCeilingTests(unittest.TestCase):
             receipt["after_snapshot"]["path_states"][0]["byte_length"],
             len(b"temporary bytes\n"),
         )
+
+    def test_failed_patch_claim_can_only_abort_with_unchanged_snapshot(self):
+        target = self.non_git_root / "failed.txt"
+        hook = self.patch_hook(target, tool_use_id="failed-non-git-patch")
+        writer_lease_guard.pre_tool_use(
+            self.store,
+            hook,
+            parent_non_git_writer_roots=[self.non_git_root],
+        )
+        claim_path = next((self.store.root / "non_git_writer_claim").glob("*.json"))
+        claim = json.loads(claim_path.read_text(encoding="utf-8"))
+        snapshot, _ = writer_lease_guard.collect_patch_non_git_snapshot(
+            [str(target)],
+            cwd=str(self.root),
+            parent_non_git_writer_roots=[self.non_git_root],
+        )
+
+        receipt_path = self.store.abort_unchanged_non_git_writer_claim(
+            claim["actor"],
+            claim_id=claim["claim_id"],
+            after_snapshot=snapshot,
+            recovery_reason="missing_posttooluse_after_tool_failure",
+        )
+
+        self.assertFalse(claim_path.exists())
+        receipt = validate_non_git_writer_abort(
+            json.loads(receipt_path.read_text(encoding="utf-8"))
+        )
+        self.assertEqual(
+            receipt["before_snapshot_sha256"],
+            receipt["after_snapshot_sha256"],
+        )
+
+    def test_recovery_cli_validates_parent_identity_and_emits_hash_only_report(self):
+        target = self.non_git_root / "cli-failed.txt"
+        hook = self.patch_hook(target, tool_use_id="failed-cli-patch")
+        writer_lease_guard.pre_tool_use(
+            self.store,
+            hook,
+            parent_non_git_writer_roots=[self.non_git_root],
+        )
+        claim_path = next((self.store.root / "non_git_writer_claim").glob("*.json"))
+        claim = json.loads(claim_path.read_text(encoding="utf-8"))
+
+        completed = subprocess.run(
+            [
+                sys.executable,
+                str(RECOVERY_SCRIPT),
+                "--state-directory",
+                str(self.store.root),
+                "--claim-id",
+                claim["claim_id"],
+                "--session-id",
+                "runtime-session",
+                "--transcript-path",
+                str(self.parent_transcript),
+                "--recovery-reason",
+                "missing_posttooluse_after_tool_failure",
+            ],
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+        )
+
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+        report = json.loads(completed.stdout)
+        self.assertEqual(
+            report["classification"],
+            "aborted_unchanged_after_missing_callback",
+        )
+        self.assertEqual(
+            report["before_snapshot_sha256"],
+            report["after_snapshot_sha256"],
+        )
+        self.assertIs(report["raw_payload_stored"], False)
+        self.assertFalse(claim_path.exists())
 
     def test_nested_child_cannot_use_parent_non_git_ceiling(self):
         child_transcript = self.root / "child.jsonl"

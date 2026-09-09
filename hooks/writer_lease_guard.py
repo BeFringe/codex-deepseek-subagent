@@ -5,18 +5,46 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import os
 from pathlib import Path
 import stat
 import subprocess
 from typing import Mapping, Sequence
 
-from compatibility_state import StateError, StateStore
+from compatibility_state import StateError, StateStore, validate_writer_receipt
 from runtime_guard import collect_git_snapshot, read_session_meta
 
 
 class WriterLeaseError(StateError):
     pass
+
+
+POST_MUTATION_RECEIPT_BEGIN = "BEGIN CODEX POST-MUTATION OBSERVATION"
+POST_MUTATION_RECEIPT_END = "END CODEX POST-MUTATION OBSERVATION"
+
+
+def post_mutation_observation(receipt: Mapping[str, object]) -> str:
+    receipt = validate_writer_receipt(dict(receipt), require_hash=True)
+    projection = {
+        "schema": 1,
+        "source": "trusted_posttooluse_hook",
+        "receipt_sha256": receipt["receipt_sha256"],
+        "claim_id": receipt["claim_id"],
+        "claim_sha256": receipt["claim_sha256"],
+        "tool_name": receipt["tool_name"],
+        "tool_use_id": receipt["tool_use_id"],
+        "actor": receipt["actor"],
+        "paths": receipt["paths"],
+        "after_snapshot": receipt["after_snapshot"],
+        "after_snapshot_sha256": receipt["after_snapshot_sha256"],
+        "integration_authority": False,
+    }
+    return (
+        f"{POST_MUTATION_RECEIPT_BEGIN}\n"
+        f"{json.dumps(projection, sort_keys=True, separators=(',', ':'))}\n"
+        f"{POST_MUTATION_RECEIPT_END}"
+    )
 
 
 def _deny(reason: str) -> dict:
@@ -402,6 +430,7 @@ def post_tool_use(
     hook_input: Mapping[str, object],
     *,
     parent_non_git_writer_roots: Sequence[str | Path] = (),
+    emit_observation_receipt: bool = False,
 ) -> dict:
     if hook_input.get("hook_event_name") != "PostToolUse":
         return {}
@@ -430,12 +459,22 @@ def post_tool_use(
             ),
         )
         if surface == "git":
-            store.release_writer_claim(
+            receipt_path = store.release_writer_claim(
                 actor,
                 tool_name="apply_patch",
                 tool_use_id=tool_use_id,
                 after_snapshot=snapshot,
             )
+            if emit_observation_receipt:
+                receipt = store.read_writer_receipt(
+                    receipt_path.stem, require_hash=True
+                )
+                return {
+                    "hookSpecificOutput": {
+                        "hookEventName": "PostToolUse",
+                        "additionalContext": post_mutation_observation(receipt),
+                    }
+                }
         else:
             store.release_non_git_writer_claim(
                 actor,

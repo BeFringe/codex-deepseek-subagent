@@ -52,9 +52,8 @@ class ChildWriteProbeHookOverlayTests(unittest.TestCase):
     def digest(self):
         return hashlib.sha256(self.input.read_bytes()).hexdigest()
 
-    def run_builder(self, *, expected=None, output=None):
-        return subprocess.run(
-            [
+    def run_builder(self, *, expected=None, output=None, writer_hold_seconds=0):
+        command = [
                 sys.executable,
                 str(SCRIPT),
                 "--input",
@@ -69,7 +68,11 @@ class ChildWriteProbeHookOverlayTests(unittest.TestCase):
                 str(self.target),
                 "--hook-script",
                 str(HOOK),
-            ],
+            ]
+        if writer_hold_seconds:
+            command.extend(["--writer-hold-seconds", str(writer_hold_seconds)])
+        return subprocess.run(
+            command,
             text=True,
             capture_output=True,
             check=False,
@@ -92,6 +95,37 @@ class ChildWriteProbeHookOverlayTests(unittest.TestCase):
             option_count += after[1]["command"].count("--child-write-probe")
         self.assertEqual(option_count, 1)
         self.assertEqual(self.output.stat().st_mode & 0o777, 0o600)
+
+    def test_overlay_can_add_one_bounded_child_lease_hold(self):
+        result = self.run_builder(writer_hold_seconds=8)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        report = json.loads(result.stdout)
+        self.assertEqual(report["writer_hold_seconds"], 8)
+        overlay = json.loads(self.output.read_text(encoding="utf-8"))
+        commands = [
+            command["command"]
+            for matcher in overlay["hooks"]["PreToolUse"]
+            for command in matcher["hooks"]
+            if "g4_qualification_probe_worker" in command.get("command", "")
+        ]
+        self.assertEqual(len(commands), 1)
+        self.assertEqual(commands[0].count("--qualification-writer-hold-seconds"), 1)
+        for event in ("SubagentStart", "PostToolUse", "PreCompact", "SubagentStop"):
+            self.assertNotIn(
+                "--qualification-writer-hold-seconds",
+                json.dumps(overlay["hooks"][event]),
+            )
+
+    def test_overlay_rejects_out_of_range_writer_hold(self):
+        for seconds in (-1, 11):
+            with self.subTest(seconds=seconds):
+                output = self.root / f"hold-{seconds}.json"
+                result = self.run_builder(
+                    output=output,
+                    writer_hold_seconds=seconds,
+                )
+                self.assertEqual(result.returncode, 2)
+                self.assertFalse(output.exists())
 
     def test_hash_drift_and_existing_target_fail_closed(self):
         drift = self.run_builder(expected="0" * 64)

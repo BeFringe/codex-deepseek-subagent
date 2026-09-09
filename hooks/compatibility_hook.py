@@ -9,6 +9,7 @@ import json
 from pathlib import Path
 import re
 import sys
+import time
 from typing import Mapping, Sequence
 
 from assignment_transport import capture_spawn, subagent_start
@@ -30,6 +31,9 @@ from writer_lease_guard import pre_tool_use as guard_writer_lease
 
 SANDBOX_PROBE_TASK_NAME_RE = re.compile(r"^[a-z0-9_]+$")
 SANDBOX_PROBE_ROOT = Path("/private/tmp")
+WRITER_LEASE_CONTEXT_RE = re.compile(
+    r"(?:^|\n)WRITER\.LEASED claim_id=([0-9a-f-]{36}) surface=git(?:\n|$)"
+)
 
 
 def child_sandbox_probe_spec(value: str) -> tuple[str, Path]:
@@ -74,6 +78,67 @@ def child_write_probe_spec(value: str) -> tuple[str, Path]:
             "child write probe must target one canonical direct child of a temporary root"
         )
     return task_name, target
+
+
+def qualification_writer_hold_seconds(value: str) -> int:
+    try:
+        seconds = int(value)
+    except ValueError as error:
+        raise argparse.ArgumentTypeError(
+            "qualification writer hold must be an integer"
+        ) from error
+    if not 1 <= seconds <= 10:
+        raise argparse.ArgumentTypeError(
+            "qualification writer hold must be between 1 and 10 seconds"
+        )
+    return seconds
+
+
+def hold_exact_qualification_writer_lease(
+    store: StateStore,
+    hook_input: Mapping[str, object],
+    output: Mapping[str, object],
+    *,
+    plaintext_agent_types: set[str],
+    child_write_probes: Mapping[str, Path],
+    seconds: int,
+    sleeper=time.sleep,
+) -> bool:
+    """Expose one exact live child-lease race window without granting authority."""
+
+    if seconds == 0:
+        return False
+    if len(child_write_probes) != 1:
+        raise StateError("qualification writer hold requires one exact write probe")
+    if (
+        hook_input.get("hook_event_name") != "PreToolUse"
+        or hook_input.get("tool_name") != "apply_patch"
+        or hook_input.get("agent_type") not in plaintext_agent_types
+    ):
+        return False
+    specific = output.get("hookSpecificOutput")
+    if not isinstance(specific, Mapping):
+        return False
+    context = specific.get("additionalContext")
+    if not isinstance(context, str):
+        return False
+    match = WRITER_LEASE_CONTEXT_RE.search(context)
+    if match is None:
+        return False
+
+    task_name, target = next(iter(child_write_probes.items()))
+    claim = store.read_writer_claim(match.group(1))
+    actor = claim["actor"]
+    expected_root = target.parent.resolve()
+    if (
+        actor["agent_type"] not in plaintext_agent_types
+        or actor["canonical_agent_path"].rsplit("/", 1)[-1] != task_name
+        or Path(claim["root"]).resolve() != expected_root
+        or claim["paths"] != [target.name]
+    ):
+        raise StateError("qualification writer hold claim identity is not exact")
+    sleeper(seconds)
+    return True
 
 
 def fail_closed_output(event: object, error: BaseException) -> dict:
@@ -170,6 +235,7 @@ def dispatch(
             store,
             hook_input,
             parent_non_git_writer_roots=parent_non_git_writer_roots,
+            emit_observation_receipt=child_is_target,
         )
     if event == "SubagentStart":
         return subagent_start(store, hook_input) if child_is_target else {}
@@ -216,7 +282,11 @@ def dispatch_with_receipts(
         and not child_is_target
     )
     observe_before = (
-        (child_is_target and event in {"SubagentStart", "PreToolUse", "PreCompact", "SubagentStop"})
+        (
+            child_is_target
+            and event
+            in {"SubagentStart", "PreToolUse", "PostToolUse", "PreCompact", "SubagentStop"}
+        )
         or is_target_spawn(hook_input, plaintext_agent_types=plaintext_agent_types)
         or (is_parent_writer and event == "PostToolUse")
     )
@@ -308,6 +378,11 @@ def main() -> int:
         type=child_write_probe_spec,
         dest="child_write_probe_specs",
     )
+    parser.add_argument(
+        "--qualification-writer-hold-seconds",
+        type=qualification_writer_hold_seconds,
+        default=0,
+    )
     arguments = parser.parse_args()
     child_sandbox_probes: dict[str, Path] = {}
     for task_name, target in arguments.child_sandbox_probe_specs:
@@ -319,6 +394,8 @@ def main() -> int:
         if task_name in child_write_probes:
             parser.error("child write probe task name is duplicated")
         child_write_probes[task_name] = target
+    if arguments.qualification_writer_hold_seconds and len(child_write_probes) != 1:
+        parser.error("qualification writer hold requires one exact child write probe")
     try:
         hook_input = json.load(sys.stdin)
     except json.JSONDecodeError as error:
@@ -327,8 +404,9 @@ def main() -> int:
     if not isinstance(hook_input, dict):
         print("Hook input must be a JSON object.", file=sys.stderr)
         return 2
+    store = StateStore(arguments.state_directory)
     output = run_dispatch(
-        StateStore(arguments.state_directory),
+        store,
         hook_input,
         plaintext_agent_types=set(arguments.plaintext_agent_types),
         pretool_schema_observation_root=arguments.pretool_schema_observation_root,
@@ -336,6 +414,17 @@ def main() -> int:
         child_sandbox_probes=child_sandbox_probes,
         child_write_probes=child_write_probes,
     )
+    try:
+        hold_exact_qualification_writer_lease(
+            store,
+            hook_input,
+            output,
+            plaintext_agent_types=set(arguments.plaintext_agent_types),
+            child_write_probes=child_write_probes,
+            seconds=arguments.qualification_writer_hold_seconds,
+        )
+    except (OSError, StateError) as error:
+        output = fail_closed_output(hook_input.get("hook_event_name"), error)
     json.dump(output, sys.stdout, ensure_ascii=False, separators=(",", ":"))
     sys.stdout.flush()
     return 0

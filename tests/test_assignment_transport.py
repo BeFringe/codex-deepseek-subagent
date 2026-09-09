@@ -1,3 +1,4 @@
+import argparse
 import datetime as dt
 from concurrent.futures import ThreadPoolExecutor
 import hashlib
@@ -8,6 +9,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 import uuid
 
 
@@ -518,6 +520,9 @@ class AssignmentTransportTests(unittest.TestCase):
             authority["verification"] = [
                 assignment_transport.QUALIFICATION_WRITE_PROBE_VERIFICATION
             ]
+            authority["execution_contract"]["required_invariants"] = [
+                runtime_guard.HASH_BOUND_POST_MUTATION_RECEIPT_INVARIANT
+            ]
             hook = self.spawn_hook(
                 "qualified_write",
                 tool_input={"message": self.message(authority=authority)},
@@ -561,7 +566,7 @@ class AssignmentTransportTests(unittest.TestCase):
                     "transcript_path": child["transcript_path"],
                 }
             )
-            pretool = compatibility_hook.dispatch(
+            pretool = compatibility_hook.dispatch_with_receipts(
                 self.store,
                 patch,
                 plaintext_agent_types={"fixture_worker"},
@@ -572,7 +577,7 @@ class AssignmentTransportTests(unittest.TestCase):
                 pretool["hookSpecificOutput"]["additionalContext"],
             )
             target.write_text("qualified bytes\n", encoding="utf-8")
-            posttool = compatibility_hook.dispatch(
+            posttool = compatibility_hook.dispatch_with_receipts(
                 self.store,
                 dict(
                     patch,
@@ -582,7 +587,6 @@ class AssignmentTransportTests(unittest.TestCase):
                 plaintext_agent_types={"fixture_worker"},
                 child_write_probes={"qualified_write": target},
             )
-            self.assertEqual(posttool, {})
             receipt = json.loads(
                 next((self.store.root / "writer_receipt").glob("*.json")).read_text(
                     encoding="utf-8"
@@ -590,6 +594,84 @@ class AssignmentTransportTests(unittest.TestCase):
             )
             self.assertEqual(receipt["actor"]["thread_id"], "child-qualified_write")
             self.assertEqual(receipt["paths"], ["qualified.txt"])
+            compatibility_state.validate_writer_receipt(receipt, require_hash=True)
+            tampered = dict(receipt, released_at="2026-08-12T00:00:01+00:00")
+            with self.assertRaisesRegex(
+                compatibility_state.CorruptState,
+                "receipt hash does not match",
+            ):
+                compatibility_state.validate_writer_receipt(tampered, require_hash=True)
+            legacy = dict(receipt, schema=1)
+            legacy.pop("receipt_sha256")
+            compatibility_state.validate_writer_receipt(legacy)
+            legacy_path = self.store.root / "writer_receipt" / "00000000-0000-4000-8000-000000000000.json"
+            legacy_path.write_text(json.dumps(legacy), encoding="utf-8")
+            context = posttool["hookSpecificOutput"]["additionalContext"]
+            self.assertTrue(context.startswith("BEGIN CODEX POST-MUTATION OBSERVATION\n"))
+            observation = json.loads(context.splitlines()[1])
+            self.assertEqual(observation["source"], "trusted_posttooluse_hook")
+            self.assertEqual(observation["receipt_sha256"], receipt["receipt_sha256"])
+            self.assertEqual(observation["after_snapshot"], receipt["after_snapshot"])
+            self.assertIs(observation["integration_authority"], False)
+            snapshot = runtime_guard.collect_git_snapshot(str(self.repository))
+            attestation = {
+                "assignment_id": capsule["assignment_id"],
+                "handoff_id": capsule["handoff_id"],
+                "capsule_sha256": capsule["capsule_sha256"],
+                "compact_invariant_sha256": compatibility_state.compact_invariant_sha256(
+                    capsule
+                ),
+                "authority_provenance": {
+                    "policy_sha256": compatibility_state.provenance_policy_sha256(capsule),
+                    "worker_claimed_origin": "owner_internal",
+                    "test_only_injection_used": False,
+                    "derivation_receipt_sha256": receipt["receipt_sha256"],
+                },
+                "canonical_agent_path": capsule["canonical_agent_path"],
+                "recovery_count": 0,
+                "context_lost": False,
+                **snapshot,
+                "verification": [
+                    {
+                        "command": assignment_transport.QUALIFICATION_WRITE_PROBE_VERIFICATION,
+                        "exit_code": 0,
+                    }
+                ],
+                "authority_violation": False,
+                "assigned_slice_complete": True,
+                "inventory_summaries": [],
+            }
+            message = (
+                "BEGIN CODEX WORKER ATTESTATION\n"
+                + json.dumps(attestation)
+                + "\nEND CODEX WORKER ATTESTATION"
+            )
+            stopped = runtime_guard.subagent_stop(
+                self.store,
+                {
+                    "hook_event_name": "SubagentStop",
+                    "session_id": "runtime-session",
+                    "agent_id": "child-qualified_write",
+                    "agent_type": "fixture_worker",
+                    "transcript_path": str(self.parent_transcript),
+                    "agent_transcript_path": child["transcript_path"],
+                    "last_assistant_message": message,
+                },
+            )
+            self.assertEqual(stopped, {})
+            self.assertEqual(len(list((self.store.root / "reported").glob("*.json"))), 1)
+            self.assertTrue(legacy_path.exists())
+            chain = hook_event_receipts.load_chain(self.store.root)
+            self.assertEqual(
+                [
+                    (event["hook_event_name"], event["scope"])
+                    for event in chain["events"]
+                ],
+                [
+                    ("PreToolUse", "target_child"),
+                    ("PostToolUse", "target_child"),
+                ],
+            )
         self.repository = original_repository
 
     def test_invalid_authority_or_fork_mode_blocks_spawn(self):
@@ -960,6 +1042,179 @@ class AssignmentTransportTests(unittest.TestCase):
         )
         self.assertEqual(stopped, {})
 
+    def test_exact_context_lost_final_terminates_once_as_unresolved(self):
+        self.capture(self.spawn_hook())
+        child = self.child_hook()
+        assignment_transport.subagent_start(self.store, child)
+        stop = {
+            "hook_event_name": "SubagentStop",
+            "session_id": "runtime-session",
+            "agent_id": "child-bounded_task",
+            "agent_type": "fixture_worker",
+            "transcript_path": str(self.parent_transcript),
+            "agent_transcript_path": child["transcript_path"],
+            "last_assistant_message": "TASK.CONTEXT_LOST",
+        }
+
+        self.assertEqual(runtime_guard.subagent_stop(self.store, stop), {})
+        self.assertEqual(runtime_guard.subagent_stop(self.store, stop), {})
+        self.assertFalse(list((self.store.root / "active").glob("*.json")))
+        unresolved = next((self.store.root / "unresolved").glob("*.json"))
+        envelope = json.loads(unresolved.read_text(encoding="utf-8"))
+        self.assertEqual(
+            envelope["termination_evidence"]["reason"],
+            "final_return_context_lost",
+        )
+
+    def test_same_relative_owned_path_in_distinct_git_root_does_not_conflict(self):
+        self.capture(self.spawn_hook("first_root"))
+        first_child = self.child_hook("first_root")
+        assignment_transport.subagent_start(self.store, first_child)
+        runtime_guard.subagent_stop(
+            self.store,
+            {
+                "hook_event_name": "SubagentStop",
+                "session_id": "runtime-session",
+                "agent_id": "child-first_root",
+                "agent_type": "fixture_worker",
+                "transcript_path": str(self.parent_transcript),
+                "agent_transcript_path": first_child["transcript_path"],
+                "last_assistant_message": "TASK.CONTEXT_LOST",
+            },
+        )
+
+        original_repository = self.repository
+        second = self.root / "second-repository"
+        second.mkdir()
+        self.repository = second
+        try:
+            self.git("init", "-b", "main")
+            self.git("config", "user.name", "Fixture")
+            self.git("config", "user.email", "fixture@example.invalid")
+            (second / "baseline.txt").write_text("second\n", encoding="utf-8")
+            self.git("add", "baseline.txt")
+            self.git("commit", "-m", "second baseline")
+            self.write_meta(
+                self.parent_transcript,
+                session_id="runtime-session",
+                thread_id="runtime-session",
+                agent_path=None,
+                parent_thread_id=None,
+                agent_role=None,
+            )
+
+            captured = self.capture(self.spawn_hook("second_root"))
+            self.assertNotIn(
+                "permissionDecision",
+                captured["hookSpecificOutput"],
+            )
+            pending = next((self.store.root / "pending").glob("*.json"))
+            envelope = json.loads(pending.read_text(encoding="utf-8"))
+            self.assertEqual(
+                envelope["capsule"]["root"]["path"],
+                str(second.resolve()),
+            )
+        finally:
+            self.repository = original_repository
+
+    def test_invalid_final_correction_is_bounded_and_hash_only(self):
+        self.capture(self.spawn_hook())
+        child = self.child_hook()
+        assignment_transport.subagent_start(self.store, child)
+        stop = {
+            "hook_event_name": "SubagentStop",
+            "session_id": "runtime-session",
+            "agent_id": "child-bounded_task",
+            "agent_type": "fixture_worker",
+            "transcript_path": str(self.parent_transcript),
+            "agent_transcript_path": child["transcript_path"],
+            "last_assistant_message": "malformed final payload",
+        }
+
+        first = runtime_guard.subagent_stop(self.store, stop)
+        self.assertEqual(first["decision"], "block")
+        self.assertIn("correction_attempt=1/2", first["reason"])
+        active = next((self.store.root / "active").glob("*.json"))
+        envelope = json.loads(active.read_text(encoding="utf-8"))
+        rejection = envelope["final_rejections"][0]
+        self.assertEqual(set(rejection), {
+            "schema",
+            "classification",
+            "reason",
+            "message_sha256",
+            "snapshot_sha256",
+            "observed_at",
+        })
+        self.assertNotIn("malformed final payload", json.dumps(rejection))
+
+        self.assertEqual(runtime_guard.subagent_stop(self.store, stop), {})
+        self.assertEqual(runtime_guard.subagent_stop(self.store, stop), {})
+        unresolved = next((self.store.root / "unresolved").glob("*.json"))
+        envelope = json.loads(unresolved.read_text(encoding="utf-8"))
+        evidence = envelope["termination_evidence"]
+        self.assertEqual(evidence["reason"], "final_return_correction_exhausted")
+        self.assertEqual(evidence["final_rejection_count"], 2)
+
+    def test_complete_write_observation_requires_exact_child_receipt(self):
+        capsule = {
+            "assignment_mutation_mode": "write",
+            "root": {"path": str(self.repository.resolve())},
+            "owned_paths": ["owned"],
+            "execution_contract": {
+                "required_invariants": [
+                    runtime_guard.HASH_BOUND_POST_MUTATION_RECEIPT_INVARIANT
+                ]
+            },
+        }
+        identity = {
+            "runtime_session_id": "runtime-session",
+            "child_thread_id": "child-bounded_task",
+            "agent_type": "fixture_worker",
+            "canonical_agent_path": "/root/bounded_task",
+        }
+        snapshot = runtime_guard.collect_git_snapshot(str(self.repository))
+        attestation = {
+            "assigned_slice_complete": True,
+            "authority_provenance": {"derivation_receipt_sha256": None},
+        }
+        receipt_store = mock.Mock()
+        with self.assertRaisesRegex(
+            runtime_guard.GuardError,
+            "no post-mutation receipt",
+        ):
+            runtime_guard.validate_complete_write_observation(
+                receipt_store, identity, capsule, attestation, snapshot
+            )
+
+        attestation["authority_provenance"]["derivation_receipt_sha256"] = "a" * 64
+        receipt_store.find_writer_receipt.return_value = {
+            "root": str(self.repository.resolve()),
+            "after_snapshot": snapshot,
+            "paths": ["owned/result.txt"],
+        }
+        runtime_guard.validate_complete_write_observation(
+            receipt_store, identity, capsule, attestation, snapshot
+        )
+        receipt_store.find_writer_receipt.assert_called_once_with(
+            {
+                "runtime_session_id": "runtime-session",
+                "thread_id": "child-bounded_task",
+                "agent_type": "fixture_worker",
+                "canonical_agent_path": "/root/bounded_task",
+            },
+            "a" * 64,
+        )
+
+        receipt_store.find_writer_receipt.return_value = {
+            "root": str(self.repository.resolve()),
+            "after_snapshot": snapshot,
+            "paths": ["foreign/result.txt"],
+        }
+        with self.assertRaisesRegex(runtime_guard.GuardError, "exceeds exact owned paths"):
+            runtime_guard.validate_complete_write_observation(
+                receipt_store, identity, capsule, attestation, snapshot
+            )
+
     def test_interrupt_ack_without_quiescence_cannot_reassign_overlapping_paths(self):
         self.capture(self.spawn_hook())
         child = self.child_hook()
@@ -1160,6 +1415,96 @@ class AssignmentTransportTests(unittest.TestCase):
             "foreign_actor_writer_lease_conflict",
         )
         self.assertEqual(evidence["conflicts"][0]["kind"], "active")
+
+    def test_qualification_hold_binds_exact_child_claim_before_sleeping(self):
+        claim_id = "11111111-2222-4333-8444-555555555555"
+        target = self.repository / "qualified.txt"
+        store = mock.Mock()
+        store.read_writer_claim.return_value = {
+            "actor": {
+                "runtime_session_id": "runtime-session",
+                "thread_id": "child-bounded_task",
+                "agent_type": "fixture_worker",
+                "canonical_agent_path": "/root/bounded_task",
+            },
+            "root": str(self.repository.resolve()),
+            "paths": ["qualified.txt"],
+        }
+        slept = []
+
+        held = compatibility_hook.hold_exact_qualification_writer_lease(
+            store,
+            {
+                "hook_event_name": "PreToolUse",
+                "tool_name": "apply_patch",
+                "agent_type": "fixture_worker",
+            },
+            {
+                "hookSpecificOutput": {
+                    "additionalContext": (
+                        "TASK.AUTHORITY_ACTIVE\n"
+                        f"WRITER.LEASED claim_id={claim_id} surface=git"
+                    )
+                }
+            },
+            plaintext_agent_types={"fixture_worker"},
+            child_write_probes={"bounded_task": target},
+            seconds=8,
+            sleeper=slept.append,
+        )
+
+        self.assertTrue(held)
+        store.read_writer_claim.assert_called_once_with(claim_id)
+        self.assertEqual(slept, [8])
+
+    def test_qualification_hold_rejects_wrong_task_without_sleeping(self):
+        claim_id = "11111111-2222-4333-8444-555555555555"
+        target = self.repository / "qualified.txt"
+        store = mock.Mock()
+        store.read_writer_claim.return_value = {
+            "actor": {
+                "runtime_session_id": "runtime-session",
+                "thread_id": "child-other_task",
+                "agent_type": "fixture_worker",
+                "canonical_agent_path": "/root/other_task",
+            },
+            "root": str(self.repository.resolve()),
+            "paths": ["qualified.txt"],
+        }
+        sleeper = mock.Mock()
+
+        with self.assertRaisesRegex(
+            compatibility_state.StateError,
+            "claim identity is not exact",
+        ):
+            compatibility_hook.hold_exact_qualification_writer_lease(
+                store,
+                {
+                    "hook_event_name": "PreToolUse",
+                    "tool_name": "apply_patch",
+                    "agent_type": "fixture_worker",
+                },
+                {
+                    "hookSpecificOutput": {
+                        "additionalContext": (
+                            f"WRITER.LEASED claim_id={claim_id} surface=git"
+                        )
+                    }
+                },
+                plaintext_agent_types={"fixture_worker"},
+                child_write_probes={"bounded_task": target},
+                seconds=8,
+                sleeper=sleeper,
+            )
+
+        sleeper.assert_not_called()
+
+    def test_qualification_hold_duration_is_strictly_bounded(self):
+        self.assertEqual(compatibility_hook.qualification_writer_hold_seconds("8"), 8)
+        for value in ("0", "11", "not-an-integer"):
+            with self.subTest(value=value):
+                with self.assertRaises(argparse.ArgumentTypeError):
+                    compatibility_hook.qualification_writer_hold_seconds(value)
 
     def test_exact_active_child_can_acquire_and_release_its_owned_path_lease(self):
         self.capture(self.spawn_hook())

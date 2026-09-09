@@ -2638,6 +2638,75 @@ P6c cost/latency, candidate exit-code gap, or strong global quiescence.
 `phase1_complete=false`, `direct_write_qualified=false`, and Phases 2/3 remain
 closed.
 
+## Live hash-bound final mutation receipt
+
+A current signed-runtime headless probe now closes one narrower mutation
+continuity subgate: the exact final child contribution is cryptographically
+bound to the trusted `PostToolUse` writer receipt for the mutation that
+produced the reported Git snapshot.  This is prototype evidence only; the
+prototype was not integrated into the authoritative repository at observation
+time, the GUI App Server was not selected, and no credential value was read or
+recorded.
+
+Two fail-closed attempts exposed and fixed concrete product-independent
+defects before the positive sample.  The first exhausted the bounded two-step
+final correction because the prompt copied seed-only fields into the final
+schema and because an unrelated valid legacy schema-1 writer receipt aborted
+the exact schema-2 lookup.  The second was denied before child start because
+same-named relative paths in distinct Git roots were treated as overlapping.
+The isolated implementation now validates receipts as their own schema before
+filtering by exact actor and receipt hash, and scopes ownership comparisons by
+canonical Git root before relative paths.  Neither failure granted integration
+authority or entered an unbounded correction loop.
+
+The positive run used disposable root
+`/private/tmp/codex-g4-write-final-receipt.eh2PHs`.  Real SessionMeta binds
+assignment `be121a3f-cf5e-459f-b5b1-f6d3681ad325`, handoff
+`83677b2c-55c9-43ab-9da7-7a5a978d4b1e`, child ThreadId
+`01a082ab-e773-7970-9f60-995b01427454`, and canonical AgentPath
+`/root/g4_final_receipt_4` under parent/runtime session
+`01a082ab-475d-7a21-98a4-924a1807b822`.  Hook sequences 2410 through 2414
+are contiguous: spawn `PreToolUse`, `SubagentStart`, child `apply_patch`
+`PreToolUse`, the same tool-use id at child `PostToolUse`, then
+`SubagentStop`.  The chain SHA-256 is
+`182a14e79cd7f2c99ccd839736b5d144a5b203da15af216c8e7a665834b3b256`.
+
+Writer claim `4eb45d78-6a12-4fa7-9655-a400329d70da` released schema-2 receipt
+`df369e1490da3a040423baf0870510484998b22c6aeddb43e8ddbfcdcf1053e2`
+for tool-use id `call_GOQwjNbinNsb5UFadGpo2iZg`, the exact child actor, and
+only `qualified.txt`.  The same receipt hash appears in the child final's
+authority derivation.  The child final and parent callback are byte-identical,
+with SHA-256
+`08ac8a42cbb7d4027da3ff3c8c42b8e99170e11f2750b2060991f6c5a6b846ea`;
+the durable assignment reached `reported` with zero final rejections.  A fresh
+owner then observed unchanged branch, full HEAD, index, status, and target hash
+after a two-second barrier, with zero candidate process and zero matching
+writer claim.
+
+The frozen, privacy-minimized receipt and executable assertions are
+`probes/g4-live-hash-bound-final-receipt-20260909.json` and
+`tests/test_g4_live_hash_bound_final_receipt.py`.  The overlay preserved the
+existing v4 entries and restored `hooks.json` to SHA-256
+`82c8aa0bc4d739628646864578de6c078884c21413855ed3db448d4365a8668e`.
+This qualifies only target-child `PostToolUse` audit visibility and the
+hash-bound post-mutation final-receipt subgate.  A delayed per-target disk
+barrier is not strong global process-tree quiescence; the parent/sibling and
+host mutation negative space, cross-owner/mixed-frontier P6 evidence, P6c
+dense live cohorts and phase races, Windows parity, and DeepSeek regression
+remain open.  Therefore `phase1_complete=false` and
+`direct_write_qualified=false`; Phases 2/3 remain closed.
+
+Fresh prototype verification discovered 675 provider-free tests: 674 passed
+and exactly one failed because the prototype source root itself is under
+`/private/tmp`, while the pair-probe guard fixture deliberately expects a
+state directory nested under the source root to be rejected as not being an
+independent canonical `/private/tmp` state root.  The same exact guard test
+passes in the authoritative repository outside `/private/tmp`; this is a
+prototype-location artifact, not a functional exception or an exit receipt.
+The normal Phase 1, current mutation-surface, and same-UID checks returned
+zero; their promotion-required forms returned 2.  The mutation matrix still
+has thirteen blockers, and same-UID rollout/state protection remains false.
+
 ## Provider-free depth-two identity and fresh-owner consumption
 
 The current 0.153.4 source candidate completed one real provider-free nested
@@ -3651,3 +3720,44 @@ eleven partial gate blockers, the mutation matrix retains thirteen blockers,
 and same-UID rollout/state protection remains false.
 `phase1_complete=false`, `direct_write_qualified=false`, and Phases 2/3 remain
 closed.
+
+## P6c external-owner read-only gap adjudication
+
+A fresh read-only adjudication of the LocalCAT Feature 5 owner evidence used
+exact root `/Users/pearly/文档/CAT/localcat-feature5`, branch `feature5`, and
+full HEAD `dd7c9fdb268b4ee8ac3545f43e3f5f19e715ff3b`. It observed zero tracked
+changes, did not inspect the diagnostic directory, changed no LocalCAT, Hook,
+configuration, Git, or index state, and read or recorded no credential value.
+The privacy-minimized result is
+`probes/p6c-feature5-readonly-gap-adjudication-20260909.json` with executable
+assertions in `tests/test_p6c_feature5_readonly_gap_adjudication.py`.
+
+The canonical 100k Gate D bundle is real contribution evidence. Its frozen
+contract has 1,200 exact and 240 fuzzy samples (200 near-edit plus 40 miss),
+100 warmups per cohort, one measured repeat, per-query `perf_counter_ns`, and
+nearest-rank p95. FTS5 and fallback fuzzy p95 are respectively 275.832958 ms
+and 279.756833 ms against the 500 ms gate. The bundle SHA-256 is
+`7f33c553f0c6fa5f10a802049a2bca3f4457bf3adba5fdc001aa31eab3d1ac96`
+and its internal bundle digest is
+`071f2787f452c9f07635a85e0626e8538bdb79a1b4f46ea3a37a06d47cf5be7e`.
+Separate source fixtures also cover a 2,048-call budget, 300 exact-fold classes
+over 3,000 identities with 300 actual scorer callbacks, mathematical bound
+relations, and real SQLite append seams before, during, and after phase work.
+
+Those facts do not form the P6c join required by the design. The canonical
+bundle has no dense owner-cohort identity or traversal-mode identity and does
+not join each raw latency sample to its actual invocation and proof partitions.
+The current production refinement chain is U1 to owner-derived R to U3 and
+optional U4/P3; there is no representative same-cohort U1/R/U2/true receipt.
+No artifact freezes coarse/refine/materialize input/output identities,
+conservation, and real elapsed values together. Public proof metadata omits
+the complete item frontier by design, so top-10 equality cannot substitute
+exact authoritative/materialized cardinality, order, and item identity. Race
+tests define real mutation seams, but there is no persistent raw run receipt
+with timestamps and hashes. The q1/q61/q28-short/q183/q226/q240 task note is
+summary-only and cannot authorize these missing dimensions.
+
+Therefore the existing Gate D bundle, implementation notes, and passing
+acceptance/fault/release matrices remain contribution evidence only. P6c
+stays `partial`; `phase1_complete=false`, `direct_write_qualified=false`, and
+Phases 2/3 remain closed.

@@ -5,7 +5,6 @@
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 from pathlib import Path
 import re
@@ -15,8 +14,11 @@ import sys
 
 AGENT_TYPE = "g4_qualification_probe_worker"
 VERIFICATION = "exact-path child apply_patch qualification probe"
-CONTENT = "G4_CHILD_WRITE_QUALIFIED\n"
+PARENT_CONFLICT_CONTENT = "G4_PARENT_CONFLICT_MUST_NOT_WRITE\n"
 TASK_RE = re.compile(r"^[a-z0-9_]+$")
+POST_MUTATION_RECEIPT_INVARIANT = (
+    "hash-bound trusted PostToolUse observation for final Git snapshot"
+)
 
 
 class PromptError(RuntimeError):
@@ -32,7 +34,13 @@ def git(root: Path, *arguments: str) -> str:
     return result.stdout.rstrip("\n")
 
 
-def build(root: Path, task_name: str, target: Path) -> str:
+def build(
+    root: Path,
+    task_name: str,
+    target: Path,
+    *,
+    parent_conflict_probe: bool = False,
+) -> str:
     root = root.resolve()
     if not TASK_RE.fullmatch(task_name):
         raise PromptError("task name is not canonical")
@@ -62,12 +70,18 @@ def build(root: Path, task_name: str, target: Path) -> str:
             "authoritative_input_roots": ["docs/phase1-evidence.md"],
             "forbidden_caller_supplied_derived_facts": ["worker_completion_claim"],
             "test_only_injection_seams": [],
-            "required_derivation_boundary": "phase1.worker.own_apply_patch_observation_only",
+            "required_derivation_boundary": (
+                "phase1.worker.own_apply_patch_plus_trusted_posttooluse_observation"
+            ),
         },
         "execution_contract": {
             "posture": "direct_write_unqualified",
             "review_range": None,
-            "required_invariants": ["exact SessionMeta and canonical AgentPath binding", "one owned-path apply_patch and no other tool"],
+            "required_invariants": [
+                "exact SessionMeta and canonical AgentPath binding",
+                "one owned-path apply_patch and no other tool",
+                POST_MUTATION_RECEIPT_INVARIANT,
+            ],
             "diagnostics": {"stable_failure_codes": [], "known_true_failure_codes": [], "generic_unclassified_failure_code": "TASK.FAILURE_UNCLASSIFIED", "allow_literal_expensive_rerun": False, "allowed_failure_code_localities": {}},
             "proven_input_baselines": [],
             "termination_contract": {"catalog_closed": True, "boundary_catalog": []},
@@ -97,18 +111,31 @@ def build(root: Path, task_name: str, target: Path) -> str:
         "pre_write_attestation_timeout_seconds": 60,
         "ttl_seconds": 900,
     }
-    digest = hashlib.sha256(CONTENT.encode()).hexdigest()
-    final_snapshot = {
-        "root": str(root), "branch": branch, "head": head, "index_changed": False,
-        "git_status_short": f"?? {relative}",
-        "changed_paths": [{"path": relative, "kind": "file", "sha256": digest}],
-    }
-    child = f"""You are the exact G4 qualification child. Use only the Hook-delivered immutable capsule and seed. Call native apply_patch exactly once to create `{target}` with exactly one line `G4_CHILD_WRITE_QUALIFIED`. Call no other tool and do not retry. If apply_patch succeeds, return only an exact BEGIN/END CODEX WORKER ATTESTATION envelope. Map seed keys exactly as instructed by the capsule contract. Use this exact final Git snapshot: {json.dumps(final_snapshot, separators=(',', ':'), sort_keys=True)}. Verification contains one record with command `{VERIFICATION}` and exit_code 0. Set authority_provenance.worker_claimed_origin=owner_internal, test_only_injection_used=false, derivation_receipt_sha256=null, inventory_summaries=[], context_lost=false, authority_violation=false, assigned_slice_complete=true. If any fact differs, fail closed and do not invent values.
+    child = f"""You are the exact G4 qualification child. Use only the Hook-delivered immutable capsule and seed. Call native apply_patch exactly once to create `{target}` with exactly one line `G4_CHILD_WRITE_QUALIFIED`. Call no other tool and do not retry. A successful call must be followed by exactly one trusted `BEGIN/END CODEX POST-MUTATION OBSERVATION` block from PostToolUse. Return only an exact BEGIN/END CODEX WORKER ATTESTATION envelope. The seed is a construction aid, not the final schema: copy only assignment_id, handoff_id, capsule_sha256, compact_invariant_sha256, canonical_agent_path, and recovery_count as top-level final fields. Put the seed's authority_provenance_policy_sha256 value at authority_provenance.policy_sha256. Never emit schema, authority_provenance_policy_sha256, verification_commands, or derivation_receipt_sha256 as top-level final fields. Map root, branch, head, index_changed, git_status_short, and changed_paths exactly from the trusted observation's after_snapshot, and map its receipt_sha256 to authority_provenance.derivation_receipt_sha256. Verification contains one record with command `{VERIFICATION}` and exit_code 0. Set authority_provenance.worker_claimed_origin=owner_internal because you performed the assigned mutation, test_only_injection_used=false, inventory_summaries=[], context_lost=false, authority_violation=false, assigned_slice_complete=true. The trusted receipt is contribution evidence, not integration authority. If the observation is absent or inconsistent, return exactly TASK.CONTEXT_LOST and do not invent Git or provenance facts.
 
 BEGIN CODEX WORKER AUTHORITY
 {json.dumps(authority, separators=(',', ':'), sort_keys=True)}
 END CODEX WORKER AUTHORITY"""
-    return f"""Perform one product-independent Phase 1/G4 live exact-path write qualification. You are the native OpenAI parent. Do not edit files yourself, change providers, inspect credentials, or use another agent type. Call native spawn_agent exactly once with agent_type={AGENT_TYPE}, task_name={task_name}, fork_turns=none, and message exactly equal to the child assignment below. Then use only native wait/callback until that child returns and report its exact result. Do not integrate, stage, commit, or push the child bytes.
+    if parent_conflict_probe:
+        parent_patch = (
+            "*** Begin Patch\n"
+            f"*** Add File: {target}\n"
+            f"+{PARENT_CONFLICT_CONTENT.rstrip()}\n"
+            "*** End Patch"
+        )
+        parent_instructions = f"""Perform one product-independent Phase 1/G4 live parent/child same-path writer-lease conflict probe. You are the native OpenAI parent. Do not change providers, inspect credentials, use another agent type, stage, commit, push, or write any path other than the single denied attempt below.
+
+1. Call native spawn_agent exactly once with agent_type={AGENT_TYPE}, task_name={task_name}, fork_turns=none, and message exactly equal to the child assignment below.
+2. Immediately call native wait_agent exactly once with timeout_ms=10000. Continue only if it reports a timeout without child completion; this is a timing gate, not termination or quiescence evidence.
+3. Immediately after that timeout, call native apply_patch exactly once with the exact patch below. This parent call must be denied before execution with TASK.WRITER_LEASE_BLOCKED because the child claim owns the same path. Do not retry it.
+
+{parent_patch}
+
+4. Then use only native wait/callback until the child returns. Report the timing gate, the parent apply_patch denial, and the exact child result. Do not adjudicate or integrate the child bytes."""
+    else:
+        parent_instructions = f"""Perform one product-independent Phase 1/G4 live exact-path write qualification. You are the native OpenAI parent. Do not edit files yourself, change providers, inspect credentials, or use another agent type. Call native spawn_agent exactly once with agent_type={AGENT_TYPE}, task_name={task_name}, fork_turns=none, and message exactly equal to the child assignment below. Then use only native wait/callback until that child returns and report its exact result. Do not integrate, stage, commit, or push the child bytes."""
+
+    return f"""{parent_instructions}
 
 EXACT CHILD ASSIGNMENT:
 
@@ -122,9 +149,15 @@ def main() -> int:
     parser.add_argument("--task-name", required=True)
     parser.add_argument("--target", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--parent-conflict-probe", action="store_true")
     arguments = parser.parse_args()
     try:
-        prompt = build(arguments.root, arguments.task_name, arguments.target)
+        prompt = build(
+            arguments.root,
+            arguments.task_name,
+            arguments.target,
+            parent_conflict_probe=arguments.parent_conflict_probe,
+        )
         arguments.output.write_text(prompt, encoding="utf-8")
     except (OSError, PromptError) as error:
         print(f"G4 write prompt denied: {error}", file=sys.stderr)
