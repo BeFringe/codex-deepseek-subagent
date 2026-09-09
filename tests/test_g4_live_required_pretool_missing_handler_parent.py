@@ -132,7 +132,7 @@ class G4LiveRequiredPreToolMissingHandlerParentTests(unittest.TestCase):
         self.assertEqual(verdict["phase3_state"], "closed")
 
         gates = {gate["id"]: gate for gate in self.status["phase1"]["gates"]}
-        self.assertEqual(gates["P4"]["state"], "partial")
+        self.assertEqual(gates["P4"]["state"], "qualified")
         self.assertIn(str(RECEIPT.relative_to(ROOT)), gates["P4"]["evidence"])
 
 

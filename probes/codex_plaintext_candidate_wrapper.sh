@@ -164,6 +164,26 @@ case "$mode" in
         ;;
       *) fail "parent/child writer conflict probe authorization guard is invalid" ;;
     esac
+    case "${CODEX_G4_SIBLING_SPAWN_ADMISSION_PROBE_AUTHORIZED-}" in
+      "") ;;
+      schema1-exact-g4-only)
+        [ "$saw_ephemeral" = false ] || fail "sibling admission probe must retain SessionMeta"
+        [ -z "${CODEX_G4_EXACT_WRITE_PROBE_AUTHORIZED-}" ] ||
+          fail "sibling admission probe cannot combine with a write probe"
+        [ -z "${CODEX_G4_PARENT_CHILD_WRITER_CONFLICT_PROBE_AUTHORIZED-}" ] ||
+          fail "sibling admission probe cannot combine with a writer-conflict probe"
+        [ -z "${CODEX_G4_P5B_TRACKED_TERMINATION_PROBE_AUTHORIZED-}" ] ||
+          fail "sibling admission probe cannot combine with a termination probe"
+        [ -z "${CODEX_G4_REQUIRED_PRETOOL_PROBE_AUTHORIZED-}" ] ||
+          fail "sibling admission probe cannot combine with a required-PreToolUse probe"
+        case "$requested_cd" in
+          /private/tmp/codex-g4-sibling-admission.*) ;;
+          *) fail "sibling admission probe root is outside the fixed temporary namespace" ;;
+        esac
+        catalog_receipt_mode=stderr-v2-parent-child-closed
+        ;;
+      *) fail "sibling admission probe authorization guard is invalid" ;;
+    esac
     case "${CODEX_G4_P5B_TRACKED_TERMINATION_PROBE_AUTHORIZED-}" in
       "") ;;
       schema1-exact-idle-child)

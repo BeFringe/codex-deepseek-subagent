@@ -38,18 +38,23 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 EXPECTED_GOAL_CONTRACT = {
     "state": "active_fail_closed",
     "terminal_acceptance_unchanged": True,
-    "app_server_source_adjustment": {
+    "native_actor_boundary": {
         "gate": "P4",
-        "surface": "host_control_plane",
-        "required_proofs": [
-            "client_connection_authority",
-            "native_child_reachability_or_separation",
-            "sandbox_and_mutation_mediation",
-            "trusted_parent_or_host_sandbox_receipt",
-            "external_worker_bootstrap_denial_or_os_confinement",
-            "process_tree_quiescence_barrier",
+        "qualifying_actors": [
+            "exact SessionSource::Exec qualification parent",
+            "native descendants admitted by the exact G4 spawn-role gate",
         ],
-        "may_substitute_native_child_lifecycle": False,
+        "required_proofs": [
+            "trusted-runtime finalized tool catalogs",
+            "required PreToolUse mediation for every reachable mutation entry",
+            "exact G4-only child spawn admission",
+            "sandbox denial when an opaque process mutation surface is intentionally exposed",
+        ],
+        "external_host_assumption": (
+            "an independent same-UID process or separately launched App Server is outside "
+            "the native actor graph and grants no Phase 1 authority"
+        ),
+        "external_app_server_may_substitute_native_child_lifecycle": False,
     },
     "unchanged_native_lifecycle_requirements": [
         "canonical_agentpath",

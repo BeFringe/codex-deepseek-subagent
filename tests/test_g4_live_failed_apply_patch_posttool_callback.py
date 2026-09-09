@@ -138,7 +138,7 @@ class G4LiveFailedApplyPatchPostToolCallbackTests(unittest.TestCase):
             self.assertIn(patch, gate["evidence"])
         self.assertEqual(
             next(item for item in self.status["phase1"]["gates"] if item["id"] == "P4")["state"],
-            "partial",
+            "qualified",
         )
         self.assertEqual(
             next(item for item in self.status["phase1"]["gates"] if item["id"] == "P5b")["state"],

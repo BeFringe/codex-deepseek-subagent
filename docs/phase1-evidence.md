@@ -2706,6 +2706,14 @@ P6c cost/latency, candidate exit-code gap, or strong global quiescence.
 `phase1_complete=false`, `direct_write_qualified=false`, and Phases 2/3 remain
 closed.
 
+Fresh provider-free verification after this promotion passed all 794 tests in
+90.187 seconds, including agent-template checks. The normal Phase 1,
+mutation-surface, same-UID trust, and semantic runtime-index checks returned
+zero. Phase 1 qualification-required mode returned two because P7 remains open;
+the global mutation inventory and same-UID mode-bit probes also returned two by
+design because they describe host/platform space beyond the now-closed native
+P4 actor graph.
+
 ## Read-only close joined to tracked exits and a durable barrier
 
 The current-source P5b candidate replaces synthetic process termination with a
@@ -4659,3 +4667,65 @@ mutation-surface, same-UID trust, and semantic runtime-index checks returned
 zero. Their qualification-required Phase 1, mutation-surface, and same-UID
 forms each returned two as designed because P4/P7 and their receipts remain
 open.
+
+## Native sibling admission closes the P4 actor graph
+
+P4 is adjudicated over the exact native qualification actor graph: the
+`SessionSource::Exec` root selected by the G4 receipt opt-in and every child it
+can create through native Multi-Agent V2. Independent login-user processes and
+separately launched App Servers are host actors outside that graph; they produce
+no capsule or integration authority. The earlier App Server and same-UID
+negatives remain useful trust-boundary observations, but they no longer create
+an unbounded P4 requirement. If a future catalog makes either surface reachable
+from the exact native actor, P4 must reopen.
+
+The retained current-source candidate now enforces this boundary in the native
+spawn handler. An exact qualification parent may create only
+`g4_qualification_probe_worker`; omitted/default and every other role are
+rejected before child depth/config construction and before child creation. The
+incremental two-file source patch and receipt are
+`probes/current-signed-runtime-g4-sibling-admission-source-candidate.patch` and
+`.json`. Source tests cover both omitted/default and explicit `worker` denial,
+the existing closed child catalog, and exact actor close. The hash-pinned
+headless candidate is `codex-cli 0.153.4`, SHA-256
+`49b45f5571a3c8966aa7dd6192583c88ff3df05e840208734ee51df8e1b3104e`;
+it was neither installed nor selected as the GUI App Server.
+
+One product-independent read-only run then used the clean disposable Git root
+`/private/tmp/codex-g4-sibling-admission.s8i7PL`, branch `main`, full HEAD
+`f2523a45c391cd3537585e7d02492e2161ebeedd`. In the same native root session,
+an explicit `worker` spawn returned only the exact native denial and no ThreadId
+or AgentPath. The next native `list_agents` returned only `/root`. The parent
+then created the one allowed G4 child at canonical AgentPath
+`/root/g4_sibling_admission_1`. Real child SessionMeta binds the shared runtime
+session, distinct child ThreadId, parent edge, depth one, role, root, and OpenAI
+provider.
+
+Five byte-identical parent runtime receipts contain only `apply_patch`,
+`view_image`, and the required native lifecycle/control tools. Two byte-identical
+child receipts contain only `apply_patch`, `view_image`, and `list_agents`, with
+empty code mode and `can_manage_children=false`. The child used `list_agents`
+once, returned an accepted final attestation, and produced contiguous target
+spawn PreToolUse, SubagentStart, child PreToolUse, and SubagentStop receipts.
+The parent wait did not time out and its callback payload is byte-identical to
+the child final. Candidate exit was zero; the disposable root retained its exact
+HEAD, empty status, and evidence-file hash.
+
+A distinct process, PID 89316, ran
+`probes/adjudicate_g4_sibling_admission_live.py`. It re-hashed the source
+candidate, wrapper, prompt builder, stdout/stderr, both rollouts, and durable
+report; independently parsed the denial, absent sibling, SessionMeta/AgentPath,
+catalogs, Hook slice, callback, and disk snapshot; then moved assignment
+`9cf4bae4-1142-4b99-98a5-4b814dc2666c` atomically from `reported` to `consumed`.
+The frozen live and adjudication receipts are
+`probes/g4-live-sibling-spawn-admission-20260909.json` and
+`probes/g4-live-sibling-spawn-admission-parent-adjudication-20260909.json`.
+
+Together with trusted-origin catalog finalization, required PreToolUse
+fail-closed, exact-path lease/write receipts, the read-only apply-patch negative,
+and the deliberately exposed Bash/Seatbelt negative, this closes every mutation
+entry reachable by the exact native qualification actors. P4,
+`mutation_visibility`, and `sandbox_block` are now `qualified`. P7 and its
+installed callback/platform/regression receipts remain partial, so
+`phase1_complete=false`, `direct_write_qualified=false`, and Phases 2/3 remain
+closed.

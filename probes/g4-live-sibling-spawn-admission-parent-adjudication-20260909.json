@@ -1,0 +1,42 @@
+{
+  "assignment_id": "9cf4bae4-1142-4b99-98a5-4b814dc2666c",
+  "authority": {
+    "global_direct_write_promoted": false,
+    "independent_same_uid_hostile_process_qualified": false,
+    "localcat_or_business_workload_used": false,
+    "phase1_complete": false,
+    "scope": "exact native qualification parent and exact G4 child"
+  },
+  "evidence_kind": "g4_live_sibling_spawn_admission_fresh_owner_adjudication",
+  "fresh_owner": {
+    "callback_exactness": "pass",
+    "closed_parent_and_child_catalogs": "pass",
+    "durable_state_transition": "pass",
+    "fresh_disk_barrier": "pass",
+    "hook_identity_and_subagentstop": "pass",
+    "native_denial_and_absent_sibling": "pass",
+    "raw_artifact_hashes": "pass",
+    "sessionmeta_and_agentpath": "pass",
+    "source_candidate_hash": "pass"
+  },
+  "fresh_owner_pid": 89316,
+  "input": {
+    "path": "probes/g4-live-sibling-spawn-admission-20260909.json",
+    "sha256": "1d1c722c853796895577819c9e6771abfe0659d2d2789c9ceb0c1fdc03654823"
+  },
+  "parent_adjudication": {
+    "derivation_provenance_integrity": "pass",
+    "evidence_sha256": "1d1c722c853796895577819c9e6771abfe0659d2d2789c9ceb0c1fdc03654823",
+    "feasibility_contract_integrity": "pass",
+    "location_integrity": "pass",
+    "mutation_scope_integrity": "pass",
+    "verification_freshness": "pass"
+  },
+  "schema": 1,
+  "state_transition": {
+    "after": "consumed",
+    "before": "reported",
+    "consumed_envelope_sha256": "cc1ec92725f2dcf86bb0ec7e5a2abcd431d424efbf4dffd93e33c3fdad3740ae",
+    "reported_exists_after": false
+  }
+}

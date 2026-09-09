@@ -186,13 +186,16 @@ class G4LiveRequiredPreToolPartialFailedHandlerChildTests(unittest.TestCase):
         self.assertEqual(verdict["phase3_state"], "closed")
 
         gates = {gate["id"]: gate for gate in self.status["phase1"]["gates"]}
-        self.assertEqual(gates["P4"]["state"], "partial")
+        self.assertEqual(gates["P4"]["state"], "qualified")
         self.assertIn(str(RECEIPT.relative_to(ROOT)), gates["P4"]["evidence"])
         self.assertIn(
-            "full actor-by-failure cross product is not required",
+            "exact native qualification actor graph is closed",
             gates["P4"]["source_progress"],
         )
-        self.assertIn("do not add unbounded actor cohorts", gates["P4"]["finite_remaining_boundary"])
+        self.assertIn(
+            "hostile independent same-UID process",
+            gates["P4"]["qualification"],
+        )
 
 
 if __name__ == "__main__":

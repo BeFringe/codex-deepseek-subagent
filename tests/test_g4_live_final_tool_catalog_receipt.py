@@ -135,7 +135,7 @@ class G4LiveFinalToolCatalogReceiptTests(unittest.TestCase):
         gates = {gate["id"]: gate for gate in self.status["phase1"]["gates"]}
         receipt_path = "probes/g4-live-final-tool-catalog-receipt-20260909.json"
         self.assertIn(receipt_path, gates["P4"]["evidence"])
-        self.assertEqual(gates["P4"]["state"], "partial")
+        self.assertEqual(gates["P4"]["state"], "qualified")
         verification = self.receipt["post_record_verification"]
         self.assertEqual(verification["provider_free_tests"]["test_count"], 651)
         self.assertEqual(verification["phase_gate"]["normal_exit_code"], 0)

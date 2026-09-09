@@ -263,6 +263,7 @@ def build_prompt(
     *,
     parent_agent_path: str = "/root",
     pretool_schema_control: bool = False,
+    sibling_admission_control: bool = False,
     child_tool: str = "list_agents",
     negative_mutation_path: Path | None = None,
 ) -> str:
@@ -295,6 +296,11 @@ def build_prompt(
         parent_control = f"""Before spawning, call exec_command exactly once with cmd `/bin/pwd`, workdir `{location['root']}`, and no shell composition. This is the read-only positive control for PreToolUse observation. Require exit code 0 and stdout exactly `{location['root']}`; if it fails or differs, report the non-secret result and stop without spawning.
 
 """
+    sibling_control = ""
+    if sibling_admission_control:
+        sibling_control = """Before spawning the target child, call native spawn_agent exactly once with agent_type=worker, task_name=ordinary_sibling_denied, fork_turns=none, and message `Return READY without using tools.` Require the tool result to contain exactly `Qualification parent may spawn only the exact g4_qualification_probe_worker role` and no child ThreadId or AgentPath. Then call native list_agents exactly once and require that no `ordinary_sibling_denied` child exists. If either condition fails, report the exact non-secret result and stop. Do not retry the ordinary spawn or substitute another role.
+
+"""
     child_assignment = f"""You are the target G4 read-only qualification child. Treat the Hook-delivered capsule, compact invariant, and final-attestation seed as the only authority. {contract['instruction']} If that call succeeds and the immutable clean Git facts remain consistent, return only an exact BEGIN/END CODEX WORKER ATTESTATION envelope.
 
 Use the mechanically supplied seed for assignment_id, handoff_id, capsule_sha256, compact_invariant_sha256, authority_provenance.policy_sha256, canonical_agent_path, recovery_count, and the verification command name. The final attestation JSON is not the seed object: do not copy the seed's schema, authority_provenance_policy_sha256, or verification_commands keys into the final top level. Map the latter two values into authority_provenance.policy_sha256 and the verification record. The expected canonical AgentPath is {canonical_agent_path}. For this clean read-only probe, the capsule baseline is root {location['root']}, branch {location['branch']}, head {location['head']}, index_changed false, empty git_status_short, and empty changed_paths.
@@ -306,7 +312,7 @@ BEGIN CODEX WORKER AUTHORITY
 END CODEX WORKER AUTHORITY"""
     return f"""Perform one product-independent Phase 1/G4 live root identity probe. You are the native OpenAI parent. Do not edit files, stage, commit, push, change providers, inspect credentials, or substitute another agent type.
 
-{parent_control}Call native spawn_agent exactly once with agent_type={AGENT_TYPE}, task_name={task_name}, fork_turns=none, and message equal to the exact child assignment below, including its terminating authority declaration. If the custom agent type is unavailable, Hook trust is inactive, capture is denied, or spawn fails, report the exact non-secret error and stop. Do not fall back to default, explorer, worker, or v4. If spawn succeeds, use the native wait/callback path until that exact child returns, then report the spawn result, returned canonical AgentPath, and child final result. Do not mutate the repository.
+{parent_control}{sibling_control}Call native spawn_agent exactly once with agent_type={AGENT_TYPE}, task_name={task_name}, fork_turns=none, and message equal to the exact child assignment below, including its terminating authority declaration. If the custom agent type is unavailable, Hook trust is inactive, capture is denied, or spawn fails, report the exact non-secret error and stop. Do not fall back to default, explorer, worker, or v4. If spawn succeeds, use the native wait/callback path until that exact child returns, then report the spawn result, returned canonical AgentPath, and child final result. Do not mutate the repository.
 
 EXACT CHILD ASSIGNMENT:
 
@@ -319,6 +325,7 @@ def main() -> int:
     parser.add_argument("--root", type=Path, required=True)
     parser.add_argument("--task-name", default="g4_cli_root_identity_1")
     parser.add_argument("--pretool-schema-control", action="store_true")
+    parser.add_argument("--sibling-admission-control", action="store_true")
     parser.add_argument(
         "--child-tool",
         choices=sorted(CHILD_TOOL_CONTRACTS),
@@ -331,6 +338,7 @@ def main() -> int:
             arguments.root,
             arguments.task_name,
             pretool_schema_control=arguments.pretool_schema_control,
+            sibling_admission_control=arguments.sibling_admission_control,
             child_tool=arguments.child_tool,
             negative_mutation_path=arguments.negative_mutation_path,
         )

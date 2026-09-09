@@ -95,6 +95,22 @@ class G4NativeProbePromptTests(unittest.TestCase):
         self.assertIn(str(self.root.resolve()), controlled)
         self.assertIn("task_name=g4_root_2", controlled)
 
+        sibling_controlled = probe_prompt.build_prompt(
+            self.root,
+            "g4_root_2b",
+            sibling_admission_control=True,
+        )
+        self.assertIn("agent_type=worker", sibling_controlled)
+        self.assertIn("task_name=ordinary_sibling_denied", sibling_controlled)
+        self.assertIn(
+            "Qualification parent may spawn only the exact "
+            "g4_qualification_probe_worker role",
+            sibling_controlled,
+        )
+        self.assertIn("no child ThreadId or AgentPath", sibling_controlled)
+        self.assertIn("call native list_agents exactly once", sibling_controlled)
+        self.assertIn("task_name=g4_root_2b", sibling_controlled)
+
         lifecycle = probe_prompt.build_prompt(
             self.root,
             "g4_root_3",

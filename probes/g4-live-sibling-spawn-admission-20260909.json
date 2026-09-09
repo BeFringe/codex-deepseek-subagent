@@ -1,0 +1,178 @@
+{
+  "schema": 1,
+  "evidence_kind": "g4_live_native_sibling_spawn_admission_and_exact_child_continuity",
+  "recorded_at": "2026-09-09T15:10:22.654000+00:00",
+  "scope": "one product-independent native headless root session, one denied ordinary sibling, and one accepted exact G4 child",
+  "repository_baseline": {
+    "root": "/Users/pearly/文档/CAT/codex-deepseek-subagent",
+    "branch": "main",
+    "head": "bc75b6a5f48627fbd20e4a0305d656d8043f2f69",
+    "probe_root": "/private/tmp/codex-g4-sibling-admission.s8i7PL",
+    "probe_branch": "main",
+    "probe_head": "f2523a45c391cd3537585e7d02492e2161ebeedd"
+  },
+  "source_candidate": {
+    "receipt": "probes/current-signed-runtime-g4-sibling-admission-source-candidate.json",
+    "receipt_sha256": "5f9037dfdaf3b91066763bcff0d04468455764cfc299057eb1dffc80fc1ad1a9"
+  },
+  "runtime": {
+    "semantic_version": "codex-cli 0.153.4",
+    "candidate_path": "/private/tmp/codex-current-plaintext.aTU9C2/source/codex-rs/target/debug/codex",
+    "candidate_sha256": "49b45f5571a3c8966aa7dd6192583c88ff3df05e840208734ee51df8e1b3104e",
+    "candidate_size_bytes": 590357464,
+    "candidate_exit_code": 0,
+    "parent_model_provider": "openai",
+    "child_model_provider": "openai",
+    "sandbox": "read-only",
+    "approval_policy": "never",
+    "code_mode_host": false,
+    "gui_app_server_selected": false,
+    "candidate_installed_live": false,
+    "credential_value_observed": false
+  },
+  "probe_inputs": {
+    "wrapper": "probes/codex_plaintext_candidate_wrapper.sh",
+    "wrapper_sha256": "0f92eda7a4b9c90185750ebfc06651c52058d5f3e9695df6596d9643858eba9f",
+    "prompt_builder": "probes/build_g4_native_probe_prompt.py",
+    "prompt_builder_sha256": "b7e371a677b77e6cbb3d9cad9822be5bfd406f5b392174b9b187941220df3f1c",
+    "prompt_sha256": "bb9d1562f5df7f880d706f1af65b629867719d4d205fe00fc835e6ab2e417a3d",
+    "authorization": "CODEX_G4_SIBLING_SPAWN_ADMISSION_PROBE_AUTHORIZED=schema1-exact-g4-only",
+    "catalog_opt_in": "CODEX_G4_TOOL_CATALOG_RECEIPT=stderr-v2-parent-child-closed"
+  },
+  "raw_artifacts": {
+    "events_path": "/private/tmp/codex-g4-sibling-admission.s8i7PL.stdout.jsonl",
+    "events_sha256": "c2d965b8b2fa24af0f6850019de4dbb7d2fc154d32ffdd5a0563e9dd7f7c7682",
+    "events_lines": 10,
+    "events_bytes": 3069,
+    "stderr_path": "/private/tmp/codex-g4-sibling-admission.s8i7PL.stderr.log",
+    "stderr_sha256": "a73209291c145d7ce001608d61f236b9a9c26bbeb33654231e5d91fb46309445",
+    "stderr_lines": 8,
+    "stderr_bytes": 9136,
+    "parent_rollout_path": "/Users/pearly/.codex/sessions/2026/09/09/rollout-2026-09-09T23-08-43-01a086b6-d191-7e82-ab8d-8bcdf2eb6ae5.jsonl",
+    "parent_rollout_sha256": "81404f110320c74b3dc4e91df6cf46db3dc1219be443926795bf03663ef8e809",
+    "child_rollout_path": "/Users/pearly/.codex/sessions/2026/09/09/rollout-2026-09-09T23-09-39-01a086b7-ac72-7f62-9593-a99863d2aa14.jsonl",
+    "child_rollout_sha256": "270c6a19dc2f9c4d4cbc2042fade02ca51181d96235a4ce91ac7820c39db607c",
+    "reported_envelope_sha256_before_adjudication": "156fa004e5a07e4903b305d231b0e19071dd53ed9058855ae130a7fa7357cae0",
+    "raw_payload_committed": false
+  },
+  "identity": {
+    "runtime_session_id": "01a086b6-d191-7e82-ab8d-8bcdf2eb6ae5",
+    "parent_thread_id": "01a086b6-d191-7e82-ab8d-8bcdf2eb6ae5",
+    "parent_turn_id": "01a086b6-d21b-7d31-92f9-3782d7e845e1",
+    "child_thread_id": "01a086b7-ac72-7f62-9593-a99863d2aa14",
+    "child_turn_id": "01a086b7-accf-7410-a908-b5ae3c921167",
+    "requested_task_name": "g4_sibling_admission_1",
+    "canonical_agent_path": "/root/g4_sibling_admission_1",
+    "agent_type": "g4_qualification_probe_worker",
+    "assignment_id": "9cf4bae4-1142-4b99-98a5-4b814dc2666c",
+    "handoff_id": "d4fa7374-5899-47b9-a119-5638951fc297",
+    "target_spawn_tool_use_id": "call_HS5SuwMPO4YDzlIW4MXsGjX0",
+    "child_list_agents_tool_use_id": "call_fPWUbdudUIoukXFsda7BT2qJ"
+  },
+  "ordinary_sibling_negative": {
+    "requested_agent_type": "worker",
+    "requested_task_name": "ordinary_sibling_denied",
+    "spawn_tool_use_id": "call_e87cKpSvyjEyHh0mEoOqhQ7H",
+    "exact_denial": "Qualification parent may spawn only the exact g4_qualification_probe_worker role",
+    "denial_returned_child_thread_id": false,
+    "denial_returned_agent_path": false,
+    "parent_list_agents_tool_use_id": "call_TfBhluACl0iSolorFYqZCpPQ",
+    "post_denial_agent_list": [
+      {
+        "agent_name": "/root",
+        "agent_status": "running"
+      }
+    ],
+    "ordinary_child_activity_event_present": false,
+    "ordinary_child_sessionmeta_present": false,
+    "retry_count": 0
+  },
+  "exact_child_positive": {
+    "spawn_result": {
+      "task_name": "/root/g4_sibling_admission_1"
+    },
+    "sessionmeta_source": "ThreadSpawn",
+    "depth": 1,
+    "parent_wait_tool_use_id": "call_phsCi6Ai5Qv9yJjUSMpa0UqP",
+    "parent_wait_timed_out": false,
+    "child_completed_activity_present": true,
+    "child_final_sha256": "92ce36e9f1c6f7357b7b8c3db48df085f06ff15194975407e8a23057f4704bfc",
+    "parent_callback_payload_sha256": "92ce36e9f1c6f7357b7b8c3db48df085f06ff15194975407e8a23057f4704bfc",
+    "parent_child_final_exactly_equal": true,
+    "canonical_attestation_sha256": "646a6411b6f15c320bf349a1f8f267eeb219ce9a84fad9529991e3e15dd7ff59",
+    "assigned_slice_complete": true,
+    "authority_violation": false,
+    "context_lost": false,
+    "verification_exit_code": 0
+  },
+  "runtime_tool_catalog": {
+    "emission_prefix": "G4_TOOL_CATALOG_RECEIPT_V2",
+    "total_receipt_count": 7,
+    "parent": {
+      "receipt_count": 5,
+      "receipts_byte_identical": true,
+      "canonical_receipt_sha256": "eb58f8e53f6a2379b2c4e44747b29b78e002674fb36590bc439ce01877266dbe",
+      "registered_tools": [
+        "apply_patch",
+        "g4_assignment.close_agent",
+        "g4_assignment.followup_task",
+        "g4_assignment.interrupt_agent",
+        "g4_assignment.list_agents",
+        "g4_assignment.send_message",
+        "g4_assignment.spawn_agent",
+        "g4_assignment.wait_agent",
+        "view_image"
+      ],
+      "code_mode_tool_names": {},
+      "can_manage_children": true
+    },
+    "child": {
+      "receipt_count": 2,
+      "receipts_byte_identical": true,
+      "canonical_receipt_sha256": "10830abe1bf75a509d98f4baf053c946d7608d43d60c92c5b9de252677f11431",
+      "registered_tools": [
+        "apply_patch",
+        "g4_assignment.list_agents",
+        "view_image"
+      ],
+      "code_mode_tool_names": {},
+      "can_manage_children": false
+    }
+  },
+  "hook_identity_slice": {
+    "sequence_start": 3257,
+    "sequence_end": 3260,
+    "sequences_contiguous": true,
+    "spawn_pretool_receipt_sha256": "7f7ed6c37eb745725f443dd3f8b35a0d342f9f0ff8e47d1f99bbf8a7b3e7c564",
+    "subagent_start_receipt_sha256": "db0f547db5b7432ce328b67fd95b95579fd0f7e8c281f0e90ef5fb7c8305120a",
+    "child_list_agents_pretool_receipt_sha256": "dc89e8a3c182a4c70c92c4b0eba18caa072188a26234268d68bf2d68725e1b7a",
+    "accepted_subagent_stop_receipt_sha256": "e3ed50cf990b55ee454c2a7e280b64b447e7a95614e28424c5b75ea910a4d6e6",
+    "same_runtime_session_and_exact_child_identity": true
+  },
+  "probe_root_final_disk": {
+    "status_porcelain_v1": "",
+    "branch": "main",
+    "head": "f2523a45c391cd3537585e7d02492e2161ebeedd",
+    "evidence_file_sha256": "9ccf3c68c297628229be00fc6d480a455d9fd62b12c406c4fb413b648861d707",
+    "ordinary_sibling_created_files": false,
+    "target_child_created_files": false,
+    "late_write_observed": false,
+    "strong_global_quiescence_claimed": false
+  },
+  "fresh_owner_adjudication": {
+    "required": true,
+    "state": "pending"
+  },
+  "verdict": {
+    "ordinary_sibling_spawn_denied_before_child_creation": true,
+    "exact_g4_child_spawn_and_callback_continuity_qualified": true,
+    "native_actor_set_widening_closed_for_this_exact_parent": true,
+    "localcat_or_business_workload_used": false,
+    "independent_same_uid_hostile_process_qualified": false,
+    "p4_qualified": false,
+    "phase1_complete": false,
+    "direct_write_qualified": false,
+    "phase2_state": "closed",
+    "phase3_state": "closed"
+  }
+}

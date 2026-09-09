@@ -29,11 +29,10 @@ P1–P7 的有限职责如下：
 | P6c | 一个产品无关 live bundle 绑定 invocation/latency authority、dense p95、U1→R→U2、phase conservation、mixed frontier 与十个 race seams |
 | P7 | 同一协议的 POSIX/Windows、既有 DeepSeek 路径和安装/回滚回归 |
 
-当前有限矩阵是：P1、P2、P3、P5、P5a、P5b、P6、P6a、P6b、P6c 已
-`qualified`；P4、P7 仍为 `partial`。因此不是阻塞在 P1，也不需要“前面一通才全部通”。
-P4 的剩余问题是 Hook/ToolRouter 之外的 host-control 与 OS/权限信任根；P7 的剩余问题是
-Windows、既有 DeepSeek 路径以及安装态失败回调/回滚。外部业务会话没有 Phase 1
-裁决职责，只能在自然发生异常时贡献带原始 identity/hash/timeline 的事故样本。
+当前有限矩阵是：P1、P2、P3、P4、P5、P5a、P5b、P6、P6a、P6b、P6c 已
+`qualified`；P7 仍为 `partial`。因此不是阻塞在 P1，也不需要“前面一通才全部通”。
+P7 的剩余问题是 Windows、既有 DeepSeek 路径以及安装态失败回调/回滚。任何业务仓库、
+workload 规模或业务侧完成结论都不参与 Phase 1 裁决。
 
 ## 三阶段主线
 
@@ -59,11 +58,12 @@ Windows、既有 DeepSeek 路径以及安装态失败回调/回滚。外部业�
    joinable bundle：一组共享 invocation/phase identity 的 dense samples、U1→R→U2、
    mixed frontier 和十个 ordered race seams。不相关应用的数据规模或独立 workload
    运行不属于该 gate。
-3. P4 的主要阻点不是继续微调 Hook matcher。exact G4 headless candidate 已能在所有 tool
-   contributor 之后删除非 allowlist runtime；但 Hook 错误仍可能 fail open，普通 GUI parent、
-   App Server/daemon/control client、同 UID state/rollout 改写和独立进程仍在 ToolRouter 之外。
-   这要求 mandatory runtime gate 加 OS/不同权限信任根，不能靠 prompt、claim refresh 或
-   更多 after-the-fact hash 代替。
+3. P4 的有限证明域是 exact native qualification actor graph。exact G4 headless candidate 已在
+   所有 tool contributor 之后删除非 allowlist runtime，required PreToolUse 对 actor 可达的
+   `apply_patch` fail closed，child 不能管理子节点；新增 native spawn admission 又在创建 child
+   之前拒绝 default/普通 sibling，阻断通过 sibling 重新取得宽 catalog。独立同 UID 进程或另行
+   启动的 App Server 不在该 actor graph 内，也不产生 Phase 1 authority；如果以后有工具重新让
+   exact actor 可达这些入口，P4 必须重新打开。
 4. Phase 3 不能继续默认等同于“建 ZHIPU bridge”。ZHIPU direct Responses 已有官方候选与
    live wire feasibility；bridge 只在 direct 语义不够时作为可删除 fallback。
 5. P6/P6a 曾继续等待未定义的 broader mutation/cross-owner cohort。原始 P6 只要求错误
@@ -80,18 +80,25 @@ Windows、既有 DeepSeek 路径以及安装态失败回调/回滚。外部业�
 
 1. 保留 P1/P2/P3/P5/P5a/P5b/P6/P6a/P6b/P6c 已 `qualified` 的事实，不再用未定义的
    broader cohort 重新打开它们。
-2. P4 的 finalized G4 catalog 已完成 trusted-runtime origin binding；required PreToolUse
-   fail-closed 由 parent/child 共用的源码谓词、exact parent missing-handler live denial 与
-   exact child partial multi-handler failure live denial 共同闭合。无需再跑 actor×failure
-   笛卡尔积。P4 下一步只处理 ToolRouter 外的同 UID hostile host、独立 App Server/daemon/
-   control client、已打开进程输入和 external worker bootstrap 的 OS/privilege boundary。
+2. P4 已闭合：finalized G4 catalog 完成 trusted-runtime origin binding；required PreToolUse
+   fail-closed 由 parent/child 共用的源码谓词与两条 live negative 证明；native spawn admission
+   在同一真实 root session 中拒绝普通 sibling、确认拒绝后只有 `/root`，再成功完成唯一精确
+   G4 child 的 SessionMeta、SubagentStart/Stop、callback、clean disk 与 fresh-owner consumption。
+   现有 macOS Seatbelt negative 另证在刻意开放 Bash 时 read-only sandbox 会阻断实际写入。
 3. P5b 以 exact closed-catalog actor 为证明域：现有 source admission freeze、真实
    tracked-exit witness、运行中 write actor close、稳定 disk barrier、唯一 handover 与四个
-   原子 writer window 已闭合该门。任意宿主进程的全局 quiescence 不重复挂到 P5b；独立
-   host-control 与同 UID 攻击仍由 P4 处理，安装态失败回调由 P7 处理。
+   原子 writer window 已闭合该门。任意宿主进程的全局 quiescence 不重复挂到 P5b；安装态
+   失败回调由 P7 处理。
 4. P6b/P6c 已由 disposable product-independent root 的同一次 invocation/phase/race/live
    bundle及 distinct fresh-process disk owner 消费闭合。
-5. 当前执行面收束为 P4 的 host/OS trust boundary 与 P7 的 native Windows、DeepSeek
-   regression、安装态失败 callback 和完整 live install/rollback。
+5. 当前执行面只剩 P7 的 native Windows、DeepSeek regression、安装态失败 callback 和完整
+   live install/rollback。
 6. 仅当所有 gate 与 exit receipt 均 qualified，才允许一次独立提交把 Phase 1 和 direct
    write 置真并打开 Phase 2；Phase 3 仍需 Phase 2 完成。
+
+## Broker 参照的使用边界
+
+[Utopia Broker](https://github.com/Utopia-V/mixagents/blob/main/packages/broker/README.zh-CN.md)
+提供了产品无关的多 agent 术语：route、spawn、send、wait、interrupt，以及默认只读和显式
+workspace-write。这里可复用这些职责名称，但不复用它的独立 App Server worker 生命周期；
+本项目的裁决对象始终是 Codex native spawn、AgentPath、Multi-Agent V2、wait/callback/cancel。

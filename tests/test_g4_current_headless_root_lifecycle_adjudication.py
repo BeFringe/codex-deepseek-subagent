@@ -164,7 +164,7 @@ class G4CurrentHeadlessRootLifecycleAdjudicationTests(unittest.TestCase):
             self.assertIn(result_path, gates[gate_id]["evidence"])
         for gate_id in ("P2", "P3", "P5b", "P6", "P6a", "P6b"):
             self.assertEqual(gates[gate_id]["state"], "qualified")
-        self.assertEqual(gates["P4"]["state"], "partial")
+        self.assertEqual(gates["P4"]["state"], "qualified")
         self.assertFalse(status["phase1"]["declared_complete"])
         self.assertFalse(status["phase1"]["declared_direct_write_qualified"])
         self.assertEqual(status["phase2"]["state"], "closed")

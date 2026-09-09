@@ -106,10 +106,10 @@ class Phase1G4GateTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "declared Phase 1 completion"):
                 check_phase1_g4.load_status(path)
 
-    def test_app_server_host_control_cannot_replace_native_lifecycle(self):
+    def test_external_app_server_cannot_replace_native_lifecycle(self):
         value = json.loads(STATUS.read_text(encoding="utf-8"))
-        value["goal_contract"]["app_server_source_adjustment"][
-            "may_substitute_native_child_lifecycle"
+        value["goal_contract"]["native_actor_boundary"][
+            "external_app_server_may_substitute_native_child_lifecycle"
         ] = True
 
         with tempfile.TemporaryDirectory(dir=REPO / "probes") as directory:
@@ -117,24 +117,20 @@ class Phase1G4GateTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "goal contract drifted"):
                 check_phase1_g4.load_status(path)
 
-    def test_app_server_bootstrap_denial_cannot_be_dropped(self):
+    def test_exact_g4_spawn_admission_cannot_be_dropped(self):
         value = json.loads(STATUS.read_text(encoding="utf-8"))
-        proofs = value["goal_contract"]["app_server_source_adjustment"][
-            "required_proofs"
-        ]
-        proofs.remove("external_worker_bootstrap_denial_or_os_confinement")
+        proofs = value["goal_contract"]["native_actor_boundary"]["required_proofs"]
+        proofs.remove("exact G4-only child spawn admission")
 
         with tempfile.TemporaryDirectory(dir=REPO / "probes") as directory:
             path = self.write_status(value, directory)
             with self.assertRaisesRegex(ValueError, "goal contract drifted"):
                 check_phase1_g4.load_status(path)
 
-    def test_role_sandbox_declaration_cannot_replace_trusted_host_receipt(self):
+    def test_required_pretool_mediation_cannot_be_dropped(self):
         value = json.loads(STATUS.read_text(encoding="utf-8"))
-        proofs = value["goal_contract"]["app_server_source_adjustment"][
-            "required_proofs"
-        ]
-        proofs.remove("trusted_parent_or_host_sandbox_receipt")
+        proofs = value["goal_contract"]["native_actor_boundary"]["required_proofs"]
+        proofs.remove("required PreToolUse mediation for every reachable mutation entry")
 
         with tempfile.TemporaryDirectory(dir=REPO / "probes") as directory:
             path = self.write_status(value, directory)

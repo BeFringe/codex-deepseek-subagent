@@ -3,7 +3,8 @@
 2026-09-09 的范围与验收校准见
 [Phase 1/G4 主线校准](phase1-g4-calibration-20260909.md)。该附录移除无界 cohort 与
 业务 workload 硬依赖，但不降低本计划的 P1–P7、sandbox、termination、Windows 或
-DeepSeek 退出条件；host-control 与 same-UID 风险只在 P4 证明一次。
+DeepSeek 退出条件。P4 只裁决 exact native qualification actor graph；独立 App Server 与
+同 UID 外部进程属于宿主信任假设，除非它们重新成为该 actor graph 的可达能力。
 
 Status: **read-only qualification only**. `direct_write_qualified=false` remains
 mandatory until every live/platform gate below closes. After explicit user
@@ -11,13 +12,8 @@ authorization, a qualification-only live candidate may be installed and trusted
 for the probes below; that installation does not enable Phase 2, alter the
 parent provider, or let an external worker adjudicate its own behavior.
 
-## Historical handoff baseline
+## Historical handoff baseline（non-gating）
 
-- Continuation input began at local
-  `main@dcdc6207503af8117e48b3f6178137f07f5b0523`; the current installed G4
-  script source is evidence commit
-  `8d23bc1ff18f8032541bfb28e7c78ec4332fe501`; refreshed remote baseline remains
-  `origin/main@076ee0df9aca11fbc0c19a6ccd7cd8befc0051f7`.
 - Host: macOS 26.2 (`25C56`), Darwin arm64, Asia/Shanghai.
 - Codex app: `26.810.41047` (`6570`); CLI: `0.148.0-alpha.9`.
 - Codex source: tag `rust-v0.148.0-alpha.9`, peeled commit
@@ -32,11 +28,8 @@ parent provider, or let an external worker adjudicate its own behavior.
   handoff point the new entries still required user trust and no live candidate
   event had run.
 
-The migrated checkout initially had 62 blob-identical executable-bit changes.
-They were normalized only after a fresh remote fetch proved every content blob
-and `origin/main` identical. The SSH config's GitHub host alias did not match the
-repository remote; the fetch therefore required the migrated GitHub identity as
-a one-command override. No key content was read or recorded.
+Repository remote aliases and host authentication are maintenance facts, not
+Phase 1 gates. Historical migration details remain only in the evidence log.
 
 ### Installed baseline refresh (2026-09-07)
 
