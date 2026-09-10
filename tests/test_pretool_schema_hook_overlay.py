@@ -6,6 +6,8 @@ import sys
 import tempfile
 import unittest
 
+from private_output_assertions import assert_private_output
+
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "probes" / "build_pretool_schema_hook_overlay.py"
@@ -110,7 +112,7 @@ class PreToolSchemaHookOverlayTests(unittest.TestCase):
         command = overlay["hooks"]["PreToolUse"][0]["hooks"][0]["command"]
         self.assertIn("--pretool-schema-observation-root", command)
         self.assertIn("'" + str(self.observed_root.resolve()) + "'", command)
-        self.assertEqual(self.output.stat().st_mode & 0o777, 0o600)
+        assert_private_output(self, self.output)
 
     def test_optional_subagentstart_observer_changes_only_g4_commands(self):
         built = self.run_builder(include_start=True)

@@ -7,7 +7,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 import stat
 import subprocess
 from typing import Mapping, Sequence
@@ -111,8 +111,22 @@ def extract_apply_patch_paths(command: object) -> list[str]:
         for prefix in prefixes:
             if line.startswith(prefix):
                 path = line[len(prefix) :]
-                if not path or path != path.strip() or "\x00" in path or "\\" in path:
+                if not path or path != path.strip() or "\x00" in path or ("\\" in path and os.name != "nt"):
                     raise WriterLeaseError("apply_patch contains an invalid path")
+                if os.name == "nt":
+                    windows_path = PureWindowsPath(path)
+                    tail = path[len(windows_path.drive):]
+                    # Native separators are valid, but drive-relative paths,
+                    # device namespaces, alternate streams and Win32 aliases
+                    # must not become a different target after authorization.
+                    if (path.replace("\\", "/").startswith(("//?/", "//./"))
+                            or (windows_path.drive and not windows_path.root)
+                            or ":" in tail
+                            or any(PureWindowsPath(part).is_reserved()
+                                   for part in windows_path.parts[bool(windows_path.anchor):])
+                            or any(part not in {".", ".."} and part.endswith((".", " "))
+                                   for part in windows_path.parts[bool(windows_path.anchor):])):
+                        raise WriterLeaseError("apply_patch contains an ambiguous Windows path")
                 paths.append(path)
                 break
     if not paths:
@@ -146,7 +160,7 @@ def normalize_patch_paths(
         if value in {"", "."} or ".." in relative.parts:
             raise WriterLeaseError("apply_patch path is not canonical")
         normalized.append(value)
-    if len(set(normalized)) != len(normalized):
+    if len({os.path.normcase(path) for path in normalized}) != len(normalized):
         raise WriterLeaseError("apply_patch aliases resolve to the same path")
     return normalized
 
@@ -253,7 +267,9 @@ def _non_git_file_state(root: Path, target: Path) -> dict:
             raise WriterLeaseError(
                 "non-Git writer target has no existing parent directory"
             ) from error
-        if stat.S_ISLNK(status.st_mode) or not stat.S_ISDIR(status.st_mode):
+        if (stat.S_ISLNK(status.st_mode)
+                or getattr(status, "st_file_attributes", 0) & 0x400
+                or not stat.S_ISDIR(status.st_mode)):
             raise WriterLeaseError(
                 "non-Git writer target traverses a symlink or non-directory"
             )
@@ -266,7 +282,9 @@ def _non_git_file_state(root: Path, target: Path) -> dict:
             "sha256": None,
             "byte_length": None,
         }
-    if stat.S_ISLNK(target_status.st_mode) or not stat.S_ISREG(target_status.st_mode):
+    if (stat.S_ISLNK(target_status.st_mode)
+            or getattr(target_status, "st_file_attributes", 0) & 0x400
+            or not stat.S_ISREG(target_status.st_mode)):
         raise WriterLeaseError("non-Git writer target is not a regular file")
     flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)
     try:
@@ -314,7 +332,7 @@ def collect_patch_non_git_snapshot(
         _reject_git_control_path(root, target)
         states.append(_non_git_file_state(root, target))
     paths = [state["path"] for state in states]
-    if len(set(paths)) != len(paths):
+    if len({os.path.normcase(path) for path in paths}) != len(paths):
         raise WriterLeaseError("apply_patch aliases resolve to the same non-Git path")
     return {
         "schema": 1,

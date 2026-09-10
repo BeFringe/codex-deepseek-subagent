@@ -26,7 +26,7 @@ def digest(value: str) -> str:
 class PlaintextPairProbeGuardTests(unittest.TestCase):
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory(
-            prefix="codex-p1-pair-guard-", dir="/private/tmp"
+            prefix="codex-p1-pair-guard-", dir=(tempfile.gettempdir() if sys.platform == "win32" else "/private/tmp")
         )
         self.state = Path(self.temporary.name) / "state"
         self.messages = {

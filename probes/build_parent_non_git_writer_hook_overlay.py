@@ -14,6 +14,8 @@ import re
 import shlex
 import sys
 
+from private_output import open_private_output
+
 
 TARGET_AGENT_TYPE = "g4_qualification_probe_worker"
 TARGET_EVENTS = {"PreToolUse": "*", "PostToolUse": "apply_patch"}
@@ -126,7 +128,7 @@ def write_private_new(path: Path, value: dict) -> None:
         json.dumps(value, ensure_ascii=False, indent=2, sort_keys=False) + "\n"
     ).encode("utf-8")
     try:
-        descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+        descriptor = open_private_output(path)
         with os.fdopen(descriptor, "wb") as stream:
             stream.write(encoded)
             stream.flush()

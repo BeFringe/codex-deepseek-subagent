@@ -2,6 +2,7 @@ import hashlib
 import json
 from pathlib import Path
 import unittest
+from historical_source import historical_sha256
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -27,8 +28,8 @@ class G4LiveHandoverCleanupCloseTests(unittest.TestCase):
         guard = self.receipt["probe_guard"]
         reconciliation = self.receipt["durable_reconciliation"]
         self.assertEqual(guard["wrapper_sha256"], sha256(WRAPPER))
-        self.assertEqual(guard["prompt_builder_sha256"], sha256(PROMPT_BUILDER))
-        self.assertEqual(guard["overlay_builder_sha256"], sha256(OVERLAY_BUILDER))
+        self.assertEqual(guard["prompt_builder_sha256"], historical_sha256(PROMPT_BUILDER))
+        self.assertEqual(guard["overlay_builder_sha256"], historical_sha256(OVERLAY_BUILDER))
         self.assertEqual(reconciliation["tool_sha256"], sha256(RECONCILER))
         self.assertEqual(
             guard["authorization"],

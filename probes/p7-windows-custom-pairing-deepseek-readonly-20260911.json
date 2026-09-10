@@ -1,0 +1,56 @@
+{
+  "schema": 1,
+  "classification": "p7_windows_fresh_owner_readonly_lifecycle",
+  "fresh_adjudicator_pid": 6228,
+  "manifest_sha256": "e0edb15b3b4d6e52b691cc2ba14c87242f6b8fc13a1f14dd1f6cd2bac7b3c621",
+  "provider": "deepseek",
+  "identity_and_lifecycle": {
+    "parent_thread_id": "01a090c7-931b-7380-8cbc-1b2605420d66",
+    "child_thread_id": "01a090c8-7217-7dc3-9245-08c9a332b2c7",
+    "canonical_agent_path": "/root/p7_windows_deepseek",
+    "close_receipt": {
+      "previous_status": {
+        "completed": "BEGIN CODEX WORKER ATTESTATION\n{\"assignment_id\":\"f741995d-4fa9-44d6-b0f9-b805fa4dcc0b\",\"handoff_id\":\"42d8e702-9bf7-4ac9-95d6-8128971bf5b4\",\"capsule_sha256\":\"a24862ff5e9da2b36ffba195cba8d0b6b3c57a6ec05fa8ee44de1b13652ca3f9\",\"compact_invariant_sha256\":\"46adf38fa112c07c9739b29a65d565a28730a9bf877224c8c07c5c0458994f52\",\"authority_provenance\":{\"policy_sha256\":\"adde5392c2d7252c581ce596a996a7bbc7096ea5def04e1efd3147e0abea2eb0\",\"worker_claimed_origin\":\"owner_internal\",\"test_only_injection_used\":false,\"derivation_receipt_sha256\":null},\"canonical_agent_path\":\"/root/p7_windows_deepseek\",\"recovery_count\":0,\"context_lost\":false,\"root\":\"C:\\\\Users\\\\BonBon\\\\.codex-p7-artifacts\\\\p7-deepseek-a8571c44d0e6403cac3e3c86973af58b\\\\worktree\",\"branch\":\"main\",\"head\":\"0e84786670c1482659408bda874678f6341b298d\",\"index_changed\":false,\"git_status_short\":\"\",\"changed_paths\":[],\"verification\":[{\"command\":\"native list_agents read-only probe\",\"exit_code\":0}],\"authority_violation\":false,\"assigned_slice_complete\":true,\"inventory_summaries\":[]}\nEND CODEX WORKER ATTESTATION"
+      },
+      "target_thread_id": "01a090c8-7217-7dc3-9245-08c9a332b2c7",
+      "target_agent_path": "/root/p7_windows_deepseek",
+      "session_loop_terminated": true,
+      "model_callable_process_bootstrap_absent": true,
+      "tracked_background_processes_before_close": 0,
+      "tracked_process_ids_by_thread": {
+        "01a090c8-7217-7dc3-9245-08c9a332b2c7": []
+      },
+      "confirmed_exit_process_ids_by_thread": {
+        "01a090c8-7217-7dc3-9245-08c9a332b2c7": []
+      },
+      "unconfirmed_exit_process_ids_by_thread": {
+        "01a090c8-7217-7dc3-9245-08c9a332b2c7": []
+      },
+      "unresolved_start_process_ids_by_thread": {
+        "01a090c8-7217-7dc3-9245-08c9a332b2c7": []
+      },
+      "tracked_process_termination_confirmed": true,
+      "closed_catalog_actor_quiescence_claimed": true,
+      "process_tree_quiescence_claimed": false
+    },
+    "callback_byte_exact": true,
+    "child_tool_name": "list_agents",
+    "child_tool_namespace": null,
+    "child_tool_arguments": {},
+    "child_tool_call_id": "call_00_ubjxplZia9we2eN4tb6F9309",
+    "child_tool_output_sha256": "8f89b5f314fb93728facfca589021a8ad796ff17e8b9d3e21f83d146b0e9167f",
+    "callback_sha256": "172455d6b54bc19162f4489831fd5de2c6b0667c62dab38f3ffbf86a5a293eaa",
+    "raw_hook_event_count": 7,
+    "durable_hook_event_count": 4,
+    "interim_wait_timeouts": 0
+  },
+  "assignment_id": "f741995d-4fa9-44d6-b0f9-b805fa4dcc0b",
+  "consumed_sha256": "851bd4ad2515ad81e5b13fb0c83f68d3531ba97be0c78e3509a2f5d4da252ab6",
+  "windows_live_qualified": true,
+  "scope": "exact closed native parent and read-only child",
+  "global_process_tree_qualified": false,
+  "direct_write_qualified": false,
+  "phase1_complete": false,
+  "phase2_state": "closed",
+  "phase3_state": "closed"
+}

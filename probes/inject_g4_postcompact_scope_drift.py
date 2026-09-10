@@ -4,6 +4,8 @@
 
 from __future__ import annotations
 
+import tempfile
+
 import argparse
 import datetime as dt
 import hashlib
@@ -12,6 +14,11 @@ import os
 from pathlib import Path
 import re
 import sys
+# Support standalone importlib-based probe tests as well as direct CLI launch.
+_probe_module_directory = str(Path(__file__).resolve().parent)
+if _probe_module_directory not in sys.path:
+    sys.path.insert(0, _probe_module_directory)
+from private_output import open_private_output
 import time
 
 
@@ -39,7 +46,7 @@ def sha256_bytes(value: bytes) -> str:
 
 
 def write_exclusive(path: Path, content: bytes) -> None:
-    descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    descriptor = open_private_output(path)
     with os.fdopen(descriptor, "wb") as stream:
         stream.write(content)
         stream.flush()
@@ -48,7 +55,7 @@ def write_exclusive(path: Path, content: bytes) -> None:
 
 def validate_root(root: Path) -> Path:
     resolved = root.resolve(strict=True)
-    if resolved.parent != Path("/private/tmp") or not ROOT_NAME_RE.fullmatch(resolved.name):
+    if resolved.parent != Path(tempfile.gettempdir() if sys.platform == "win32" else "/private/tmp").resolve() or not ROOT_NAME_RE.fullmatch(resolved.name):
         raise ProbeError("probe root is outside the fixed temporary namespace")
     return resolved
 

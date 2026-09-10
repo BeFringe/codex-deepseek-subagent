@@ -5,6 +5,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from private_output_assertions import assert_private_output
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -20,7 +21,7 @@ class ChildWriteProbeHookOverlayTests(unittest.TestCase):
         self.input = self.root / "hooks.json"
         self.output = self.root / "overlay.json"
         self.git_directory = tempfile.TemporaryDirectory(
-            prefix="codex-g4-write-overlay-", dir="/private/tmp"
+            prefix="codex-g4-write-overlay-", dir=(tempfile.gettempdir() if sys.platform == "win32" else "/private/tmp")
         )
         self.git_root = Path(self.git_directory.name).resolve()
         subprocess.run(["git", "-C", str(self.git_root), "init", "-b", "main"], check=True, capture_output=True)
@@ -103,7 +104,7 @@ class ChildWriteProbeHookOverlayTests(unittest.TestCase):
             self.assertIn(str(HOOK), after[1]["command"])
             option_count += after[1]["command"].count("--child-write-probe")
         self.assertEqual(option_count, 1)
-        self.assertEqual(self.output.stat().st_mode & 0o777, 0o600)
+        assert_private_output(self, self.output)
 
     def test_overlay_can_add_one_bounded_child_lease_hold(self):
         result = self.run_builder(writer_hold_seconds=8)

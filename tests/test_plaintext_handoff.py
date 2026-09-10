@@ -9,6 +9,7 @@ import tempfile
 import threading
 import time
 import unittest
+from private_output_assertions import assert_private_output
 
 
 def resolve_script():
@@ -38,6 +39,11 @@ def resolve_script():
 
 SCRIPT = resolve_script()
 AGENT_TYPE = "v4_flash_worker"
+HANDOFF_COMMAND = (["powershell.exe", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass",
+                    "-File", str(SCRIPT.with_name("plaintext-handoff.ps1"))]
+                   if os.name == "nt" else [sys.executable, str(SCRIPT)])
+MODE_ARGUMENT = "-Mode" if os.name == "nt" else "--mode"
+STATE_ARGUMENT = "-StateDirectory" if os.name == "nt" else "--state-directory"
 
 
 def utc_timestamp(*, seconds_from_now=0):
@@ -76,22 +82,25 @@ class PlaintextHandoffCliTests(unittest.TestCase):
         return self.invoke_at(self.state_directory, mode, stdin, *extra_arguments)
 
     def invoke_at(self, state_directory, mode, stdin, *extra_arguments):
-        return subprocess.run(
+        if os.name == "nt":
+            extra_arguments = tuple("-TtlSeconds" if value == "--ttl-seconds" else value
+                                    for value in extra_arguments)
+        result = subprocess.run(
             [
-                sys.executable,
-                str(SCRIPT),
-                "--mode",
+                *HANDOFF_COMMAND,
+                MODE_ARGUMENT,
                 mode,
-                "--state-directory",
+                STATE_ARGUMENT,
                 str(state_directory),
                 *extra_arguments,
             ],
-            input=stdin,
-            text=True,
+            input=stdin.encode('utf-8'),
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             check=False,
         )
+        return subprocess.CompletedProcess(result.args, result.returncode,
+                                           result.stdout.decode('utf-8'), result.stderr.decode('utf-8'))
 
     def write_pending(self, value):
         self.state_directory.mkdir(parents=True, exist_ok=True)
@@ -124,7 +133,7 @@ class PlaintextHandoffCliTests(unittest.TestCase):
         self.assertEqual(staged["schema"], 1)
         self.assertEqual(staged["assignment"], assignment)
         self.assertNotIn(assignment.strip(), result.stdout)
-        self.assertEqual(self.pending_path.stat().st_mode & 0o777, 0o600)
+        assert_private_output(self, self.pending_path)
 
     def test_hook_consumes_one_valid_assignment_and_emits_additional_context(self):
         assignment = "Summarize the supplied build log."
@@ -221,6 +230,7 @@ class PlaintextHandoffCliTests(unittest.TestCase):
 
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(json.loads(self.pending_path.read_text())["assignment"], "fresh assignment")
+        assert_private_output(self, self.pending_path)
 
     def test_stage_never_replaces_structurally_invalid_expired_envelopes(self):
         invalid_cases = {
@@ -432,7 +442,6 @@ class PlaintextHandoffCliTests(unittest.TestCase):
         self.assertNotIn(0, [r.returncode for r in results])
         self.assertFalse(self.handoff_state_files())
 
-    @unittest.skipUnless(os.name == "posix", "requires the POSIX dispatch lock")
     def test_stage_racing_hook_over_expired_pending_never_delivers_expired_assignment(self):
         # A stage recovering an expired pending can race the Hook claim of the
         # next child. Whichever acquires the dispatch lock first, the expired
@@ -463,7 +472,6 @@ class PlaintextHandoffCliTests(unittest.TestCase):
         else:
             self.assertTrue(self.retry_stage_publishes_fresh_envelope())
 
-    @unittest.skipUnless(os.name == "posix", "requires the POSIX dispatch lock")
     def test_stage_racing_hook_over_expired_claim_recovers_it_fail_closed(self):
         # Recovery of an expired orphan claim races a fresh stage and the next
         # Hook claim. The orphan must be removed by the recovery, its content
@@ -514,7 +522,6 @@ class PlaintextHandoffCliTests(unittest.TestCase):
                 return True
         return False
 
-    @unittest.skipUnless(os.name == "posix", "requires the POSIX dispatch lock")
     def test_concurrent_stages_publish_exactly_one_complete_envelope(self):
         # Launch several stages concurrently and release their communicate()
         # through a single barrier, so input and EOF reach all children at the
@@ -523,11 +530,10 @@ class PlaintextHandoffCliTests(unittest.TestCase):
         # be that winner's, complete.
         self.write_pending(envelope("old expired assignment", expires_in=-60))
         command = [
-            sys.executable,
-            str(SCRIPT),
-            "--mode",
+            *HANDOFF_COMMAND,
+                MODE_ARGUMENT,
             "stage",
-            "--state-directory",
+            STATE_ARGUMENT,
             str(self.state_directory),
         ]
         start_barrier = threading.Barrier(7)  # six stage runners + the test
@@ -570,14 +576,31 @@ class PlaintextHandoffCliTests(unittest.TestCase):
         self.assertIn(pending["assignment"], delivered_context)
         self.assertFalse(self.handoff_state_files())
 
-    @unittest.skipUnless(os.name == "posix", "requires the POSIX dispatch lock")
     def test_stage_fails_while_dispatch_lock_is_held(self):
         # Hold the dispatch lock from the test process, then stage: the
         # nonblocking acquire must fail deterministically without touching state.
-        import fcntl
-
         self.state_directory.mkdir(parents=True)
         lock_path = self.state_directory / f".{AGENT_TYPE}.lock"
+        if os.name == "nt":
+            # Match the PowerShell backend's FileShare.None dispatch lease.
+            import ctypes
+            from ctypes import wintypes
+            kernel = ctypes.WinDLL("kernel32", use_last_error=True)
+            kernel.CreateFileW.argtypes = [wintypes.LPCWSTR, wintypes.DWORD, wintypes.DWORD,
+                                          wintypes.LPVOID, wintypes.DWORD, wintypes.DWORD, wintypes.HANDLE]
+            kernel.CreateFileW.restype = wintypes.HANDLE
+            kernel.CloseHandle.argtypes = [wintypes.HANDLE]
+            handle = kernel.CreateFileW(str(lock_path), 0xC0000000, 0, None, 4, 0x80, None)
+            self.assertNotEqual(handle, ctypes.c_void_p(-1).value, ctypes.get_last_error())
+            try:
+                result = self.invoke("stage", "blocked by a held dispatch lock")
+            finally:
+                kernel.CloseHandle(handle)
+            self.assertEqual(result.returncode, 13, result.stderr)
+            self.assertIn("already in progress", result.stderr)
+            self.assertFalse(self.pending_path.exists())
+            return
+        import fcntl
         descriptor = os.open(lock_path, os.O_RDWR | os.O_CREAT, 0o600)
         try:
             fcntl.flock(descriptor, fcntl.LOCK_EX)
@@ -595,11 +618,10 @@ class PlaintextHandoffCliTests(unittest.TestCase):
         active = envelope(assignment, expires_in=2)
         self.write_pending(active)
         command = [
-            sys.executable,
-            str(SCRIPT),
-            "--mode",
+            *HANDOFF_COMMAND,
+                MODE_ARGUMENT,
             "hook",
-            "--state-directory",
+            STATE_ARGUMENT,
             str(self.state_directory),
         ]
         hook = subprocess.Popen(
@@ -708,11 +730,10 @@ class PlaintextHandoffCliTests(unittest.TestCase):
         # after the complete JSON document has been written and synced.
         assignment = "x" * (16 * 1024 * 1024)
         command = [
-            sys.executable,
-            str(SCRIPT),
-            "--mode",
+            *HANDOFF_COMMAND,
+                MODE_ARGUMENT,
             "stage",
-            "--state-directory",
+            STATE_ARGUMENT,
             str(self.state_directory),
         ]
         process = subprocess.Popen(

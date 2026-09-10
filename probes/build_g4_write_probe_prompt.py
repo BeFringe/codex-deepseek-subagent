@@ -4,6 +4,8 @@
 
 from __future__ import annotations
 
+import tempfile
+
 import argparse
 import json
 import os
@@ -11,6 +13,11 @@ from pathlib import Path
 import re
 import subprocess
 import sys
+# Support standalone importlib-based probe tests as well as direct CLI launch.
+_probe_module_directory = str(Path(__file__).resolve().parent)
+if _probe_module_directory not in sys.path:
+    sys.path.insert(0, _probe_module_directory)
+from private_output import open_private_output
 
 
 AGENT_TYPE = "g4_qualification_probe_worker"
@@ -63,7 +70,7 @@ def build(
         )
     ) > 1:
         raise PromptError("write probe modes are mutually exclusive")
-    if root.parent != Path("/private/tmp") or Path(git(root, "rev-parse", "--show-toplevel")).resolve() != root:
+    if root.parent != Path(tempfile.gettempdir() if sys.platform == "win32" else "/private/tmp").resolve() or Path(git(root, "rev-parse", "--show-toplevel")).resolve() != root:
         raise PromptError("root is not an exact temporary Git top level")
     if target.parent.resolve() != root or target.resolve(strict=False) != target or target.is_symlink():
         raise PromptError("target is not one canonical direct root child")
@@ -248,11 +255,7 @@ def main() -> int:
             p5b_close_after_write=arguments.p5b_close_after_write,
             p5b_handover_after_barrier=arguments.p5b_handover_after_barrier,
         )
-        descriptor = os.open(
-            arguments.output,
-            os.O_WRONLY | os.O_CREAT | os.O_EXCL,
-            0o600,
-        )
+        descriptor = open_private_output(arguments.output)
         with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
             stream.write(prompt)
             stream.flush()

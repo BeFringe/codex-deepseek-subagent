@@ -6,6 +6,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from private_output_assertions import assert_private_output
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -46,7 +47,7 @@ class FakeStore:
 class G4PostcompactScopeDriftInjectorTests(unittest.TestCase):
     def setUp(self):
         self.directory = tempfile.TemporaryDirectory(
-            prefix="codex-g4-postcompact-drift-fixture-", dir="/private/tmp"
+            prefix="codex-g4-postcompact-drift-fixture-", dir=(tempfile.gettempdir() if sys.platform == "win32" else "/private/tmp")
         )
         self.root = Path(self.directory.name).resolve()
         self.state = self.root.parent / f"{self.root.name}.state"
@@ -137,7 +138,7 @@ class G4PostcompactScopeDriftInjectorTests(unittest.TestCase):
         target = self.root / injector.TARGET_NAME
         self.assertIsNotNone(result)
         self.assertEqual(target.read_bytes(), injector.TARGET_CONTENT)
-        self.assertEqual(target.stat().st_mode & 0o777, 0o600)
+        assert_private_output(self, target)
         self.assertTrue(result["state_lock_held_during_injection"])
         self.assertEqual(result["recovery_count"], 1)
         self.assertEqual(result["target_relative_path"], injector.TARGET_NAME)

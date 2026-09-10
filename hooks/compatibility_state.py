@@ -8,22 +8,31 @@ state and validation core used by isolated Phase 1 probes.
 
 from __future__ import annotations
 
+import tempfile
+
 import contextlib
 import datetime as dt
+import errno
 import hashlib
 import json
 import os
 import pathlib
 import re
 import sys
+import time
 import unicodedata
 import uuid
 from typing import Iterator, Mapping, Sequence
 
 if os.name == "posix":
     import fcntl
-else:  # pragma: no cover - exercised by the Windows parity harness later
+    msvcrt = None
+elif os.name == "nt":
+    import msvcrt
     fcntl = None
+else:  # pragma: no cover
+    fcntl = None
+    msvcrt = None
 
 
 SCHEMA = 2
@@ -1075,7 +1084,7 @@ def validate_capsule(capsule: object, assignment: str) -> dict:
     if host_consent == qualification_consent:
         if mutation_mode != "write":
             raise CorruptState("qualification consent requires write mutation mode")
-        if root_path.parent != pathlib.Path("/private/tmp") or root_path.resolve() != root_path:
+        if root_path.parent != pathlib.Path(tempfile.gettempdir() if sys.platform == "win32" else "/private/tmp").resolve() or root_path.resolve() != root_path:
             raise CorruptState("qualification consent requires one canonical temporary Git root")
         if len(capsule.get("owned_paths", [])) != 1 or capsule.get("excluded_paths") != []:
             raise CorruptState("qualification consent requires one exact owned path")
@@ -1635,13 +1644,29 @@ class StateStore:
 
     @contextlib.contextmanager
     def locked(self) -> Iterator[None]:
-        if fcntl is None:
+        if fcntl is None and msvcrt is None:
             raise StateError("schema-v2 locking is not qualified on this platform")
         self.root.mkdir(mode=0o700, parents=True, exist_ok=True)
         descriptor = os.open(self.root / ".compatibility-state.lock", os.O_RDWR | os.O_CREAT, 0o600)
         try:
-            os.fchmod(descriptor, 0o600)
-            fcntl.flock(descriptor, fcntl.LOCK_EX)
+            if fcntl is not None:
+                os.fchmod(descriptor, 0o600)
+                fcntl.flock(descriptor, fcntl.LOCK_EX)
+            else:
+                # Windows byte-range locks extend beyond EOF and are released
+                # by descriptor close, including process death. Use nonblocking
+                # attempts so a contending Python thread cannot hold the GIL
+                # while the current owner needs it to release its descriptor.
+                os.lseek(descriptor, 0, os.SEEK_SET)
+                deadline = time.monotonic() + 10
+                while True:
+                    try:
+                        msvcrt.locking(descriptor, msvcrt.LK_NBLCK, 1)
+                        break
+                    except OSError as error:
+                        if error.errno not in (errno.EACCES, errno.EAGAIN, errno.EDEADLK) or time.monotonic() >= deadline:
+                            raise StateError("Windows state lock acquisition failed") from error
+                        time.sleep(0.01)
             yield
         finally:
             os.close(descriptor)

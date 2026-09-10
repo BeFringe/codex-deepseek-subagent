@@ -6,6 +6,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from private_output_assertions import assert_private_output
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -27,7 +28,7 @@ prompt_builder = load_module()
 class G4PostcompactScopeDriftProbePromptTests(unittest.TestCase):
     def setUp(self):
         self.directory = tempfile.TemporaryDirectory(
-            prefix="codex-g4-postcompact-drift-prompt-", dir="/private/tmp"
+            prefix="codex-g4-postcompact-drift-prompt-", dir=(tempfile.gettempdir() if sys.platform == "win32" else "/private/tmp")
         )
         self.root = Path(self.directory.name).resolve()
         self.output = Path(self.directory.name + ".prompt")
@@ -106,7 +107,7 @@ class G4PostcompactScopeDriftProbePromptTests(unittest.TestCase):
         self.assertEqual(completed.returncode, 0, completed.stderr)
         result = json.loads(completed.stdout)
         self.assertEqual(result["output"], str(self.output))
-        self.assertEqual(self.output.stat().st_mode & 0o777, 0o600)
+        assert_private_output(self, self.output)
         self.assertRegex(result["sha256"], r"^[0-9a-f]{64}$")
         duplicate = subprocess.run(
             [

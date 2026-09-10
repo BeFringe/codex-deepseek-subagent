@@ -9,6 +9,7 @@ import uuid
 
 
 MODULE_PATH = Path(__file__).resolve().parents[1] / "hooks" / "compatibility_state.py"
+FIXTURE_ROOT = str(Path(tempfile.gettempdir()).resolve() / "codex-state-fixture" / "repository")
 SPEC = importlib.util.spec_from_file_location("compatibility_state", MODULE_PATH)
 compatibility_state = importlib.util.module_from_spec(SPEC)
 assert SPEC.loader is not None
@@ -40,7 +41,7 @@ def capsule(assignment, **overrides):
         "requested_task_name": "bounded_task",
         "canonical_agent_path": None,
         "root": {
-            "path": "/workspace/repository",
+            "path": FIXTURE_ROOT,
             "branch": "main",
             "base_commit": "a" * 64,
             "allow_descendant_head": False,
@@ -354,8 +355,8 @@ class CompatibilityStateTests(unittest.TestCase):
                     "require_clean_worktree": True,
                 },
                 "evidence_binding": {
-                    "executed_root": "/workspace/repository",
-                    "hashed_root": "/workspace/repository",
+                    "executed_root": FIXTURE_ROOT,
+                    "hashed_root": FIXTURE_ROOT,
                     "source_identity": {"kind": "git_commit", "value": "a" * 64},
                     "canonical_output": "evidence/review.json",
                     "no_follow_dirfd_walk": True,
@@ -521,7 +522,7 @@ class CompatibilityStateTests(unittest.TestCase):
             self.store.mark_recovery(
                 value["assignment_id"],
                 identity(),
-                root="/workspace/repository",
+                root=FIXTURE_ROOT,
                 branch="main",
                 head="a" * 64,
             ),
@@ -539,7 +540,7 @@ class CompatibilityStateTests(unittest.TestCase):
             self.store.mark_recovery(
                 value["assignment_id"],
                 wrong_identity,
-                root="/workspace/repository",
+                root=FIXTURE_ROOT,
                 branch="main",
                 head="a" * 64,
             )
@@ -547,7 +548,7 @@ class CompatibilityStateTests(unittest.TestCase):
             self.store.mark_recovery(
                 value["assignment_id"],
                 identity(),
-                root="/workspace/repository",
+                root=FIXTURE_ROOT,
                 branch="main",
                 head="b" * 64,
             )
@@ -560,7 +561,7 @@ class CompatibilityStateTests(unittest.TestCase):
         self.store.mark_recovery(
             value["assignment_id"],
             identity(),
-            root="/workspace/repository",
+            root=FIXTURE_ROOT,
             branch="main",
             head="a" * 64,
         )
@@ -568,7 +569,7 @@ class CompatibilityStateTests(unittest.TestCase):
         self.store.attest_tool_use(
             value["assignment_id"],
             identity(),
-            root="/workspace/repository",
+            root=FIXTURE_ROOT,
             branch="main",
             head="a" * 64,
             changed_paths=["owned/result.txt"],
@@ -577,7 +578,7 @@ class CompatibilityStateTests(unittest.TestCase):
             self.store.attest_tool_use(
                 value["assignment_id"],
                 identity(),
-                root="/workspace/repository",
+                root=FIXTURE_ROOT,
                 branch="main",
                 head="a" * 64,
                 changed_paths=["outside/result.txt"],
@@ -586,7 +587,7 @@ class CompatibilityStateTests(unittest.TestCase):
             self.store.attest_tool_use(
                 value["assignment_id"],
                 identity(),
-                root="/workspace/repository",
+                root=FIXTURE_ROOT,
                 branch="main",
                 head="a" * 64,
                 git_operation="commit",
@@ -599,7 +600,7 @@ class CompatibilityStateTests(unittest.TestCase):
             self.store.attest_tool_use(
                 value["assignment_id"],
                 identity(child_thread_id="other", agent_id="other"),
-                root="/workspace/repository",
+                root=FIXTURE_ROOT,
                 branch="main",
                 head="a" * 64,
             )
@@ -702,7 +703,7 @@ class CompatibilityStateTests(unittest.TestCase):
     def test_atomic_stage_recheck_rejects_capture_snapshot_drift(self):
         assignment = "stage only if the capture snapshot remains exact"
         baseline = {
-            "root": "/workspace/repository",
+            "root": FIXTURE_ROOT,
             "branch": "main",
             "head": "a" * 64,
             "index_changed": False,

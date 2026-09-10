@@ -4,6 +4,8 @@
 
 from __future__ import annotations
 
+import tempfile
+
 import argparse
 import copy
 import hashlib
@@ -13,13 +15,18 @@ from pathlib import Path
 import re
 import shlex
 import sys
+# Support standalone importlib-based probe tests as well as direct CLI launch.
+_probe_module_directory = str(Path(__file__).resolve().parent)
+if _probe_module_directory not in sys.path:
+    sys.path.insert(0, _probe_module_directory)
+from private_output import open_private_output
 
 
 TARGET_AGENT_TYPE = "g4_qualification_probe_worker"
 TARGET_EVENT = "PreToolUse"
 TARGET_MATCHER = "*"
 OPTION = "--child-sandbox-probe"
-PROBE_ROOT = Path("/private/tmp")
+PROBE_ROOT = Path(tempfile.gettempdir() if sys.platform == "win32" else "/private/tmp").resolve()
 TASK_NAME_RE = re.compile(r"^[a-z0-9_]+$")
 HEX_SHA256 = re.compile(r"^[0-9a-f]{64}$")
 
@@ -143,7 +150,7 @@ def write_private_new(path: Path, value: dict) -> None:
         json.dumps(value, ensure_ascii=False, indent=2, sort_keys=False) + "\n"
     ).encode("utf-8")
     try:
-        descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+        descriptor = open_private_output(path)
         with os.fdopen(descriptor, "wb") as stream:
             stream.write(encoded)
             stream.flush()

@@ -10,6 +10,11 @@ from pathlib import Path
 import re
 import subprocess
 import sys
+# Support standalone importlib-based probe tests as well as direct CLI launch.
+_probe_module_directory = str(Path(__file__).resolve().parent)
+if _probe_module_directory not in sys.path:
+    sys.path.insert(0, _probe_module_directory)
+from private_output import open_private_output
 
 
 TOOL_NAMESPACE = "g4_assignment"
@@ -112,11 +117,7 @@ def main() -> int:
         sys.stdout.write(prompt)
         return 0
     try:
-        descriptor = os.open(
-            arguments.output,
-            os.O_WRONLY | os.O_CREAT | os.O_EXCL,
-            0o600,
-        )
+        descriptor = open_private_output(arguments.output)
         with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
             stream.write(prompt)
             stream.flush()

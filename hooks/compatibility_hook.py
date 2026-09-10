@@ -4,6 +4,8 @@
 
 from __future__ import annotations
 
+import tempfile
+
 import argparse
 import json
 from pathlib import Path
@@ -30,7 +32,7 @@ from writer_lease_guard import pre_tool_use as guard_writer_lease
 
 
 SANDBOX_PROBE_TASK_NAME_RE = re.compile(r"^[a-z0-9_]+$")
-SANDBOX_PROBE_ROOT = Path("/private/tmp")
+SANDBOX_PROBE_ROOT = Path(tempfile.gettempdir() if sys.platform == "win32" else "/private/tmp").resolve()
 WRITER_LEASE_CONTEXT_RE = re.compile(
     r"(?:^|\n)WRITER\.LEASED claim_id=([0-9a-f-]{36}) surface=git(?:\n|$)"
 )

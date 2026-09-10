@@ -24,7 +24,7 @@ def digest(value: str) -> str:
 class PlaintextPairProbeHookOverlayTests(unittest.TestCase):
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory(
-            prefix="codex-p1-pair-overlay-", dir="/private/tmp"
+            prefix="codex-p1-pair-overlay-", dir=(tempfile.gettempdir() if sys.platform == "win32" else "/private/tmp")
         )
         self.root = Path(self.temporary.name)
         self.input = self.root / "hooks.json"

@@ -3,10 +3,11 @@ import datetime as dt
 import hashlib
 import importlib.util
 import json
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 import re
 import sys
 import unittest
+from historical_source import historical_sha256
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -59,7 +60,7 @@ class G4LiveNonemptyTrackedProcessTerminationTests(unittest.TestCase):
         self.assertIn("CODEX_G4_CANDIDATE_SHA256", current_wrapper)
         self.assertIn("CODEX_G4_P5B_TRACKED_TERMINATION_PROBE_AUTHORIZED", current_wrapper)
         self.assertIn("GUI and server entry points are forbidden", current_wrapper)
-        self.assertEqual(guard["prompt_builder_sha256"], sha256(PROMPT_BUILDER))
+        self.assertEqual(guard["prompt_builder_sha256"], historical_sha256(PROMPT_BUILDER))
         self.assertEqual(self.receipt["reconciler"]["sha256"], sha256(RECONCILER))
         self.assertTrue(guard["candidate_and_code_mode_host_sha256_bound"])
         self.assertRegex(
@@ -128,7 +129,7 @@ class G4LiveNonemptyTrackedProcessTerminationTests(unittest.TestCase):
         for artifact in self.receipt["raw_artifacts"].values():
             self.assertRegex(artifact["sha256"], r"^[0-9a-f]{64}$")
             self.assertGreater(artifact["line_count"], 0)
-            self.assertTrue(Path(artifact["path"]).is_absolute())
+            self.assertTrue(PurePosixPath(artifact["path"]).is_absolute())
         barrier = self.receipt["post_termination_host_barrier"]
         observations = barrier["observations"]
         self.assertEqual(len(observations), 2)

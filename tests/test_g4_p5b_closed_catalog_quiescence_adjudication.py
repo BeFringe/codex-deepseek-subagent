@@ -1,6 +1,7 @@
 import hashlib
 import json
 from pathlib import Path
+import subprocess
 import unittest
 
 
@@ -36,9 +37,18 @@ class G4P5bClosedCatalogQuiescenceAdjudicationTests(unittest.TestCase):
                 section["receipt_sha256"], hashlib.sha256(path.read_bytes()).hexdigest()
             )
         ordering = evidence["atomic_ordering_evidence"]
+        # This historical receipt binds the frozen test bytes, not subsequent
+        # Windows fixture edits. The qualification base contains that exact blob.
+        frozen = subprocess.run(
+            ["git", "-C", str(ROOT), "show",
+             "785b945d46a9a8879f659a428ff0a03d940cf7a1:" + ordering["test"]],
+            capture_output=True,
+        )
+        if frozen.returncode != 0:
+            self.skipTest("originating-host frozen test anchor is unavailable in Git history")
         self.assertEqual(
             ordering["test_sha256"],
-            hashlib.sha256((ROOT / ordering["test"]).read_bytes()).hexdigest(),
+            hashlib.sha256(frozen.stdout).hexdigest(),
         )
 
     def test_source_close_contract_uses_real_exit_witnesses(self):
@@ -117,7 +127,7 @@ class G4P5bClosedCatalogQuiescenceAdjudicationTests(unittest.TestCase):
         gates = {gate["id"]: gate for gate in self.status["phase1"]["gates"]}
         self.assertEqual(gates["P5b"]["state"], "qualified")
         self.assertEqual(gates["P5b"]["provider_free"], "pass")
-        self.assertIn(str(ADJUDICATION.relative_to(ROOT)), gates["P5b"]["evidence"])
+        self.assertIn(ADJUDICATION.relative_to(ROOT).as_posix(), gates["P5b"]["evidence"])
         self.assertEqual(gates["P4"]["state"], "qualified")
         self.assertEqual(gates["P7"]["state"], "partial")
         self.assertFalse(self.status["phase1"]["declared_complete"])

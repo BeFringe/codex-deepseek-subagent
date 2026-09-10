@@ -6,6 +6,8 @@ import sys
 import tempfile
 import unittest
 
+from private_output_assertions import assert_private_output
+
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "probes" / "build_g4_current_hook_overlay.py"
@@ -76,7 +78,7 @@ class G4CurrentHookOverlayTests(unittest.TestCase):
             self.assertEqual(after[0], before[0])
             self.assertIn(str(HOOK), after[1]["command"])
             self.assertNotIn("--child-write-probe", after[1]["command"])
-        self.assertEqual(self.output.stat().st_mode & 0o777, 0o600)
+        assert_private_output(self, self.output)
 
     def test_input_drift_and_duplicate_g4_command_fail_closed(self):
         drift = self.run_builder(digest="0" * 64)

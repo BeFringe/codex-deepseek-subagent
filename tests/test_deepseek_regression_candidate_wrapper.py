@@ -1,23 +1,27 @@
 from pathlib import Path
 import hashlib
+import json
 import os
 import subprocess
 import tempfile
+import sys
 import unittest
 
 
 ROOT = Path(__file__).resolve().parents[1]
 WRAPPER = ROOT / "probes" / "codex_deepseek_regression_candidate_wrapper.sh"
+WRAPPER_COMMAND = ([sys.executable, str(ROOT / 'probes' / 'windows_candidate_launcher.py'), 'deepseek']
+                   if os.name == 'nt' else [str(WRAPPER)])
 
 
 class DeepSeekRegressionCandidateWrapperTests(unittest.TestCase):
     def setUp(self):
         self.stack = []
         self.probe_tmp = tempfile.TemporaryDirectory(
-            prefix="codex-p7-deepseek-regression.", dir="/private/tmp"
+            prefix="codex-p7-deepseek-regression.", dir=(tempfile.gettempdir() if sys.platform == "win32" else "/private/tmp")
         )
         self.handoff_tmp = tempfile.TemporaryDirectory(
-            prefix="codex-p7-deepseek-handoff.", dir="/private/tmp"
+            prefix="codex-p7-deepseek-handoff.", dir=(tempfile.gettempdir() if sys.platform == "win32" else "/private/tmp")
         )
         self.stack.extend([self.probe_tmp, self.handoff_tmp])
         self.probe_root = Path(self.probe_tmp.name).resolve()
@@ -58,6 +62,10 @@ class DeepSeekRegressionCandidateWrapperTests(unittest.TestCase):
         )
         self.candidate.chmod(0o700)
         self.candidate_sha = hashlib.sha256(self.candidate.read_bytes()).hexdigest()
+        if os.name == 'nt':
+            from windows_launcher_fixture import candidate
+            self.candidate, self.candidate_sha = candidate(
+                runtime, 'ARGUMENT_LOG', 'ENVIRONMENT_LOG', 'CODEX_DEEPSEEK_HANDOFF_DIR')
 
         role_dir = runtime / "agents"
         role_dir.mkdir()
@@ -89,7 +97,7 @@ class DeepSeekRegressionCandidateWrapperTests(unittest.TestCase):
 
     def command(self):
         return [
-            str(WRAPPER),
+            *WRAPPER_COMMAND,
             "exec",
             "--ignore-user-config",
             "--ignore-rules",
@@ -116,7 +124,7 @@ class DeepSeekRegressionCandidateWrapperTests(unittest.TestCase):
         arguments = self.argument_log.read_text(encoding="utf-8").splitlines()
         expected = [
             'features.multi_agent_v2.child_model_providers={v4_flash_worker="deepseek"}',
-            f'agents.v4_flash_worker.config_file="{self.role}"',
+            'agents.v4_flash_worker.config_file=' + json.dumps(str(self.role)),
             'model_providers.deepseek.base_url="https://api.deepseek.com"',
             'model_providers.deepseek.env_key="DEEPSEEK_API_KEY"',
             'model_providers.deepseek.wire_api="responses"',
@@ -149,7 +157,7 @@ class DeepSeekRegressionCandidateWrapperTests(unittest.TestCase):
     def test_fails_closed_for_caller_config_or_non_exec_entry_point(self):
         for command in (
             [*self.command()[:-1], "-c", 'model_provider="deepseek"', "Return READY."],
-            [str(WRAPPER), "app-server"],
+            [*WRAPPER_COMMAND, "app-server"],
         ):
             with self.subTest(command=command[1]):
                 if self.argument_log.exists():

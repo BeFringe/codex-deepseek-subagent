@@ -1,0 +1,180 @@
+{
+  "schema": 1,
+  "evidence_kind": "p7_windows_exact_readonly_native_pair",
+  "recorded_at": "2026-09-10T18:36:48.722588+00:00",
+  "qualification_base_commit": "785b945d46a9a8879f659a428ff0a03d940cf7a1",
+  "upstream_source_commit": "3d2ee51ca2d5db578f328aa75e20aa22c0197c9a",
+  "patch_sha256": "94ec3d6140868055662ca43b0d0d464f5bda8d41cd40433a20facb4fb600f72d",
+  "candidate_sha256": "e97c11909c080ff4556c0746b80b7c47f9508f5792ccac8bb83d91db187a9101",
+  "build_receipt": "probes/p7-windows-build-20260911.json",
+  "provider_free_receipt": "probes/p7-windows-provider-free-20260911.json",
+  "provider_free_receipt_sha256": "06a80e0d94560f77a8cbf7954326c2728472eec4317c83c5dbdfb9530281e737",
+  "provider_free_test_counts": {
+    "passed": 753,
+    "error": 67,
+    "failed": 14,
+    "skipped": 8
+  },
+  "provider_free_tests_run": 842,
+  "provider_free_suite_passed": false,
+  "remaining_nonpass_categories": {
+    "b_posix_specific_without_automatic_waiver": 85,
+    "c_originating_anchor_unavailable_skips": 4
+  },
+  "native_powershell_handoff_groups_passed": 12,
+  "native_powershell_log_path": "E:\\Archives\\Project\\subagent\\.p7-windows\\replay-785b945-native-powershell.log",
+  "native_powershell_log_sha256": "d65dbd385c24a0e2eb99f5e667bbc352e7f89e11e4e155610233278a85c24513",
+  "qualified_runs": {
+    "deepseek": {
+      "raw_manifest_path": "C:\\Users\\BonBon\\.codex-p7-artifacts\\p7-deepseek-ace0534189974b2fad0d356e728eeb69\\manifest.json",
+      "raw_manifest_sha256": "46cdc653d01d3fc3bf3d1539e159942d914e3f04f1ecd74d12515c73518ba89d",
+      "adjudication_receipt": "probes/p7-windows-deepseek-readonly-20260911.json",
+      "adjudication_sha256": "6b11f58d922b20bd70b01af7679a5b8965797f4ca0db925a514def1f274d2714",
+      "model": "deepseek-v4-flash",
+      "candidate_exit_code": 0,
+      "runtime_seconds": 81.1969343,
+      "isolated_auth_removed": true,
+      "authority_consumed": true,
+      "identity_and_lifecycle": {
+        "parent_thread_id": "01a08c93-a9ff-7702-b602-55fc91988e11",
+        "child_thread_id": "01a08c94-765c-7e60-a73d-ff1d4249b462",
+        "canonical_agent_path": "/root/p7_windows_deepseek",
+        "close_receipt": {
+          "previous_status": {
+            "completed": "BEGIN CODEX WORKER ATTESTATION\n{\"assignment_id\":\"8bc1ee23-94e7-462b-8412-1e603767716a\",\"handoff_id\":\"5ecb2e9d-ab69-422f-a278-84231ac617b8\",\"capsule_sha256\":\"63b40edd50d4e6a798e0ac363e7cee37a7a0b5c6e8bf3b38804646a3052ce1f7\",\"compact_invariant_sha256\":\"f83dc721e281587cf74aae31eb04939fa7884c9d32a6da41d9f469b5b10b8954\",\"authority_provenance\":{\"policy_sha256\":\"adde5392c2d7252c581ce596a996a7bbc7096ea5def04e1efd3147e0abea2eb0\",\"worker_claimed_origin\":\"owner_internal\",\"test_only_injection_used\":false,\"derivation_receipt_sha256\":null},\"canonical_agent_path\":\"/root/p7_windows_deepseek\",\"recovery_count\":0,\"context_lost\":false,\"root\":\"C:\\\\Users\\\\BonBon\\\\.codex-p7-artifacts\\\\p7-deepseek-ace0534189974b2fad0d356e728eeb69\\\\worktree\",\"branch\":\"main\",\"head\":\"f30d9d56de6904aba56ade477449e8df5b5a904a\",\"index_changed\":false,\"git_status_short\":\"\",\"changed_paths\":[],\"verification\":[{\"command\":\"native list_agents read-only probe\",\"exit_code\":0}],\"authority_violation\":false,\"assigned_slice_complete\":true,\"inventory_summaries\":[]}\nEND CODEX WORKER ATTESTATION"
+          },
+          "target_thread_id": "01a08c94-765c-7e60-a73d-ff1d4249b462",
+          "target_agent_path": "/root/p7_windows_deepseek",
+          "session_loop_terminated": true,
+          "model_callable_process_bootstrap_absent": true,
+          "tracked_background_processes_before_close": 0,
+          "tracked_process_ids_by_thread": {
+            "01a08c94-765c-7e60-a73d-ff1d4249b462": []
+          },
+          "confirmed_exit_process_ids_by_thread": {
+            "01a08c94-765c-7e60-a73d-ff1d4249b462": []
+          },
+          "unconfirmed_exit_process_ids_by_thread": {
+            "01a08c94-765c-7e60-a73d-ff1d4249b462": []
+          },
+          "unresolved_start_process_ids_by_thread": {
+            "01a08c94-765c-7e60-a73d-ff1d4249b462": []
+          },
+          "tracked_process_termination_confirmed": true,
+          "closed_catalog_actor_quiescence_claimed": true,
+          "process_tree_quiescence_claimed": false
+        },
+        "callback_byte_exact": true,
+        "child_tool_name": "list_agents",
+        "child_tool_namespace": null,
+        "child_tool_arguments": {},
+        "child_tool_call_id": "call_00_xhc78ICnxbqDlA0VzXqF6602",
+        "child_tool_output_sha256": "8f89b5f314fb93728facfca589021a8ad796ff17e8b9d3e21f83d146b0e9167f",
+        "callback_sha256": "146e347ca041042ac6a98f7d9762896dcd35fd18be8224dd8b765f7be1267b25",
+        "raw_hook_event_count": 7,
+        "durable_hook_event_count": 4,
+        "interim_wait_timeouts": 0
+      }
+    },
+    "zhipu": {
+      "raw_manifest_path": "C:\\Users\\BonBon\\.codex-p7-artifacts\\p7-zhipu-7ff69a30e8eb410cba557cafa6ae62c9\\manifest.json",
+      "raw_manifest_sha256": "398bbe5d47bb0e58c1521a0841c59ffe32df33aa56a2f90f30068c3b3e02328d",
+      "adjudication_receipt": "probes/p7-windows-zhipu-readonly-20260911.json",
+      "adjudication_sha256": "756e0cf3fbc746d4faef5c789914a093c67ff205b167149b4fac7a457ddc5bd4",
+      "model": "glm-5.3",
+      "candidate_exit_code": 0,
+      "runtime_seconds": 97.7484501,
+      "isolated_auth_removed": true,
+      "authority_consumed": true,
+      "identity_and_lifecycle": {
+        "parent_thread_id": "01a08c97-1fdc-76a0-aed2-749dcaf68fcd",
+        "child_thread_id": "01a08c98-0b3f-76f1-8966-ab7b66bd56d0",
+        "canonical_agent_path": "/root/p7_windows_zhipu",
+        "close_receipt": {
+          "previous_status": {
+            "completed": "BEGIN CODEX WORKER ATTESTATION\n{\"assignment_id\":\"a8f9b969-0f68-4e8b-bc50-0cc784345b05\",\"handoff_id\":\"c1fffa50-a3a0-4872-9209-06a43308e7bd\",\"capsule_sha256\":\"291157ebe82eb114b070c89773916cb5da72041310c4d29d5e1f564a990581ad\",\"compact_invariant_sha256\":\"b7f43164b3f5e4ac991f09ef465d512762e63d11a04e6ae9397b2a17d428cfc0\",\"authority_provenance\":{\"policy_sha256\":\"adde5392c2d7252c581ce596a996a7bbc7096ea5def04e1efd3147e0abea2eb0\",\"worker_claimed_origin\":\"owner_internal\",\"test_only_injection_used\":false,\"derivation_receipt_sha256\":null},\"canonical_agent_path\":\"/root/p7_windows_zhipu\",\"recovery_count\":0,\"context_lost\":false,\"root\":\"C:\\\\Users\\\\BonBon\\\\.codex-p7-artifacts\\\\p7-zhipu-7ff69a30e8eb410cba557cafa6ae62c9\\\\worktree\",\"branch\":\"main\",\"head\":\"d847a68fc37cc129c5a6aab47c08ae626188c637\",\"index_changed\":false,\"git_status_short\":\"\",\"changed_paths\":[],\"verification\":[{\"command\":\"native list_agents read-only probe\",\"exit_code\":0}],\"authority_violation\":false,\"assigned_slice_complete\":true,\"inventory_summaries\":[]}\nEND CODEX WORKER ATTESTATION"
+          },
+          "target_thread_id": "01a08c98-0b3f-76f1-8966-ab7b66bd56d0",
+          "target_agent_path": "/root/p7_windows_zhipu",
+          "session_loop_terminated": true,
+          "model_callable_process_bootstrap_absent": true,
+          "tracked_background_processes_before_close": 0,
+          "tracked_process_ids_by_thread": {
+            "01a08c98-0b3f-76f1-8966-ab7b66bd56d0": []
+          },
+          "confirmed_exit_process_ids_by_thread": {
+            "01a08c98-0b3f-76f1-8966-ab7b66bd56d0": []
+          },
+          "unconfirmed_exit_process_ids_by_thread": {
+            "01a08c98-0b3f-76f1-8966-ab7b66bd56d0": []
+          },
+          "unresolved_start_process_ids_by_thread": {
+            "01a08c98-0b3f-76f1-8966-ab7b66bd56d0": []
+          },
+          "tracked_process_termination_confirmed": true,
+          "closed_catalog_actor_quiescence_claimed": true,
+          "process_tree_quiescence_claimed": false
+        },
+        "callback_byte_exact": true,
+        "child_tool_name": "list_agents",
+        "child_tool_namespace": "g4_assignment",
+        "child_tool_arguments": {},
+        "child_tool_call_id": "call_58b0853f23cf41fa9a8f312a",
+        "child_tool_output_sha256": "1879acb5f596dc467a9388c9431659a58c62bfa1cc87f9955ff8776f5bba1c73",
+        "callback_sha256": "99c200bc2d2d6c80f1a6f4e1de816a52e6bb2de513b17967411ad27b55ac3feb",
+        "raw_hook_event_count": 7,
+        "durable_hook_event_count": 4,
+        "interim_wait_timeouts": 0
+      }
+    }
+  },
+  "retained_nonqualifying_attempts": [
+    {
+      "raw_manifest_path": "C:\\Users\\BonBon\\.codex-p7-artifacts\\p7-deepseek-6048b8e392174f08afe2df9e902c3a95\\manifest.json",
+      "raw_manifest_sha256": "ca3564f923fe73ed7b2905452882b487a3724d47e818d1b3e9c3d773cb45ef9a",
+      "candidate_exit_code": 0,
+      "qualified": false,
+      "verifier_exit_code_observed": 2,
+      "rejection_reason": "Windows verifier expected namespaced child catalog despite the pinned DeepSeek flat-tool profile",
+      "frozen_harness_directory": "E:\\Archives\\Project\\subagent\\.p7-windows\\strict-deepseek-first-harness",
+      "frozen_harness_sha256": {
+        "run_p7_windows_live.py": "2275fdbf432f66b8aa51aad58f3bad756a29b581b3b9fe857bafe866d2a801ae",
+        "p7_windows_hook.py": "9bad54e9796f51b712971bcdfc4ff569ad49ec14eba38f5996541b3c1ddccb61",
+        "p7_windows_acl.py": "d70cb50eb2056f2703f6f308e75c737ad3e21481ad4a209fae52d3cf4a193c7e",
+        "adjudicate_p7_windows_live.py": "1b4355c4b35522b9411c0280dfc6bf24b7d3c8c3f83b87aeea7fbb565a5ad4b8",
+        "build_g4_native_probe_prompt.py": "a30427f9985df4b566d7392c9c5c041b396b1dbdee99b208fe1d508cb3a517d0"
+      },
+      "original_no_tool_output_found_reproduced": false,
+      "authority_consumed": false
+    },
+    {
+      "raw_manifest_path": "C:\\Users\\BonBon\\.codex-p7-artifacts\\p7-deepseek-ce4a1072b9ca469d824f03041f12aeb1\\manifest.json",
+      "raw_manifest_sha256": "62a9403700f19920e3d788d39b6aab1f1b3d71f00bce96b250946dbffb38fb3f",
+      "candidate_exit_code": 0,
+      "qualified": false,
+      "verifier_exit_code_observed": 2,
+      "rejection_reason": "First final envelope used Markdown fences; Stop blocked it, and the corrected second envelope did not meet the strict single-attestation run contract",
+      "frozen_harness_directory": "E:\\Archives\\Project\\subagent\\.p7-windows\\strict-deepseek-second-harness",
+      "frozen_harness_sha256": {
+        "run_p7_windows_live.py": "2275fdbf432f66b8aa51aad58f3bad756a29b581b3b9fe857bafe866d2a801ae",
+        "p7_windows_hook.py": "9bad54e9796f51b712971bcdfc4ff569ad49ec14eba38f5996541b3c1ddccb61",
+        "p7_windows_acl.py": "d70cb50eb2056f2703f6f308e75c737ad3e21481ad4a209fae52d3cf4a193c7e",
+        "adjudicate_p7_windows_live.py": "071fd5b421b140aea0f97df95325c7d6e43bbfd2ac08d3e6970ef2c90798b8ba",
+        "build_g4_native_probe_prompt.py": "a30427f9985df4b566d7392c9c5c041b396b1dbdee99b208fe1d508cb3a517d0"
+      },
+      "original_no_tool_output_found_reproduced": false,
+      "authority_consumed": false
+    }
+  ],
+  "readonly_native_pair_qualified": true,
+  "scope": "Exact closed native OpenAI/ChatGPT parent and read-only DeepSeek or ZHIPU child",
+  "p7_gate_declared_complete": false,
+  "phase1_complete": false,
+  "direct_write_qualified": false,
+  "global_process_tree_qualified": false,
+  "phase2_state": "closed",
+  "phase3_state": "closed",
+  "gui_installation_performed": false,
+  "global_hook_installation_performed": false,
+  "credential_values_recorded": false
+}

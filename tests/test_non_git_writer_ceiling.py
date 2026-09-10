@@ -275,7 +275,12 @@ class NonGitWriterCeilingTests(unittest.TestCase):
         self.assertFalse((self.store.root / "non_git_writer_claim").exists())
 
     def test_non_git_ceiling_rejects_symlink_escape_and_cross_root_patch(self):
-        (self.non_git_root / "alias").symlink_to(self.outside_root, target_is_directory=True)
+        if sys.platform == "win32":
+            import _winapi
+
+            _winapi.CreateJunction(str(self.outside_root), str(self.non_git_root / "alias"))
+        else:
+            (self.non_git_root / "alias").symlink_to(self.outside_root, target_is_directory=True)
         symlink_result = writer_lease_guard.pre_tool_use(
             self.store,
             self.patch_hook(self.non_git_root / "alias" / "escaped.txt"),

@@ -10,6 +10,11 @@ import json
 import os
 from pathlib import Path
 import sys
+# Support standalone importlib-based probe tests as well as direct CLI launch.
+_probe_module_directory = str(Path(__file__).resolve().parent)
+if _probe_module_directory not in sys.path:
+    sys.path.insert(0, _probe_module_directory)
+from private_output import open_private_output
 
 
 PROBE_DIRECTORY = Path(__file__).resolve().parent
@@ -32,7 +37,7 @@ FINAL_MARKER = "TASK.AUTHORITY_REATTESTATION_BLOCKED"
 
 def write_new(path: Path, prompt: str) -> str:
     encoded = prompt.encode("utf-8")
-    descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    descriptor = open_private_output(path)
     with os.fdopen(descriptor, "wb") as stream:
         stream.write(encoded)
         stream.flush()

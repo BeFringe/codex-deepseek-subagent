@@ -186,13 +186,13 @@ class G4LiveParentChildClosedCatalogTests(unittest.TestCase):
         self.assertFalse(status["phase1"]["declared_direct_write_qualified"])
         gates = {gate["id"]: gate for gate in status["phase1"]["gates"]}
         lifecycle_evidence = {
-            str(RECEIPT.relative_to(ROOT)),
-            str(ADJUDICATION.relative_to(ROOT)),
+            RECEIPT.relative_to(ROOT).as_posix(),
+            ADJUDICATION.relative_to(ROOT).as_posix(),
             "tests/test_g4_live_parent_child_closed_catalog.py",
         }
         catalog_evidence = lifecycle_evidence | {
-            str(SOURCE.relative_to(ROOT)),
-            str(SOURCE_PATCH.relative_to(ROOT)),
+            SOURCE.relative_to(ROOT).as_posix(),
+            SOURCE_PATCH.relative_to(ROOT).as_posix(),
         }
         for gate_id in ("P4", "P5b", "P7"):
             gate = gates[gate_id]

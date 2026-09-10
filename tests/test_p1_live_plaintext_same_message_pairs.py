@@ -3,6 +3,7 @@ import importlib.util
 import json
 from pathlib import Path
 import unittest
+from historical_source import historical_sha256
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -51,7 +52,7 @@ class P1LivePlaintextSameMessagePairTests(unittest.TestCase):
             ("guard_path", "guard_sha256"),
             ("overlay_builder_path", "overlay_builder_sha256"),
         ):
-            self.assertEqual(assets[hash_key], sha256(ROOT / assets[path_key]))
+            self.assertEqual(assets[hash_key], historical_sha256(ROOT / assets[path_key]))
         self.assertTrue(assets["guard_state_stores_only_fingerprints"])
         self.assertFalse(assets["guard_bytecode_written_next_to_repo_source"])
 

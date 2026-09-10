@@ -1,0 +1,81 @@
+{
+  "schema": 1,
+  "evidence_kind": "native_windows_successful_build",
+  "qualification_base_commit": "785b945d46a9a8879f659a428ff0a03d940cf7a1",
+  "source_commit": "3d2ee51ca2d5db578f328aa75e20aa22c0197c9a",
+  "source_root": "E:\\Archives\\Project\\subagent\\.p7-windows\\source-custom-pairing",
+  "patch_sha256": "4f61f37ae46f6160055fde7b7ce95d095b2456ce1b9f1a96f5947669baab63b8",
+  "patch_bytes": 231411,
+  "previous_patch_sha256": "94ec3d6140868055662ca43b0d0d464f5bda8d41cd40433a20facb4fb600f72d",
+  "exit_code": 0,
+  "target": "x86_64-pc-windows-msvc",
+  "candidate": "E:\\Archives\\Project\\subagent\\.p7-windows\\source-custom-pairing\\candidate\\codex.exe",
+  "candidate_sha256": "be617eb1ebe44d9df02b64b689a140804600e91b0d7b352e8a23223e5d664e80",
+  "version": "codex-cli 0.153.4",
+  "binaries": {
+    "codex.exe": {
+      "sha256": "be617eb1ebe44d9df02b64b689a140804600e91b0d7b352e8a23223e5d664e80",
+      "bytes": 298503168,
+      "reused_unchanged_support_binary": false
+    },
+    "codex-code-mode-host.exe": {
+      "sha256": "7ab011ef9fa06111fb06835b4871d556761911722ed12f3030dff86389a79a02",
+      "bytes": 73608704,
+      "reused_unchanged_support_binary": true
+    },
+    "codex-windows-sandbox-setup.exe": {
+      "sha256": "d1b77747f1feecf366f3fc0b366776c3374ff3cd237686ffaa240dc2c77a2723",
+      "bytes": 15512064,
+      "reused_unchanged_support_binary": true
+    },
+    "codex-command-runner.exe": {
+      "sha256": "e2818e62b5f0b806b9fc13e9475f288cbc853f0654fce94c7d165090afa7e1a7",
+      "bytes": 8215552,
+      "reused_unchanged_support_binary": true
+    }
+  },
+  "profile": "release",
+  "jobs": 1,
+  "log": "E:\\Archives\\Project\\subagent\\.p7-windows\\build-custom-pairing-03.log",
+  "log_sha256": "3e3c5955e3670a9b39c33c36d5cf720824b3bf3565a212308a18b6b877249ea2",
+  "raw_build": {
+    "candidate_root": "E:\\Archives\\Project\\subagent\\.p7-windows\\source-custom-pairing\\candidate",
+    "exit_code": 0,
+    "started": "2026-09-11T11:34:02.9123440Z",
+    "finished": "2026-09-11T14:00:31.5529125Z"
+  },
+  "rust_pairing_tests_passed": 3,
+  "rust_portable_process_tests_passed": 6,
+  "windows_live_qualified": false,
+  "phase1_complete": false,
+  "direct_write_qualified": false,
+  "nextest": {
+    "log": "E:\\Archives\\Project\\subagent\\.p7-windows\\custom-pairing-nextest-02.log",
+    "sha256": "67baf4d378829eb3ffbab8be3b8efbd2d5c879731ccc4ed6eab4f92ea268d024",
+    "tests_passed": 9,
+    "scope": "affected codex-core lib tests",
+    "whole_workspace_suite_run": false
+  },
+  "formatting": {
+    "just_fmt_exit_code": 0,
+    "unrelated_upstream_bazel_formatting_restored": [
+      {
+        "path": "bazel/extensions/codex_release_archive.bzl",
+        "formatted_sha256": "6a3ccb51f8103d29a4e164fe462f3d0b558311949300b79c70ef1c4887a03097",
+        "restored_upstream_sha256": "8124967b1812ce37995e236a8f6bbd3bae832e58e76a01c898ca7caf6bd9dbfd"
+      },
+      {
+        "path": "rbe.bzl",
+        "formatted_sha256": "9f1505a6fc1d363fb5a9960580c3b603a6fe742e1b9926036b2681bd2d090e82",
+        "restored_upstream_sha256": "3ce1e494713e2ec25c511a182f57a6d3c489612671922ec0556e68f5ccfcd6ef"
+      },
+      {
+        "path": "tools/argument-comment-lint/lint_aspect.bzl",
+        "formatted_sha256": "8058231d660a0d4617996a143ca3d3cc39da96882324c4f09dcd9d89eb40c7c4",
+        "restored_upstream_sha256": "1f439a05441419d40c8384958cda0ead078be1b815b7b98f09ca6ffcc710bc92"
+      }
+    ],
+    "source_patch_sha256": "4f61f37ae46f6160055fde7b7ce95d095b2456ce1b9f1a96f5947669baab63b8",
+    "just_fmt_log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  }
+}

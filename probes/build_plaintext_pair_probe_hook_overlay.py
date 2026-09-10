@@ -4,6 +4,8 @@
 
 from __future__ import annotations
 
+import tempfile
+
 import argparse
 import copy
 import hashlib
@@ -13,6 +15,11 @@ from pathlib import Path
 import re
 import shlex
 import sys
+# Support standalone importlib-based probe tests as well as direct CLI launch.
+_probe_module_directory = str(Path(__file__).resolve().parent)
+if _probe_module_directory not in sys.path:
+    sys.path.insert(0, _probe_module_directory)
+from private_output import open_private_output
 
 
 OPERATIONS = ("spawn_agent", "send_message", "followup_task")
@@ -49,7 +56,7 @@ def canonical_temporary_state(path: Path) -> Path:
     if not path.is_absolute():
         raise OverlayError("pair state directory must be absolute")
     resolved = path.resolve(strict=False)
-    temporary_root = Path("/private/tmp").resolve(strict=True)
+    temporary_root = Path(tempfile.gettempdir() if sys.platform == "win32" else "/private/tmp").resolve().resolve(strict=True)
     if resolved != path or temporary_root not in resolved.parents:
         raise OverlayError("pair state directory must be a canonical /private/tmp descendant")
     if resolved.exists():
@@ -139,7 +146,7 @@ def build_overlay(
 
 def write_private_new(path: Path, value: dict) -> None:
     encoded = (json.dumps(value, ensure_ascii=False, indent=2) + "\n").encode("utf-8")
-    descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    descriptor = open_private_output(path)
     with os.fdopen(descriptor, "wb") as stream:
         stream.write(encoded)
         stream.flush()

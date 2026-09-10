@@ -4,6 +4,9 @@
 
 from __future__ import annotations
 
+import tempfile
+import sys
+
 import datetime as dt
 import hashlib
 import json
@@ -384,7 +387,7 @@ def capture_spawn(
         if qualification_target is not None:
             root_path = Path(snapshot["root"])
             target = Path(qualification_target)
-            if root_path.parent != Path("/private/tmp") or root_path.resolve() != root_path:
+            if root_path.parent != Path(tempfile.gettempdir() if sys.platform == "win32" else "/private/tmp").resolve() or root_path.resolve() != root_path:
                 raise GuardError("qualification write probe root is not canonical temporary Git root")
             if not target.is_absolute() or target.parent.resolve() != root_path:
                 raise GuardError("qualification write probe target is not a direct root child")

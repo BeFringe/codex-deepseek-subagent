@@ -2,9 +2,11 @@ import hashlib
 import json
 from pathlib import Path
 import subprocess
+import shlex
 import sys
 import tempfile
 import unittest
+from private_output_assertions import assert_private_output
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -17,7 +19,7 @@ class ChildSandboxProbeHookOverlayTests(unittest.TestCase):
         self.root = Path(self.temporary_directory.name).resolve()
         self.input = self.root / "hooks.json"
         self.output = self.root / "overlay.json"
-        self.target = Path("/private/tmp") / (
+        self.target = Path(tempfile.gettempdir() if sys.platform == "win32" else "/private/tmp").resolve() / (
             "codex-g4-sandbox-overlay-" + self.root.name
         )
         g4_command = (
@@ -102,10 +104,10 @@ class ChildSandboxProbeHookOverlayTests(unittest.TestCase):
         )
         command = overlay["hooks"]["PreToolUse"][0]["hooks"][0]["command"]
         self.assertIn("--parent-non-git-writer-root /private/tmp", command)
-        self.assertIn(
-            f"--child-sandbox-probe g4_sandbox_1={self.target}", command
-        )
-        self.assertEqual(self.output.stat().st_mode & 0o777, 0o600)
+        arguments = shlex.split(command)
+        self.assertEqual(arguments[arguments.index("--child-sandbox-probe") + 1],
+                         f"g4_sandbox_1={self.target}")
+        assert_private_output(self, self.output)
 
     def test_hash_drift_bad_task_and_duplicate_option_fail_closed(self):
         drift = self.run_builder(expected_hash="0" * 64)

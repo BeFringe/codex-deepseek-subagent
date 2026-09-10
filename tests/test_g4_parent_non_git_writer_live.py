@@ -57,12 +57,20 @@ class G4ParentNonGitWriterLiveTests(unittest.TestCase):
         self.assertEqual(chain["pre_tool_use"]["sequence"] + 1, chain["post_tool_use"]["sequence"])
         self.assertEqual(chain["pre_tool_use"]["event_stage"], "authorized")
         self.assertEqual(chain["post_tool_use"]["event_stage"], "callback_observed")
-        receipt = validate_non_git_writer_receipt(smoke["writer_receipt"])
+        # Frozen metadata can be inspected off-host without reinterpreting its
+        # native filesystem identity as a path on this machine.
+        receipt = smoke["writer_receipt"]
         self.assertEqual(receipt["actor"]["thread_id"], smoke["thread_id"])
         self.assertEqual(receipt["tool_use_id"], smoke["hook_tool_use_id"])
         state = receipt["after_snapshot"]["path_states"][0]
         self.assertEqual(state["sha256"], smoke["target_sha256"])
         self.assertEqual(state["byte_length"], smoke["target_byte_length"])
+
+    def test_originating_host_revalidates_writer_receipt(self):
+        receipt = self.record["trusted_live_smoke"]["writer_receipt"]
+        if not Path(receipt["root"]).is_absolute() or not Path(receipt["root"]).is_dir():
+            self.skipTest("originating-host raw writer root is unavailable")
+        validate_non_git_writer_receipt(receipt)
 
     def test_parent_temp_ceiling_does_not_promote_phase_or_child_write(self):
         verdict = self.record["verdict"]

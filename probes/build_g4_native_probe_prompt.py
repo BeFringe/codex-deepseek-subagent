@@ -4,6 +4,8 @@
 
 from __future__ import annotations
 
+import tempfile
+
 import argparse
 import json
 from pathlib import Path
@@ -16,7 +18,7 @@ AGENT_TYPE = "g4_qualification_probe_worker"
 TASK_NAME_RE = re.compile(r"^[a-z0-9_]+$")
 PARENT_AGENT_PATH_RE = re.compile(r"^/root(?:/[a-z0-9_]+)*$")
 VERIFICATION_COMMAND = "native list_agents read-only probe"
-NON_GIT_PROBE_ROOT = Path("/private/tmp")
+NON_GIT_PROBE_ROOT = Path(tempfile.gettempdir() if sys.platform == "win32" else "/private/tmp").resolve()
 NEGATIVE_MUTATION_MARKER = "G4_CHILD_DENY_PROBE"
 FINAL_ATTESTATION_FIELDS = (
     "assignment_id",

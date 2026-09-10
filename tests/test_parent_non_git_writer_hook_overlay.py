@@ -6,6 +6,8 @@ import sys
 import tempfile
 import unittest
 
+from private_output_assertions import assert_private_output
+
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "probes" / "build_parent_non_git_writer_hook_overlay.py"
@@ -96,7 +98,7 @@ class ParentNonGitWriterHookOverlayTests(unittest.TestCase):
             command = overlay["hooks"][event][0]["hooks"][0]["command"]
             self.assertIn("--parent-non-git-writer-root", command)
             self.assertIn("'" + str(self.non_git_root) + "'", command)
-        self.assertEqual(self.output.stat().st_mode & 0o777, 0o600)
+        assert_private_output(self, self.output)
 
     def test_hash_drift_and_duplicate_target_fail_without_output(self):
         drift = self.run_builder(expected_hash="0" * 64)

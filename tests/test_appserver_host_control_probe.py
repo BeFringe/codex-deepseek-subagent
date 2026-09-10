@@ -1,6 +1,6 @@
 import importlib.util
 import json
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 import tempfile
 import unittest
 
@@ -24,7 +24,9 @@ class AppServerHostControlProbeTests(unittest.TestCase):
         self.assertRegex(
             configuration["identity"]["source_commit"], r"^[0-9a-f]{40}$"
         )
-        self.assertTrue(configuration["binary"].is_absolute())
+        # The frozen receipt names the originating macOS runtime, even when
+        # its metadata is checked on Windows. It is not a local executable.
+        self.assertTrue(PurePosixPath(configuration["binary"].as_posix()).is_absolute())
         self.assertRegex(configuration["binary_sha256"], r"^[0-9a-f]{64}$")
 
     def test_isolated_environment_has_only_the_closed_noncredential_keys(self):

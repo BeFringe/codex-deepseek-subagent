@@ -40,7 +40,7 @@ class G4WriteThenCloseReconciliationTests(unittest.TestCase):
     def setUp(self):
         self.directory = tempfile.TemporaryDirectory(
             prefix="codex-g4-p5b-write-termination.",
-            dir="/private/tmp",
+            dir=(tempfile.gettempdir() if sys.platform == "win32" else "/private/tmp"),
         )
         self.root = Path(self.directory.name)
         self.target = self.root / "qualified.txt"

@@ -25,7 +25,7 @@ prompt_builder = load_module("p5b_tracked_process_prompt", SCRIPT)
 class P5bTrackedProcessProbePromptTests(unittest.TestCase):
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory(
-            prefix="codex-g4-p5b-tracked-process.", dir="/private/tmp"
+            prefix="codex-g4-p5b-tracked-process.", dir=(tempfile.gettempdir() if sys.platform == "win32" else "/private/tmp")
         )
         self.root = Path(self.temporary.name).resolve()
         subprocess.run(

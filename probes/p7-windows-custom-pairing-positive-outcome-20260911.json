@@ -1,0 +1,53 @@
+{
+  "schema": 1,
+  "classification": "fresh_windows_mutation_outcome_only",
+  "manifest_sha256": "d779347b1803f8a329c2432193aef5b98e220e00de75f026bbd9dbbf20b04484",
+  "verifier_pid": 23276,
+  "case": "positive",
+  "parent_thread_id": "01a090d5-53af-7da1-96a5-95d3a5bf46d3",
+  "child_thread_id": "01a090d6-1a30-73a1-abae-7076d65ca9c0",
+  "agent_path": "/root/p7_windows_positive",
+  "tool_call_id": "call_00_a9VReqXIwB1TGxlyh9Su3831",
+  "tool_output": "Exit code: 0\nWall time: 4 seconds\nOutput:\nSuccess. Updated the following files:\nA C:\\Users\\BonBon\\AppData\\Local\\Temp\\codex-g4-write-windows-g8jwjyu5\\qualified.txt\n",
+  "close_receipt": {
+    "previous_status": {
+      "completed": "BEGIN CODEX WORKER ATTESTATION\n{\"assignment_id\":\"e0be999d-0620-493a-8f83-0c7b485eddad\",\"handoff_id\":\"d9c8e40e-6d04-4fd4-b584-71046053db56\",\"capsule_sha256\":\"d2bb42224df234a31fd5594f6e5c6c4481f2ab90b330e821767328d887c6f159\",\"compact_invariant_sha256\":\"3865129bd4cce65ee72d063e5b221c9fafbc371382405a4bd33ff4bd9e3c17e9\",\"canonical_agent_path\":\"/root/p7_windows_positive\",\"recovery_count\":0,\"root\":\"C:\\\\Users\\\\BonBon\\\\AppData\\\\Local\\\\Temp\\\\codex-g4-write-windows-g8jwjyu5\",\"branch\":\"main\",\"head\":\"35c32b9f8bb03ccc7f15ff92a1d98784e6911801\",\"index_changed\":false,\"git_status_short\":\"?? qualified.txt\",\"changed_paths\":[{\"kind\":\"file\",\"path\":\"qualified.txt\",\"sha256\":\"4fd8e8f97e640e495fefed6d4fdb0467c4e5835d9bd006173da14af37698ac8c\"}],\"verification\":[{\"command\":\"exact-path child apply_patch qualification probe\",\"exit_code\":0}],\"authority_provenance\":{\"policy_sha256\":\"0d8a41eb35bbc44d0adada71c8028437534424b3fda6d15515ea8645a2b5ec77\",\"derivation_receipt_sha256\":\"c280e6aa52b3efb66d74c4681828347113ddd334684cf6351f686f0c3e6c760f\",\"worker_claimed_origin\":\"owner_internal\",\"test_only_injection_used\":false},\"inventory_summaries\":[],\"context_lost\":false,\"authority_violation\":false,\"assigned_slice_complete\":true}\nEND CODEX WORKER ATTESTATION"
+    },
+    "target_thread_id": "01a090d6-1a30-73a1-abae-7076d65ca9c0",
+    "target_agent_path": "/root/p7_windows_positive",
+    "session_loop_terminated": true,
+    "model_callable_process_bootstrap_absent": true,
+    "tracked_background_processes_before_close": 0,
+    "tracked_process_ids_by_thread": {
+      "01a090d6-1a30-73a1-abae-7076d65ca9c0": []
+    },
+    "confirmed_exit_process_ids_by_thread": {
+      "01a090d6-1a30-73a1-abae-7076d65ca9c0": []
+    },
+    "unconfirmed_exit_process_ids_by_thread": {
+      "01a090d6-1a30-73a1-abae-7076d65ca9c0": []
+    },
+    "unresolved_start_process_ids_by_thread": {
+      "01a090d6-1a30-73a1-abae-7076d65ca9c0": []
+    },
+    "tracked_process_termination_confirmed": true,
+    "closed_catalog_actor_quiescence_claimed": true,
+    "process_tree_quiescence_claimed": false
+  },
+  "native_write_root_acl": {
+    "workspace_capability_sid": "S-1-5-21-1762280431-3144080518-219050031-4179057026",
+    "capability_mask": 1245631,
+    "scope": "exact native workspace capability, no additional ACL principals"
+  },
+  "negative_boundary": null,
+  "disk_barriers_verified": true,
+  "outcome_verified": true,
+  "authority_consumed": false,
+  "direct_write_qualified": false,
+  "phase1_complete": false,
+  "remaining": [
+    "parent/sibling writer exclusion",
+    "complete fresh-owner writer adjudication",
+    "unexplained historical concurrent binding and parent-claim failures"
+  ]
+}

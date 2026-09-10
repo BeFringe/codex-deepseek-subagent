@@ -4,6 +4,9 @@
 
 from __future__ import annotations
 
+import tempfile
+import sys
+
 import datetime as dt
 import hashlib
 import json
@@ -56,7 +59,7 @@ READ_ONLY_TOOL_NAME_ALIASES = {
     # prefixes (which could authorize an unknown tool by suffix).
     "g4_assignmentlist_agents": "list_agents",
 }
-QUALIFICATION_SANDBOX_PROBE_ROOT = Path("/private/tmp")
+QUALIFICATION_SANDBOX_PROBE_ROOT = Path(tempfile.gettempdir() if sys.platform == "win32" else "/private/tmp").resolve()
 QUALIFICATION_SANDBOX_PROBE_VERIFICATION = (
     "code-mode nested Bash read-only sandbox denial probe"
 )
@@ -470,7 +473,7 @@ def _qualification_write_probe_authorized(
         return False
     root = Path(capsule["root"]["path"])
     target = Path(target_value)
-    if root.parent != Path("/private/tmp") or root.resolve() != root:
+    if root.parent != Path(tempfile.gettempdir() if sys.platform == "win32" else "/private/tmp").resolve() or root.resolve() != root:
         raise AuthorityViolation("qualification write probe root is not canonical temporary root")
     if not target.is_absolute() or target.parent.resolve() != root:
         raise AuthorityViolation("qualification write probe target is not an exact root child")

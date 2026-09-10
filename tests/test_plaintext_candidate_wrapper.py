@@ -3,16 +3,25 @@ import hashlib
 import os
 import subprocess
 import tempfile
+import sys
 import unittest
 
 
 ROOT = Path(__file__).resolve().parents[1]
 WRAPPER = ROOT / "probes" / "codex_plaintext_candidate_wrapper.sh"
 HANDOVER_WRAPPER = ROOT / "probes" / "codex_plaintext_handover_candidate_wrapper.sh"
+WINDOWS_LAUNCHER = ROOT / "probes" / "windows_candidate_launcher.py"
+WRAPPER_COMMAND = ([sys.executable, str(WINDOWS_LAUNCHER), 'plaintext']
+                   if os.name == 'nt' else [str(WRAPPER)])
+HANDOVER_COMMAND = ([sys.executable, str(WINDOWS_LAUNCHER), 'handover']
+                    if os.name == 'nt' else [str(HANDOVER_WRAPPER)])
 
 
 class PlaintextCandidateWrapperTests(unittest.TestCase):
     def _fake_candidate(self, directory):
+        if os.name == 'nt':
+            from windows_launcher_fixture import candidate
+            return candidate(directory)
         candidate = directory / "candidate"
         candidate.write_text(
             "#!/bin/sh\n"
@@ -42,7 +51,7 @@ class PlaintextCandidateWrapperTests(unittest.TestCase):
             arg_log = directory / "args.txt"
             result = subprocess.run(
                 [
-                    str(WRAPPER),
+                    *WRAPPER_COMMAND,
                     "exec",
                     "--ephemeral",
                     "--ignore-user-config",
@@ -90,7 +99,7 @@ class PlaintextCandidateWrapperTests(unittest.TestCase):
                 with self.subTest(entry_point=entry_point):
                     arg_log = directory / f"{entry_point}.txt"
                     result = subprocess.run(
-                        [str(WRAPPER), entry_point],
+                        [*WRAPPER_COMMAND, entry_point],
                         env=self._environment(candidate, digest, arg_log),
                         text=True,
                         stdout=subprocess.PIPE,
@@ -111,7 +120,7 @@ class PlaintextCandidateWrapperTests(unittest.TestCase):
                     arg_log = directory / f"missing-{missing[2:]}.txt"
                     arguments = ["exec", *(flag for flag in complete if flag != missing)]
                     result = subprocess.run(
-                        [str(WRAPPER), *arguments],
+                        [*WRAPPER_COMMAND, *arguments],
                         env=self._environment(candidate, digest, arg_log),
                         text=True,
                         stdout=subprocess.PIPE,
@@ -159,7 +168,7 @@ class PlaintextCandidateWrapperTests(unittest.TestCase):
 
             accepted = subprocess.run(
                 [
-                    str(WRAPPER),
+                    *WRAPPER_COMMAND,
                     "exec",
                     "--ignore-user-config",
                     "--ignore-rules",
@@ -183,7 +192,7 @@ class PlaintextCandidateWrapperTests(unittest.TestCase):
             denied_environment = self._environment(candidate, digest, denied_log)
             denied = subprocess.run(
                 [
-                    str(WRAPPER),
+                    *WRAPPER_COMMAND,
                     "exec",
                     "--ignore-user-config",
                     "--ignore-rules",
@@ -203,7 +212,7 @@ class PlaintextCandidateWrapperTests(unittest.TestCase):
 
     def test_exact_temporary_write_guard_selects_workspace_write_only_for_that_root(self):
         with tempfile.TemporaryDirectory() as candidate_dir, tempfile.TemporaryDirectory(
-            prefix="codex-g4-write-wrapper-", dir="/private/tmp"
+            prefix="codex-g4-write-wrapper-", dir=(tempfile.gettempdir() if sys.platform == "win32" else "/private/tmp")
         ) as root_dir:
             directory = Path(candidate_dir)
             root = Path(root_dir).resolve()
@@ -228,7 +237,7 @@ class PlaintextCandidateWrapperTests(unittest.TestCase):
             )
             result = subprocess.run(
                 [
-                    str(WRAPPER), "exec", "--ignore-user-config", "--ignore-rules",
+                    *WRAPPER_COMMAND, "exec", "--ignore-user-config", "--ignore-rules",
                     "--dangerously-bypass-hook-trust", "--json", "-C", str(root), "Return READY.",
                 ],
                 env=environment,
@@ -242,7 +251,7 @@ class PlaintextCandidateWrapperTests(unittest.TestCase):
 
     def test_required_pretool_missing_handler_guard_disables_hooks_only_headlessly(self):
         with tempfile.TemporaryDirectory() as candidate_dir, tempfile.TemporaryDirectory(
-            prefix="codex-g4-required-pretool.", dir="/private/tmp"
+            prefix="codex-g4-required-pretool.", dir=(tempfile.gettempdir() if sys.platform == "win32" else "/private/tmp")
         ) as root_dir:
             directory = Path(candidate_dir)
             root = Path(root_dir).resolve()
@@ -276,7 +285,7 @@ class PlaintextCandidateWrapperTests(unittest.TestCase):
             )
             result = subprocess.run(
                 [
-                    str(WRAPPER), "exec", "--ignore-user-config", "--ignore-rules",
+                    *WRAPPER_COMMAND, "exec", "--ignore-user-config", "--ignore-rules",
                     "--dangerously-bypass-hook-trust", "--json", "-C", str(root),
                     "Return READY.",
                 ],
@@ -305,7 +314,7 @@ class PlaintextCandidateWrapperTests(unittest.TestCase):
             )
             denied = subprocess.run(
                 [
-                    str(WRAPPER), "exec", "--ignore-user-config", "--ignore-rules",
+                    *WRAPPER_COMMAND, "exec", "--ignore-user-config", "--ignore-rules",
                     "--dangerously-bypass-hook-trust", "--json", "-C", str(root),
                     "Return READY.",
                 ],
@@ -319,7 +328,7 @@ class PlaintextCandidateWrapperTests(unittest.TestCase):
 
     def test_required_pretool_failed_handler_guard_injects_exact_inline_hook(self):
         with tempfile.TemporaryDirectory() as candidate_dir, tempfile.TemporaryDirectory(
-            prefix="codex-g4-required-pretool.", dir="/private/tmp"
+            prefix="codex-g4-required-pretool.", dir=(tempfile.gettempdir() if sys.platform == "win32" else "/private/tmp")
         ) as root_dir:
             directory = Path(candidate_dir)
             root = Path(root_dir).resolve()
@@ -353,7 +362,7 @@ class PlaintextCandidateWrapperTests(unittest.TestCase):
             )
             result = subprocess.run(
                 [
-                    str(WRAPPER), "exec", "--ignore-user-config", "--ignore-rules",
+                    *WRAPPER_COMMAND, "exec", "--ignore-user-config", "--ignore-rules",
                     "--dangerously-bypass-hook-trust", "--json", "-C", str(root),
                     "Return READY.",
                 ],
@@ -367,8 +376,9 @@ class PlaintextCandidateWrapperTests(unittest.TestCase):
             arguments = arg_log.read_text(encoding="utf-8").splitlines()
             self.assertNotIn("features.hooks=false", arguments)
             self.assertIn(
-                'hooks.PreToolUse=[{matcher="^apply_patch$",hooks=['
-                '{type="command",command="/usr/bin/false",timeout=5}]}]',
+                'hooks.PreToolUse=[{matcher="^apply_patch$",hooks=[' +
+                ('{type="command",command="cmd.exe /d /c exit 1",timeout=5}]}]'
+                 if os.name == 'nt' else '{type="command",command="/usr/bin/false",timeout=5}]}]'),
                 arguments,
             )
             self.assertEqual(arguments[arguments.index("-s") + 1], "read-only")
@@ -385,7 +395,7 @@ class PlaintextCandidateWrapperTests(unittest.TestCase):
             )
             denied = subprocess.run(
                 [
-                    str(WRAPPER), "exec", "--ignore-user-config", "--ignore-rules",
+                    *WRAPPER_COMMAND, "exec", "--ignore-user-config", "--ignore-rules",
                     "--dangerously-bypass-hook-trust", "--json", "-C", str(root),
                     "Return READY.",
                 ],
@@ -399,7 +409,7 @@ class PlaintextCandidateWrapperTests(unittest.TestCase):
 
     def test_failed_patch_callback_guard_narrowly_enables_code_mode_host(self):
         with tempfile.TemporaryDirectory() as candidate_dir, tempfile.TemporaryDirectory(
-            prefix="codex-g4-write-posttool-", dir="/private/tmp"
+            prefix="codex-g4-write-posttool-", dir=(tempfile.gettempdir() if sys.platform == "win32" else "/private/tmp")
         ) as root_dir:
             directory = Path(candidate_dir)
             root = Path(root_dir).resolve()
@@ -432,7 +442,7 @@ class PlaintextCandidateWrapperTests(unittest.TestCase):
             )
             result = subprocess.run(
                 [
-                    str(WRAPPER), "exec", "--ignore-user-config", "--ignore-rules",
+                    *WRAPPER_COMMAND, "exec", "--ignore-user-config", "--ignore-rules",
                     "--dangerously-bypass-hook-trust", "--json", "-C", str(root),
                     "Return READY.",
                 ],
@@ -448,7 +458,7 @@ class PlaintextCandidateWrapperTests(unittest.TestCase):
             self.assertEqual(arguments[arguments.index("-s") + 1], "workspace-write")
     def test_parent_child_conflict_guard_is_exact_and_enables_parent_patch_host(self):
         with tempfile.TemporaryDirectory() as candidate_dir, tempfile.TemporaryDirectory(
-            prefix="codex-g4-write-parent-conflict.", dir="/private/tmp"
+            prefix="codex-g4-write-parent-conflict.", dir=(tempfile.gettempdir() if sys.platform == "win32" else "/private/tmp")
         ) as root_dir:
             directory = Path(candidate_dir)
             root = Path(root_dir).resolve()
@@ -485,7 +495,7 @@ class PlaintextCandidateWrapperTests(unittest.TestCase):
             )
             result = subprocess.run(
                 [
-                    str(WRAPPER), "exec", "--ignore-user-config", "--ignore-rules",
+                    *WRAPPER_COMMAND, "exec", "--ignore-user-config", "--ignore-rules",
                     "--dangerously-bypass-hook-trust", "--json", "-C", str(root),
                     "Return READY.",
                 ],
@@ -517,7 +527,7 @@ class PlaintextCandidateWrapperTests(unittest.TestCase):
             )
             denied = subprocess.run(
                 [
-                    str(WRAPPER), "exec", "--ignore-user-config", "--ignore-rules",
+                    *WRAPPER_COMMAND, "exec", "--ignore-user-config", "--ignore-rules",
                     "--dangerously-bypass-hook-trust", "--json", "-C", str(root),
                     "Return READY.",
                 ],
@@ -532,7 +542,7 @@ class PlaintextCandidateWrapperTests(unittest.TestCase):
 
     def test_sibling_admission_guard_closes_catalog_without_widening_sandbox(self):
         with tempfile.TemporaryDirectory() as candidate_dir, tempfile.TemporaryDirectory(
-            prefix="codex-g4-sibling-admission.", dir="/private/tmp"
+            prefix="codex-g4-sibling-admission.", dir=(tempfile.gettempdir() if sys.platform == "win32" else "/private/tmp")
         ) as root_dir:
             directory = Path(candidate_dir)
             root = Path(root_dir).resolve()
@@ -566,7 +576,7 @@ class PlaintextCandidateWrapperTests(unittest.TestCase):
             )
             result = subprocess.run(
                 [
-                    str(WRAPPER), "exec", "--ignore-user-config", "--ignore-rules",
+                    *WRAPPER_COMMAND, "exec", "--ignore-user-config", "--ignore-rules",
                     "--dangerously-bypass-hook-trust", "--json", "-C", str(root),
                     "Return READY.",
                 ],
@@ -602,7 +612,7 @@ class PlaintextCandidateWrapperTests(unittest.TestCase):
             )
             result = subprocess.run(
                 [
-                    str(WRAPPER), "exec", "--ephemeral", "--ignore-user-config",
+                    *WRAPPER_COMMAND, "exec", "--ephemeral", "--ignore-user-config",
                     "--ignore-rules", "--json", "Return READY.",
                 ],
                 env=environment,
@@ -616,7 +626,7 @@ class PlaintextCandidateWrapperTests(unittest.TestCase):
 
     def test_p5b_termination_guard_closes_catalog_without_widening_sandbox(self):
         with tempfile.TemporaryDirectory() as candidate_dir, tempfile.TemporaryDirectory(
-            prefix="codex-g4-p5b-termination.", dir="/private/tmp"
+            prefix="codex-g4-p5b-termination.", dir=(tempfile.gettempdir() if sys.platform == "win32" else "/private/tmp")
         ) as root_dir:
             directory = Path(candidate_dir)
             root = Path(root_dir).resolve()
@@ -650,7 +660,7 @@ class PlaintextCandidateWrapperTests(unittest.TestCase):
             )
             result = subprocess.run(
                 [
-                    str(WRAPPER), "exec", "--ignore-user-config", "--ignore-rules",
+                    *WRAPPER_COMMAND, "exec", "--ignore-user-config", "--ignore-rules",
                     "--dangerously-bypass-hook-trust", "--json", "-C", str(root),
                     "Return READY.",
                 ],
@@ -671,12 +681,12 @@ class PlaintextCandidateWrapperTests(unittest.TestCase):
 
     def test_p5b_tracked_process_guard_is_read_only_and_exact(self):
         with tempfile.TemporaryDirectory() as candidate_dir, tempfile.TemporaryDirectory(
-            prefix="codex-g4-p5b-tracked-process.", dir="/private/tmp"
+            prefix="codex-g4-p5b-tracked-process.", dir=(tempfile.gettempdir() if sys.platform == "win32" else "/private/tmp")
         ) as root_dir:
             directory = Path(candidate_dir)
             root = Path(root_dir).resolve()
             candidate, digest = self._fake_candidate(directory)
-            code_mode_host = directory / "codex-code-mode-host"
+            code_mode_host = directory / ("codex-code-mode-host.exe" if os.name == 'nt' else "codex-code-mode-host")
             code_mode_host.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
             code_mode_host.chmod(0o700)
             code_mode_host_digest = hashlib.sha256(
@@ -712,7 +722,7 @@ class PlaintextCandidateWrapperTests(unittest.TestCase):
             )
             result = subprocess.run(
                 [
-                    str(WRAPPER), "exec", "--ignore-user-config", "--ignore-rules",
+                    *WRAPPER_COMMAND, "exec", "--ignore-user-config", "--ignore-rules",
                     "--dangerously-bypass-hook-trust", "--json", "-C", str(root),
                     "Return READY.",
                 ],
@@ -739,7 +749,7 @@ class PlaintextCandidateWrapperTests(unittest.TestCase):
             )
             digest_denied = subprocess.run(
                 [
-                    str(WRAPPER), "exec", "--ignore-user-config", "--ignore-rules",
+                    *WRAPPER_COMMAND, "exec", "--ignore-user-config", "--ignore-rules",
                     "--dangerously-bypass-hook-trust", "--json", "-C", str(root),
                     "Return READY.",
                 ],
@@ -759,7 +769,7 @@ class PlaintextCandidateWrapperTests(unittest.TestCase):
             ] = "schema1-unbounded-process"
             denied = subprocess.run(
                 [
-                    str(WRAPPER), "exec", "--ignore-user-config", "--ignore-rules",
+                    *WRAPPER_COMMAND, "exec", "--ignore-user-config", "--ignore-rules",
                     "--dangerously-bypass-hook-trust", "--json", "-C", str(root),
                     "Return READY.",
                 ],
@@ -774,7 +784,7 @@ class PlaintextCandidateWrapperTests(unittest.TestCase):
 
     def test_p5b_write_then_close_guard_has_exact_temporary_write_ceiling(self):
         with tempfile.TemporaryDirectory() as candidate_dir, tempfile.TemporaryDirectory(
-            prefix="codex-g4-p5b-write-termination.", dir="/private/tmp"
+            prefix="codex-g4-p5b-write-termination.", dir=(tempfile.gettempdir() if sys.platform == "win32" else "/private/tmp")
         ) as root_dir:
             directory = Path(candidate_dir)
             root = Path(root_dir).resolve()
@@ -808,7 +818,7 @@ class PlaintextCandidateWrapperTests(unittest.TestCase):
             )
             result = subprocess.run(
                 [
-                    str(WRAPPER), "exec", "--ignore-user-config", "--ignore-rules",
+                    *WRAPPER_COMMAND, "exec", "--ignore-user-config", "--ignore-rules",
                     "--dangerously-bypass-hook-trust", "--json", "-C", str(root),
                     "Return READY.",
                 ],
@@ -829,7 +839,7 @@ class PlaintextCandidateWrapperTests(unittest.TestCase):
 
     def test_p5b_handover_guard_accepts_only_the_exact_frozen_frontier(self):
         with tempfile.TemporaryDirectory() as candidate_dir, tempfile.TemporaryDirectory(
-            prefix="codex-g4-p5b-write-termination.", dir="/private/tmp"
+            prefix="codex-g4-p5b-write-termination.", dir=(tempfile.gettempdir() if sys.platform == "win32" else "/private/tmp")
         ) as root_dir:
             directory = Path(candidate_dir)
             root = Path(root_dir).resolve()
@@ -848,9 +858,7 @@ class PlaintextCandidateWrapperTests(unittest.TestCase):
                 check=True,
                 capture_output=True,
             )
-            (root / "qualified.txt").write_text(
-                "G4_CHILD_WRITE_QUALIFIED\n", encoding="utf-8"
-            )
+            (root / "qualified.txt").write_bytes(b"G4_CHILD_WRITE_QUALIFIED\n")
             arg_log = directory / "p5b-handover-args.txt"
             env_log = directory / "p5b-handover-env.txt"
             environment = self._environment(candidate, digest, arg_log)
@@ -869,7 +877,7 @@ class PlaintextCandidateWrapperTests(unittest.TestCase):
             )
             result = subprocess.run(
                 [
-                    str(HANDOVER_WRAPPER), "exec", "--ignore-user-config", "--ignore-rules",
+                    *HANDOVER_COMMAND, "exec", "--ignore-user-config", "--ignore-rules",
                     "--dangerously-bypass-hook-trust", "--json", "-C", str(root),
                     "Return READY.",
                 ],
@@ -892,7 +900,7 @@ class PlaintextCandidateWrapperTests(unittest.TestCase):
             drift_environment = dict(environment, ARG_LOG=str(drift_log))
             drift = subprocess.run(
                 [
-                    str(HANDOVER_WRAPPER), "exec", "--ignore-user-config", "--ignore-rules",
+                    *HANDOVER_COMMAND, "exec", "--ignore-user-config", "--ignore-rules",
                     "--dangerously-bypass-hook-trust", "--json", "-C", str(root),
                     "Return READY.",
                 ],
@@ -907,7 +915,7 @@ class PlaintextCandidateWrapperTests(unittest.TestCase):
 
             gui_log = directory / "p5b-handover-gui.txt"
             gui = subprocess.run(
-                [str(HANDOVER_WRAPPER), "app-server"],
+                [*HANDOVER_COMMAND, "app-server"],
                 env=dict(environment, ARG_LOG=str(gui_log)),
                 text=True,
                 capture_output=True,
@@ -922,7 +930,7 @@ class PlaintextCandidateWrapperTests(unittest.TestCase):
             missing_environment.pop("CODEX_G4_P5B_HANDOVER_PROBE_AUTHORIZED")
             missing = subprocess.run(
                 [
-                    str(HANDOVER_WRAPPER), "exec", "--ignore-user-config",
+                    *HANDOVER_COMMAND, "exec", "--ignore-user-config",
                     "--ignore-rules", "--dangerously-bypass-hook-trust", "--json",
                     "-C", str(root), "Return READY.",
                 ],
@@ -937,7 +945,7 @@ class PlaintextCandidateWrapperTests(unittest.TestCase):
 
     def test_auto_compact_guard_injects_fixed_limit_into_stateful_read_only_probe(self):
         with tempfile.TemporaryDirectory() as candidate_dir, tempfile.TemporaryDirectory(
-            prefix="codex-g4-compact-wrapper-", dir="/private/tmp"
+            prefix="codex-g4-compact-wrapper-", dir=(tempfile.gettempdir() if sys.platform == "win32" else "/private/tmp")
         ) as root_dir:
             directory = Path(candidate_dir)
             root = Path(root_dir).resolve()
@@ -967,7 +975,7 @@ class PlaintextCandidateWrapperTests(unittest.TestCase):
             )
             result = subprocess.run(
                 [
-                    str(WRAPPER), "exec", "--ignore-user-config", "--ignore-rules",
+                    *WRAPPER_COMMAND, "exec", "--ignore-user-config", "--ignore-rules",
                     "--dangerously-bypass-hook-trust", "--json", "-C", str(root),
                     "Return READY.",
                 ],
@@ -989,7 +997,7 @@ class PlaintextCandidateWrapperTests(unittest.TestCase):
             arg_log = directory / "args.txt"
             result = subprocess.run(
                 [
-                    str(WRAPPER), "exec", "--ephemeral", "--ignore-user-config",
+                    *WRAPPER_COMMAND, "exec", "--ephemeral", "--ignore-user-config",
                     "--ignore-rules", "-c", "features.code_mode_host=true", "Return READY.",
                 ],
                 env=self._environment(candidate, digest, arg_log),
@@ -1008,7 +1016,7 @@ class PlaintextCandidateWrapperTests(unittest.TestCase):
             candidate, digest = self._fake_candidate(directory)
             status_log = directory / "status.txt"
             status = subprocess.run(
-                [str(WRAPPER), "login", "status"],
+                [*WRAPPER_COMMAND, "login", "status"],
                 env=self._environment(candidate, digest, status_log),
                 text=True,
                 stdout=subprocess.PIPE,
@@ -1020,7 +1028,7 @@ class PlaintextCandidateWrapperTests(unittest.TestCase):
 
             logout_log = directory / "logout.txt"
             logout = subprocess.run(
-                [str(WRAPPER), "login", "logout"],
+                [*WRAPPER_COMMAND, "login", "logout"],
                 env=self._environment(candidate, digest, logout_log),
                 text=True,
                 stdout=subprocess.PIPE,
@@ -1039,7 +1047,7 @@ class PlaintextCandidateWrapperTests(unittest.TestCase):
             environment.pop("CODEX_G4_LIVE_SELECTION_AUTHORIZED")
 
             result = subprocess.run(
-                [str(WRAPPER), "login", "status"],
+                [*WRAPPER_COMMAND, "login", "status"],
                 env=environment,
                 text=True,
                 stdout=subprocess.PIPE,
@@ -1058,7 +1066,7 @@ class PlaintextCandidateWrapperTests(unittest.TestCase):
             environment = self._environment(candidate, "0" * 64, arg_log)
 
             result = subprocess.run(
-                [str(WRAPPER), "login", "status"],
+                [*WRAPPER_COMMAND, "login", "status"],
                 env=environment,
                 text=True,
                 stdout=subprocess.PIPE,

@@ -10,6 +10,8 @@ handler dispatch.  It never stores the message bytes.
 
 from __future__ import annotations
 
+import tempfile
+
 import argparse
 import datetime as dt
 import hashlib
@@ -45,7 +47,7 @@ def validate_state_directory(path: Path) -> Path:
     if not path.is_absolute():
         raise ProbeGuardError("qualification state directory must be absolute")
     resolved = path.resolve(strict=False)
-    temporary_root = Path("/private/tmp").resolve(strict=True)
+    temporary_root = Path(tempfile.gettempdir() if sys.platform == "win32" else "/private/tmp").resolve().resolve(strict=True)
     if resolved != path or temporary_root not in resolved.parents:
         raise ProbeGuardError(
             "qualification state directory must be a canonical /private/tmp descendant"

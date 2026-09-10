@@ -14,6 +14,8 @@ import re
 import shlex
 import sys
 
+from private_output import open_private_output
+
 
 AGENT_TYPE = "g4_qualification_probe_worker"
 EVENTS = ("SubagentStart", "PreToolUse", "PostToolUse", "PreCompact", "SubagentStop")
@@ -100,7 +102,7 @@ def build(config: dict, *, hook_script: Path) -> tuple[dict, dict]:
 
 def write_new(path: Path, value: dict) -> None:
     encoded = (json.dumps(value, ensure_ascii=False, indent=2) + "\n").encode("utf-8")
-    descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    descriptor = open_private_output(path)
     with os.fdopen(descriptor, "wb") as stream:
         stream.write(encoded)
         stream.flush()

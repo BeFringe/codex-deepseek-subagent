@@ -214,11 +214,25 @@ function Publish-Handoff([object]$Handoff, [bool]$ReplaceExpired) {
     $temporaryPath = Join-Path $stateRoot (".{0}.staging.{1}.tmp" -f $agentType, [Guid]::NewGuid().ToString("N"))
     $backupPath = $null
     try {
+        # Set the protected DACL at creation, before assignment bytes exist.
+        $security = [Security.AccessControl.FileSecurity]::new()
+        $userSid = [Security.Principal.WindowsIdentity]::GetCurrent().User
+        $security.SetOwner($userSid)
+        $security.SetAccessRuleProtection($true, $false)
+        foreach ($sid in @($userSid.Value, 'S-1-5-18', 'S-1-5-32-544') | Sort-Object -Unique) {
+            $identity = [Security.Principal.SecurityIdentifier]::new($sid)
+            $security.AddAccessRule([Security.AccessControl.FileSystemAccessRule]::new(
+                $identity, [Security.AccessControl.FileSystemRights]::FullControl,
+                [Security.AccessControl.AccessControlType]::Allow))
+        }
         $stream = [System.IO.FileStream]::new(
             $temporaryPath,
             [System.IO.FileMode]::CreateNew,
-            [System.IO.FileAccess]::Write,
-            [System.IO.FileShare]::None
+            [Security.AccessControl.FileSystemRights]::Write,
+            [System.IO.FileShare]::None,
+            4096,
+            [System.IO.FileOptions]::None,
+            $security
         )
         $writer = [System.IO.StreamWriter]::new($stream, $utf8WithoutBom, 4096, $true)
         try {
@@ -232,6 +246,12 @@ function Publish-Handoff([object]$Handoff, [bool]$ReplaceExpired) {
 
         if ($ReplaceExpired) {
             $backupPath = Join-Path $stateRoot (".{0}.expired.{1}.bak" -f $agentType, [Guid]::NewGuid().ToString("N"))
+            # ReplaceFile preserves the destination's DACL. Protect the expired
+            # destination before publishing fresh assignment bytes over it.
+            if ([IO.File]::GetAttributes($pendingPath) -band [IO.FileAttributes]::ReparsePoint) {
+                throw 'Expired pending handoff must not be a reparse point'
+            }
+            [System.IO.File]::SetAccessControl($pendingPath, $security)
             [System.IO.File]::Replace($temporaryPath, $pendingPath, $backupPath, $true)
             [System.IO.File]::Delete($backupPath)
             $backupPath = $null

@@ -68,6 +68,19 @@ def run_bound_evidence(
         hashed_root=hashed_root,
         source_identity=source_identity,
     )
+    if os.name == "nt":
+        from windows_evidence_binding import run_bound_windows_evidence
+
+        try:
+            run_bound_windows_evidence(root, output, expensive_runner)
+        except OSError as error:
+            raise EvidenceBindingViolation(f"no-follow output walk failed: {error}") from error
+        return {
+            "root": str(root),
+            "output": output.as_posix(),
+            "source_identity": dict(source_identity),
+            "terminal_identity_reproved": True,
+        }
     nofollow = getattr(os, "O_NOFOLLOW", 0)
     directory_flags = os.O_RDONLY | os.O_DIRECTORY | nofollow
     directory_fds: list[int] = []

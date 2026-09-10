@@ -1,13 +1,18 @@
 import argparse
+import contextlib
 import datetime as dt
 from concurrent.futures import ThreadPoolExecutor
 import hashlib
 import importlib.util
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
 import tempfile
+import threading
+import time
+import traceback
 import unittest
 from unittest import mock
 import uuid
@@ -82,6 +87,14 @@ class AssignmentTransportTests(unittest.TestCase):
         )
 
     def tearDown(self):
+        result = getattr(getattr(self, '_outcome', None), 'result', None)
+        problems = list(getattr(result, 'failures', [])) + list(getattr(result, 'errors', []))
+        if any(test is self or getattr(test, 'test_case', None) is self for test, _ in problems):
+            # Preserve the actual synthetic fixture, including pending/claimed
+            # files, before TemporaryDirectory's finalizer can erase a race.
+            self.temporary_directory._finalizer.detach()
+            print(json.dumps({'retained_failed_fixture': str(self.root), 'test_id': self.id()}), file=sys.stderr)
+            return
         self.temporary_directory.cleanup()
 
     def git(self, *arguments):
@@ -492,7 +505,7 @@ class AssignmentTransportTests(unittest.TestCase):
     def test_exact_temporary_hook_ceiling_creates_hash_bound_qualification_consent(self):
         original_repository = self.repository
         with tempfile.TemporaryDirectory(
-            prefix="codex-g4-write-qualification-", dir="/private/tmp"
+            prefix="codex-g4-write-qualification-", dir=(tempfile.gettempdir() if sys.platform == "win32" else "/private/tmp")
         ) as temporary_root:
             self.repository = Path(temporary_root).resolve()
             self.git("init", "-b", "main")
@@ -696,7 +709,7 @@ class AssignmentTransportTests(unittest.TestCase):
     def test_handover_ceiling_requires_and_preserves_one_exact_prior_barrier(self):
         original_repository = self.repository
         with tempfile.TemporaryDirectory(
-            prefix="codex-g4-p5b-write-termination.", dir="/private/tmp"
+            prefix="codex-g4-p5b-write-termination.", dir=(tempfile.gettempdir() if sys.platform == "win32" else "/private/tmp")
         ) as temporary_root:
             self.repository = Path(temporary_root).resolve()
             self.git("init", "-b", "main")
@@ -1645,6 +1658,35 @@ class AssignmentTransportTests(unittest.TestCase):
 
     def test_concurrent_distinct_spawns_bind_to_their_own_children(self):
         tasks = ["task_one", "task_two", "task_three"]
+        trace = []
+        original_locked = self.store.locked
+
+        def mark(event, task=None):
+            trace.append({'event': event, 'task': task, 'pid': os.getpid(),
+                          'thread_id': threading.get_native_id(), 'time_ns': time.time_ns()})
+
+        @contextlib.contextmanager
+        def observed_lock():
+            mark('lock_attempt')
+            with original_locked():
+                mark('lock_acquired')
+                try:
+                    yield
+                finally:
+                    mark('lock_releasing')
+            mark('lock_released')
+
+        def state_snapshot():
+            result = {}
+            for path in sorted(self.store.root.rglob('*')):
+                if path.is_file():
+                    raw = path.read_bytes()
+                    result[path.relative_to(self.store.root).as_posix()] = {
+                        'sha256': hashlib.sha256(raw).hexdigest(), 'bytes': len(raw),
+                        'raw_utf8': raw.decode('utf-8')}
+            return result
+
+        self.store.locked = observed_lock
         def distinct_spawn(task):
             authority = json.loads(
                 self.message().split("BEGIN CODEX WORKER AUTHORITY\n", 1)[1].split(
@@ -1657,21 +1699,46 @@ class AssignmentTransportTests(unittest.TestCase):
                 task,
                 tool_input={"message": self.message(authority=authority)},
             )
+        def capture_task(task):
+            mark('capture_start', task)
+            result = self.capture(distinct_spawn(task))
+            mark('capture_end', task)
+            return result
+
         with ThreadPoolExecutor(max_workers=3) as executor:
-            captured = list(executor.map(lambda task: self.capture(distinct_spawn(task)), tasks))
+            captured = list(executor.map(capture_task, tasks))
+        before_claim = state_snapshot()
         self.assertTrue(all("updatedInput" not in json.dumps(item) for item in captured))
+        self.assertTrue(all(item.get('hookSpecificOutput', {}).get('permissionDecision') != 'deny'
+                            for item in captured), json.dumps({'captured': captured, 'before_claim': before_claim,
+                                                               'trace': trace, 'state_root': str(self.store.root)}))
+
+        def start_task(task):
+            mark('start_begin', task)
+            result = assignment_transport.subagent_start(self.store, self.child_hook(task))
+            mark('start_end', task)
+            return result
 
         with ThreadPoolExecutor(max_workers=3) as executor:
             started = list(
                 executor.map(
-                    lambda task: assignment_transport.subagent_start(
-                        self.store, self.child_hook(task)
-                    ),
+                    start_task,
                     reversed(tasks),
                 )
             )
 
-        self.assertTrue(all("BEGIN CODEX WORKER CAPSULE" in item["hookSpecificOutput"]["additionalContext"] for item in started))
+        evidence = {'expected_tasks': tasks, 'state_root': str(self.store.root),
+                    'temp_root': str(self.root), 'captured': captured, 'started': started,
+                    'before_claim': before_claim, 'after_claim': state_snapshot(), 'trace': trace}
+        self.assertTrue(all("BEGIN CODEX WORKER CAPSULE" in item["hookSpecificOutput"]["additionalContext"] for item in started),
+                        json.dumps(evidence))
+        for task, result in zip(reversed(tasks), started):
+            context = result['hookSpecificOutput']['additionalContext']
+            capsule = json.loads(context.split('BEGIN CODEX WORKER CAPSULE\n', 1)[1].split('\nEND CODEX WORKER CAPSULE', 1)[0])
+            self.assertEqual(capsule['requested_task_name'], task, json.dumps(evidence))
+            active = self.store._validated_envelope(self.store.path('active', capsule['assignment_id']))
+            self.assertEqual(active['capsule']['handoff_id'], capsule['handoff_id'], json.dumps(evidence))
+            self.assertEqual(active['binding']['child_thread_id'], 'child-' + task, json.dumps(evidence))
         self.assertEqual(len(list((self.store.root / "active").glob("*.json"))), 3)
         self.assertEqual(len(list((self.store.root / "pending").glob("*.json"))), 0)
 
@@ -1944,21 +2011,30 @@ class AssignmentTransportTests(unittest.TestCase):
             self.parent_patch_hook(tool_use_id="parent-race-two"),
         ]
 
-        with ThreadPoolExecutor(max_workers=2) as executor:
-            results = list(
-                executor.map(
-                    lambda hook: writer_lease_guard.pre_tool_use(self.store, hook),
-                    hooks,
-                )
-            )
+        denials = []
+        original_deny = writer_lease_guard._deny
+
+        def observed_deny(reason):
+            error = sys.exc_info()[1]
+            denials.append({'reason': reason, 'thread_id': threading.get_native_id(),
+                           'time_ns': time.time_ns(), 'error_type': type(error).__name__,
+                           'traceback': ''.join(traceback.format_exception(error)) if error else None})
+            return original_deny(reason)
+
+        with mock.patch.object(writer_lease_guard, '_deny', observed_deny):
+            with ThreadPoolExecutor(max_workers=2) as executor:
+                results = list(executor.map(lambda hook: writer_lease_guard.pre_tool_use(self.store, hook), hooks))
 
         decisions = [
             result["hookSpecificOutput"].get("permissionDecision", "pass")
             for result in results
         ]
-        self.assertEqual(sorted(decisions), ["deny", "pass"])
-        self.assertEqual(len(list((self.store.root / "writer_claim").glob("*.json"))), 1)
-        self.assertEqual(len(list((self.store.root / "writer_conflict").glob("*.json"))), 1)
+        evidence = json.dumps({'hooks': hooks, 'results': results, 'denials': denials, 'state_root': str(self.store.root),
+                               'state': {p.relative_to(self.store.root).as_posix(): p.read_text(encoding='utf-8')
+                                         for p in self.store.root.rglob('*.json')}})
+        self.assertEqual(sorted(decisions), ["deny", "pass"], evidence)
+        self.assertEqual(len(list((self.store.root / "writer_claim").glob("*.json"))), 1, evidence)
+        self.assertEqual(len(list((self.store.root / "writer_conflict").glob("*.json"))), 1, evidence)
 
     def test_concurrent_disjoint_parent_claims_both_persist(self):
         hooks = [
@@ -2013,7 +2089,12 @@ class AssignmentTransportTests(unittest.TestCase):
 
     def test_symlink_alias_cannot_bypass_active_child_ownership(self):
         (self.repository / "owned").mkdir()
-        (self.repository / "alias").symlink_to("owned", target_is_directory=True)
+        if sys.platform == "win32":
+            import _winapi
+
+            _winapi.CreateJunction(str(self.repository / "owned"), str(self.repository / "alias"))
+        else:
+            (self.repository / "alias").symlink_to("owned", target_is_directory=True)
         self.capture(self.spawn_hook())
         assignment_transport.subagent_start(self.store, self.child_hook())
 
@@ -2345,7 +2426,7 @@ class AssignmentTransportTests(unittest.TestCase):
         )
 
     def test_child_sandbox_probe_spec_is_exact_task_and_temp_child(self):
-        target = Path("/private/tmp") / f"g4-sandbox-spec-{uuid.uuid4().hex}"
+        target = Path(tempfile.gettempdir() if sys.platform == "win32" else "/private/tmp").resolve() / f"g4-sandbox-spec-{uuid.uuid4().hex}"
 
         task_name, parsed_target = compatibility_hook.child_sandbox_probe_spec(
             f"g4_sandbox_1={target}"

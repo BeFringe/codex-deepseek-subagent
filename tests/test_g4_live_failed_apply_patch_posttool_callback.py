@@ -121,8 +121,8 @@ class G4LiveFailedApplyPatchPostToolCallbackTests(unittest.TestCase):
 
     def test_wrapper_guard_and_status_keep_qualification_bounded(self) -> None:
         wrapper = WRAPPER_PATH.read_text(encoding="utf-8")
-        evidence = str(RECEIPT_PATH.relative_to(ROOT))
-        patch = str(self.patch_path.relative_to(ROOT))
+        evidence = RECEIPT_PATH.relative_to(ROOT).as_posix()
+        patch = self.patch_path.relative_to(ROOT).as_posix()
 
         self.assertIn("CODEX_G4_FAILED_PATCH_CALLBACK_PROBE_AUTHORIZED", wrapper)
         self.assertIn("schema1-root-failed-apply-patch", wrapper)

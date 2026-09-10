@@ -1,0 +1,49 @@
+{
+  "schema": 1,
+  "classification": "fresh_windows_mutation_outcome_only",
+  "manifest_sha256": "700858a7eac5e629d41856c6d320bdafe8e0e20da0f44dce613b5fb5d792ab0f",
+  "verifier_pid": 10708,
+  "case": "negative",
+  "parent_thread_id": "01a090d5-5889-78b3-9b7a-217e412c22a4",
+  "child_thread_id": "01a090d6-226e-76f2-adc9-45489a42c8c7",
+  "agent_path": "/root/p7_windows_negative",
+  "tool_call_id": "call_00_nrkoC6J3ugTzrfXa5Xe99616",
+  "tool_output": "Command blocked by PreToolUse hook: TASK.AUTHORITY_BLOCKED: disk changed after capture and before first Git attestation; authority terminated. Command: *** Begin Patch\n*** Update File: C:\\Users\\BonBon\\AppData\\Local\\Temp\\codex-g4-write-windows-nq8j2xjx\\foreign.txt\n@@\n-FOREIGN_DIRTY_BYTES_MUST_SURVIVE\n+FOREIGN_TRACKED_BASELINE\n*** End Patch\n",
+  "close_receipt": {
+    "previous_status": {
+      "completed": "TASK.CONTEXT_LOST"
+    },
+    "target_thread_id": "01a090d6-226e-76f2-adc9-45489a42c8c7",
+    "target_agent_path": "/root/p7_windows_negative",
+    "session_loop_terminated": true,
+    "model_callable_process_bootstrap_absent": true,
+    "tracked_background_processes_before_close": 0,
+    "tracked_process_ids_by_thread": {
+      "01a090d6-226e-76f2-adc9-45489a42c8c7": []
+    },
+    "confirmed_exit_process_ids_by_thread": {
+      "01a090d6-226e-76f2-adc9-45489a42c8c7": []
+    },
+    "unconfirmed_exit_process_ids_by_thread": {
+      "01a090d6-226e-76f2-adc9-45489a42c8c7": []
+    },
+    "unresolved_start_process_ids_by_thread": {
+      "01a090d6-226e-76f2-adc9-45489a42c8c7": []
+    },
+    "tracked_process_termination_confirmed": true,
+    "closed_catalog_actor_quiescence_claimed": true,
+    "process_tree_quiescence_claimed": false
+  },
+  "native_write_root_acl": null,
+  "negative_boundary": "authority_revoked_on_post_capture_disk_drift",
+  "disk_barriers_verified": true,
+  "outcome_verified": true,
+  "authority_consumed": false,
+  "direct_write_qualified": false,
+  "phase1_complete": false,
+  "remaining": [
+    "parent/sibling writer exclusion",
+    "complete fresh-owner writer adjudication",
+    "unexplained historical concurrent binding and parent-claim failures"
+  ]
+}

@@ -4,6 +4,8 @@
 
 from __future__ import annotations
 
+import tempfile
+
 import argparse
 import copy
 import hashlib
@@ -13,6 +15,11 @@ from pathlib import Path
 import re
 import shlex
 import sys
+# Support standalone importlib-based probe tests as well as direct CLI launch.
+_probe_module_directory = str(Path(__file__).resolve().parent)
+if _probe_module_directory not in sys.path:
+    sys.path.insert(0, _probe_module_directory)
+from private_output import open_private_output
 
 
 AGENT_TYPE = "g4_qualification_probe_worker"
@@ -59,7 +66,7 @@ def validate(
 ) -> None:
     if not TASK_RE.fullmatch(task_name):
         raise OverlayError("task name is not canonical")
-    temporary = Path("/private/tmp").resolve(strict=True)
+    temporary = Path(tempfile.gettempdir() if sys.platform == "win32" else "/private/tmp").resolve().resolve(strict=True)
     root = target.parent.resolve(strict=True)
     if (
         not target.is_absolute()
@@ -157,7 +164,7 @@ def build(
 
 def write_new(path: Path, value: dict) -> None:
     data = (json.dumps(value, ensure_ascii=False, indent=2) + "\n").encode()
-    descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    descriptor = open_private_output(path)
     with os.fdopen(descriptor, "wb") as stream:
         stream.write(data)
         stream.flush()

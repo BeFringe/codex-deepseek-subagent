@@ -13,7 +13,7 @@ SCRIPT = ROOT / "probes" / "build_g4_write_probe_prompt.py"
 class G4WriteProbePromptTests(unittest.TestCase):
     def setUp(self):
         self.directory = tempfile.TemporaryDirectory(
-            prefix="codex-g4-write-prompt-", dir="/private/tmp"
+            prefix="codex-g4-write-prompt-", dir=(tempfile.gettempdir() if sys.platform == "win32" else "/private/tmp")
         )
         self.root = Path(self.directory.name).resolve()
         (self.root / "docs").mkdir()

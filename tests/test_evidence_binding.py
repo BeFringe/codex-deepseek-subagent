@@ -7,6 +7,7 @@ import unittest
 
 
 REPO = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(REPO / "hooks"))
 
 
 def load_module(name, path):
@@ -75,7 +76,14 @@ class EvidenceBindingTests(unittest.TestCase):
         actual = self.root / "actual"
         actual.mkdir()
         (self.root / "evidence").rmdir()
-        (self.root / "evidence").symlink_to(actual, target_is_directory=True)
+        if os.name == "nt":
+            import _winapi
+
+            # A junction is a native directory reparse point and does not need
+            # the symlink privilege. Exercise the real Windows no-follow path.
+            _winapi.CreateJunction(str(actual), str(self.root / "evidence"))
+        else:
+            (self.root / "evidence").symlink_to(actual, target_is_directory=True)
 
         with self.assertRaisesRegex(
             evidence_binding.EvidenceBindingViolation, "no-follow output walk failed"
@@ -93,8 +101,30 @@ class EvidenceBindingTests(unittest.TestCase):
 
         def replace_terminal(descriptor):
             os.write(descriptor, b"original")
-            output.unlink()
-            output.write_text("replacement", encoding="utf-8")
+            if os.name == "nt":
+                import ctypes
+                from ctypes import wintypes
+                from windows_evidence_binding import kernel
+
+                kernel.SetFileInformationByHandle.argtypes = [
+                    wintypes.HANDLE, ctypes.c_int, wintypes.LPVOID, wintypes.DWORD]
+                kernel.SetFileInformationByHandle.restype = wintypes.BOOL
+                handle = kernel.CreateFileW(str(output), 0x10000, 7, None, 3, 0, None)
+                if handle == wintypes.HANDLE(-1).value:
+                    raise ctypes.WinError(ctypes.get_last_error())
+                try:
+                    # FileDispositionInfoEx with DELETE | POSIX_SEMANTICS
+                    # removes the name while the original evidence fd stays open.
+                    flags = wintypes.DWORD(3)
+                    if not kernel.SetFileInformationByHandle(
+                            handle, 21, ctypes.byref(flags), ctypes.sizeof(flags)):
+                        raise ctypes.WinError(ctypes.get_last_error())
+                finally:
+                    kernel.CloseHandle(handle)
+                output.write_text("replacement", encoding="utf-8")
+            else:
+                output.unlink()
+                output.write_text("replacement", encoding="utf-8")
 
         with self.assertRaisesRegex(
             evidence_binding.EvidenceBindingViolation, "terminal identity changed"
@@ -106,6 +136,38 @@ class EvidenceBindingTests(unittest.TestCase):
                 source_identity=self.source,
                 expensive_runner=replace_terminal,
             )
+
+    @unittest.skipUnless(os.name == "nt", "requires Windows directory handles and junctions")
+    def test_windows_directory_replacement_is_blocked_or_detected(self):
+        import _winapi
+
+        outside = self.root / "outside"
+        outside.mkdir()
+        renamed = []
+
+        def replace_directory(descriptor):
+            os.write(descriptor, b"original")
+            (self.root / "evidence").rename(self.root / "original-evidence")
+            renamed.append(True)
+            _winapi.CreateJunction(str(outside), str(self.root / "evidence"))
+
+        with self.assertRaises(evidence_binding.EvidenceBindingViolation) as raised:
+            evidence_binding.run_bound_evidence(
+                self.binding,
+                executed_root=str(self.root),
+                hashed_root=str(self.root),
+                source_identity=self.source,
+                expensive_runner=replace_directory,
+            )
+        if renamed:
+            self.assertIn("reparse point", str(raised.exception))
+        else:
+            # Windows may refuse the directory rename while its child is open.
+            # Verify that specific native denial and the preserved original.
+            self.assertIsInstance(raised.exception.__cause__, PermissionError)
+            self.assertIn(raised.exception.__cause__.winerror, (5, 32))
+            self.assertEqual((self.root / "evidence" / "result.json").read_bytes(), b"original")
+        self.assertEqual(list(outside.iterdir()), [])
 
 
 if __name__ == "__main__":

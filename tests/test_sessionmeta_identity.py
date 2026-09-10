@@ -210,6 +210,9 @@ class SessionMetaIdentityTests(unittest.TestCase):
     def test_mixed_parent_child_transcript_path_flavors_fail(self):
         bundle = copy.deepcopy(self.bundle)
         item = bundle["observations"][0]
+        posix_path = "/private/tmp/rollouts/parent.jsonl"
+        item["capture_hook"]["transcript_path"] = posix_path
+        item["parent_rollout"]["path"] = posix_path
         windows_path = r"C:\Codex\rollouts\child.jsonl"
         item["start_hook"]["transcript_path"] = windows_path
         item["child_rollout"]["path"] = windows_path

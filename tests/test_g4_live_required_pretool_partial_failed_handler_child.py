@@ -36,7 +36,7 @@ class G4LiveRequiredPreToolPartialFailedHandlerChildTests(unittest.TestCase):
         current = self.runtime_index["runtime_roles"][current_role]
         self.assertEqual(runtime["source_commit"], current["source_commit"])
         self.assertEqual(runtime["codex_cli_version"], current["codex_version"])
-        self.assertEqual(runtime["source_receipt"], str(SOURCE.relative_to(ROOT)))
+        self.assertEqual(runtime["source_receipt"], SOURCE.relative_to(ROOT).as_posix())
         self.assertRegex(runtime["candidate_sha256"], SHA256)
         self.assertGreater(runtime["candidate_bytes"], 0)
         self.assertEqual(runtime["candidate_exit_code"], 0)
@@ -187,7 +187,7 @@ class G4LiveRequiredPreToolPartialFailedHandlerChildTests(unittest.TestCase):
 
         gates = {gate["id"]: gate for gate in self.status["phase1"]["gates"]}
         self.assertEqual(gates["P4"]["state"], "qualified")
-        self.assertIn(str(RECEIPT.relative_to(ROOT)), gates["P4"]["evidence"])
+        self.assertIn(RECEIPT.relative_to(ROOT).as_posix(), gates["P4"]["evidence"])
         self.assertIn(
             "exact native qualification actor graph is closed",
             gates["P4"]["source_progress"],
