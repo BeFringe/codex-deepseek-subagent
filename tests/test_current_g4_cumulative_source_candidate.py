@@ -37,10 +37,15 @@ class CurrentG4CumulativeSourceCandidateTests(unittest.TestCase):
         self.assertTrue(all(left == right for left, right in paths))
         names = {left for left, _ in paths}
         self.assertIn("codex-rs/core/src/agent/control/spawn.rs", names)
+        self.assertIn("codex-rs/core/src/client.rs", names)
         self.assertIn("codex-rs/core/src/tools/g4_catalog_receipt.rs", names)
         self.assertIn("codex-rs/core/src/tools/handlers/multi_agents_v2/close_agent.rs", names)
         self.assertIn("codex-rs/hooks/src/events/pre_tool_use.rs", names)
+        self.assertIn("codex-rs/model-provider-info/src/lib.rs", names)
+        self.assertIn("codex-rs/model-provider/src/provider.rs", names)
         self.assertIn("codex-rs/protocol/src/protocol.rs", names)
+        self.assertIn("supports_namespace_tools", self.patch_text)
+        self.assertIn("requires_function_call_output_adjacency", self.patch_text)
 
     def test_fresh_replay_is_exact_but_not_windows_evidence(self):
         replay = self.receipt["fresh_replay"]

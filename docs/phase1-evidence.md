@@ -4858,10 +4858,10 @@ isolated install receipt.
 The current G4 source candidate is now available as one portable full-index
 patch instead of an ordered stack of incremental probe patches. The exact base
 is upstream `rust-v0.153.4` commit
-`3d2ee51ca2d5db578f328aa75e20aa22c0197c9a`; the 43-path patch is
-`probes/current-signed-runtime-g4-cumulative-source-candidate.patch`, 207474
+`3d2ee51ca2d5db578f328aa75e20aa22c0197c9a`; the 57-path patch is
+`probes/current-signed-runtime-g4-cumulative-source-candidate.patch`, 228346
 bytes with SHA-256
-`f0b0c2dc1f8c4b3167e0b8b4c913a11c0a59f615ddd4df16a5417f428983744a`.
+`94ec3d6140868055662ca43b0d0d464f5bda8d41cd40433a20facb4fb600f72d`.
 A fresh detached worktree passed `git apply --check`, applied the patch to the
 index, and reproduced the same full-index diff byte-for-byte. The machine
 receipt and executable static checks are
@@ -4874,3 +4874,58 @@ native child, Hook, callback, termination, or disk-barrier observation. P7 and
 `windows_live` therefore remain open; Phase 1 and direct write remain false.
 Fresh provider-free verification passed all 817 tests in 77.805 seconds,
 including agent-template checks.
+
+## DeepSeek G4 Responses pairing and Hook continuity
+
+A same-shape macOS/Windows negative isolated the remaining G4 DeepSeek failure
+below assignment delivery and identity binding. Both hosts observed a real
+DeepSeek child, exact SessionMeta/canonical AgentPath, one `list_agents {}`
+call, and a local `function_call_output` with the same nonempty `call_id`.
+DeepSeek rejected the next Responses request with `No tool output found for
+tool call`. The macOS negative first retained the `g4_assignment` namespace;
+a second run exposed the same error after flattening the catalog to an ordinary
+function, proving that namespace removal alone was insufficient.
+
+The second macOS rollout made the stricter pairing boundary visible. The
+synchronous PreToolUse Hook recorded its `AUTHORITY.REATTESTED` developer
+message between the function call and its output. The candidate now expresses
+two independent provider capabilities: whether namespace tools are supported,
+and whether submitted Responses history requires contiguous function-call
+outputs. The latter normalization changes only the external request ordering;
+the durable rollout retains the original Hook event order. OpenAI parent
+defaults remain unchanged.
+
+The final isolated run used candidate SHA-256
+`a10fd9fcd753687c26285f9c5e0447986e42d0dfc00780e14b59b5abebed297f`.
+The OpenAI/ChatGPT parent spawned DeepSeek child
+`01a08c00-c36d-7f41-9e12-08737b2f7ca6` at
+`/root/p7_macos_deepseek`. The child issued exactly one ordinary function
+`list_agents` with exact arguments `{}` and call id
+`call_00_MPcr7CS2Du3Se88AUMhC0016`; one output matched it. DeepSeek accepted the
+next turn, the child returned a schema-exact final attestation, SubagentStop
+moved the durable assignment to `reported`, native wait/callback completed,
+and `close_agent` removed the child from the post-close catalog. The Git root
+remained clean and two post-exit disk barriers were identical. The raw manifest
+SHA-256 is
+`c85ebb96d68bb5750d0f12246df972f8cbf935010bc52f53cb52a3e074bf4746`;
+the committed adjudication summary is
+`probes/p7-live-deepseek-g4-responses-compat-20260910.json`.
+
+This is a positive G4 external-wire and SubagentStop/callback result on macOS,
+not Phase 1 completion. The close receipt reports an absent process bootstrap,
+empty tracked/confirmed/unconfirmed/unresolved process maps, terminated session
+loop, and closed-catalog quiescence, but still reports
+`process_tree_quiescence_claimed=false`; this no-process P7 run does not replace
+or weaken the separate nonempty-process receipt that already qualifies P5b and
+`termination_quiescence`. The exact updated source patch still awaits native
+Windows replay. Therefore only `windows_live` keeps P7 partial;
+`phase1_complete=false`, `direct_write_qualified=false`, and Phases 2/3 remain
+closed.
+
+Fresh provider-free verification after adding the request-normalization and
+evidence checks ran 826 tests in 78.233 seconds and passed, including the agent
+template checks. Two originating-host replay tests skipped explicitly because
+their external raw anchors had drifted: the earlier candidate path had been
+rebuilt and the installed App runtime had been upgraded. Their committed,
+off-host evidence validation still ran and passed; neither skip is counted as a
+live replay or as a qualification success.

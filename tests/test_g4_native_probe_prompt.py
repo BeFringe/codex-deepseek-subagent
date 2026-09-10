@@ -66,6 +66,20 @@ class G4NativeProbePromptTests(unittest.TestCase):
         self.assertIn("/root/g4_root_1", prompt)
         self.assertIn("final attestation JSON is not the seed object", prompt)
         self.assertIn("do not copy the seed's schema", prompt)
+        self.assertIn(
+            '"assigned_slice_complete","inventory_summaries"]',
+            prompt,
+        )
+        self.assertIn(
+            '["policy_sha256","worker_claimed_origin",'
+            '"test_only_injection_used","derivation_receipt_sha256"]',
+            prompt,
+        )
+        self.assertIn(
+            "Keep inventory_summaries, context_lost, authority_violation, and "
+            "assigned_slice_complete only at the top level",
+            prompt,
+        )
         self.assertEqual(declaration["assignment_mutation_mode"], "read_only")
         self.assertEqual(declaration["parent_recorded_user_write_intent"], "deny")
         self.assertEqual(declaration["owned_paths"], [])
@@ -111,6 +125,30 @@ class G4NativeProbePromptTests(unittest.TestCase):
         self.assertIn("call native list_agents exactly once", sibling_controlled)
         self.assertIn("task_name=g4_root_2b", sibling_controlled)
 
+        exact_empty_close = probe_prompt.build_prompt(
+            self.root,
+            "g4_empty_args_close_1",
+            exact_list_agents_empty_arguments=True,
+            close_after_callback=True,
+        )
+        self.assertIn(
+            "Call native list_agents exactly once with arguments exactly `{}`",
+            exact_empty_close,
+        )
+        self.assertIn("do not supply path_prefix", exact_empty_close)
+        self.assertIn(
+            "one read-only list_agents call with exact empty arguments and no mutation",
+            exact_empty_close,
+        )
+        self.assertIn(
+            "Treat either a successful child return or an errored child return as the final callback",
+            exact_empty_close,
+        )
+        self.assertIn(
+            "call native close_agent exactly once with target=/root/g4_empty_args_close_1",
+            exact_empty_close,
+        )
+
         lifecycle = probe_prompt.build_prompt(
             self.root,
             "g4_root_3",
@@ -139,6 +177,17 @@ class G4NativeProbePromptTests(unittest.TestCase):
         )
 
     def test_dirty_worktree_and_noncanonical_task_name_fail_closed(self):
+        with self.assertRaisesRegex(
+            probe_prompt.ProbePromptError,
+            "exact empty list_agents arguments require the list_agents child tool",
+        ):
+            probe_prompt.build_prompt(
+                self.root,
+                "g4_invalid_empty_args_1",
+                child_tool="list_mcp_resources",
+                exact_list_agents_empty_arguments=True,
+            )
+
         (self.root / "dirty.txt").write_text("dirty\n", encoding="utf-8")
 
         with self.assertRaisesRegex(

@@ -1323,6 +1323,54 @@ index e217b702497e6ff02969a51046f7ba887024f487..ca93c945c9a5d608944d81bc0c12f6df
  dependencies = [
   "anyhow",
   "codex-login",
+diff --git a/codex-rs/app-server/src/request_processors/thread_processor_tests.rs b/codex-rs/app-server/src/request_processors/thread_processor_tests.rs
+index 60f36d6365f08dd5a3c0e7582103535066e7ec0b..e37798a7bab73c4bcc2d060826b9ecf9e853e2ca 100644
+--- a/codex-rs/app-server/src/request_processors/thread_processor_tests.rs
++++ b/codex-rs/app-server/src/request_processors/thread_processor_tests.rs
+@@ -607,6 +607,8 @@ mod thread_processor_behavior_tests {
+             websocket_connect_timeout_ms: None,
+             requires_openai_auth: false,
+             supports_websockets: true,
++            supports_namespace_tools: None,
++            requires_function_call_output_adjacency: false,
+             supports_standalone_web_search: false,
+         };
+         let config_manager = ConfigManager::new(
+diff --git a/codex-rs/config/src/thread_config.rs b/codex-rs/config/src/thread_config.rs
+index 76d76fd59f0ecc575d5ad9679d09d0a7b36fba64..be45d3803bb4850a2bc801e14e7ed971b7ddd20f 100644
+--- a/codex-rs/config/src/thread_config.rs
++++ b/codex-rs/config/src/thread_config.rs
+@@ -313,6 +313,8 @@ mod tests {
+             websocket_connect_timeout_ms: None,
+             requires_openai_auth: false,
+             supports_websockets: true,
++            supports_namespace_tools: None,
++            requires_function_call_output_adjacency: false,
+             supports_standalone_web_search: true,
+         }
+     }
+diff --git a/codex-rs/config/src/thread_config/remote.rs b/codex-rs/config/src/thread_config/remote.rs
+index 8d5b8febe4fb898f571e80c51c5dbdbbc2fc950e..697e9610ccd50cd5c8fc91c3033c58e38800d498 100644
+--- a/codex-rs/config/src/thread_config/remote.rs
++++ b/codex-rs/config/src/thread_config/remote.rs
+@@ -191,6 +191,8 @@ fn model_provider_from_proto(
+         websocket_connect_timeout_ms: provider.websocket_connect_timeout_ms,
+         requires_openai_auth: provider.requires_openai_auth,
+         supports_websockets: provider.supports_websockets,
++        supports_namespace_tools: None,
++        requires_function_call_output_adjacency: false,
+         supports_standalone_web_search: provider.supports_standalone_web_search,
+     };
+     Ok((id, info))
+@@ -219,6 +221,8 @@ fn model_provider_to_proto(
+         websocket_connect_timeout_ms,
+         requires_openai_auth,
+         supports_websockets,
++        supports_namespace_tools: _,
++        requires_function_call_output_adjacency: _,
+         supports_standalone_web_search,
+     } = provider;
+ 
 diff --git a/codex-rs/core/src/agent/control/legacy.rs b/codex-rs/core/src/agent/control/legacy.rs
 index f6bff6cd901b37880df84cc568864b644858dbb2..cc1dde73dfe5c6d22e90ea5a686c99ff41a87ce1 100644
 --- a/codex-rs/core/src/agent/control/legacy.rs
@@ -1650,6 +1698,127 @@ index 6abe3610d82c7c33813d8e0ce441b95c46d03031..61057f820cd26abae846b1f8e2f2862f
  #[tokio::test]
  async fn apply_role_disables_plugins_unless_required_by_managed_policy() {
      let home = TempDir::new().expect("create temp dir");
+diff --git a/codex-rs/core/src/client.rs b/codex-rs/core/src/client.rs
+index 9f03c939e09c87824aabb6108c051786908d6204..79209b85ba9054019f6b1ac020d58fa7b4029e0a 100644
+--- a/codex-rs/core/src/client.rs
++++ b/codex-rs/core/src/client.rs
+@@ -24,6 +24,7 @@
+ //! fails, normal stream retry/fallback logic handles recovery on the same turn.
+ 
+ use std::collections::HashMap;
++use std::collections::HashSet;
+ use std::sync::Arc;
+ use std::sync::Mutex as StdMutex;
+ use std::sync::OnceLock;
+@@ -463,6 +464,34 @@ fn sideband_websocket_auth_headers(api_auth: &dyn AuthProvider) -> ApiHeaderMap
+     headers
+ }
+ 
++fn normalize_function_call_output_adjacency(input: Vec<ResponseItem>) -> Vec<ResponseItem> {
++    let mut normalized = Vec::with_capacity(input.len());
++    let mut pending_call_ids = HashSet::new();
++    let mut deferred = Vec::new();
++
++    for item in input {
++        match &item {
++            ResponseItem::FunctionCall { call_id, .. } => {
++                pending_call_ids.insert(call_id.clone());
++                normalized.push(item);
++            }
++            ResponseItem::FunctionCallOutput {
++                call_id: Some(call_id),
++                ..
++            } if pending_call_ids.remove(call_id) => {
++                normalized.push(item);
++                if pending_call_ids.is_empty() {
++                    normalized.append(&mut deferred);
++                }
++            }
++            _ if !pending_call_ids.is_empty() => deferred.push(item),
++            _ => normalized.push(item),
++        }
++    }
++    normalized.append(&mut deferred);
++    normalized
++}
++
+ impl ModelClient {
+     #[allow(clippy::too_many_arguments)]
+     /// Creates a new session-scoped `ModelClient`.
+@@ -985,6 +1014,14 @@ impl ModelClient {
+                 }
+             }
+         }
++        if self
++            .state
++            .provider
++            .info()
++            .requires_function_call_output_adjacency
++        {
++            input = normalize_function_call_output_adjacency(input);
++        }
+         let reasoning = self.build_reasoning(model_info, effort, summary);
+         let stream_options = (self.state.concurrent_reasoning_summaries_enabled
+             && is_openai
+diff --git a/codex-rs/core/src/client_tests.rs b/codex-rs/core/src/client_tests.rs
+index 6eda1c86bfb9b0e6cbe66beeff0b7fa5c1e1c7bb..b644615d3a48eb299c4efcf1c13010530cf1c02f 100644
+--- a/codex-rs/core/src/client_tests.rs
++++ b/codex-rs/core/src/client_tests.rs
+@@ -9,6 +9,7 @@ use super::X_CODEX_PARENT_THREAD_ID_HEADER;
+ use super::X_CODEX_TURN_METADATA_HEADER;
+ use super::X_CODEX_WINDOW_ID_HEADER;
+ use super::X_OPENAI_SUBAGENT_HEADER;
++use super::normalize_function_call_output_adjacency;
+ use crate::AttestationContext;
+ use crate::AttestationProvider;
+ use crate::GenerateAttestationFuture;
+@@ -96,6 +97,46 @@ use wiremock::matchers::path;
+ const TEST_CHATGPT_ID_TOKEN: &str = "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJlbWFpbCI6InVzZXJAZXhhbXBsZS5jb20iLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwiaHR0cHM6Ly9hcGkub3BlbmFpLmNvbS9hdXRoIjp7ImNoYXRncHRfdXNlcl9pZCI6InVzZXItMTIzNDUiLCJ1c2VyX2lkIjoidXNlci0xMjM0NSIsImNoYXRncHRfcGxhbl90eXBlIjoicHJvIiwiY2hhdGdwdF9hY2NvdW50X2lkIjoiYWNjb3VudC0xMjMifX0.c2ln";
+ const TEST_INSTALLATION_ID: &str = "11111111-1111-4111-8111-111111111111";
+ 
++#[test]
++fn strict_responses_pairing_moves_hook_context_after_function_output() {
++    let input: Vec<ResponseItem> = vec![
++        serde_json::from_value(json!({
++            "type": "function_call",
++            "name": "list_agents",
++            "arguments": "{}",
++            "call_id": "call-g4"
++        }))
++        .expect("function call"),
++        serde_json::from_value(json!({
++            "type": "message",
++            "role": "developer",
++            "content": [{"type": "input_text", "text": "AUTHORITY.REATTESTED"}]
++        }))
++        .expect("hook context"),
++        serde_json::from_value(json!({
++            "type": "function_call_output",
++            "call_id": "call-g4",
++            "output": "{\"agents\":[]}"
++        }))
++        .expect("function output"),
++    ];
++
++    let normalized = normalize_function_call_output_adjacency(input);
++    let kinds = normalized
++        .iter()
++        .map(|item| serde_json::to_value(item).expect("serialize")["type"].clone())
++        .collect::<Vec<_>>();
++
++    assert_eq!(
++        kinds,
++        vec![
++            json!("function_call"),
++            json!("function_call_output"),
++            json!("message"),
++        ]
++    );
++}
++
+ fn test_model_client(session_source: SessionSource) -> ModelClient {
+     test_model_client_with_thread_id(ThreadId::new(), session_source)
+ }
 diff --git a/codex-rs/core/src/config/config_tests.rs b/codex-rs/core/src/config/config_tests.rs
 index 8796f539b614ed53708a0c8ac1c7bc032789a4a6..2fafd55731fce1299476f89379fa55d629b73174 100644
 --- a/codex-rs/core/src/config/config_tests.rs
@@ -3812,7 +3981,7 @@ index 908bb143afcbe3b8f0523ce5c3406c7b8c443603..2c5f52219b53203c278aef3439f58db8
                  exposure,
              );
 diff --git a/codex-rs/core/src/tools/spec_plan_tests.rs b/codex-rs/core/src/tools/spec_plan_tests.rs
-index c77936fc9055d75a34819a97ffc224dbe15c6690..09758543a457c8bf92430933deeba2bab5b05cff 100644
+index c77936fc9055d75a34819a97ffc224dbe15c6690..22bddd799de616cbf583648a9899d2c5a0157fa7 100644
 --- a/codex-rs/core/src/tools/spec_plan_tests.rs
 +++ b/codex-rs/core/src/tools/spec_plan_tests.rs
 @@ -3,6 +3,7 @@ use std::collections::BTreeMap;
@@ -3905,7 +4074,7 @@ index c77936fc9055d75a34819a97ffc224dbe15c6690..09758543a457c8bf92430933deeba2ba
          "interrupt_agent",
          "list_agents",
      ] {
-@@ -3056,6 +3097,429 @@ async fn multi_agent_v2_bedrock_workers_only_delegate_when_model_supports_v2() {
+@@ -3056,6 +3097,476 @@ async fn multi_agent_v2_bedrock_workers_only_delegate_when_model_supports_v2() {
      }
  }
  
@@ -4086,6 +4255,53 @@ index c77936fc9055d75a34819a97ffc224dbe15c6690..09758543a457c8bf92430933deeba2ba
 +        &ToolName::namespaced("g4_assignment", "close_agent").to_string(),
 +        &ToolName::namespaced("g4_assignment", "interrupt_agent").to_string(),
 +    ]);
++}
++
++#[tokio::test]
++async fn exact_g4_qualification_role_flattens_tools_for_function_only_provider() {
++    let plan = probe(|turn| {
++        set_feature(turn, Feature::MultiAgentV2, /*enabled*/ true);
++        let mut provider_info = turn.config.model_provider.clone();
++        provider_info.supports_namespace_tools = Some(false);
++        update_config(turn, |config| {
++            config.model_provider = provider_info.clone();
++            config.multi_agent_v2.child_model_providers.insert(
++                "g4_qualification_probe_worker".to_string(),
++                config.model_provider_id.clone(),
++            );
++            config.multi_agent_v2.tool_namespace = Some("g4_assignment".to_string());
++        });
++        turn.provider = create_model_provider(provider_info, turn.auth_manager.clone());
++        turn.session_source = SessionSource::SubAgent(SubAgentSource::ThreadSpawn {
++            parent_thread_id: ThreadId::new(),
++            depth: 1,
++            agent_path: Some(
++                AgentPath::try_from("/root/g4_function_only").expect("valid agent path"),
++            ),
++            agent_nickname: None,
++            agent_role: Some("g4_qualification_probe_worker".to_string()),
++        });
++    })
++    .await;
++
++    assert_eq!(plan.tool_mode, ToolMode::Direct);
++    plan.assert_visible_contains(&["list_agents"]);
++    plan.assert_visible_lacks(&["g4_assignment"]);
++    plan.assert_registered_contains(&["list_agents"]);
++    plan.assert_registered_lacks(&[
++        &ToolName::namespaced("g4_assignment", "list_agents").to_string()
++    ]);
++    assert!(
++        plan.qualification_catalog["model_visible_tools"]
++            .as_array()
++            .expect("model-visible tools")
++            .iter()
++            .any(|entry| {
++                entry["kind"] == "function"
++                    && entry["name"] == "list_agents"
++                    && entry.get("namespace").is_none()
++            })
++    );
 +}
 +
 +#[tokio::test]
@@ -4335,7 +4551,7 @@ index c77936fc9055d75a34819a97ffc224dbe15c6690..09758543a457c8bf92430933deeba2ba
  #[tokio::test]
  async fn code_mode_only_can_expose_namespaced_multi_agent_v2_as_normal_tools() {
      let plan = probe(|turn| {
-@@ -3097,6 +3561,7 @@ async fn code_mode_only_can_expose_namespaced_multi_agent_v2_as_normal_tools() {
+@@ -3097,6 +3608,7 @@ async fn code_mode_only_can_expose_namespaced_multi_agent_v2_as_normal_tools() {
          "send_message",
          "followup_task",
          "wait_agent",
@@ -5002,6 +5218,90 @@ index e7f99e38ee731241e1b2a1cb6f590d4a560a5ad1..92162cb8b0f76fcbdf614e5c7770d3d5
  }
  
  #[tokio::test]
+diff --git a/codex-rs/core/tests/responses_headers.rs b/codex-rs/core/tests/responses_headers.rs
+index 9beca451bd13d1bc80b9ad28cf3ee59cf6aa6cad..33af18e2cd54474725f9cf59a41c4427f27fc30f 100644
+--- a/codex-rs/core/tests/responses_headers.rs
++++ b/codex-rs/core/tests/responses_headers.rs
+@@ -89,6 +89,8 @@ async fn responses_stream_includes_subagent_header_on_review() {
+         websocket_connect_timeout_ms: None,
+         requires_openai_auth: false,
+         supports_websockets: false,
++        supports_namespace_tools: None,
++        requires_function_call_output_adjacency: false,
+         supports_standalone_web_search: false,
+     };
+ 
+@@ -226,6 +228,8 @@ async fn responses_stream_includes_subagent_header_on_other() {
+         websocket_connect_timeout_ms: None,
+         requires_openai_auth: false,
+         supports_websockets: false,
++        supports_namespace_tools: None,
++        requires_function_call_output_adjacency: false,
+         supports_standalone_web_search: false,
+     };
+ 
+@@ -344,6 +348,8 @@ async fn responses_respects_model_info_overrides_from_config() {
+         websocket_connect_timeout_ms: None,
+         requires_openai_auth: false,
+         supports_websockets: false,
++        supports_namespace_tools: None,
++        requires_function_call_output_adjacency: false,
+         supports_standalone_web_search: false,
+     };
+ 
+diff --git a/codex-rs/core/tests/suite/client.rs b/codex-rs/core/tests/suite/client.rs
+index c209df57628ffcac9eaf352f8d81c0cc50e75550..2ac4d4bb8289c2934604c359f05b25048d784ccb 100644
+--- a/codex-rs/core/tests/suite/client.rs
++++ b/codex-rs/core/tests/suite/client.rs
+@@ -1523,6 +1523,8 @@ async fn send_provider_auth_request(server: &MockServer, auth: ModelProviderAuth
+         websocket_connect_timeout_ms: None,
+         requires_openai_auth: false,
+         supports_websockets: false,
++        supports_namespace_tools: None,
++        requires_function_call_output_adjacency: false,
+         supports_standalone_web_search: false,
+     };
+ 
+@@ -3020,6 +3022,8 @@ async fn azure_responses_request_does_not_store_and_preserves_prefixed_item_ids(
+         websocket_connect_timeout_ms: None,
+         requires_openai_auth: false,
+         supports_websockets: false,
++        supports_namespace_tools: None,
++        requires_function_call_output_adjacency: false,
+         supports_standalone_web_search: false,
+     };
+ 
+@@ -3652,6 +3656,8 @@ async fn azure_overrides_assign_properties_used_for_responses_url() {
+         websocket_connect_timeout_ms: None,
+         requires_openai_auth: false,
+         supports_websockets: false,
++        supports_namespace_tools: None,
++        requires_function_call_output_adjacency: false,
+         supports_standalone_web_search: false,
+     };
+ 
+@@ -3736,6 +3742,8 @@ async fn env_var_overrides_loaded_auth() {
+         websocket_connect_timeout_ms: None,
+         requires_openai_auth: false,
+         supports_websockets: false,
++        supports_namespace_tools: None,
++        requires_function_call_output_adjacency: false,
+         supports_standalone_web_search: false,
+     };
+ 
+diff --git a/codex-rs/core/tests/suite/client_websockets.rs b/codex-rs/core/tests/suite/client_websockets.rs
+index 3263b9e4c916e23d5763b165d4b77c540fa3b0cb..9247befa8bce7e6cd37506a59044bd5f0101ff91 100755
+--- a/codex-rs/core/tests/suite/client_websockets.rs
++++ b/codex-rs/core/tests/suite/client_websockets.rs
+@@ -2507,6 +2507,8 @@ fn websocket_provider_with_connect_timeout(
+         websocket_connect_timeout_ms,
+         requires_openai_auth: false,
+         supports_websockets: true,
++        supports_namespace_tools: None,
++        requires_function_call_output_adjacency: false,
+         supports_standalone_web_search: false,
+     }
+ }
 diff --git a/codex-rs/core/tests/suite/hooks.rs b/codex-rs/core/tests/suite/hooks.rs
 index 119697581c947981bbb1e87ad3b8b7a6832e279c..65577c72c17da41d65a0c4e40f97a237aecd759b 100644
 --- a/codex-rs/core/tests/suite/hooks.rs
@@ -5081,6 +5381,32 @@ index 119697581c947981bbb1e87ad3b8b7a6832e279c..65577c72c17da41d65a0c4e40f97a237
  #[tokio::test]
  async fn post_tool_use_records_apply_patch_context_with_edit_alias() -> Result<()> {
      skip_if_no_network!(Ok(()));
+diff --git a/codex-rs/core/tests/suite/stream_error_allows_next_turn.rs b/codex-rs/core/tests/suite/stream_error_allows_next_turn.rs
+index 32ebbf29799ec2f7bc796417818eea28425482db..2a4b9b9fee359c68c0dcf110eb4b108ed1f3a663 100644
+--- a/codex-rs/core/tests/suite/stream_error_allows_next_turn.rs
++++ b/codex-rs/core/tests/suite/stream_error_allows_next_turn.rs
+@@ -81,6 +81,8 @@ async fn continue_after_stream_error() {
+         websocket_connect_timeout_ms: None,
+         requires_openai_auth: false,
+         supports_websockets: false,
++        supports_namespace_tools: None,
++        requires_function_call_output_adjacency: false,
+         supports_standalone_web_search: false,
+     };
+ 
+diff --git a/codex-rs/core/tests/suite/stream_no_completed.rs b/codex-rs/core/tests/suite/stream_no_completed.rs
+index d9741d0381b742b2d49c4705029e2faffa1ad3a6..281f31982a5379ee33375b880fbd53b3cb14bd12 100644
+--- a/codex-rs/core/tests/suite/stream_no_completed.rs
++++ b/codex-rs/core/tests/suite/stream_no_completed.rs
+@@ -67,6 +67,8 @@ async fn retries_on_early_close() {
+         websocket_connect_timeout_ms: None,
+         requires_openai_auth: false,
+         supports_websockets: false,
++        supports_namespace_tools: None,
++        requires_function_call_output_adjacency: false,
+         supports_standalone_web_search: false,
+     };
+ 
 diff --git a/codex-rs/core/tests/suite/subagent_notifications.rs b/codex-rs/core/tests/suite/subagent_notifications.rs
 index 4adf018bc6876cc83d1d95480a3290a189e2b509..162d61cac70584dc8476dc6b12f389ec9bc4141d 100644
 --- a/codex-rs/core/tests/suite/subagent_notifications.rs
@@ -5659,6 +5985,155 @@ index c1baebd4f01fd1906f461fe84cb2bf0d73058bfc..9e9b77676beb9ee4551af465b3e80768
              }
          );
          assert_eq!(parsed.completed.run.status, HookRunStatus::Blocked);
+diff --git a/codex-rs/login/src/auth_env_telemetry.rs b/codex-rs/login/src/auth_env_telemetry.rs
+index 86cbbfd8fea04016310093df15b84b5a0a235268..5370949e95d2e83cdbc7d09e27b1a58853b3c251 100644
+--- a/codex-rs/login/src/auth_env_telemetry.rs
++++ b/codex-rs/login/src/auth_env_telemetry.rs
+@@ -76,6 +76,8 @@ mod tests {
+             websocket_connect_timeout_ms: None,
+             requires_openai_auth: false,
+             supports_websockets: false,
++            supports_namespace_tools: None,
++            requires_function_call_output_adjacency: false,
+             supports_standalone_web_search: false,
+         };
+ 
+diff --git a/codex-rs/model-provider-info/src/lib.rs b/codex-rs/model-provider-info/src/lib.rs
+index 3fb3e87a2aa9b034713687b20b7f11c38b182389..38de4a60df8d0106a47780489f8375ff4319ae5f 100644
+--- a/codex-rs/model-provider-info/src/lib.rs
++++ b/codex-rs/model-provider-info/src/lib.rs
+@@ -146,6 +146,21 @@ pub struct ModelProviderInfo {
+     /// Whether this provider supports the Responses API WebSocket transport.
+     #[serde(default)]
+     pub supports_websockets: bool,
++    /// Whether this provider supports Responses API namespace tool definitions and calls.
++    ///
++    /// `None` preserves the historical default (`true`). Providers whose Responses-compatible
++    /// endpoint accepts only ordinary function tools can set this to `false`; tool planning then
++    /// exposes the same local handlers as ordinary functions for that provider session.
++    #[serde(default)]
++    pub supports_namespace_tools: Option<bool>,
++    /// Whether the Responses-compatible endpoint requires function calls and their outputs to
++    /// remain contiguous in the submitted input history.
++    ///
++    /// Codex Hooks can add developer context while a tool is executing. Providers with stricter
++    /// pairing rules can enable this request normalization so that context is delivered after all
++    /// currently pending function-call outputs without changing the durable rollout order.
++    #[serde(default)]
++    pub requires_function_call_output_adjacency: bool,
+     /// Whether this provider supports the standalone web-search endpoint.
+     #[serde(default)]
+     pub supports_standalone_web_search: bool,
+@@ -417,6 +432,8 @@ impl ModelProviderInfo {
+             websocket_connect_timeout_ms: None,
+             requires_openai_auth: true,
+             supports_websockets: true,
++            supports_namespace_tools: Some(true),
++            requires_function_call_output_adjacency: false,
+             supports_standalone_web_search: true,
+         }
+     }
+@@ -452,6 +469,8 @@ impl ModelProviderInfo {
+             websocket_connect_timeout_ms: None,
+             requires_openai_auth: false,
+             supports_websockets: false,
++            supports_namespace_tools: None,
++            requires_function_call_output_adjacency: false,
+             supports_standalone_web_search: false,
+         }
+     }
+@@ -628,6 +647,8 @@ pub fn create_oss_provider_with_base_url(base_url: &str, wire_api: WireApi) -> M
+         websocket_connect_timeout_ms: None,
+         requires_openai_auth: false,
+         supports_websockets: false,
++        supports_namespace_tools: None,
++        requires_function_call_output_adjacency: false,
+         supports_standalone_web_search: false,
+     }
+ }
+diff --git a/codex-rs/model-provider-info/src/model_provider_info_tests.rs b/codex-rs/model-provider-info/src/model_provider_info_tests.rs
+index d08af0ffb54c266d81465cd056944e2085889b97..b84c5dc092438fb1c88aea50bd1c4811de699e6c 100644
+--- a/codex-rs/model-provider-info/src/model_provider_info_tests.rs
++++ b/codex-rs/model-provider-info/src/model_provider_info_tests.rs
+@@ -29,6 +29,8 @@ base_url = "http://localhost:11434/v1"
+         websocket_connect_timeout_ms: None,
+         requires_openai_auth: false,
+         supports_websockets: false,
++        supports_namespace_tools: None,
++        requires_function_call_output_adjacency: false,
+         supports_standalone_web_search: false,
+     };
+ 
+@@ -64,6 +66,8 @@ query_params = { api-version = "2025-04-01-preview" }
+         websocket_connect_timeout_ms: None,
+         requires_openai_auth: false,
+         supports_websockets: false,
++        supports_namespace_tools: None,
++        requires_function_call_output_adjacency: false,
+         supports_standalone_web_search: false,
+     };
+ 
+@@ -103,6 +107,8 @@ supports_standalone_web_search = true
+         websocket_connect_timeout_ms: None,
+         requires_openai_auth: false,
+         supports_websockets: false,
++        supports_namespace_tools: None,
++        requires_function_call_output_adjacency: false,
+         supports_standalone_web_search: true,
+     };
+ 
+@@ -280,6 +286,8 @@ fn test_create_amazon_bedrock_provider() {
+             websocket_connect_timeout_ms: None,
+             requires_openai_auth: false,
+             supports_websockets: false,
++            supports_namespace_tools: None,
++            requires_function_call_output_adjacency: false,
+             supports_standalone_web_search: false,
+         }
+     );
+diff --git a/codex-rs/model-provider/src/provider.rs b/codex-rs/model-provider/src/provider.rs
+index 027850b78809d2f30dd9e9624c37d32dc471875a..9158d3ea463b01d2d72a7e802165901a218d83cb 100644
+--- a/codex-rs/model-provider/src/provider.rs
++++ b/codex-rs/model-provider/src/provider.rs
+@@ -360,6 +360,7 @@ impl ModelProvider for ConfiguredModelProvider {
+         };
+ 
+         ProviderCapabilities {
++            namespace_tools: self.info.supports_namespace_tools.unwrap_or(true),
+             remote_compaction,
+             ..ProviderCapabilities::default()
+         }
+@@ -585,6 +586,8 @@ mod tests {
+             websocket_connect_timeout_ms: None,
+             requires_openai_auth: false,
+             supports_websockets: false,
++            supports_namespace_tools: None,
++            requires_function_call_output_adjacency: false,
+             supports_standalone_web_search: false,
+         }
+     }
+@@ -690,6 +693,21 @@ mod tests {
+         }
+     }
+ 
++    #[test]
++    fn configured_provider_can_disable_namespace_tools() {
++        let provider = create_model_provider(
++            ModelProviderInfo {
++                name: "function-only responses".to_string(),
++                supports_namespace_tools: Some(false),
++                requires_function_call_output_adjacency: false,
++                ..ModelProviderInfo::default()
++            },
++            /*auth_manager*/ None,
++        );
++
++        assert!(!provider.capabilities().namespace_tools);
++    }
++
+     #[test]
+     fn configured_provider_uses_default_approval_review_preferred_model() {
+         let provider = create_model_provider(
 diff --git a/codex-rs/protocol/src/protocol.rs b/codex-rs/protocol/src/protocol.rs
 index ae2107b801b7115654b7a076b060a8686a3b3e68..fc88340c560b6607ff949cf8f361e2c341796ea5 100644
 --- a/codex-rs/protocol/src/protocol.rs

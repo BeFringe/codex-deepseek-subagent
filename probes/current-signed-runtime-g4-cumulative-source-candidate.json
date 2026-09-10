@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "classification": "current_signed_runtime_g4_cumulative_source_candidate",
-  "captured_at": "2026-09-10T01:29:47+08:00",
+  "captured_at": "2026-09-11T00:19:27+08:00",
   "source": {
     "repository": "https://github.com/openai/codex",
     "tag": "rust-v0.153.4",
@@ -10,23 +10,23 @@
   },
   "patch": {
     "path": "probes/current-signed-runtime-g4-cumulative-source-candidate.patch",
-    "sha256": "f0b0c2dc1f8c4b3167e0b8b4c913a11c0a59f615ddd4df16a5417f428983744a",
-    "bytes": 207474,
-    "lines": 5762,
-    "changed_paths": 43,
+    "sha256": "94ec3d6140868055662ca43b0d0d464f5bda8d41cd40433a20facb4fb600f72d",
+    "bytes": 228346,
+    "lines": 6237,
+    "changed_paths": 57,
     "format": "git diff --binary --full-index HEAD"
   },
   "fresh_replay": {
     "detached_exact_base": true,
     "git_apply_check_passed": true,
     "git_apply_index_passed": true,
-    "replayed_patch_sha256": "f0b0c2dc1f8c4b3167e0b8b4c913a11c0a59f615ddd4df16a5417f428983744a",
+    "replayed_patch_sha256": "94ec3d6140868055662ca43b0d0d464f5bda8d41cd40433a20facb4fb600f72d",
     "canonical_diff_byte_exact": true,
-    "changed_paths": 43
+    "changed_paths": 57
   },
   "originating_host_build": {
     "platform": "darwin-arm64",
-    "codex_sha256": "49b45f5571a3c8966aa7dd6192583c88ff3df05e840208734ee51df8e1b3104e",
+    "codex_sha256": "a10fd9fcd753687c26285f9c5e0447986e42d0dfc00780e14b59b5abebed297f",
     "binary_installed_or_selected_by_gui": false
   },
   "portable_boundary": {
