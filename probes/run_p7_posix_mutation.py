@@ -60,6 +60,43 @@ def git(root: Path, *arguments: str) -> str:
     return run(["git", "--no-optional-locks", "-C", str(root), *arguments]).stdout.decode().rstrip("\n")
 
 
+def complete_worktree_identity(root: Path) -> dict[str, object]:
+    with tempfile.TemporaryDirectory(prefix="p7-source-index.", dir="/private/tmp") as directory:
+        environment = dict(os.environ)
+        environment["GIT_INDEX_FILE"] = str(Path(directory) / "index")
+        command = [
+            "git",
+            "--no-optional-locks",
+            "-c",
+            "core.autocrlf=false",
+            "-c",
+            "core.eol=lf",
+            "-C",
+            str(root),
+        ]
+        run(command + ["read-tree", "HEAD"], env=environment)
+        run(command + ["add", "-A", "--", "."], env=environment)
+        tree = run(command + ["write-tree"], env=environment).stdout.decode().strip()
+        diff = run(
+            command + ["diff", "--cached", "--binary", "--full-index", "HEAD"],
+            env=environment,
+        ).stdout
+        names = run(
+            command + ["diff", "--cached", "--name-only", "-z", "HEAD"],
+            env=environment,
+        ).stdout.split(b"\0")
+        check = run(
+            command + ["diff", "--cached", "--check", "HEAD"],
+            env=environment,
+        ).stdout
+    return {
+        "tree": tree,
+        "binary_full_index_diff_sha256": hashlib.sha256(diff).hexdigest(),
+        "changed_paths": len([name for name in names if name]),
+        "diff_check_passed": not check,
+    }
+
+
 def write_private_json(path: Path, value: object) -> None:
     descriptor = open_private_output(path)
     with os.fdopen(descriptor, "w", encoding="utf-8", newline="\n") as stream:
@@ -188,7 +225,10 @@ def main() -> int:
     parser.add_argument("--source-patch-artifact", type=Path, required=True)
     parser.add_argument("--source-patch-sha256", required=True)
     parser.add_argument("--source-replay-sha256", required=True)
-    parser.add_argument("--source-chain-receipt", type=Path)
+    parser.add_argument("--source-chain-receipt", type=Path, required=True)
+    parser.add_argument("--complete-source-receipt", type=Path, required=True)
+    parser.add_argument("--complete-source-tree", required=True)
+    parser.add_argument("--complete-source-replay-sha256", required=True)
     parser.add_argument("--case", choices=("positive", "negative"), required=True)
     parser.add_argument("--feasibility-receipt", type=Path)
     parser.add_argument("--reuse-root", type=Path)
@@ -202,7 +242,8 @@ def main() -> int:
         candidate = arguments.candidate.resolve(strict=True)
         source = arguments.source_root.resolve(strict=True)
         source_patch = arguments.source_patch_artifact.resolve(strict=True)
-        source_chain = None
+        source_chain_path = arguments.source_chain_receipt.resolve(strict=True)
+        complete_source_path = arguments.complete_source_receipt.resolve(strict=True)
         require(candidate.is_file() and not candidate.is_symlink(), "candidate is not a regular file")
         require(sha256_file(candidate) == arguments.candidate_sha256, "candidate hash mismatch")
         require(
@@ -211,39 +252,65 @@ def main() -> int:
             and sha256_file(source_patch) == arguments.source_patch_sha256,
             "source patch artifact mismatch",
         )
-        if arguments.source_chain_receipt is not None:
-            source_chain_path = arguments.source_chain_receipt.resolve(strict=True)
-            source_chain = json.loads(source_chain_path.read_text(encoding="utf-8"))
-            require(
-                source_chain.get("classification")
-                == "current_signed_runtime_g4_explicit_plaintext_delivery_candidate"
-                and source_chain.get("source", {}).get("base_commit") == SOURCE_BASE
-                and source_chain.get("fresh_replay", {}).get(
-                    "canonical_cumulative_diff_sha256"
-                )
-                == arguments.source_replay_sha256,
-                "source patch-chain receipt does not bind the cumulative replay",
+        source_chain = json.loads(source_chain_path.read_text(encoding="utf-8"))
+        require(
+            source_chain.get("classification")
+            == "current_signed_runtime_g4_explicit_plaintext_delivery_candidate"
+            and source_chain.get("source", {}).get("base_commit") == SOURCE_BASE
+            and source_chain.get("fresh_replay", {}).get(
+                "canonical_cumulative_diff_sha256"
             )
-            chain_entries = source_chain.get("patch_chain")
+            == arguments.source_replay_sha256,
+            "source patch-chain receipt does not bind the legacy replay observation",
+        )
+        chain_entries = source_chain.get("patch_chain")
+        require(
+            isinstance(chain_entries, list)
+            and len(chain_entries) == 2
+            and chain_entries[-1].get("sha256") == arguments.source_patch_sha256,
+            "source patch-chain membership is not exact",
+        )
+        for entry in chain_entries:
+            artifact = (ROOT / entry["path"]).resolve(strict=True)
             require(
-                isinstance(chain_entries, list)
-                and len(chain_entries) == 2
-                and chain_entries[-1].get("sha256") == arguments.source_patch_sha256,
-                "source patch-chain membership is not exact",
+                artifact.is_relative_to(ROOT)
+                and artifact.is_file()
+                and not artifact.is_symlink()
+                and sha256_file(artifact) == entry["sha256"],
+                "source patch-chain artifact mismatch",
             )
-            for entry in chain_entries:
-                artifact = (ROOT / entry["path"]).resolve(strict=True)
-                require(
-                    artifact.is_relative_to(ROOT)
-                    and artifact.is_file()
-                    and not artifact.is_symlink()
-                    and sha256_file(artifact) == entry["sha256"],
-                    "source patch-chain artifact mismatch",
-                )
+        complete_source = json.loads(complete_source_path.read_text(encoding="utf-8"))
+        complete_reconstruction = complete_source.get("complete_reconstruction", {})
+        require(
+            complete_source.get("classification")
+            == "current_signed_runtime_g4_complete_source_tree"
+            and complete_source.get("source", {}).get("base_commit") == SOURCE_BASE
+            and complete_source.get("predecessor_receipt", {}).get("sha256")
+            == sha256_file(source_chain_path)
+            and complete_reconstruction.get("tree") == arguments.complete_source_tree
+            and complete_reconstruction.get("binary_full_index_diff_sha256")
+            == arguments.complete_source_replay_sha256,
+            "complete source receipt does not bind the requested source tree",
+        )
+        require(
+            [
+                (entry.get("path"), entry.get("sha256"))
+                for entry in complete_source.get("ordered_patch_chain", [])
+            ]
+            == [(entry.get("path"), entry.get("sha256")) for entry in chain_entries],
+            "complete source patch order drifted",
+        )
         require(git(source, "rev-parse", "HEAD") == SOURCE_BASE, "source commit mismatch")
-        source_diff = run(["git", "-C", str(source), "diff", "--binary", "--full-index", "HEAD"]).stdout
-        require(hashlib.sha256(source_diff).hexdigest() == arguments.source_replay_sha256, "source patch replay drift")
-        require(not git(source, "diff", "--check", "HEAD"), "source patch has whitespace errors")
+        complete_identity = complete_worktree_identity(source)
+        require(
+            complete_identity["tree"] == arguments.complete_source_tree
+            and complete_identity["binary_full_index_diff_sha256"]
+            == arguments.complete_source_replay_sha256
+            and complete_identity["changed_paths"]
+            == complete_reconstruction.get("changed_paths")
+            and complete_identity["diff_check_passed"] is True,
+            "complete source working tree drifted",
+        )
         cargo = tomllib.loads((source / "codex-rs" / "Cargo.toml").read_text(encoding="utf-8"))
         source_version = cargo["workspace"]["package"]["version"]
         require(
@@ -374,16 +441,12 @@ def main() -> int:
             "source_commit": SOURCE_BASE,
             "source_patch_sha256": arguments.source_patch_sha256,
             "source_replay_sha256": arguments.source_replay_sha256,
-            "source_chain_receipt": (
-                str(arguments.source_chain_receipt.resolve())
-                if arguments.source_chain_receipt
-                else None
-            ),
-            "source_chain_receipt_sha256": (
-                sha256_file(arguments.source_chain_receipt)
-                if arguments.source_chain_receipt
-                else None
-            ),
+            "source_chain_receipt": str(source_chain_path),
+            "source_chain_receipt_sha256": sha256_file(source_chain_path),
+            "complete_source_receipt": str(complete_source_path),
+            "complete_source_receipt_sha256": sha256_file(complete_source_path),
+            "complete_source_tree": arguments.complete_source_tree,
+            "complete_source_replay_sha256": arguments.complete_source_replay_sha256,
             "source_version": source_version,
             "candidate": str(candidate),
             "candidate_sha256": arguments.candidate_sha256,

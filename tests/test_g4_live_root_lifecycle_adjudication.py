@@ -58,8 +58,8 @@ class G4LiveRootLifecycleAdjudicationTests(unittest.TestCase):
         for gate_id in ("P2", "P3", "P5b", "P6", "P6a", "P6b"):
             self.assertEqual(gates[gate_id]["state"], "qualified")
         self.assertEqual(gates["P4"]["state"], "qualified")
-        self.assertFalse(status["phase1"]["declared_complete"])
-        self.assertFalse(status["phase1"]["declared_direct_write_qualified"])
+        self.assertTrue(status["phase1"]["declared_complete"])
+        self.assertTrue(status["phase1"]["declared_direct_write_qualified"])
         self.assertEqual(status["phase2"]["state"], "closed")
         self.assertEqual(status["phase3"]["state"], "closed")
 

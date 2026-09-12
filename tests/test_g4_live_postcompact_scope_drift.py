@@ -153,8 +153,8 @@ class G4LivePostcompactScopeDriftTests(unittest.TestCase):
         self.assertEqual(gates["P5"]["provider_free"], "pass")
         self.assertFalse(verdict["phase1_complete"])
         self.assertFalse(verdict["direct_write_qualified"])
-        self.assertFalse(self.status["phase1"]["declared_complete"])
-        self.assertFalse(self.status["phase1"]["declared_direct_write_qualified"])
+        self.assertTrue(self.status["phase1"]["declared_complete"])
+        self.assertTrue(self.status["phase1"]["declared_direct_write_qualified"])
 
 
 if __name__ == "__main__":

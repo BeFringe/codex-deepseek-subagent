@@ -17,10 +17,15 @@ DEFAULTS = {
     "source": ROOT
     / "probes"
     / "current-signed-runtime-g4-explicit-plaintext-delivery-source-candidate.json",
+    "complete_source": ROOT
+    / "probes"
+    / "current-signed-runtime-g4-complete-source-tree-20260912.json",
     "rust": ROOT
     / "probes"
-    / "current-signed-runtime-g4-explicit-plaintext-delivery-rust-validation-20260912.json",
-    "macos": ROOT / "probes" / "p7-macos-current-candidate-writer-live-20260912.json",
+    / "current-signed-runtime-g4-complete-source-rust-validation-20260912.json",
+    "macos": ROOT
+    / "probes"
+    / "p7-macos-complete-source-writer-live-20260912.json",
     "sibling": ROOT
     / "probes"
     / "g4-live-sibling-spawn-admission-parent-adjudication-20260909.json",
@@ -59,6 +64,9 @@ SOURCE_IDENTITY_KEYS = (
     "patch_sha256",
     "cumulative_replay_sha256",
     "patch_chain_receipt_sha256",
+    "complete_tree",
+    "complete_replay_sha256",
+    "complete_source_receipt_sha256",
 )
 SHA256 = re.compile(r"^[0-9a-f]{64}$")
 GIT_OID = re.compile(r"^(?:[0-9a-f]{40}|[0-9a-f]{64})$")
@@ -94,11 +102,88 @@ def require_true(value: dict[str, Any], keys: tuple[str, ...], label: str) -> No
         require(value.get(key) is True, f"{label}.{key} must be true")
 
 
-def expected_source_identity(source_path: Path, source: dict[str, Any]) -> dict[str, str]:
+def expected_source_identity(
+    source_path: Path,
+    source: dict[str, Any],
+    complete_source_path: Path,
+    complete_source: dict[str, Any],
+) -> dict[str, str]:
     patch_chain = source.get("patch_chain")
     require(isinstance(patch_chain, list) and patch_chain, "source patch chain is empty")
     final_patch = patch_chain[-1]
     require(isinstance(final_patch, dict), "final source patch entry is invalid")
+    require(
+        complete_source.get("classification")
+        == "current_signed_runtime_g4_complete_source_tree",
+        "complete source classification drifted",
+    )
+    require(
+        complete_source.get("source") == {
+            **source["source"],
+            "base_tree": complete_source.get("source", {}).get("base_tree"),
+        },
+        "complete source descriptor drifted",
+    )
+    base_tree = complete_source.get("source", {}).get("base_tree")
+    require(
+        isinstance(base_tree, str) and GIT_OID.fullmatch(base_tree) is not None,
+        "complete source base tree must be a full Git object ID",
+    )
+    predecessor = complete_source.get("predecessor_receipt", {})
+    require(
+        predecessor.get("sha256") == sha256_file(source_path),
+        "complete source predecessor receipt drifted",
+    )
+    complete_chain = complete_source.get("ordered_patch_chain")
+    require(
+        isinstance(complete_chain, list) and len(complete_chain) == len(patch_chain),
+        "complete source patch chain length drifted",
+    )
+    for prior, complete in zip(patch_chain, complete_chain, strict=True):
+        require(
+            complete.get("path") == prior.get("path")
+            and complete.get("sha256") == prior.get("sha256"),
+            "complete source patch chain drifted",
+        )
+        patch_path = ROOT / complete["path"]
+        require(
+            sha256_file(patch_path) == complete["sha256"],
+            f"complete source patch bytes drifted at {patch_path.name}",
+        )
+    reconstruction = complete_source.get("complete_reconstruction", {})
+    require(
+        reconstruction.get("method")
+        == "temporary_index_read_tree_then_apply_cached_in_order",
+        "complete source reconstruction method drifted",
+    )
+    require_true(
+        reconstruction,
+        ("git_apply_cached_passed", "git_diff_check_passed"),
+        "complete source reconstruction",
+    )
+    require(
+        reconstruction.get("working_tree_mutated") is False,
+        "complete source reconstruction mutated the working tree",
+    )
+    complete_tree = reconstruction.get("tree")
+    require(
+        isinstance(complete_tree, str) and GIT_OID.fullmatch(complete_tree) is not None,
+        "complete source tree must be a full Git object ID",
+    )
+    complete_replay_sha256 = require_sha256(
+        reconstruction.get("binary_full_index_diff_sha256"),
+        "complete source binary diff",
+    )
+    legacy = complete_source.get("legacy_tracked_only_observation", {})
+    require(
+        legacy.get("sha256")
+        == source["fresh_replay"]["canonical_cumulative_diff_sha256"],
+        "legacy tracked-only observation drifted",
+    )
+    require(
+        legacy.get("complete_source_identity") is False,
+        "legacy tracked-only observation must not be complete",
+    )
     identity = {
         "base_commit": source["source"]["base_commit"],
         "semantic_version": source["source"]["semantic_version"],
@@ -107,6 +192,9 @@ def expected_source_identity(source_path: Path, source: dict[str, Any]) -> dict[
             "canonical_cumulative_diff_sha256"
         ],
         "patch_chain_receipt_sha256": sha256_file(source_path),
+        "complete_tree": complete_tree,
+        "complete_replay_sha256": complete_replay_sha256,
+        "complete_source_receipt_sha256": sha256_file(complete_source_path),
     }
     require(
         isinstance(identity["base_commit"], str)
@@ -117,6 +205,8 @@ def expected_source_identity(source_path: Path, source: dict[str, Any]) -> dict[
         "patch_sha256",
         "cumulative_replay_sha256",
         "patch_chain_receipt_sha256",
+        "complete_replay_sha256",
+        "complete_source_receipt_sha256",
     ):
         require_sha256(identity[key], f"source identity {key}")
     require(source["fresh_replay"].get("detached_exact_base") is True, "source base is not exact")
@@ -180,11 +270,10 @@ def validate_rust(
 ) -> None:
     require(
         rust.get("classification")
-        == "current_signed_runtime_g4_explicit_plaintext_delivery_rust_validation",
+        == "current_signed_runtime_g4_complete_source_rust_validation",
         "Rust validation classification drifted",
     )
     rust_source = dict(rust.get("source", {}))
-    rust_source["patch_chain_receipt_sha256"] = rust.get("source_chain_receipt_sha256")
     require_source_identity(rust_source, expected_source, "Rust validation")
     require(
         rust.get("source", {}).get("candidate_sha256") == source_candidate_sha,
@@ -396,9 +485,14 @@ def adjudicate(paths: dict[str, Path]) -> dict[str, Any]:
     require(set(paths) == required, "adjudication path set drifted")
     values = {name: read_json(path) for name, path in paths.items()}
     status_state = validate_status(values["status"])
-    expected_source = expected_source_identity(paths["source"], values["source"])
+    expected_source = expected_source_identity(
+        paths["source"],
+        values["source"],
+        paths["complete_source"],
+        values["complete_source"],
+    )
     source_candidate_sha = require_sha256(
-        values["source"].get("originating_host_build", {}).get("codex_sha256"),
+        values["rust"].get("source", {}).get("candidate_sha256"),
         "source candidate",
     )
     validate_rust(values["rust"], expected_source, source_candidate_sha)

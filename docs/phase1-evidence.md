@@ -5039,3 +5039,114 @@ mistaken for the final candidate replay. Until a real Windows receipt satisfies
 this contract, P7 remains partial, `windows_live` remains pending,
 `phase1_complete=false`, and `direct_write_qualified=false`; Phases 2/3 remain
 closed.
+
+## Complete-source identity correction and cold macOS replay (2026-09-12)
+
+The preceding explicit-plaintext section is retained as historical evidence,
+but its cumulative SHA-256 `9804546dabff267b30230ac0b9007867febf9f3c5ea147ce62647dd7603f4bf5`
+was produced by an ordinary worktree diff. That diff omitted two untracked
+added Rust files after the non-indexed replay, so it is not a complete source
+identity and cannot authorize cross-platform promotion. The candidate
+`386a551d909eb3e53e3a9274b006519644b7a534b7d6b1f8998ebade7519a235`
+was likewise built before the complete two-patch source tree was established.
+Both receipts remain immutable and unpromoted.
+
+`probes/current-signed-runtime-g4-complete-source-tree-20260912.json`
+reconstructs the complete candidate from upstream commit
+`3d2ee51ca2d5db578f328aa75e20aa22c0197c9a` in a temporary Git index. It
+applies the two pinned patches in order and includes added files rather than
+depending on worktree trackedness. The resulting tree is
+`45f946181672a55b78b04506f0436e170576bdde`; its 62-path binary/full-index
+diff SHA-256 is
+`40f7ca3da65cb3027e53bac0b871b69fa4a1452d8a27d0edf2008ed61ed5d7b7`.
+The receipt also binds the exact blob and SHA-256 identities of
+`g4_catalog_receipt.rs` and `close_agent.rs`. A Windows checkout with
+`core.autocrlf=true` initially diverged, then independently reproduced the
+same tree and diff after the replay explicitly selected LF semantics. The
+line-ending mismatch is preserved as a negative; it is not normalized away
+inside the receipt.
+
+The shared cross-worktree Cargo target was deleted before rebuilding, because
+its dependency cache had allowed successful commands to reuse artifacts from
+another absolute source root. A cold build from the one complete tree produced
+macOS arm64 candidate SHA-256
+`c51939223fbb176d98e34159ce8c45b7c904baca65fd71989bdc8e2c750c7d4d`
+and reported semantic version `0.153.4`; it was not installed into or selected
+by the GUI App. Nine exact callback, rollout reconstruction, identity, fork,
+plaintext-wire, and protocol tests ran and passed. The serial core cohort ran
+2470 tests: 2467 passed and three nonpasses were retained rather than labelled
+green. Two match the previously observed upstream host network/proxy boundary;
+the tracing test passes in an isolated current-source process and reflects
+serial process-global order. The executable receipt is
+`probes/current-signed-runtime-g4-complete-source-rust-validation-20260912.json`.
+
+The complete-source candidate then repeated the product-independent macOS
+sequence: one positive calibration, one foreign-dirty-byte negative, a
+parent-owned feasibility decision and exact-root reset, and a final native
+writer run. The negative had an exact PreToolUse denial, zero PostToolUse,
+preserved foreign bytes, bounded close, and stable post-termination barriers.
+The final positive bound exact SessionMeta and
+`/root/p7_macos_positive`, one owned `apply_patch`, paired custom-tool output,
+byte-exact callback, consumed authority, empty in-flight authority, catalog
+absence, and a 2.166957-second stable disk barrier. Its manifest SHA-256 is
+`de62f53a900e1d0877087518a35467055de9698fab79e6fca072685f00f40989`;
+the fresh verifier and fresh-owner receipt SHA-256 values are respectively
+`b634310680e09be88af58c06fc804ecec142e1e84b934b8dbe36a071cb0ea6da`
+and `98b7ea46b9ac39d65f3c18881300b44574b4393e41db7cf282d42d27bc322f88`.
+The compact evidence and executable checks are
+`probes/p7-macos-complete-source-writer-live-20260912.json` and
+`tests/test_p7_macos_complete_source_live_evidence.py`.
+
+Fresh provider-free verification at this boundary ran 895 tests: 882 passed,
+13 originating-host replays skipped explicitly, and zero failed; agent
+templates passed. The final adjudicator now requires the base commit,
+complete tree, complete binary/full-index replay SHA-256, and complete-source
+receipt SHA-256 to match on macOS and Windows. The old tracked-only identity is
+therefore unable to promote even if its behavioral receipts are otherwise
+green. Until the exact complete-source Windows replay is independently
+adjudicated, P7 remains partial, `windows_live` remains pending,
+`phase1_complete=false`, and `direct_write_qualified=false`; Phases 2/3 remain
+closed.
+
+## Phase 1 / G4 cross-platform closure (2026-09-12)
+
+Windows independently reproduced complete source tree
+`45f946181672a55b78b04506f0436e170576bdde` from base
+`3d2ee51ca2d5db578f328aa75e20aa22c0197c9a`, built candidate SHA-256
+`f333abaf171811bfa0a162d08c59ac4c918a1d5a8ba978578ba269d1c48c3cc4`,
+and closed the native positive, foreign-path negative, parent same-path denial,
+fresh-owner, and authority-consumption sequence. The provider-free Windows run
+executed 908 tests: 900 passed, eight originating-host tests skipped explicitly,
+and zero failed. All 85 Windows-equivalence cases and all six deterministic
+schedules passed. The compact receipt is
+`probes/p7-windows-current-candidate-writer-live-20260912.json` (SHA-256
+`9be283dabbeef22fd7bab132f588bae756da6be7ad8ab7c53512aa4bfb05cc56`),
+with portable audit
+`probes/p7-windows-current-candidate-audit-20260912.json` (SHA-256
+`dc3df90b7652f6ca018bc30f15de579f6692db2001a6ea1b477f59fbfb221212`).
+
+The targeted Rust cohort passed 14 of 14. The full current run executed 3598
+tests (3590 passed, seven failed, one timed out, 77 ignored); the normalized
+upstream control executed 3565 (3559 passed, five failed, one timed out, 77
+ignored). Three current helper failures passed on same-source rerun. The final
+cold-initialization case timed out at 180 seconds in both current and control,
+then passed warm after an explicit prewarm (current 12.249 seconds; control
+10.632 seconds). Shared-target contamination was detected, preserved as invalid
+evidence, and eliminated with distinct force-rebuilt binaries. The final audit
+therefore records `comparison_complete=true`, `unexplained=0`, and
+`patch_regressions=0`; it deliberately does not claim that either full upstream
+suite was wholly green or that the shared Windows cold-start harness boundary
+was repaired.
+
+The fresh parent adjudicator now returns `promotion_ready=true` and
+`status_already_promoted=true`. P1–P7, including P5a/P5b/P6a/P6b/P6c, and the
+required platform/regression exit receipts are qualified. Final macOS
+provider-free verification executed 909 tests: 896 passed, 13 originating-host
+replays skipped explicitly, and zero failed; agent-template checks passed. The
+final receipt is
+`probes/phase1-cross-platform-promotion-adjudication-20260912.json` (SHA-256
+`cb7d3f692ebfdb9ce70bf50beff5930ce095f4d2046213d9adce49a71d3f552b`).
+Accordingly `phase1_complete=true` and `direct_write_qualified=true` for the
+exact qualified G4 actor graph. Phase 2 worker/provider profiles and the Phase 3
+ZHIPU Responses bridge remain closed. No candidate was installed into or
+selected by the GUI App during this Windows closure.

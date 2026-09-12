@@ -136,8 +136,8 @@ class P1LivePlaintextSameMessagePairTests(unittest.TestCase):
         self.assertIn(evidence_path, gates["P1"]["evidence"])
         self.assertIn(tests_path, gates["P1"]["evidence"])
         self.assertNotIn("blocker", gates["P1"])
-        self.assertFalse(status["phase1"]["declared_complete"])
-        self.assertFalse(status["phase1"]["declared_direct_write_qualified"])
+        self.assertTrue(status["phase1"]["declared_complete"])
+        self.assertTrue(status["phase1"]["declared_direct_write_qualified"])
 
     def test_receipt_contains_no_raw_plaintext_or_credentials(self) -> None:
         privacy = self.evidence["privacy"]

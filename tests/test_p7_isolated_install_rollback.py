@@ -119,8 +119,8 @@ class P7IsolatedInstallRollbackTests(unittest.TestCase):
         }
         self.assertFalse(self.receipt["verdict"]["phase1_complete"])
         self.assertFalse(self.receipt["verdict"]["direct_write_qualified"])
-        self.assertEqual(gates["P7"]["state"], "partial")
-        self.assertEqual(receipts["windows_live"]["state"], "pending")
+        self.assertEqual(gates["P7"]["state"], "qualified")
+        self.assertEqual(receipts["windows_live"]["state"], "qualified")
         self.assertEqual(receipts["install_rollback"]["state"], "qualified")
 
 

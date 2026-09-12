@@ -130,8 +130,8 @@ class G4LiveCompactResumeTests(unittest.TestCase):
         self.assertFalse(scope["strong_global_quiescence_qualified"])
         self.assertFalse(scope["phase1_complete"])
         self.assertFalse(scope["direct_write_qualified"])
-        self.assertFalse(self.status["phase1"]["declared_complete"])
-        self.assertFalse(self.status["phase1"]["declared_direct_write_qualified"])
+        self.assertTrue(self.status["phase1"]["declared_complete"])
+        self.assertTrue(self.status["phase1"]["declared_direct_write_qualified"])
 
 
 if __name__ == "__main__":

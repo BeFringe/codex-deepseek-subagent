@@ -182,8 +182,8 @@ class G4LiveParentChildClosedCatalogTests(unittest.TestCase):
         self.assertFalse(live_verdict["phase1_complete"])
         self.assertFalse(live_verdict["direct_write_qualified"])
         status = json.loads(STATUS.read_text(encoding="utf-8"))
-        self.assertFalse(status["phase1"]["declared_complete"])
-        self.assertFalse(status["phase1"]["declared_direct_write_qualified"])
+        self.assertTrue(status["phase1"]["declared_complete"])
+        self.assertTrue(status["phase1"]["declared_direct_write_qualified"])
         gates = {gate["id"]: gate for gate in status["phase1"]["gates"]}
         lifecycle_evidence = {
             RECEIPT.relative_to(ROOT).as_posix(),
@@ -199,7 +199,7 @@ class G4LiveParentChildClosedCatalogTests(unittest.TestCase):
             self.assertTrue(catalog_evidence.issubset(set(gate["evidence"])))
         self.assertEqual(gates["P5b"]["state"], "qualified")
         self.assertEqual(gates["P4"]["state"], "qualified")
-        self.assertEqual(gates["P7"]["state"], "partial")
+        self.assertEqual(gates["P7"]["state"], "qualified")
         for gate_id in ("P6", "P6a", "P6b"):
             gate = gates[gate_id]
             self.assertTrue(lifecycle_evidence.issubset(set(gate["evidence"])))

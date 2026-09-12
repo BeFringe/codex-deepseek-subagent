@@ -129,9 +129,9 @@ class G4P5bClosedCatalogQuiescenceAdjudicationTests(unittest.TestCase):
         self.assertEqual(gates["P5b"]["provider_free"], "pass")
         self.assertIn(ADJUDICATION.relative_to(ROOT).as_posix(), gates["P5b"]["evidence"])
         self.assertEqual(gates["P4"]["state"], "qualified")
-        self.assertEqual(gates["P7"]["state"], "partial")
-        self.assertFalse(self.status["phase1"]["declared_complete"])
-        self.assertFalse(self.status["phase1"]["declared_direct_write_qualified"])
+        self.assertEqual(gates["P7"]["state"], "qualified")
+        self.assertTrue(self.status["phase1"]["declared_complete"])
+        self.assertTrue(self.status["phase1"]["declared_direct_write_qualified"])
 
 
 if __name__ == "__main__":

@@ -88,7 +88,7 @@ class G4CurrentAppFailedPatchCallbackRegressionTests(unittest.TestCase):
         self.assertFalse(verdict["phase1_complete"])
         self.assertFalse(verdict["direct_write_qualified"])
 
-    def test_status_keeps_regression_in_p7_and_accepts_the_later_rollback_receipt(self) -> None:
+    def test_status_retains_regression_evidence_after_p7_closure(self) -> None:
         gates = {gate["id"]: gate for gate in self.status["phase1"]["gates"]}
         receipts = {
             receipt["id"]: receipt
@@ -102,13 +102,9 @@ class G4CurrentAppFailedPatchCallbackRegressionTests(unittest.TestCase):
             self.assertIn(rel, gate["evidence"])
             self.assertIn(test_rel, gate["evidence"])
         self.assertEqual(gates["P5b"]["state"], "qualified")
-        self.assertEqual(gates["P7"]["state"], "partial")
-        blocker = gates["P7"]["blocker"]
+        self.assertEqual(gates["P7"]["state"], "qualified")
+        self.assertNotIn("blocker", gates["P7"])
         self.assertEqual(receipts["install_rollback"]["state"], "qualified")
-        self.assertNotIn("failed-PostToolUse callback", blocker)
-        self.assertNotIn("installed-runtime candidate reload/rollback", blocker)
-        self.assertIn("native Windows parity", blocker)
-        self.assertNotRegex(blocker, r"installed \d+\.\d+\.\d+")
 
 
 if __name__ == "__main__":

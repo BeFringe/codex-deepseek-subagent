@@ -152,9 +152,9 @@ class P1LivePlaintextMessageDeliveryTests(unittest.TestCase):
             self.assertIn(evidence_path, gates[gate_id]["evidence"])
         for gate_id in ("P2", "P3"):
             self.assertEqual(gates[gate_id]["state"], "qualified")
-        self.assertEqual(gates["P7"]["state"], "partial")
-        self.assertFalse(status["phase1"]["declared_complete"])
-        self.assertFalse(status["phase1"]["declared_direct_write_qualified"])
+        self.assertEqual(gates["P7"]["state"], "qualified")
+        self.assertTrue(status["phase1"]["declared_complete"])
+        self.assertTrue(status["phase1"]["declared_direct_write_qualified"])
 
     def test_no_credential_value_or_name_is_stored(self) -> None:
         self.assertFalse(self.evidence["runtime"]["credential_values_observed_or_recorded"])

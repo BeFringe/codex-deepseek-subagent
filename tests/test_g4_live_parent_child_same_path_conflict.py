@@ -107,8 +107,8 @@ class G4LiveParentChildSamePathConflictTests(unittest.TestCase):
             self.assertIn(evidence, gates[gate_id]["evidence"])
         self.assertEqual(gates["P4"]["state"], "qualified")
         self.assertEqual(gates["P5b"]["state"], "qualified")
-        self.assertFalse(status["phase1"]["declared_complete"])
-        self.assertFalse(status["phase1"]["declared_direct_write_qualified"])
+        self.assertTrue(status["phase1"]["declared_complete"])
+        self.assertTrue(status["phase1"]["declared_direct_write_qualified"])
 
 
 if __name__ == "__main__":

@@ -1,6 +1,7 @@
 import importlib.util
 from pathlib import Path
 import stat
+import sys
 import tempfile
 import unittest
 
@@ -15,6 +16,11 @@ assert SPEC.loader is not None
 SPEC.loader.exec_module(hook)
 
 
+@unittest.skipUnless(
+    sys.platform == 'darwin',
+    'originating-host macOS fixture: /private/tmp, O_NOFOLLOW and POSIX 0600; '
+    'does not establish Windows reparse-point or DACL equivalence',
+)
 class MacosMutationHookTests(unittest.TestCase):
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory(dir="/private/tmp")

@@ -1,0 +1,76 @@
+{
+  "schema": 1,
+  "classification": "current_signed_runtime_g4_complete_source_tree",
+  "captured_at": "2026-09-12T02:22:42+08:00",
+  "source": {
+    "repository": "https://github.com/openai/codex",
+    "tag": "rust-v0.153.4",
+    "base_commit": "3d2ee51ca2d5db578f328aa75e20aa22c0197c9a",
+    "base_tree": "c527c7a5f5f199231dc0d819264e9e2180eb126a",
+    "semantic_version": "0.153.4"
+  },
+  "predecessor_receipt": {
+    "path": "probes/current-signed-runtime-g4-explicit-plaintext-delivery-source-candidate.json",
+    "sha256": "6f5e5b6819287f82eb1ea76b51c6c8659b52ded7d067bf7d52196c945e32f12b"
+  },
+  "ordered_patch_chain": [
+    {
+      "path": "probes/current-signed-runtime-g4-custom-tool-pairing-source-candidate.patch",
+      "sha256": "4f61f37ae46f6160055fde7b7ce95d095b2456ce1b9f1a96f5947669baab63b8",
+      "bytes": 231411,
+      "lines": 6310,
+      "changed_paths": 57
+    },
+    {
+      "path": "probes/current-signed-runtime-g4-explicit-plaintext-delivery-source-candidate.patch",
+      "sha256": "14acd83f16c35acef0be7d9e511f3012ffa0bff8b6438a5890dbd3eddddc99d7",
+      "bytes": 18625,
+      "lines": 412,
+      "changed_paths": 8
+    }
+  ],
+  "complete_reconstruction": {
+    "method": "temporary_index_read_tree_then_apply_cached_in_order",
+    "working_tree_mutated": false,
+    "patch_order_required": true,
+    "git_apply_cached_passed": true,
+    "git_diff_check_passed": true,
+    "changed_paths": 62,
+    "tree_object_format": "sha1",
+    "tree": "45f946181672a55b78b04506f0436e170576bdde",
+    "binary_full_index_diff_sha256": "40f7ca3da65cb3027e53bac0b871b69fa4a1452d8a27d0edf2008ed61ed5d7b7"
+  },
+  "added_paths": [
+    {
+      "path": "codex-rs/core/src/tools/g4_catalog_receipt.rs",
+      "mode": "100644",
+      "blob": "2e7ee3a0c0c3434d9e3a1873b3a7e363c11b2964",
+      "sha256": "959b76e42137bfb147b7d8c94bb00650946d0562ed71bfabac6890e0075c12bb"
+    },
+    {
+      "path": "codex-rs/core/src/tools/handlers/multi_agents_v2/close_agent.rs",
+      "mode": "100644",
+      "blob": "25a6d738c767eba992779c10677bb251b295a034",
+      "sha256": "265c526eb0d6c7a0f6eae33e4ae45fb06ff26a92f5857281b334087a3251736b"
+    }
+  ],
+  "legacy_tracked_only_observation": {
+    "sha256": "9804546dabff267b30230ac0b9007867febf9f3c5ea147ce62647dd7603f4bf5",
+    "complete_source_identity": false,
+    "reason": "ordinary git diff HEAD omitted two untracked added files after a non-indexed replay",
+    "omitted_paths": [
+      "codex-rs/core/src/tools/g4_catalog_receipt.rs",
+      "codex-rs/core/src/tools/handlers/multi_agents_v2/close_agent.rs"
+    ]
+  },
+  "portable_boundary": {
+    "product_independent": true,
+    "credential_values_recorded": false,
+    "windows_must_match_complete_tree": true,
+    "windows_live_qualified": false,
+    "phase1_complete": false,
+    "direct_write_qualified": false,
+    "phase2_state": "closed",
+    "phase3_state": "closed"
+  }
+}

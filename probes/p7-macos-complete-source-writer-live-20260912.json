@@ -1,0 +1,125 @@
+{
+  "schema": 1,
+  "classification": "p7_macos_current_candidate_writer_live_evidence",
+  "captured_at": "2026-09-12T02:56:38+08:00",
+  "platform": {
+    "system": "Darwin",
+    "machine": "arm64"
+  },
+  "source": {
+    "base_commit": "3d2ee51ca2d5db578f328aa75e20aa22c0197c9a",
+    "semantic_version": "0.153.4",
+    "patch_sha256": "14acd83f16c35acef0be7d9e511f3012ffa0bff8b6438a5890dbd3eddddc99d7",
+    "cumulative_replay_sha256": "9804546dabff267b30230ac0b9007867febf9f3c5ea147ce62647dd7603f4bf5",
+    "patch_chain_receipt_sha256": "6f5e5b6819287f82eb1ea76b51c6c8659b52ded7d067bf7d52196c945e32f12b",
+    "complete_tree": "45f946181672a55b78b04506f0436e170576bdde",
+    "complete_replay_sha256": "40f7ca3da65cb3027e53bac0b871b69fa4a1452d8a27d0edf2008ed61ed5d7b7",
+    "complete_source_receipt_sha256": "d708e619ac054dd70bb6289b08e3728540ed213c24d4f952196b91d30ed2c418",
+    "candidate_sha256": "c51939223fbb176d98e34159ce8c45b7c904baca65fd71989bdc8e2c750c7d4d"
+  },
+  "provider_boundary": {
+    "parent_provider": "openai",
+    "parent_auth": "current_chatgpt_login",
+    "child_provider": "deepseek",
+    "child_model": "deepseek-v4-flash",
+    "credential_present": true,
+    "credential_values_recorded": false,
+    "parent_provider_routed_through_project": false
+  },
+  "superseded_incomplete_source_binding": {
+    "receipt_sha256": "d0d98e68a64bdaa7a1cac4190879e77bcd9cabb8cfd717958361b4de476d135e",
+    "candidate_sha256": "386a551d909eb3e53e3a9274b006519644b7a534b7d6b1f8998ebade7519a235",
+    "complete_source_tree_bound": false,
+    "promoted": false,
+    "preserved": true
+  },
+  "positive_calibration": {
+    "manifest_sha256": "622875b2b7e87a37cbd98e0df6730a66a51e1dcb736e9c1a62f759fdbb9600ec",
+    "fresh_outcome_sha256": "51488c776d6fc317b38e48c04915d121ea885e41c37addab49d5e1a6b9346503",
+    "callback_exact": true,
+    "outcome_verified": true,
+    "authority_consumed": false
+  },
+  "negative_calibration": {
+    "manifest_sha256": "fadf6f71bfb408553b110f531d0c8b0474c79ea00d7592cfa4160e2f6c5f1d3e",
+    "fresh_outcome_sha256": "7d473f599cb3232d6176b39fe11676d80d7085c86b68c5d606b7680f68e3bed8",
+    "parent_thread_id": "01a091d0-620d-73c3-a24a-105a05fc3856",
+    "child_thread_id": "01a091d0-fe4d-7a02-a65b-3840d58b1642",
+    "canonical_agent_path": "/root/p7_macos_negative",
+    "tool_call_id": "call_00_iTCAQdrJvMLll7xrBUlZ5742",
+    "requested_foreign_path": "foreign.txt",
+    "pretool_decision": "deny",
+    "posttool_observation_count": 0,
+    "negative_boundary": "authority_revoked_on_post_capture_disk_drift",
+    "foreign_dirty_sha256": "064ce9083df70dfd9f5ac4c87e987376275046fb0012aa83caad1eee90c7c5d8",
+    "disk_barriers_verified": true,
+    "session_loop_terminated": true,
+    "tracked_process_termination_confirmed": true,
+    "closed_catalog_actor_quiescence_claimed": true,
+    "child_absent_after_close": true
+  },
+  "feasibility_and_reset": {
+    "feasibility_receipt_sha256": "01ed8a1ca0f95677955d0a7e043fc8fc1749f383ae5f3fc93cec74f69f146ea8",
+    "owner_decision": "dispatch",
+    "counterexample_executed": true,
+    "counterexample_found": false,
+    "bounded_completion_satisfies": true,
+    "root_preparation_receipt_sha256": "b284e6d52a1eba84365d394eb195ad6d7ec4173c5d47d0d92077a5f7839b24ca",
+    "exact_baseline_restored": true
+  },
+  "final_positive": {
+    "manifest_sha256": "de62f53a900e1d0877087518a35467055de9698fab79e6fca072685f00f40989",
+    "fresh_outcome_sha256": "b634310680e09be88af58c06fc804ecec142e1e84b934b8dbe36a071cb0ea6da",
+    "fresh_owner_sha256": "98b7ea46b9ac39d65f3c18881300b44574b4393e41db7cf282d42d27bc322f88",
+    "parent_thread_id": "01a091d1-d258-75b1-abd5-c9eda67e2a85",
+    "child_thread_id": "01a091d2-a665-77a0-be4b-169a59d5e279",
+    "canonical_agent_path": "/root/p7_macos_positive",
+    "tool_call_id": "call_00_05rHVR8wIptq1Ccy8Aw06471",
+    "assignment_id": "84443b01-d3ec-4dfe-98de-bbce9a945b13",
+    "branch": "main",
+    "base_head": "dfc10b6625ccf1a92807c48199d582ecaaf73135",
+    "baseline_index_sha256": "7aab7a440bcebcafdcdd2bbb82e258408371df7b6873b2f510a9a7d005bddbf6",
+    "changed_paths": [
+      {
+        "kind": "file",
+        "path": "qualified.txt",
+        "sha256": "4fd8e8f97e640e495fefed6d4fdb0467c4e5835d9bd006173da14af37698ac8c"
+      }
+    ],
+    "callback_exact": true,
+    "custom_tool_call_output_paired": true,
+    "feasibility_bound_before_dispatch": true,
+    "post_termination_barrier_interval_ns": 2166957000,
+    "disk_barriers_exact_and_stable": true,
+    "session_loop_terminated": true,
+    "tracked_process_termination_confirmed": true,
+    "closed_catalog_actor_quiescence_claimed": true,
+    "child_absent_after_close": true,
+    "in_flight_authority_empty": true,
+    "consumed_receipt_sha256": "26283ddf6be0efb860711cdbb379ad2b18d2e36b9f33dd5f4fab3ea3f7b78f2f",
+    "authority_consumed": true,
+    "exact_closed_writer_run_qualified": true
+  },
+  "provider_free_regression": {
+    "tests_run": 895,
+    "passed": 882,
+    "skipped": 13,
+    "failed": 0,
+    "agent_template_checks_passed": true
+  },
+  "raw_artifact_retention": {
+    "location": "originating_host_private_0700",
+    "raw_paths_committed": false,
+    "raw_artifacts_hash_bound": true
+  },
+  "scope_decision": {
+    "macos_exact_closed_writer_qualified": true,
+    "macos_foreign_path_negative_qualified": true,
+    "windows_current_candidate_state": "pending",
+    "p7_complete": false,
+    "phase1_complete": false,
+    "direct_write_qualified": false,
+    "phase2_state": "closed",
+    "phase3_state": "closed"
+  }
+}

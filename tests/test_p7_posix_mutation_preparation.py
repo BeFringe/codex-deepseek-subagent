@@ -46,7 +46,7 @@ class PosixMutationPreparationTests(unittest.TestCase):
         self.assertIn("grants no foreign-path ownership", negative)
         self.assertIn("return exactly TASK.CONTEXT_LOST", negative)
 
-    def test_source_chain_receipt_is_part_of_live_manifest_contract(self):
+    def test_complete_source_tree_is_part_of_live_manifest_contract(self):
         runner = (ROOT / "probes" / "run_p7_posix_mutation.py").read_text(
             encoding="utf-8"
         )
@@ -55,7 +55,11 @@ class PosixMutationPreparationTests(unittest.TestCase):
         ).read_text(encoding="utf-8")
         self.assertIn("--source-chain-receipt", runner)
         self.assertIn("source_chain_receipt_sha256", runner)
+        self.assertIn("--complete-source-receipt", runner)
+        self.assertIn("--complete-source-tree", runner)
+        self.assertIn("complete_worktree_identity", runner)
         self.assertIn("source patch-chain artifact drift", verifier)
+        self.assertIn("complete source identity does not bind this runtime", verifier)
 
 
 if __name__ == "__main__":

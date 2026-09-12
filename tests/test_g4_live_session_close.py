@@ -120,8 +120,8 @@ class G4LiveSessionCloseTests(unittest.TestCase):
             self.assertEqual(row["state"], "qualified")
             self.assertIn("probes/g4-live-session-close-20260908.json", row["evidence"])
             self.assertIn("tests/test_g4_live_session_close.py", row["evidence"])
-        self.assertFalse(phase1["declared_complete"])
-        self.assertFalse(phase1["declared_direct_write_qualified"])
+        self.assertTrue(phase1["declared_complete"])
+        self.assertTrue(phase1["declared_direct_write_qualified"])
 
 
 if __name__ == "__main__":

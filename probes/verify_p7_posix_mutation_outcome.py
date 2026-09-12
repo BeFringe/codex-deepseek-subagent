@@ -168,6 +168,28 @@ def verify(path: Path) -> dict[str, object]:
                 and sha256_file(artifact) == entry["sha256"],
                 "source patch-chain artifact drift",
             )
+    complete_path = Path(manifest["complete_source_receipt"])
+    require(
+        sha256_file(complete_path) == manifest["complete_source_receipt_sha256"],
+        "complete source receipt drift",
+    )
+    complete = read_json(complete_path)
+    reconstruction = complete.get("complete_reconstruction", {})
+    require(
+        complete.get("classification")
+        == "current_signed_runtime_g4_complete_source_tree"
+        and complete.get("source", {}).get("base_commit") == manifest["source_commit"]
+        and complete.get("predecessor_receipt", {}).get("sha256")
+        == manifest["source_chain_receipt_sha256"]
+        and reconstruction.get("tree") == manifest["complete_source_tree"]
+        and reconstruction.get("binary_full_index_diff_sha256")
+        == manifest["complete_source_replay_sha256"]
+        and complete.get("legacy_tracked_only_observation", {}).get(
+            "complete_source_identity"
+        )
+        is False,
+        "complete source identity does not bind this runtime",
+    )
     require(
         manifest["argv"]
         == invocation(Path(manifest["candidate"]), root, directory / "role.toml", directory / "models.json"),

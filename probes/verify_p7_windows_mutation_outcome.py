@@ -20,6 +20,29 @@ from p7_windows_acl import run_directory_acl
 from p7_windows_sandbox_acl import inspect_acl, validate_sandbox_acl
 from compatibility_state import validate_writer_receipt
 from writer_lease_guard import post_mutation_observation
+from p7_current_candidate_source import verify_current_source
+
+
+def verify_denied_tool(pre, post, reason_prefix):
+    decision = json.loads(pre['stdout']).get('hookSpecificOutput', {})
+    require(decision.get('permissionDecision') == 'deny', 'denied tool lacks an explicit PreToolUse denial')
+    require(str(decision.get('permissionDecisionReason', '')).startswith(reason_prefix),
+            'denied tool reason differs from the expected authority boundary')
+    require(not post, 'denied tool emitted PostToolUse')
+
+
+def verify_exact_single_file_patch(actual, root, name, operation, body):
+    require(name in {'qualified.txt', 'foreign.txt'}, 'unknown exact patch basename')
+    target = root / name
+    require(root.resolve(strict=True) == root and target.resolve(strict=True) == target,
+            'exact patch target is not canonical')
+    forms = {
+        f'*** Begin Patch\n*** {operation} File: {path}\n{body}\n*** End Patch'.replace('\\', '/')
+        for path in (name, str(target))
+    }
+    require(isinstance(actual, str) and actual.replace('\\', '/').strip() in forms,
+            'unexpected patch content or path')
+    return target
 
 
 def expected_disk(manifest):
@@ -45,6 +68,7 @@ def verify(path):
     require(digest(m['candidate']) == m['candidate_sha256'], 'candidate drift')
     require(digest(m['build_receipt']) == m['build_receipt_sha256'], 'build receipt drift')
     build = read_json(Path(m['build_receipt']))
+    verify_current_source(ROOT, Path(build['source_root']), build)
     require(build['source_commit'] == BASE and build['patch_sha256'] in SOURCE_PATCHES
             and build['candidate_sha256'] == m['candidate_sha256'], 'build identity mismatch')
     require(digest(ROOT / 'probes' / SOURCE_PATCHES[build['patch_sha256']]) == build['patch_sha256'], 'source patch artifact drift')
@@ -106,10 +130,11 @@ def verify(path):
     output = one(response_payloads(child_rows, 'custom_tool_call_output'), 'custom output')
     require(output['call_id'] == call['call_id'], 'custom output ID mismatch')
     if m['mutation_case'] == 'positive':
-        patch = f'*** Begin Patch\n*** Add File: {root / "qualified.txt"}\n+G4_CHILD_WRITE_QUALIFIED\n*** End Patch'
+        patch_target = verify_exact_single_file_patch(call['input'], root, 'qualified.txt', 'Add',
+                                                     '+G4_CHILD_WRITE_QUALIFIED')
     else:
-        patch = f'*** Begin Patch\n*** Update File: {root / "foreign.txt"}\n@@\n-FOREIGN_DIRTY_BYTES_MUST_SURVIVE\n+FOREIGN_TRACKED_BASELINE\n*** End Patch'
-    require(call['input'].replace('\\', '/').strip() == patch.replace('\\', '/'), 'unexpected patch content or path')
+        patch_target = verify_exact_single_file_patch(call['input'], root, 'foreign.txt', 'Update',
+                '@@\n-FOREIGN_DIRTY_BYTES_MUST_SURVIVE\n+FOREIGN_TRACKED_BASELINE')
     require('No tool output found' not in json.dumps(child_rows), 'provider rejected custom output')
     parent_calls = response_payloads(parent_rows, 'function_call')
     parent_custom = response_payloads(parent_rows, 'custom_tool_call')
@@ -140,12 +165,16 @@ def verify(path):
     decision = json.loads(pre['stdout']).get('hookSpecificOutput', {}).get('permissionDecision')
     if m.get('parent_claim_barrier'):
         parent_patch = parent_custom[0]
-        exact_patch = f'*** Begin Patch\n*** Add File: {root / "qualified.txt"}\n+G4_PARENT_CONFLICT_MUST_NOT_WRITE\n*** End Patch'
-        require(parent_patch['name'] == 'apply_patch' and parent_patch['input'].replace('\\', '/').strip() == exact_patch.replace('\\', '/'), 'unexpected parent mutation request')
+        require(parent_patch['name'] == 'apply_patch', 'unexpected parent mutation request')
+        verify_exact_single_file_patch(parent_patch['input'], root, 'qualified.txt', 'Add',
+                                       '+G4_PARENT_CONFLICT_MUST_NOT_WRITE')
         parent_output = one(response_payloads(parent_rows, 'custom_tool_call_output'), 'parent denial output')
         require(parent_output['call_id'] == parent_patch['call_id'] and 'TASK.WRITER_LEASE_BLOCKED' in str(parent_output['output']), 'parent denial output not exact')
         parent_pre = one([e for e in events if e['input'].get('hook_event_name') == 'PreToolUse'
                           and e['input'].get('tool_use_id') == parent_patch['call_id']], 'parent conflict PreToolUse')
+        parent_post = [e for e in events if e['input'].get('hook_event_name') == 'PostToolUse'
+                       and e['input'].get('tool_use_id') == parent_patch['call_id']]
+        verify_denied_tool(parent_pre, parent_post, 'TASK.WRITER_LEASE_BLOCKED')
         ready = pre['schedule_ready_published']
         released = parent_pre['schedule_release_published']
         require(parent_pre['schedule_ready_observed']['marker'] == ready
@@ -159,8 +188,6 @@ def verify(path):
         require(digest(conflict_path) == released['conflict_sha256'] and read_json(conflict_path) == conflict
                 and conflict['actor']['thread_id'] == parent['id']
                 and any(c.get('claim_id') == ready['claim_id'] for c in conflict['conflicts']), 'durable parent conflict drift')
-        require(not [e for e in events if e['input'].get('hook_event_name') == 'PostToolUse'
-                     and e['input'].get('tool_use_id') == parent_patch['call_id']], 'denied parent mutation dispatched')
     if m['mutation_case'] == 'positive':
         require(decision != 'deny' and len(post) == 1, 'write mediation incomplete')
         require('Success' in str(output['output']), 'patch did not report success')
@@ -174,6 +201,7 @@ def verify(path):
         require(capsule['root']['path'] == str(root) and capsule['root']['branch'] == m['baseline']['branch']
                 and capsule['root']['base_commit'] == m['baseline']['head']
                 and capsule['owned_paths'] == ['qualified.txt'] and not any(capsule['git_authority'].values())
+                and patch_target == root / capsule['owned_paths'][0]
                 and capsule['assignment_mutation_mode'] == 'write'
                 and capsule['parent_recorded_user_write_intent'] == 'allow'
                 and capsule['runtime_session_id'] == parent['id'] and binding['child_thread_id'] == child['id']
@@ -201,7 +229,7 @@ def verify(path):
                      if part.get('type') == 'output_text'], 'negative final text')
         require(final == 'TASK.CONTEXT_LOST' and callback_payload(parent_rows) == final,
                 'negative completion or callback differs from the expected context-lost result')
-        require(decision == 'deny', 'foreign mutation was not denied by PreToolUse')
+        verify_denied_tool(pre, post, 'TASK.AUTHORITY_BLOCKED:')
         reason = json.loads(pre['stdout'])['hookSpecificOutput'].get('permissionDecisionReason')
         require(reason == 'TASK.AUTHORITY_BLOCKED: disk changed after capture and before first Git attestation; authority terminated',
                 'negative request was rejected at an unexpected boundary')

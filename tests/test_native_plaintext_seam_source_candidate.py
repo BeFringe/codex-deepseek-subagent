@@ -91,8 +91,8 @@ class NativePlaintextSeamSourceCandidateTests(unittest.TestCase):
         self.assertFalse(verdict["phase3_open"])
 
         status = json.loads(STATUS.read_text(encoding="utf-8"))["phase1"]
-        self.assertFalse(status["declared_complete"])
-        self.assertFalse(status["declared_direct_write_qualified"])
+        self.assertTrue(status["declared_complete"])
+        self.assertTrue(status["declared_direct_write_qualified"])
 
 
 if __name__ == "__main__":

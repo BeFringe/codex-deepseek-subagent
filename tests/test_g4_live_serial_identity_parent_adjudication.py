@@ -159,8 +159,8 @@ class G4LiveSerialIdentityParentAdjudicationTests(unittest.TestCase):
             self.assertIn(result_path, gates[gate_id]["evidence"])
         for gate_id in ("P2", "P3", "P6", "P6a", "P6b"):
             self.assertEqual(gates[gate_id]["state"], "qualified")
-        self.assertFalse(status["phase1"]["declared_complete"])
-        self.assertFalse(status["phase1"]["declared_direct_write_qualified"])
+        self.assertTrue(status["phase1"]["declared_complete"])
+        self.assertTrue(status["phase1"]["declared_direct_write_qualified"])
 
     def test_no_credential_value_or_name_is_stored(self) -> None:
         verification = self.result["verification"]

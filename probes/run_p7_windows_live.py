@@ -14,6 +14,7 @@ import uuid
 
 from build_g4_native_probe_prompt import build_prompt
 from p7_windows_acl import run_directory_acl
+from p7_current_candidate_source import CUMULATIVE, verify_current_source
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -21,6 +22,8 @@ ROLE = 'g4_qualification_probe_worker'
 BASE = '3d2ee51ca2d5db578f328aa75e20aa22c0197c9a'
 PATCH_HASH = '94ec3d6140868055662ca43b0d0d464f5bda8d41cd40433a20facb4fb600f72d'
 SOURCE_PATCHES = {
+    '9804546dabff267b30230ac0b9007867febf9f3c5ea147ce62647dd7603f4bf5':
+        'current-signed-runtime-g4-explicit-plaintext-delivery-cumulative-replay.patch',
     PATCH_HASH: 'current-signed-runtime-g4-cumulative-source-candidate.patch',
     '4f61f37ae46f6160055fde7b7ce95d095b2456ce1b9f1a96f5947669baab63b8':
         'current-signed-runtime-g4-custom-tool-pairing-source-candidate.patch',
@@ -134,9 +137,14 @@ def main():
     require(command([str(candidate), '--version']).stdout.decode().strip() == 'codex-cli 0.153.4',
             'candidate semantic version mismatch')
     source = Path(build['source_root'])
-    require(git(source, 'rev-parse', 'HEAD') == BASE, 'source checkout HEAD drift')
-    replay = command(['git', '-C', str(source), 'diff', '--binary', '--full-index', 'HEAD']).stdout
+    source_options = (['-c', 'core.autocrlf=false', '-c', 'core.eol=lf',
+                       '-c', 'diff.autoRefreshIndex=false'] if build['patch_sha256'] == CUMULATIVE else [])
+    source_command = ['git', *source_options, '-C', str(source)]
+    require(command(source_command + ['rev-parse', 'HEAD']).stdout.decode().strip() == BASE,
+            'source checkout HEAD drift')
+    replay = command(source_command + ['diff', '--binary', '--full-index', 'HEAD']).stdout
     require(hashlib.sha256(replay).hexdigest() == build['patch_sha256'], 'source patch replay drift')
+    verify_current_source(ROOT, source, build)
 
     run_id = 'p7-' + args.provider + '-' + uuid.uuid4().hex
     artifacts = args.artifacts_parent.resolve(strict=True) / run_id
@@ -236,7 +244,8 @@ def main():
         'phase1_complete': False, 'direct_write_qualified': False,
         'harness_sha256': {name: digest(ROOT / 'probes' / name) for name in
             ('run_p7_windows_live.py', 'p7_windows_hook.py', 'p7_windows_acl.py',
-             'adjudicate_p7_windows_live.py', 'build_g4_native_probe_prompt.py')},
+             'adjudicate_p7_windows_live.py', 'build_g4_native_probe_prompt.py',
+             'p7_current_candidate_source.py')},
     }
     write_json(artifacts / 'prepared.json', manifest)
     if args.prepare_only:

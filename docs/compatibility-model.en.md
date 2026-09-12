@@ -2,9 +2,9 @@
 
 [简体中文](compatibility-model.md)
 
-Status: v1 control-plane design, 2026-08-12. Phase 0 evidence and probe-driven
-Phase 1 implementation are approved, but Phase 1 has not passed G4. Phases 2
-and 3 are not approved for implementation yet.
+Status: v1 control-plane design. The 2026-09-12 cross-platform parent
+adjudication closes Phase 1/G4 with `direct_write_qualified=true`. Phases 2 and
+3 remain closed and are not approved for implementation yet.
 
 Stage documents: [Phase 1 / G4 probe plan](phase1-g4-probe-plan.md) ·
 [Phase 2 Worker / Provider Profile (closed)](phase2-worker-provider-profiles.en.md) ·

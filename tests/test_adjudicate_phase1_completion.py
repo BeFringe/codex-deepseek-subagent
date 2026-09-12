@@ -8,6 +8,8 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "probes" / "adjudicate_phase1_completion.py"
+WINDOWS = ROOT / "probes" / "p7-windows-current-candidate-writer-live-20260912.json"
+FINAL = ROOT / "probes" / "phase1-cross-platform-promotion-adjudication-20260912.json"
 SPEC = importlib.util.spec_from_file_location("adjudicate_phase1_completion", SCRIPT)
 adjudicator = importlib.util.module_from_spec(SPEC)
 assert SPEC.loader is not None
@@ -18,8 +20,12 @@ class Phase1CompletionAdjudicationTests(unittest.TestCase):
     def setUp(self):
         self.paths = dict(adjudicator.DEFAULTS)
         source = adjudicator.read_json(self.paths["source"])
+        complete_source = adjudicator.read_json(self.paths["complete_source"])
         self.source_identity = adjudicator.expected_source_identity(
-            self.paths["source"], source
+            self.paths["source"],
+            source,
+            self.paths["complete_source"],
+            complete_source,
         )
 
     def valid_windows_receipt(self):
@@ -105,12 +111,12 @@ class Phase1CompletionAdjudicationTests(unittest.TestCase):
         paths["windows"] = path
         return adjudicator.adjudicate(paths)
 
-    def test_exact_contract_is_promotion_ready_without_self_promotion(self):
+    def test_exact_contract_is_promotion_ready_after_parent_promotion(self):
         with tempfile.TemporaryDirectory() as directory:
             result = self.adjudicate(self.valid_windows_receipt(), directory)
 
         self.assertTrue(result["promotion_ready"])
-        self.assertFalse(result["status_already_promoted"])
+        self.assertTrue(result["status_already_promoted"])
         self.assertEqual(result["source_identity"], self.source_identity)
         self.assertNotEqual(
             result["candidate_sha256"]["darwin_arm64"],
@@ -124,6 +130,16 @@ class Phase1CompletionAdjudicationTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             with self.assertRaisesRegex(
                 adjudicator.AdjudicationError, "source identity drifted"
+            ):
+                self.adjudicate(receipt, directory)
+
+    def test_missing_complete_tree_identity_fails_closed(self):
+        receipt = self.valid_windows_receipt()
+        del receipt["source"]["complete_tree"]
+
+        with tempfile.TemporaryDirectory() as directory:
+            with self.assertRaisesRegex(
+                adjudicator.AdjudicationError, "complete_tree"
             ):
                 self.adjudicate(receipt, directory)
 
@@ -157,10 +173,10 @@ class Phase1CompletionAdjudicationTests(unittest.TestCase):
             ):
                 self.adjudicate(receipt, directory)
 
-    def test_status_boolean_cannot_jump_ahead_of_p7(self):
+    def test_status_boolean_cannot_lag_closed_p7(self):
         status = json.loads(self.paths["status"].read_text(encoding="utf-8"))
-        status["phase1"]["declared_complete"] = True
-        status["phase1"]["declared_direct_write_qualified"] = True
+        status["phase1"]["declared_complete"] = False
+        status["phase1"]["declared_direct_write_qualified"] = False
 
         with tempfile.TemporaryDirectory() as directory:
             directory = Path(directory)
@@ -178,6 +194,20 @@ class Phase1CompletionAdjudicationTests(unittest.TestCase):
                 adjudicator.AdjudicationError, "declared Phase 1 completion"
             ):
                 adjudicator.adjudicate(paths)
+
+    def test_current_windows_receipt_is_accepted(self):
+        paths = dict(self.paths)
+        paths["windows"] = WINDOWS
+
+        result = adjudicator.adjudicate(paths)
+
+        self.assertTrue(result["promotion_ready"])
+        self.assertTrue(result["status_already_promoted"])
+        self.assertEqual(
+            result["candidate_sha256"]["windows_amd64"],
+            "f333abaf171811bfa0a162d08c59ac4c918a1d5a8ba978578ba269d1c48c3cc4",
+        )
+        self.assertEqual(json.loads(FINAL.read_text(encoding="utf-8")), result)
 
 
 if __name__ == "__main__":

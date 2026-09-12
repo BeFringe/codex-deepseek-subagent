@@ -53,7 +53,7 @@ class PriorSignedRuntimeEncryptedSpawnNegativeTests(unittest.TestCase):
             "probes/p1-live-plaintext-same-message-pairs-20260909.json",
             p1["evidence"],
         )
-        self.assertFalse(status["phase1"]["declared_complete"])
+        self.assertTrue(status["phase1"]["declared_complete"])
 
 
 if __name__ == "__main__":

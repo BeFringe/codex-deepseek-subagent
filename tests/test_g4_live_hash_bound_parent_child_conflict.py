@@ -137,7 +137,7 @@ class G4LiveHashBoundParentChildConflictTests(unittest.TestCase):
         self.assertFalse(repair["functional_reload_observed"])
         self.assertFalse(repair["install_rollback_qualified"])
 
-    def test_status_references_both_receipts_and_stays_fail_closed(self):
+    def test_status_references_both_receipts_after_cross_platform_closure(self):
         status = json.loads(STATUS.read_text(encoding="utf-8"))
         gates = {gate["id"]: gate for gate in status["phase1"]["gates"]}
         receipt = "probes/g4-live-hash-bound-parent-child-conflict-20260909.json"
@@ -148,8 +148,8 @@ class G4LiveHashBoundParentChildConflictTests(unittest.TestCase):
         for gate_id in ("P4", "P5b", "P6", "P6a", "P6b", "P7"):
             self.assertIn(receipt, gates[gate_id]["evidence"])
             self.assertIn(adjudication, gates[gate_id]["evidence"])
-        self.assertFalse(status["phase1"]["declared_complete"])
-        self.assertFalse(status["phase1"]["declared_direct_write_qualified"])
+        self.assertTrue(status["phase1"]["declared_complete"])
+        self.assertTrue(status["phase1"]["declared_direct_write_qualified"])
         verdict = self.receipt["verdict"]
         self.assertTrue(verdict["hash_bound_parent_child_same_path_conflict_subgate_qualified"])
         self.assertFalse(verdict["strong_global_quiescence_qualified"])

@@ -2,8 +2,8 @@
 
 [English](compatibility-model.en.md)
 
-状态：v1 控制面设计，2026-08-12。当前批准 Phase 0 证据与 probe 驱动的 Phase 1
-实现，但 Phase 1 尚未通过 G4；Phase 2/3 尚未获准实施。
+状态：v1 控制面设计；2026-09-12 的跨平台 parent adjudication 已闭合 Phase 1/G4，
+`direct_write_qualified=true`。Phase 2/3 仍未获准实施，保持关闭。
 
 阶段文档：[Phase 1 / G4 probe plan](phase1-g4-probe-plan.md) ·
 [Phase 2 Worker / Provider Profile（关闭）](phase2-worker-provider-profiles.md) ·

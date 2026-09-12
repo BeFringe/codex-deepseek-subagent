@@ -899,15 +899,21 @@ def validate_complete_write_observation(
 
 
 def _git(root: Path, *arguments: str, allow_code_one: bool = False) -> bytes:
+    # `git diff` can refresh the index even with optional locks disabled.
+    # Snapshot collection must preserve the caller's index bytes on both paths.
     result = subprocess.run(
-        ["git", "-C", str(root), *arguments],
+        ["git", "-C", str(root), "--no-optional-locks", "-c", "diff.autoRefreshIndex=false", *arguments],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         check=False,
     )
     if result.returncode == 0 or allow_code_one and result.returncode == 1:
         return result.stdout
-    raise GuardError(f"Git snapshot command failed: {' '.join(arguments)}")
+    diagnostic = result.stderr.decode('utf-8', errors='backslashreplace').strip()
+    raise GuardError(
+        f"Git snapshot command failed: {' '.join(arguments)} "
+        f"(exit {result.returncode}): {diagnostic}"
+    )
 
 
 def collect_git_snapshot(root_value: str) -> dict:
@@ -918,13 +924,15 @@ def collect_git_snapshot(root_value: str) -> dict:
     branch = branch_bytes.decode("utf-8").strip() or None
     status = _git(root, "status", "--short", "--untracked-files=all").decode("utf-8").rstrip("\n")
     index_result = subprocess.run(
-        ["git", "-C", str(root), "diff", "--cached", "--quiet", "--exit-code", "--"],
+        ["git", "-C", str(root), "--no-optional-locks", "-c", "diff.autoRefreshIndex=false",
+         "diff", "--cached", "--quiet", "--exit-code", "--"],
         stdout=subprocess.DEVNULL,
         stderr=subprocess.PIPE,
         check=False,
     )
     if index_result.returncode not in {0, 1}:
-        raise GuardError("Git index snapshot failed")
+        diagnostic = index_result.stderr.decode('utf-8', errors='backslashreplace').strip()
+        raise GuardError(f"Git index snapshot failed (exit {index_result.returncode}): {diagnostic}")
     tracked = _git(root, "diff", "--name-only", "-z", "HEAD", "--")
     untracked = _git(root, "ls-files", "--others", "--exclude-standard", "-z")
     try:

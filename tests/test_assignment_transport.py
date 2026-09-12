@@ -2012,7 +2012,21 @@ class AssignmentTransportTests(unittest.TestCase):
         ]
 
         denials = []
+        git_failures = []
         original_deny = writer_lease_guard._deny
+        original_run = subprocess.run
+
+        def observed_run(*args, **kwargs):
+            result = original_run(*args, **kwargs)
+            command = args[0] if args else kwargs.get('args', [])
+            if (result.returncode and isinstance(command, list) and command[:3] ==
+                    ['git', '-C', str(self.repository)]):
+                def decoded(value):
+                    return value.decode('utf-8', errors='backslashreplace') if isinstance(value, bytes) else value
+                git_failures.append({'command': command, 'returncode': result.returncode,
+                                     'stderr': decoded(result.stderr), 'stdout': decoded(result.stdout),
+                                     'thread_id': threading.get_native_id(), 'time_ns': time.time_ns()})
+            return result
 
         def observed_deny(reason):
             error = sys.exc_info()[1]
@@ -2021,7 +2035,8 @@ class AssignmentTransportTests(unittest.TestCase):
                            'traceback': ''.join(traceback.format_exception(error)) if error else None})
             return original_deny(reason)
 
-        with mock.patch.object(writer_lease_guard, '_deny', observed_deny):
+        with mock.patch.object(writer_lease_guard, '_deny', observed_deny), \
+                mock.patch.object(subprocess, 'run', observed_run):
             with ThreadPoolExecutor(max_workers=2) as executor:
                 results = list(executor.map(lambda hook: writer_lease_guard.pre_tool_use(self.store, hook), hooks))
 
@@ -2029,7 +2044,8 @@ class AssignmentTransportTests(unittest.TestCase):
             result["hookSpecificOutput"].get("permissionDecision", "pass")
             for result in results
         ]
-        evidence = json.dumps({'hooks': hooks, 'results': results, 'denials': denials, 'state_root': str(self.store.root),
+        evidence = json.dumps({'hooks': hooks, 'results': results, 'denials': denials, 'git_failures': git_failures,
+                               'state_root': str(self.store.root),
                                'state': {p.relative_to(self.store.root).as_posix(): p.read_text(encoding='utf-8')
                                          for p in self.store.root.rglob('*.json')}})
         self.assertEqual(sorted(decisions), ["deny", "pass"], evidence)

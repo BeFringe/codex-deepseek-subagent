@@ -5,10 +5,21 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'probes'))
-from run_p7_windows_provider_free import equivalence_cases
+from run_p7_windows_provider_free import RENAMED_EQUIVALENCE_CASES, equivalence_cases
 
 
 class WindowsEquivalenceAuditTests(unittest.TestCase):
+    def test_renamed_temporary_root_case_requires_its_executed_pass(self):
+        previous, current = next(iter(RENAMED_EQUIVALENCE_CASES.items()))
+        baseline = {'cases': [{'test_id': previous, 'classification': {'category': 'b'}}]}
+        actual = {'test_id': current, 'status': 'passed', 'events': []}
+        result = equivalence_cases(baseline, [actual], platform='win32')[0]
+        self.assertEqual((result['baseline_test_id'], result['executed_test_id']), (previous, current))
+        self.assertTrue(result['windows_equivalence_proven'])
+        self.assertFalse(equivalence_cases(baseline, [], platform='win32')[0]['windows_equivalence_proven'])
+        actual['status'] = 'skipped'
+        self.assertFalse(equivalence_cases(baseline, [actual], platform='win32')[0]['windows_equivalence_proven'])
+
     def test_missing_skipped_failed_or_non_windows_execution_cannot_close_a_case(self):
         previous = {'test_id': 'test_plaintext_handoff.Original.test_race',
                     'classification': {'category': 'b'}}

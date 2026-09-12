@@ -1,0 +1,80 @@
+{
+  "schema": 1,
+  "classification": "current_signed_runtime_g4_complete_source_rust_validation",
+  "captured_at": "2026-09-12T02:56:38+08:00",
+  "complete_source_receipt": "probes/current-signed-runtime-g4-complete-source-tree-20260912.json",
+  "complete_source_receipt_sha256": "d708e619ac054dd70bb6289b08e3728540ed213c24d4f952196b91d30ed2c418",
+  "source": {
+    "base_commit": "3d2ee51ca2d5db578f328aa75e20aa22c0197c9a",
+    "semantic_version": "0.153.4",
+    "patch_sha256": "14acd83f16c35acef0be7d9e511f3012ffa0bff8b6438a5890dbd3eddddc99d7",
+    "cumulative_replay_sha256": "9804546dabff267b30230ac0b9007867febf9f3c5ea147ce62647dd7603f4bf5",
+    "patch_chain_receipt_sha256": "6f5e5b6819287f82eb1ea76b51c6c8659b52ded7d067bf7d52196c945e32f12b",
+    "complete_tree": "45f946181672a55b78b04506f0436e170576bdde",
+    "complete_replay_sha256": "40f7ca3da65cb3027e53bac0b871b69fa4a1452d8a27d0edf2008ed61ed5d7b7",
+    "complete_source_receipt_sha256": "d708e619ac054dd70bb6289b08e3728540ed213c24d4f952196b91d30ed2c418",
+    "candidate_sha256": "c51939223fbb176d98e34159ce8c45b7c904baca65fd71989bdc8e2c750c7d4d"
+  },
+  "cold_build": {
+    "shared_cross_worktree_target_rejected": true,
+    "prior_target_cache_removed_reported": "36.2GiB",
+    "single_source_root": true,
+    "candidate_semantic_version": "0.153.4",
+    "candidate_sha256": "c51939223fbb176d98e34159ce8c45b7c904baca65fd71989bdc8e2c750c7d4d",
+    "gui_candidate_installed_or_selected": false,
+    "build_passed": true
+  },
+  "targeted_current_source": {
+    "all_passed": true,
+    "tests_run": 9,
+    "tests": [
+      "codex_core::agent::control::tests::multi_agent_v2_completion_queues_message_for_direct_parent",
+      "codex_core::session::rollout_reconstruction_tests::record_initial_history_reconstructs_typed_inter_agent_message",
+      "codex_core::session::tests::record_initial_history_reconstructs_resumed_transcript",
+      "codex_core::session::tests::record_inter_agent_communication_sets_turn_id_in_rollout_and_resume",
+      "codex_core::session::tests::record_inter_agent_communication_preserves_item_id_in_rollout_and_resume",
+      "codex_core::thread_rollout_truncation::tests::fork_turn_positions_use_canonical_agent_messages_and_delivery_metadata",
+      "codex_core::thread_rollout_truncation::tests::fork_turn_positions_use_plaintext_messages_and_delivery_metadata",
+      "codex_core::tools::handlers::multi_agents_v2::tests::plaintext_source_uses_user_message_wire_for_queue_and_trigger_modes",
+      "codex_protocol::protocol::tests::plaintext_inter_agent_communication_uses_supported_user_message_wire"
+    ]
+  },
+  "current_source_serial_core": {
+    "tests_run": 2470,
+    "passed": 2467,
+    "failed": 3,
+    "ignored": 0,
+    "patch_regressions": 0,
+    "test_threads": 1,
+    "rust_min_stack": 16777216,
+    "failed_tests": [
+      {
+        "name": "session::tests::managed_network_proxy_decider_survives_full_access_start",
+        "classification": "originating_host_network_baseline",
+        "prior_exact_upstream_comparison": "failed_same"
+      },
+      {
+        "name": "session::tests::user_shell_commands_do_not_inherit_managed_network_proxy",
+        "classification": "originating_host_proxy_injection",
+        "prior_exact_upstream_comparison": "failed_same"
+      },
+      {
+        "name": "session::turn::tests::post_sampling_token_estimate_is_disabled_by_always_on_sinks",
+        "classification": "serial_process_global_tracing_order",
+        "isolated_current_source": "passed",
+        "prior_exact_upstream_comparison": "passed"
+      }
+    ]
+  },
+  "decision": {
+    "complete_source_and_candidate_bound": true,
+    "callback_patch_regression_observed": false,
+    "host_boundaries_promoted_as_phase1_evidence": false,
+    "windows_replay_required": true,
+    "phase1_complete": false,
+    "direct_write_qualified": false,
+    "phase2_state": "closed",
+    "phase3_state": "closed"
+  },
+  "credential_values_recorded": false
+}

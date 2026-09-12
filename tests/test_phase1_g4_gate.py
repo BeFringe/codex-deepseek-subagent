@@ -24,16 +24,16 @@ class Phase1G4GateTests(unittest.TestCase):
         path.write_text(json.dumps(value), encoding="utf-8")
         return path
 
-    def test_current_status_keeps_all_future_authority_closed(self):
+    def test_current_status_closes_phase_one_without_opening_future_phases(self):
         result = check_phase1_g4.qualification(STATUS)
 
         self.assertTrue(result["valid"])
-        self.assertFalse(result["phase1_complete"])
-        self.assertFalse(result["direct_write_qualified"])
+        self.assertTrue(result["phase1_complete"])
+        self.assertTrue(result["direct_write_qualified"])
         self.assertEqual(result["phase2"], "closed")
         self.assertEqual(result["phase3"], "closed")
-        self.assertTrue(result["gate_blockers"])
-        self.assertTrue(result["exit_receipt_blockers"])
+        self.assertEqual(result["gate_blockers"], [])
+        self.assertEqual(result["exit_receipt_blockers"], [])
 
     def test_finite_identity_lifecycle_final_provenance_and_cost_gates_are_closed(self):
         value = json.loads(STATUS.read_text(encoding="utf-8"))
@@ -62,7 +62,7 @@ class Phase1G4GateTests(unittest.TestCase):
         }
         self.assertEqual(receipts["sessionmeta_identity"]["state"], "qualified")
 
-    def test_require_complete_fails_closed(self):
+    def test_require_complete_accepts_the_adjudicated_status(self):
         completed = subprocess.run(
             [sys.executable, str(SCRIPT), "--require-phase1-complete"],
             text=True,
@@ -71,10 +71,10 @@ class Phase1G4GateTests(unittest.TestCase):
             check=False,
         )
 
-        self.assertEqual(completed.returncode, 2, completed.stderr)
+        self.assertEqual(completed.returncode, 0, completed.stderr)
         result = json.loads(completed.stdout)
         self.assertTrue(result["valid"])
-        self.assertFalse(result["phase1_complete"])
+        self.assertTrue(result["phase1_complete"])
 
     def test_missing_subgate_is_invalid(self):
         value = json.loads(STATUS.read_text(encoding="utf-8"))
@@ -87,19 +87,19 @@ class Phase1G4GateTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "Phase 1 gates mismatch"):
                 check_phase1_g4.load_status(path)
 
-    def test_documentation_cannot_open_phase_two_early(self):
+    def test_documentation_cannot_open_phase_three_early(self):
         value = json.loads(STATUS.read_text(encoding="utf-8"))
-        value["phase2"]["state"] = "open"
+        value["phase3"]["state"] = "open"
 
         with tempfile.TemporaryDirectory(dir=REPO / "probes") as directory:
             path = self.write_status(value, directory)
-            with self.assertRaisesRegex(ValueError, "Phase 2 must remain closed"):
+            with self.assertRaisesRegex(ValueError, "Phase 3 must remain closed"):
                 check_phase1_g4.load_status(path)
 
-    def test_declared_boolean_cannot_override_blockers(self):
+    def test_declared_boolean_cannot_deny_closed_gates(self):
         value = copy.deepcopy(json.loads(STATUS.read_text(encoding="utf-8")))
-        value["phase1"]["declared_complete"] = True
-        value["phase1"]["declared_direct_write_qualified"] = True
+        value["phase1"]["declared_complete"] = False
+        value["phase1"]["declared_direct_write_qualified"] = False
 
         with tempfile.TemporaryDirectory(dir=REPO / "probes") as directory:
             path = self.write_status(value, directory)

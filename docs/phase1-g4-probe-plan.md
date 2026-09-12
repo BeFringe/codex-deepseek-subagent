@@ -6,11 +6,13 @@
 DeepSeek 退出条件。P4 只裁决 exact native qualification actor graph；独立 App Server 与
 同 UID 外部进程属于宿主信任假设，除非它们重新成为该 actor graph 的可达能力。
 
-Status: **read-only qualification only**. `direct_write_qualified=false` remains
-mandatory until every live/platform gate below closes. After explicit user
-authorization, a qualification-only live candidate may be installed and trusted
-for the probes below; that installation does not enable Phase 2, alter the
-parent provider, or let an external worker adjudicate its own behavior.
+Status: **Phase 1 / G4 qualified on 2026-09-12**.
+`direct_write_qualified=true` applies only to the exact qualified G4 actor graph
+and still requires explicit user authorization, exact-path writer authority,
+Hook mediation, identity binding, callback closure, and quiescence. Phase 2 and
+Phase 3 remain closed; this qualification does not alter the parent provider or
+let an external worker adjudicate its own behavior. The instructions below are
+retained as the executable qualification protocol and historical audit trail.
 
 ## Historical handoff baseline（non-gating）
 
@@ -553,7 +555,8 @@ DeepSeek child received the one-shot plaintext assignment, performed one
 read-only native tool call, and returned through native wait/callback with a
 clean disk barrier and fresh-process adjudication. Worker output remains
 contribution evidence; the fresh parent/disk owner is authoritative. Native
-Windows parity remains open. Finally perform an isolated install/rollback drill
+Windows parity is now closed by the exact complete-source replay described
+below. Finally perform an isolated install/rollback drill
 that restores every pre-install Hook/skill/state hash and exercises the fixed
 failed-PostToolUse callback path without selecting the candidate as the GUI App
 Server. This drill is now qualified by
@@ -561,22 +564,26 @@ Server. This drill is now qualified by
 process observed exact failed-`apply_patch` Pre/Post identity and released its
 lease, all managed paths were archived, and a distinct post-rollback process
 did not recreate removed Hook state. The live App and v4 hashes remained exact.
-Only native Windows parity remains open.
+The rollback and native Windows gates are both qualified.
 
-The Windows build input is now one cumulative full-index patch against exact
-`rust-v0.153.4` commit `3d2ee51ca2d5db578f328aa75e20aa22c0197c9a`, rather than an
-ordered stack of incremental probe patches. A fresh detached worktree replayed
-the patch byte-for-byte; the receipt is
-`probes/current-signed-runtime-g4-cumulative-source-candidate.json`. This only
-removes build-input ambiguity. It is not a Windows binary or live-runtime
-receipt and does not change `windows_live=pending`.
+The final Windows build input is the exact complete-source tree
+`45f946181672a55b78b04506f0436e170576bdde` based on upstream commit
+`3d2ee51ca2d5db578f328aa75e20aa22c0197c9a`. Its 62-path binary/full-index
+diff SHA-256 is
+`40f7ca3da65cb3027e53bac0b871b69fa4a1452d8a27d0edf2008ed61ed5d7b7`.
+The independently built Windows candidate SHA-256 is
+`f333abaf171811bfa0a162d08c59ac4c918a1d5a8ba978578ba269d1c48c3cc4`.
+The portable live receipt is
+`probes/p7-windows-current-candidate-writer-live-20260912.json`; the fresh parent
+decision is
+`probes/phase1-cross-platform-promotion-adjudication-20260912.json`.
 
-Only after P1–P7, including P5a/P5b/P6a/P6b/P6c, are green with raw live evidence
-may a separate adjudication change `direct_write_qualified`. Until then:
+P1–P7, including P5a/P5b/P6a/P6b/P6c, have now closed with raw live evidence
+and fresh parent/disk adjudication. The resulting state is:
 
 ```text
-Phase 1 complete: false
-direct_write_qualified: false
+Phase 1 complete: true
+direct_write_qualified: true
 Phase 2 worker/provider profile: closed
 ZHIPU/GLM bridge: closed
 ```

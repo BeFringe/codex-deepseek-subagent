@@ -112,11 +112,11 @@ class P7LiveDeepSeekRegressionTests(unittest.TestCase):
         receipts = {
             receipt["id"]: receipt for receipt in self.status["phase1"]["exit_receipts"]
         }
-        self.assertEqual(gates["P7"]["state"], "partial")
+        self.assertEqual(gates["P7"]["state"], "qualified")
         self.assertEqual(receipts["deepseek_regression"]["state"], "qualified")
         self.assertEqual(receipts["callback_continuity"]["state"], "qualified")
         self.assertEqual(receipts["posix_live"]["state"], "qualified")
-        self.assertEqual(receipts["windows_live"]["state"], "pending")
+        self.assertEqual(receipts["windows_live"]["state"], "qualified")
         self.assertEqual(receipts["install_rollback"]["state"], "qualified")
 
 

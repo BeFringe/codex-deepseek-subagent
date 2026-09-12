@@ -168,8 +168,8 @@ class G4LiveFirstAttestationWatchdogCancelAckTests(unittest.TestCase):
         self.assertEqual(gates["P5a"]["state"], "qualified")
         self.assertEqual(gates["P5a"]["provider_free"], "pass")
         self.assertEqual(gates["P5b"]["state"], "qualified")
-        self.assertFalse(status["phase1"]["declared_complete"])
-        self.assertFalse(status["phase1"]["declared_direct_write_qualified"])
+        self.assertTrue(status["phase1"]["declared_complete"])
+        self.assertTrue(status["phase1"]["declared_direct_write_qualified"])
 
 
 if __name__ == "__main__":

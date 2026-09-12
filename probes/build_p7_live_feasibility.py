@@ -67,6 +67,12 @@ def build(
         and positive_manifest["source_replay_sha256"] == negative_manifest["source_replay_sha256"]
         and positive_manifest.get("source_chain_receipt_sha256")
         == negative_manifest.get("source_chain_receipt_sha256")
+        and positive_manifest.get("complete_source_receipt_sha256")
+        == negative_manifest.get("complete_source_receipt_sha256")
+        and positive_manifest.get("complete_source_tree")
+        == negative_manifest.get("complete_source_tree")
+        and positive_manifest.get("complete_source_replay_sha256")
+        == negative_manifest.get("complete_source_replay_sha256")
         and positive_manifest["provider"] == negative_manifest["provider"] == "deepseek",
         "positive and negative outcomes do not share one runtime/source route",
     )
@@ -94,6 +100,13 @@ def build(
             "source_replay_sha256": positive_manifest["source_replay_sha256"],
             "source_chain_receipt_sha256": positive_manifest.get(
                 "source_chain_receipt_sha256"
+            ),
+            "complete_source_receipt_sha256": positive_manifest.get(
+                "complete_source_receipt_sha256"
+            ),
+            "complete_source_tree": positive_manifest.get("complete_source_tree"),
+            "complete_source_replay_sha256": positive_manifest.get(
+                "complete_source_replay_sha256"
             ),
             "provider": "deepseek",
         },

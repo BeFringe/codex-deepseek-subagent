@@ -118,8 +118,8 @@ class G4LiveClosedToolCatalogApplyPatchDenialTests(unittest.TestCase):
         for gate_id in ("P1", "P2", "P3", "P4", "P5b"):
             self.assertIn(receipt_path, gates[gate_id]["evidence"])
             self.assertNotEqual(gates[gate_id]["state"], "complete")
-        self.assertFalse(self.status["phase1"]["declared_complete"])
-        self.assertFalse(
+        self.assertTrue(self.status["phase1"]["declared_complete"])
+        self.assertTrue(
             self.status["phase1"]["declared_direct_write_qualified"]
         )
 

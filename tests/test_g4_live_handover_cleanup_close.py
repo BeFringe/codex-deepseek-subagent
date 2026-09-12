@@ -131,8 +131,8 @@ class G4LiveHandoverCleanupCloseTests(unittest.TestCase):
         p5b = next(gate for gate in self.status["phase1"]["gates"] if gate["id"] == "P5b")
         self.assertIn(RECEIPT.relative_to(ROOT).as_posix(), p5b["evidence"])
         self.assertEqual(p5b["state"], "qualified")
-        self.assertFalse(self.status["phase1"]["declared_complete"])
-        self.assertFalse(self.status["phase1"]["declared_direct_write_qualified"])
+        self.assertTrue(self.status["phase1"]["declared_complete"])
+        self.assertTrue(self.status["phase1"]["declared_direct_write_qualified"])
 
 
 if __name__ == "__main__":

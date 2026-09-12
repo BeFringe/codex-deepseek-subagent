@@ -12,6 +12,10 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 BASELINE = ROOT / 'probes' / 'p7-windows-provider-free-20260911.json'
+RENAMED_EQUIVALENCE_CASES = {
+    'test_plaintext_pair_probe_guard.PlaintextPairProbeGuardTests.test_state_directory_must_be_canonical_private_tmp_descendant':
+        'test_plaintext_pair_probe_guard.PlaintextPairProbeGuardTests.test_state_directory_must_be_canonical_temporary_root_descendant',
+}
 
 
 def equivalence_cases(baseline, cases, *, platform):
@@ -21,7 +25,8 @@ def equivalence_cases(baseline, cases, *, platform):
         if (previous.get('classification') or {}).get('category') != 'b':
             continue
         test_id = previous['test_id']
-        case = actual.get(test_id)
+        executed_id = RENAMED_EQUIVALENCE_CASES.get(test_id, test_id)
+        case = actual.get(executed_id)
         module = test_id.split('.')[0]
         backend = ('windows_powershell_handoff' if module == 'test_plaintext_handoff' else
                    'windows_native_launcher' if module in
@@ -33,7 +38,7 @@ def equivalence_cases(baseline, cases, *, platform):
                         'probes/p7_windows_acl.py']
         elif backend == 'windows_native_launcher':
             sources += ['probes/windows_candidate_launcher.py', 'tests/windows_launcher_fixture.py']
-        result.append({'baseline_test_id': test_id, 'executed_test_id': test_id,
+        result.append({'baseline_test_id': test_id, 'executed_test_id': executed_id,
                        'backend': backend, 'source_paths': sources,
                        'actual_status': case['status'] if case else 'missing',
                        'windows_equivalence_proven': platform == 'win32' and case is not None

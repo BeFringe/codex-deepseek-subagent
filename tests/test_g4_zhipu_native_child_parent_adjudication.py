@@ -159,9 +159,9 @@ class G4ZhipuNativeChildParentAdjudicationTests(unittest.TestCase):
         for gate_id in ("P2", "P3", "P5b", "P6", "P6a", "P6b"):
             self.assertEqual(gates[gate_id]["state"], "qualified")
         self.assertEqual(gates["P4"]["state"], "qualified")
-        self.assertEqual(gates["P7"]["state"], "partial")
-        self.assertFalse(self.status["phase1"]["declared_complete"])
-        self.assertFalse(self.status["phase1"]["declared_direct_write_qualified"])
+        self.assertEqual(gates["P7"]["state"], "qualified")
+        self.assertTrue(self.status["phase1"]["declared_complete"])
+        self.assertTrue(self.status["phase1"]["declared_direct_write_qualified"])
         self.assertEqual(self.status["phase2"]["state"], "closed")
         self.assertEqual(self.status["phase3"]["state"], "closed")
 

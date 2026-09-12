@@ -19,6 +19,7 @@ from adjudicate_g4_sibling_admission_live import (
 )
 from hook_event_receipts import load_chain, observation_from_hook
 from p7_windows_acl import run_directory_acl
+from p7_current_candidate_source import CUMULATIVE, verify_current_source
 
 
 def messages(records, role):
@@ -85,6 +86,7 @@ def verify(manifest_path):
     require(digest(manifest['candidate']) == manifest['candidate_sha256'], 'binary drift')
     require(digest(manifest['build_receipt']) == manifest['build_receipt_sha256'], 'build receipt drift')
     build = read_json(Path(manifest['build_receipt']))
+    verify_current_source(ROOT, Path(build['source_root']), build)
     require(build['source_commit'] == BASE and build['patch_sha256'] in SOURCE_PATCHES
             and build['candidate_sha256'] == manifest['candidate_sha256']
             and build['exit_code'] == 0 and build['target'] == 'x86_64-pc-windows-msvc',
@@ -98,6 +100,10 @@ def verify(manifest_path):
     for name in ('run_p7_windows_live.py', 'p7_windows_hook.py', 'p7_windows_acl.py',
                  'adjudicate_p7_windows_live.py', 'build_g4_native_probe_prompt.py'):
         require(digest(ROOT / 'probes' / name) == manifest['harness_sha256'][name], 'harness drift: ' + name)
+    if build['patch_sha256'] == CUMULATIVE:
+        require(digest(ROOT / 'probes/p7_current_candidate_source.py') ==
+                manifest['harness_sha256'].get('p7_current_candidate_source.py'),
+                'complete source verifier drift')
     for path in (ROOT / 'hooks').glob('*.py'):
         require(digest(path) == digest(directory / 'hook-runtime' / path.name), 'Hook implementation drift')
     for relative, expected_hash in manifest['artifacts'].items():
