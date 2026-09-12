@@ -6,6 +6,12 @@ Status: v1 control-plane design, 2026-08-12. Phase 0 evidence and probe-driven
 Phase 1 implementation are approved, but Phase 1 has not passed G4. Phases 2
 and 3 are not approved for implementation yet.
 
+Stage documents: [Phase 1 / G4 probe plan](phase1-g4-probe-plan.md) ·
+[Phase 2 Worker / Provider Profile (closed)](phase2-worker-provider-profiles.en.md) ·
+[Phase 3 ZHIPU Responses bridge (closed)](phase3-zhipu-responses-bridge.en.md).
+Future-stage documentation preserves design and entry conditions; it does not
+change the current stage decision.
+
 ## Boundary
 
 This repository is a removable compatibility layer, not a global model router.
@@ -35,10 +41,19 @@ one `task_name` field with both meanings.
 
 ### B. Assignment transport
 
-A worker selects `native` or `plaintext-v2`. Plaintext v2 captures the real,
-self-contained `spawn_agent.message` in a trusted `PreToolUse(spawn_agent)`
-Hook without rewriting spawn arguments. A `handoff_id` identifies one transport
-instance; it is not a logical task identity.
+A worker selects `native` or `plaintext-v2`. The plaintext-v2 design contract
+requires a trusted `PreToolUse(spawn_agent)` Hook to capture the real plaintext
+assignment without rewriting spawn arguments. A `handoff_id` identifies one
+transport instance; it is not a logical task identity.
+
+The live native collaboration surface in Codex 0.148.0-alpha.9 does not satisfy
+that premise. Its actual PreToolUse name is `collaborationspawn_agent`, and the
+`message` exactly matches the rollout function-call value by hash but is an
+opaque token-like payload with no authority markers. The generator's plaintext
+assignment has a different length and hash and one marker pair. SubagentStart
+provides real SessionMeta/AgentPath identity but no `message`, `prompt`, or
+other assignment-plaintext field. This is a P1 runtime blocker, not permission
+to treat the opaque payload as an authority source.
 
 ### C. Authority continuity
 
@@ -47,7 +62,7 @@ the whole turn. An active immutable capsule must survive compact/resume. Any
 ambiguous recovery, identity mismatch, owned-path expansion, Git-authority
 expansion, or stop-condition expansion fails closed.
 
-Codex 0.147.0 source establishes a version-specific enforcement opportunity:
+Codex 0.148.0-alpha.9 source establishes a version-specific enforcement opportunity:
 
 - `SubagentStart` runs only for a thread-spawn child at startup; child compact
   and resume do not rerun it.
@@ -87,6 +102,8 @@ The schema 2 capsule contains at least:
 - resolved Git root, branch, base commit, and descendant-HEAD policy;
 - initial index/status facts and an optional narrowing-only capture preflight
   over expected root, branch, and the complete Git object id;
+- an explicit assignment mutation mode (`read_only` or `write`), a
+  parent-recorded user-write intent, and a separate trusted-host consent gate;
 - owned and excluded paths;
 - explicit stage/commit/branch/push authority;
 - ownership-handover references to trusted host termination/quiescence barriers
@@ -105,6 +122,33 @@ The schema 2 capsule contains at least:
 - a bounded first-Git-attestation deadline.
 
 `assignment_id` is immutable authority; `handoff_id` is one delivery attempt.
+The assignment mutation mode is intent, not qualification. `read_only` requires
+`strict_read_only` and parent intent `deny`. `write` requires
+`direct_write_unqualified` and parent intent `allow`. The intent is an auditable
+parent record of the current user instruction. Missing, default, or `deny`
+cannot stage a write assignment, but `allow` is not host-attested consent and
+must never be described or consumed as proof of user authorization.
+
+`trusted_host_user_write_consent` is a separate gate and is not supplied by the
+assignment or parent. The current isolated schema accepts only the exact
+`unavailable/null/null` form; any claimed `verified` status, source, or receipt
+fails closed. A later schema revision may represent a verified receipt only
+after Codex exposes a host/UI consent signal that the parent and child cannot
+forge.
+
+Parent-recorded intent is only a mutation permission ceiling. It grants no
+owned path or Git authority, takes no parent/sibling writer lease, does not make
+`direct_write_qualified` true, and cannot replace sandbox, SessionMeta identity,
+Hook mediation, callback, termination/quiescence, or the post-termination disk
+barrier. The first mutation request from a current write capsule is frozen
+before execution as `write_authority_gates_missing`, with exact blockers for
+trusted-host consent, direct-write qualification, and live mutation mediation.
+
+The rollout marker/turn/prompt-hash experiment has been removed. It imposed a
+private user syntax and coupled authority to rollout schema/flush while the
+same-UID result still made the bytes writable. It added false-deny and
+maintenance complexity without adding direct-write authority.
+
 The canonical path is bound only after runtime metadata proves it. Recovery may
 create a new, explicitly linked assignment over a frozen dirty baseline; it may
 not replay a consumed handoff or mutate the old capsule to expand authority.
@@ -116,6 +160,13 @@ runtime/child/parent identity, root/base, owned and excluded paths, Git
 authority, authoritative input roots, stop condition, and completion predicate.
 The full capsule and assignment remain in durable state; the compact copy cannot
 replace or expand them.
+A mechanically derived, non-authorizing final-attestation seed may accompany
+that context. It contains only assignment/handoff/capsule identity,
+compact/provenance-policy hashes, canonical AgentPath, recovery epoch, and the
+verification-command names. It must not prefill provenance origin, test-only
+selection, verification exit codes, final disk state, authority violation, or
+completion. Those remain worker claims independently adjudicated by
+`SubagentStop` against fresh host and disk state.
 The optional capture preflight compares parent-supplied expected location facts
 with the Hook's current actual Git snapshot and blocks spawn on any difference.
 It cannot authorize a commit/branch, change path ownership, infer a replacement
@@ -201,6 +252,35 @@ with dirty tracked hashes. Such an identity is a baseline, not ownership: it
 does not add to `owned_paths`, and any out-of-scope artifact mutation remains
 blocked.
 
+An invocation budget and an end-to-end latency gate are independent authorities;
+one number or one `mechanism_satisfies` flag cannot stand for both. The cost
+contract must separately freeze the actual cost unit, limit/statistic,
+multiplicity/equivalence-class distribution digest, representative worst dense
+witness, sample count, the p95 window/calculation definition, phase timings,
+and the full completion stop condition. A small cohort, storage-query-only
+spike, or local phase benchmark is contribution evidence, not authority for an
+end-to-end scale or deliverability claim, unless monotonicity is proven.
+
+A multi-phase conservative refinement is derived by the authoritative owner
+inside a frozen phase catalog. It obtains a coarse upper bound `U1`, derives a
+refinement set `R`, obtains `U2`, and mechanically proves
+`true <= U2 <= U1`. Every phase re-proves input/output identity, root/source
+binding, and authority epoch. Closed registries and owner-declared set
+equations mechanically prove cross-phase conservation. The final mixed-frontier
+response must match the authoritative result in exact cardinality, canonical
+order, and item identity; aggregate counts or self-consistent digests are not
+enough.
+
+Mutation races before a phase, during refinement/owner calls, and after final
+materialization are separate failure seams. If several phases run inside one
+opaque tool call, a Hook cannot infer the invisible intermediate boundaries
+from an assignment prompt. An owner-internal operation or stronger host
+mediation must re-attest and fail closed at every seam; otherwise P6c remains
+open. Runtime convenience assumptions or local optimizations cannot let the
+child rewrite the frozen cost unit, distribution, completion condition, phase
+authority, or stop condition. A changed mechanism requires a new parent-owned
+feasibility capsule.
+
 The provider-free builder invokes owner callbacks and has no parameter for
 precomputed probe or budget outcomes. Isolated capture validates the structure,
 owner provenance, and dispatch decision. A future live Hook integration of an
@@ -225,12 +305,109 @@ evidence rather than being silently deleted.
 `reported` means only that the callback and contribution were recorded. Only a
 trusted parent adjudication can move it to `consumed`.
 
+Structured parent/sibling mutation uses a short-lived claim that grants no
+child authority:
+
+```text
+PreToolUse(apply_patch) -> writer_claim/<claim_id>.json
+  -> successful exact PostToolUse -> writer_receipt/<claim_id>.json
+  -> failed tool + exact unchanged proof -> writer_abort/<claim_id>.json
+```
+
+The claim is durable before PreToolUse returns, and child capture/staging checks
+it under the same state lock. An in-flight parent patch and overlapping new
+child ownership therefore cannot both enter. PostToolUse exists only after a
+successful tool output. Failure, partial failure, callback loss, or identity
+mismatch retains the claim and fails closed. A TTL may not silently release it;
+recovery still requires a host-owned tool-failure termination, mutation-
+quiescence receipt, and fresh disk barrier. The only narrower exception is a
+tool that failed before mutation: the exact SessionMeta actor may submit an
+explicit abort with the fixed recovery reason, but must re-prove the Git
+frontier and identical before/after identities for every claimed path. That
+abort is not a PostToolUse receipt and cannot cover partial writes, process
+death, or any uncertain disk state; those still require strong host-owned
+quiescence and a fresh barrier.
+
 ### Interrupt/cancel and ownership handover
 
 An `interrupt_agent`/cancel return acknowledges a control request; it does not
 prove that the child process, existing PTY, outer executor, MCP call, or every
 other mutation source is quiescent. An interrupt acknowledgement alone cannot
 authorize immediate reassignment of the same owned paths.
+
+The current-source candidate exposes `close_agent` separately for Multi-Agent
+V2 without changing `interrupt_agent` semantics. It resolves an exact ThreadId
+or canonical AgentPath, calls
+`AgentControl.close_agent -> shutdown_agent_tree -> Op::Shutdown -> wait_until_terminated`,
+and returns `session_loop_terminated=true` only after the target and its still-
+live descendant session loops have terminated. Each unified-exec manager first
+enters a closing state, waits for registered but unresolved process starts,
+rejects later starts, and initiates termination concurrently. A local PTY must
+produce its `exit_rx`, and an ExecServer process must produce
+`ExecProcessEvent::Exited`; a kill or RPC acknowledgement is never synthesized
+as an exit. Exact per-thread maps distinguish tracked, confirmed-exit,
+unconfirmed-exit, and unresolved-start process ids. Any pending or unconfirmed
+entry, or a non-empty final tracked set, fails closed.
+
+`closed_catalog_actor_quiescence_claimed=true` is available only under the
+exact `g4_qualification_probe_worker`/`SessionSource::Exec` opt-in, when every
+session loop captured by close has terminated, every tracked exit has a real
+witness, and no process start remains unresolved. The result still fixes
+`process_tree_quiescence_claimed=false`: detached or untracked descendants, and
+descendants created after the close capture set was formed, are outside the
+proof domain. The primitive is therefore stronger than session-loop close but
+is not global process-tree quiescence.
+
+Promotion of that primitive into a P5b handover receipt additionally requires
+a closed mutation-surface catalog for the assignment, proof that every
+disallowed process/bootstrap surface never started, zero in-flight writer
+claims for the target, exact Hook/state reconciliation by ThreadId and tool-use
+identity, and a fresh post-close root/branch/full-HEAD/index/status/path-hash
+snapshot equal to the frozen frontier. If any component is missing, the only
+valid record is `host_session_terminated_mutation_quiescence_unproven`; it must
+not create a quiescence barrier or release overlapping ownership.
+
+One real read-only child run now joins exact SessionMeta/SubagentStart, a closed
+tool catalog, zero child tool calls, true exit maps, durable active-to-unresolved
+reconciliation, and two stable disk observations. That sample proves
+termination and mutation quiescence only for its exact read-only actor.
+A second real run now covers one exact mutation-capable actor: the child used
+one leased `apply_patch`, bound its trusted PostToolUse receipt into an accepted
+attestation and byte-identical parent callback, then entered a new read-only
+hold turn. Exact `close_agent` interrupted that running turn, returned empty
+tracked/confirmed/unconfirmed/unresolved process maps, removed the child from
+the live tree, and preceded a stable dirty-byte barrier. The reconciler freezes
+the accepted report back to unresolved before publishing that barrier, so the
+receipt cannot silently become integration or handover authority. This proves
+bounded termination and mutation quiescence for that exact write actor only.
+Detached or untracked descendants, the global process tree, all other mutation
+surfaces, and ownership-handover races still require independent qualification.
+
+While a mutation-capable assignment is pending, claimed, active, reported, or
+unresolved, its `owned_paths` must be in one single-writer domain that includes
+the parent and every sibling child. A parent `apply_patch`, shell command, or
+other write to the same or hierarchically overlapping path is a competing
+ownership claim, not implicit integration authority. Declaring ownership in an
+assignment, warning that other agents exist, or refreshing the capsule before
+each write is not filesystem exclusion: a TOCTOU window remains between the
+refresh and the mutation. To take those paths back, the parent must stop its own
+overlapping writes, freeze child authority, obtain the strong termination plus
+quiescence receipt and post-termination disk barrier below, and acquire the
+writer lease in a new authority epoch. Direct write remains unqualified unless
+both parent and child mutation dispatch can be jointly mediated or serialized.
+
+The isolated candidate currently creates this bidirectional claim only for
+`apply_patch`, whose pinned source exposes `{command: raw_patch}`. It strictly
+extracts add/delete/update/move paths, normalizes absolute, `..`, and symlink
+aliases against the Git root, rejects overlap with active/pending/reported/
+unresolved ownership, and releases a successful claim only for the exact
+PostToolUse actor/tool-use identity. Unresolved child ownership enters a new
+parent claim only when the actor is the exact direct parent, a strong quiescence
+barrier exists, and the complete current snapshot still equals that barrier;
+post-barrier drift remains blocked. Unknown patch shapes fail closed. Shell,
+`write_stdin`, MCP, code mode, and other mutation surfaces still lack this
+transaction boundary, so this implementation cannot change the direct-write
+decision.
 
 Overlapping ownership requires this order: freeze old active authority into
 unresolved state; obtain a host-owned
@@ -257,18 +434,44 @@ A state lock is not a filesystem transaction. The replacement child's exact
 first attestation covers the remaining window after the fresh pre-stage
 snapshot; neither check becomes strong proof without a host quiescence
 guarantee.
+Likewise, that lock only serializes capsule transitions. It cannot stop the
+parent from changing an owned file between or during active-child tool calls.
+A later hash mismatch can freeze mixed provenance, but cannot retroactively make
+interleaved writes safe; live qualification still needs host dispatch
+serialization or an independent sandbox/block.
 
 A committed-range strict read-only review claims no mutation ownership and does
 not use this handover lifecycle. It still re-attests its compact invariant,
 clean snapshot, and exact review range at every tool event and final return;
 disk drift stops the task rather than upgrading the read-only capsule.
+Nor may a read-only child “clean up,” restore, check out, reset, delete, or patch
+foreign dirty bytes created by the parent or another writer back to the captured
+or HEAD content. Even when the final digest equals the committed baseline and
+Git status changes from dirty to clean, the operation is an unauthorized
+mutation that may erase an authoritative parent contribution. A read-only
+narrative or claim refresh cannot grant that write. The guard must reject every
+mutation surface before execution and leave adjudication of the foreign bytes
+to the parent as the sole writer.
+A target read-only child that requests any non-allowlisted tool now has its
+active authority frozen before execution as
+`read_only_child_mutation_attempt` unresolved evidence. The receipt binds the
+attempted tool and a fresh disk snapshot. Any already-present drift is only
+`pre_attempt_disk_drift_unattributed`; it is not attributed to the child or
+parent. Keeping active authority after a one-off deny is no longer candidate
+semantics.
 
 ## Exact runtime binding
 
-Parent PreToolUse captures the real `session_id`, `turn_id`, `tool_use_id`,
-message, requested task name, role, fork mode, transcript path, and cwd. Stage
-failure blocks spawn. Non-plaintext workers pass unchanged. The Hook does not
-return `updatedInput`.
+The candidate protocol requires parent PreToolUse to capture the real
+`session_id`, `turn_id`, `tool_use_id`, plaintext message, requested task name,
+role, fork mode, transcript path, and cwd. Stage failure blocks spawn.
+Non-plaintext workers pass unchanged. The Hook does not return `updatedInput`.
+
+The 2026-08-17 live probe showed that current native collaboration does not
+expose the plaintext assignment at that Hook seam. Seeing the agent-control
+event is not assignment capture. Parent staging alone also cannot close P1
+until Codex exposes a verifiable plaintext seam or a trusted host mechanism can
+prove exact equality between staged bytes and child-delivered bytes.
 
 `SubagentStart` does not directly expose the parent, task name, or AgentPath.
 The claimant must read the first `SessionMeta` from the materialized child
@@ -277,7 +480,8 @@ transcript and jointly prove:
 - Hook `session_id == SessionMeta.session_id` for the root/descendant shared
   runtime session;
 - Hook `agent_id == SessionMeta.id` for the child ThreadId;
-- direct parent thread id, role, and canonical path match the pending capsule;
+- direct parent thread id, role, and canonical path match the pending capsule
+  and their duplicates in `SessionMeta.source.subagent.thread_spawn`;
 - the requested task name has one unique logical relation to the actual path;
 - any precomputed expected path exactly matches.
 
@@ -304,6 +508,12 @@ must re-resolve one active capsule and re-attest root, branch/base, owned paths,
 Git authority, and epoch before execution. Missing, ambiguous, or corrupt state
 blocks new writes and scope expansion.
 
+The local 0.148.0-alpha.9 binary's embedded schema contains
+`PreToolUseHookSpecificOutputWire.additionalContext`, consistent with the pinned
+`schema.rs` source anchor. That proves only that Codex parses the output field;
+a live compact probe must still show that the target child actually receives
+the recovered context.
+
 The capsule carries a short bounded first-attestation deadline. Before the first
 tool execution, the guard compares actual root, branch, full HEAD, index, status,
 and path hashes with immutable state. Any exact mismatch or elapsed deadline
@@ -317,7 +527,7 @@ isolated watchdog and interrupt/cancel when it returns
 only that the next event is denied, not that the provider turn stopped exactly
 at the deadline. An assignment prompt cannot repair this limitation.
 The current isolated API models the trusted receipt shape and transitions only;
-Codex 0.147.0 has not yet been proven to expose a receipt with this strong
+Codex 0.148.0-alpha.9 has not yet been proven to expose a receipt with this strong
 guarantee. Live direct-write handover therefore remains unqualified.
 
 SubagentStop requires a machine-checkable attestation containing assignment and
@@ -380,18 +590,29 @@ child is truthful; the parent must revalidate any receipt at the owner boundary.
 | P6 final gate | context-loss narrative, slice overclaim, disk-hash mismatch | wrong final must be blocked |
 | P6a causal provenance | digest-valid forged facts, real-mode test seam, owner-internal shared derivation | caller self-authorization must fail |
 | P6b feasibility contract | budget/measurement domain drift, scale witness, owner-derived equivalence fan-out, recovery artifact baseline | mismatch, forged grouping, and artifact authority expansion must fail |
+| P6c end-to-end cost/phase continuity | dense-case p95, U1→R→U2, phase binding/conservation, mixed-frontier exactness, before/mid/after races | small-cohort extrapolation, phase drift, or an unblocked race fails |
 | P7 parity/regression | POSIX/Windows and existing DeepSeek route | all green before Phase 2 |
 
 Phase 2 cannot start until P1–P7 and live evidence close the Phase 1 gate. Phase
 3 cannot start before Phase 2.
 
+The complete closed-stage contracts are
+[Worker / Provider Profile](phase2-worker-provider-profiles.en.md) and the
+[optional Responses bridge for a ZHIPU child](phase3-zhipu-responses-bridge.en.md).
+
 ## Baseline and rollback
 
-The workflow checkout began at `main@1377b76`. The repository and live Hook are
-schema 1, role-single-slot, manually staged, and delete the claimed state after
-initial delivery. Live Hook/skill/state remain untouched during Phase 0/1
-development. Schema 2 uses an isolated state directory and configuration until
-qualified. Rollback selects the recorded schema 1 adapter baseline without
+The workflow checkout is now
+`main@076ee0df9aca11fbc0c19a6ccd7cd8befc0051f7`, equal to `origin/main` after
+the 2026-08-15 fresh fetch. At the user's explicit request, the migrated legacy
+v4 agent/skill/schema-1 plaintext Hook has been restored. A qualification-only
+G4 schema-2 overlay is now installed beside it after explicit user approval; it
+does not qualify direct write. The user approved its initial five definitions,
+then a live warning repair changed the `PreCompact` and `SubagentStop`
+definitions. The repaired config was then reviewed and trusted by the user;
+fresh-process exact-hash reload/rollback qualification is still pending. Schema
+2 continues to use a dedicated state directory until qualified. Rollback
+selects the recorded schema 1 adapter baseline without
 claiming durable continuity; it never changes the OpenAI parent provider or
 deletes quarantine/unresolved evidence.
 
@@ -402,18 +623,19 @@ hashes are recorded in the Chinese document.
 
 ## Version-locked Codex evidence
 
-Local CLI: `codex-cli 0.147.0`. The official `rust-v0.147.0` tag peels to
-`be6e8eac029b183056b7e4402879f15d2c85f61b`.
+Local CLI: `codex-cli 0.148.0-alpha.9`. The official
+`rust-v0.148.0-alpha.9` tag peels to
+`9392c3fa5bcda342b5b96a1a04d67b2f781617c2`.
 
-- [Hook schemas](https://github.com/openai/codex/blob/be6e8eac029b183056b7e4402879f15d2c85f61b/codex-rs/hooks/src/schema.rs)
-- [startup-only SubagentStart dispatch](https://github.com/openai/codex/blob/be6e8eac029b183056b7e4402879f15d2c85f61b/codex-rs/core/src/hook_runtime.rs)
-- [compact Hook behavior](https://github.com/openai/codex/blob/be6e8eac029b183056b7e4402879f15d2c85f61b/codex-rs/hooks/src/events/compact.rs)
-- [SubagentStop continuation gate](https://github.com/openai/codex/blob/be6e8eac029b183056b7e4402879f15d2c85f61b/codex-rs/hooks/src/events/stop.rs)
-- [requested name to AgentPath](https://github.com/openai/codex/blob/be6e8eac029b183056b7e4402879f15d2c85f61b/codex-rs/core/src/tools/handlers/multi_agents_common.rs)
-- [V2 canonical-path return](https://github.com/openai/codex/blob/be6e8eac029b183056b7e4402879f15d2c85f61b/codex-rs/core/src/tools/handlers/multi_agents_v2/spawn.rs)
-- [SessionMeta identity](https://github.com/openai/codex/blob/be6e8eac029b183056b7e4402879f15d2c85f61b/codex-rs/protocol/src/protocol.rs)
-- [Hook session id is shared by root and descendants](https://github.com/openai/codex/blob/be6e8eac029b183056b7e4402879f15d2c85f61b/codex-rs/core/src/session/session.rs)
-- [transcript materialization test](https://github.com/openai/codex/blob/be6e8eac029b183056b7e4402879f15d2c85f61b/codex-rs/core/src/session/tests.rs)
+- [Hook schemas](https://github.com/openai/codex/blob/9392c3fa5bcda342b5b96a1a04d67b2f781617c2/codex-rs/hooks/src/schema.rs)
+- [subagent and compact runtime binding](https://github.com/openai/codex/blob/9392c3fa5bcda342b5b96a1a04d67b2f781617c2/codex-rs/core/src/hook_runtime.rs)
+- [compact Hook behavior](https://github.com/openai/codex/blob/9392c3fa5bcda342b5b96a1a04d67b2f781617c2/codex-rs/hooks/src/events/compact.rs)
+- [SubagentStop continuation gate](https://github.com/openai/codex/blob/9392c3fa5bcda342b5b96a1a04d67b2f781617c2/codex-rs/hooks/src/events/stop.rs)
+- [requested name to AgentPath](https://github.com/openai/codex/blob/9392c3fa5bcda342b5b96a1a04d67b2f781617c2/codex-rs/core/src/tools/handlers/multi_agents_common.rs)
+- [V2 canonical-path return](https://github.com/openai/codex/blob/9392c3fa5bcda342b5b96a1a04d67b2f781617c2/codex-rs/core/src/tools/handlers/multi_agents_v2/spawn.rs)
+- [SessionMeta identity](https://github.com/openai/codex/blob/9392c3fa5bcda342b5b96a1a04d67b2f781617c2/codex-rs/protocol/src/protocol.rs)
+- [Hook session id is shared by root and descendants](https://github.com/openai/codex/blob/9392c3fa5bcda342b5b96a1a04d67b2f781617c2/codex-rs/core/src/session/session.rs)
+- [transcript materialization and persist/flush distinction](https://github.com/openai/codex/blob/9392c3fa5bcda342b5b96a1a04d67b2f781617c2/codex-rs/rollout/src/recorder.rs)
 
 No official documentation was found that promotes all of these source behaviors
 to a long-term API guarantee. Re-run the probes for every minimum supported

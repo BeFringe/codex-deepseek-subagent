@@ -5,6 +5,11 @@
 状态：v1 控制面设计，2026-08-12。当前批准 Phase 0 证据与 probe 驱动的 Phase 1
 实现，但 Phase 1 尚未通过 G4；Phase 2/3 尚未获准实施。
 
+阶段文档：[Phase 1 / G4 probe plan](phase1-g4-probe-plan.md) ·
+[Phase 2 Worker / Provider Profile（关闭）](phase2-worker-provider-profiles.md) ·
+[Phase 3 ZHIPU Responses bridge（关闭）](phase3-zhipu-responses-bridge.md)。未来阶段文档的
+存在只保存设计与准入条件，不改变当前阶段裁决。
+
 ## 目标与非目标
 
 本仓库是可删除的异构 worker compatibility layer，不是全局 model router：
@@ -42,10 +47,18 @@ relation、agent role、lifecycle、wait/callback 和 cancel。`requested_task_n
 
 ### B. Assignment transport
 
-每个 worker 只能选择 `native` 或 `plaintext-v2`。`plaintext-v2` 从可信
-`PreToolUse(spawn_agent)` 捕获真实 `spawn_agent.message`；真实 message 仍保持自洽，
-Hook 不改写 spawn arguments。transport instance 使用独立 `handoff_id`，不能用
-logical task name 充当 handoff identity。
+每个 worker 只能选择 `native` 或 `plaintext-v2`。`plaintext-v2` 的设计合同要求从可信
+`PreToolUse(spawn_agent)` 捕获真实 plaintext assignment；真实 message 仍保持自洽，Hook
+不改写 spawn arguments。transport instance 使用独立 `handoff_id`，不能用 logical task
+name 充当 handoff identity。
+
+当前 Codex 0.148.0-alpha.9 的 live native collaboration surface 不满足这个前提：
+`PreToolUse` 的实际 tool name 是 `collaborationspawn_agent`，它的 `message` 与 rollout
+function-call 值完全同 hash，但只是无 authority marker 的 opaque token-like payload；生成器
+提供的 plaintext assignment 有不同 length/hash 和一对 marker。`SubagentStart` 提供真实
+SessionMeta/AgentPath identity，却没有 `message`、`prompt` 或其他 assignment plaintext
+字段。这是 P1 的 runtime blocker，而不是允许 adapter 把 opaque payload 当 authority source
+的理由。
 
 ### C. Authority continuity
 
@@ -54,7 +67,7 @@ capsule 必须在 child compact/resume 后仍可由 runtime guard 读取。任�
 identity mismatch、owned-path 扩张、Git authority 扩张或 stop-condition 扩张都必须
 fail closed。
 
-当前 Codex 0.147.0 的源码合同表明：
+当前 Codex 0.148.0-alpha.9 的源码合同表明：
 
 - `SubagentStart` 只在 thread-spawn child 的 startup 运行；child compact/resume 不会
   再次运行该 Hook；
@@ -114,6 +127,14 @@ assignment 的 capsule，不能被 provider profile 默认、推断或归一化�
     "expected_base_head": "full exact object id"
   },
   "capture_snapshot_sha256": "hex",
+  "assignment_mutation_mode": "read_only|write",
+  "parent_recorded_user_write_intent": "deny|allow",
+  "trusted_host_user_write_consent": {
+    "schema": 1,
+    "status": "unavailable",
+    "source": null,
+    "receipt_sha256": null
+  },
   "owned_paths": ["repo-relative/path"],
   "excluded_paths": ["repo-relative/path"],
   "git_authority": {
@@ -277,6 +298,25 @@ assignment 的 capsule，不能被 provider profile 默认、推断或归一化�
 规则：
 
 - `assignment_id` 标识 immutable authority；`handoff_id` 标识一次 transport instance。
+- `assignment_mutation_mode` 是 assignment 的 mutation intent，不是 qualification。
+  `read_only` 必须配 `strict_read_only` 与 parent intent `deny`；`write` 必须配
+  `direct_write_unqualified` 与 parent intent `allow`。intent 是 parent 对当前用户指令的审计记录，
+  默认/缺失/`deny` 都不能 staging write assignment；它不是 host-attested consent，不得命名或
+  使用为真实用户授权证明。
+- `trusted_host_user_write_consent` 是另一独立 gate，不由 assignment 或 parent 填写。当前
+  isolated schema 只接受精确的 `unavailable/null/null`；任何 `verified`、source 或 receipt 值都
+  fail closed。未来只有 Codex host/UI 提供不可由 parent/child 伪造的 consent signal 后，才能用
+  新 schema revision 表达 verified receipt。
+- parent-recorded intent 只是 child mutation 的 permission ceiling。它不授予 owned path，不取得
+  parent/sibling writer lease，不改变 Git authority，不把 `direct_write_qualified` 置 true，也不能
+  替代 sandbox、SessionMeta identity、PreToolUse/PostToolUse mediation、callback、termination/
+  quiescence 或 post-termination disk barrier。当前 `write` capsule 的第一次 mutation tool
+  request 仍以 `write_authority_gates_missing` 在执行前冻结为 unresolved，并机械记录
+  `trusted_host_user_write_consent`、`direct_write_qualification` 与
+  `live_mutation_mediation` 三个 blocker。
+- 已删除 rollout marker/turn/prompt-hash 方案。它要求私有用户语法、耦合 rollout schema/flush，
+  且 same-UID 可写使其不能形成可信 host boundary；保留它只会增加复杂度与 false deny，不增加
+  direct-write authority。
 - `canonical_agent_path` 只在 runtime metadata 证明后写入绑定记录，不能猜字符串格式。
 - capsule 本身不可原地扩大权限。恢复 assignment 必须新建 identity，并显式引用冻结的
   dirty baseline；不得 replay 已消费的 handoff。
@@ -327,6 +367,25 @@ assignment 的 capsule，不能被 provider profile 默认、推断或归一化�
   claim。若机制使用 equivalence compression，分组必须由 authoritative owner 派生，class/identity
   count 分离，且 fan-out 必须守恒。builder 只调用 owner derivation callback 并自行写入 owner/origin，
   不接受 precomputed grouping 或 caller 自报的 `grouping_origin`；digest 自洽不能补足来源。
+- invocation budget 与 end-to-end latency gate 是两个独立 authority，不能用一个数字或同一
+  `mechanism_satisfies` 代替。cost contract 必须分别冻结实际 cost unit、limit/statistic、
+  multiplicity/等价类分布 digest、代表性 worst dense witness、样本数、p95 的窗口/计算定义、
+  phase timing 与完整 completion stop condition。小 cohort、单层存储查询 spike 或局部 phase
+  benchmark 只能作为 contribution evidence；没有 end-to-end representative witness 或已证明的
+  monotonicity 时，不能授权 scale/deliverability claim。
+- 多阶段 conservative refinement 必须由 authoritative owner 在 capsule 冻结的 phase catalog 内
+  派生：先得到 coarse upper bound `U1`，从 owner-derived refinement set `R` 得到 `U2`，并机械
+  验证 `true <= U2 <= U1`。每个 phase 都要重新证明 input/output identity、root/source binding 与
+  authority epoch；closed set registries 和 owner-declared set equations 必须机械验证跨 phase
+  conservation。最终 mixed-frontier response 必须与 authoritative result 在 exact cardinality、
+  canonical order 与 item identity 上等价，不能只比较 aggregate count 或 self-consistent digest。
+- phase 开始前、refinement/owner call 执行中、final materialization 后的 mutation race 都是独立
+  failure seam。若多个 phase 位于一个 opaque tool call 内而 Hook 看不到中间 boundary，assignment
+  prompt 不能补足 visibility；必须由 owner-internal operation 或更强 host mediation 在每个 seam
+  re-attest/fail closed，否则 P6c 保持未通过。
+- 运行中发现的便利假设、局部优化或新分组不能由 child 改写冻结的 cost unit、distribution、
+  completion condition、phase authority 或 stop condition。任何机制变更都需要 parent 重新生成
+  feasibility capsule；旧 child 只能停止或返回 unresolved contribution。
 - pre-existing dirty hashes 防止 child 把用户修改误报为自己的贡献。blocked long run 的 recovery
   capsule 可以同时冻结 reusable generated artifact 的 path/status/hash identity，但该记录不增加
   `owned_paths`；artifact 未改变时可复用，任何越出既有 ownership 的修改仍被拒绝。
@@ -340,6 +399,12 @@ assignment 的 capsule，不能被 provider profile 默认、推断或归一化�
 child/parent identity、owned/excluded paths、root/base、Git authority、authoritative input
 roots、stop condition 和 completion predicate。完整 capsule/assignment 仍保留在 durable
 state；compact copy 不能扩大或替代它。
+
+同一上下文还可携带一个机械派生、非授权的 final-attestation seed，只提供 assignment/
+handoff/capsule identity、compact/provenance policy hash、canonical AgentPath、recovery epoch
+与 verification command 名单。它不得预填 worker provenance origin、test-only 选择、
+verification exit code、final disk snapshot、authority violation 或 completion claim；这些仍由
+worker 声明并由 `SubagentStop` 以 fresh host/disk state 独立裁决。
 
 ## handoff 与 authority 生命周期
 
@@ -359,6 +424,23 @@ reported/<assignment_id>.json
 consumed/<assignment_id>.json
 ```
 
+parent/sibling 的 structured mutation 另有不授予 child authority 的短期 claim：
+
+```text
+PreToolUse(apply_patch) -> writer_claim/<claim_id>.json
+  -> successful exact PostToolUse -> writer_receipt/<claim_id>.json
+  -> failed tool + exact unchanged proof -> writer_abort/<claim_id>.json
+```
+
+claim 在 PreToolUse 返回前持久化，并由 child capture/stage 在同一 state lock 内检查；因此
+in-flight parent patch 与新 overlapping child ownership 只能有一方进入。PostToolUse 只在
+工具产生 successful output 时存在，失败、部分失败、callback 丢失或 identity mismatch 都保留
+claim 并 fail closed。不得用 TTL 静默释放；后续恢复仍需 host-owned tool-failure termination、
+mutation quiescence 与 fresh disk barrier。唯一较窄的例外是工具在 mutation 前失败：exact
+SessionMeta actor 可提交固定原因的 explicit abort，但必须重证 Git frontier 及所有 claimed
+path 的 before/after identity 完全相同。该 abort 不能记为 PostToolUse，也不能处理部分写入、
+进程死亡或任何不确定 disk state；这些情况仍需 strong host-owned quiescence/barrier。
+
 - pending/claimed/active/consumed/quarantine 的所有转换都在 OS-owned lock 下完成。
 - identity mismatch 只拒绝该 claim，不消费、不覆盖、不 quarantine 有效 assignment。
 - 只有 JSON/schema/UUID/hash/timestamp/required identity 等 state corruption 才 quarantine。
@@ -371,6 +453,58 @@ consumed/<assignment_id>.json
 `interrupt_agent`/cancel 的返回只表示 control request 已被确认，不等于 child process、已有
 PTY、outer executor、MCP 或其他 mutation source 已静默。interrupt ack 不能单独作为
 mutation quiescence，也不能授权立即把相同 owned paths 交给新 child。
+
+当前源码 candidate 为 Multi-Agent V2 单独暴露 `close_agent`，而不改变
+`interrupt_agent` 的既有语义。它按 exact ThreadId 或 canonical AgentPath 解析 target，调用
+`AgentControl.close_agent -> shutdown_agent_tree -> Op::Shutdown -> wait_until_terminated`，并只在
+target 及其仍 live 的 descendant session loop 均终止后返回
+`session_loop_terminated=true`。每个 unified-exec manager 先进入 closing state，等待已登记但未决议的
+process start，拒绝后来 start，并发起并行 termination；local PTY 必须观测 `exit_rx`，
+ExecServer 必须观测 `ExecProcessEvent::Exited`，不得把 kill/RPC acknowledgement 合成为
+exit。返回的 exact per-thread maps 区分 tracked、confirmed-exit、unconfirmed-exit 与
+unresolved-start process id；有任何 pending/unconfirmed 或最终 tracked 非零都 fail closed。
+
+只有在 exact `g4_qualification_probe_worker`/`SessionSource::Exec` 选通、本次 close 捕获的
+session loops 全部终止、所有 tracked exit 均有真实 witness、且没有 unresolved start 时，
+才可返回 `closed_catalog_actor_quiescence_claimed=true`。它仍固定
+`process_tree_quiescence_claimed=false`：detached/untracked descendant，以及 close 开始时捕获集合之外
+才产生的 descendant，不在证明域内。因此该 primitive 已强于单纯 session-loop close，
+但仍不是全局 process-tree quiescence。
+
+把该 primitive 升为 P5b handover receipt 还必须证明：本次 assignment 的 mutation-surface catalog
+闭合，所有不允许的 process/bootstrap surface 均未启动，target 的 in-flight writer claim 为零，
+Hook/state event 已按 exact ThreadId/tool-use identity 对账，而且在 close 返回后重新采集的
+root/branch/full HEAD/index/status/path hashes 与冻结 frontier 一致。任一项缺失时只可记录
+`host_session_terminated_mutation_quiescence_unproven`，不得创建 quiescence barrier 或释放
+overlapping ownership。一次真实只读 child 运行已把 exact SessionMeta/SubagentStart、闭合工具目录、
+零 child tool call、真实 exit maps、durable active→unresolved reconciliation 与两次稳定磁盘观测连接起来。
+该样本只证明其 exact read-only actor 的 termination/mutation quiescence。第二次真实运行覆盖一个
+exact mutation-capable actor：child 以 writer lease 执行唯一一次 `apply_patch`，把可信 PostToolUse
+receipt 写入 accepted attestation 与 byte-identical parent callback，随后进入新的 read-only hold turn。
+exact `close_agent` 中断这个 running turn，返回空 tracked/confirmed/unconfirmed/unresolved process maps，
+让 child 从 live tree 消失，并在稳定 dirty-byte barrier 之前完成。reconciler 在发布 barrier 前先把
+accepted report 冻结回 unresolved，因此该 receipt 不会静默变成 integration 或 handover authority。
+这只证明该 exact write actor 的 bounded termination/mutation quiescence；detached/untracked descendant、
+全局 process tree、其他 mutation surface 与 ownership handover race 仍须独立资格证明。
+
+mutation-capable assignment 从 pending/claimed/active 到 reported/unresolved 期间，其
+`owned_paths` 必须处于包含 parent 与所有 sibling child 的 single-writer 域。parent 在已交给
+active child 的相同或父子重叠路径上调用 `apply_patch`、shell 或其他写工具，是竞争 ownership
+claim，不是隐含的 integration authority。assignment 中声明 ownership、提示“并非唯一 agent”或
+在每次写前 refresh capsule，都不是文件系统互斥：refresh 与实际 mutation 之间仍存在 TOCTOU
+窗口。parent 若需接管这些路径，必须先停止自己的重叠写入，冻结 child authority，取得下述强
+termination+quiescence receipt 与 post-termination disk barrier，再以新的 authority epoch
+取得 writer lease；无法在 parent 与 child 两侧共同 mediation/serialization 时，direct write
+保持不合格。
+
+当前 isolated candidate 只对源码已固定为 `{command: raw_patch}` 的 `apply_patch` 建立上述
+双向 writer claim。它严格解析 add/delete/update/move path，按 Git root 归一化 absolute、`..`
+与 symlink alias，拒绝 active/pending/reported/unresolved ownership overlap，并让 exact
+PostToolUse actor/tool-use identity 释放成功 claim。只有 exact direct parent、强 quiescence
+barrier 与当前 full snapshot 完全相等时，unresolved child ownership 才能作为 hash-bound
+handover 进入新的 parent claim；barrier 后 disk drift 继续 block。unknown patch shape fail closed；shell、
+`write_stdin`、MCP、code mode 与其他 mutation surface 仍未取得相同 transaction boundary，
+所以这项实现不能改变 direct-write 裁决。
 
 重派相同/父子重叠 ownership 的顺序必须是：先把旧 active authority 冻结为 unresolved，
 再取得 host-owned `child_terminated_and_mutations_quiesced` receipt，最后在 termination 之后
@@ -390,6 +524,15 @@ interrupt ack 都不能替代证明。
 严格只读的 committed-range review 不认领 mutation ownership，因此不走上述 handover。
 它仍须在每次工具调用和 final return 重新核对 compact invariant、clean snapshot 与 exact
 review range；若磁盘漂移则停止，而不是把 read-only capsule 升格为 mutation authority。
+parent 或其他 writer 产生的 foreign dirty bytes 也不得由 read-only child “清理”、restore、
+checkout、reset、删除或 patch 回 captured/HEAD 内容。即使最终 digest 恰好等于 committed
+baseline、Git status 从 dirty 变 clean，该操作仍是越权 mutation，并且可能抹掉 authoritative
+parent contribution。只读 narrative 或 claim refresh 不能授权这种写入；guard 必须在工具执行前
+拒绝所有 mutation surface，并由 parent 对 foreign bytes 作唯一 writer 裁决。
+target read-only child 一旦请求非 allowlist tool，isolated guard 在执行前记录 attempted tool 与
+fresh disk snapshot，把 active authority 冻结为 `read_only_child_mutation_attempt` unresolved
+evidence；若此前已有 disk drift，只能标为 `pre_attempt_disk_drift_unattributed`，不得归因给 child
+或 parent。单次 deny 后继续保留 active authority 不再是候选语义。
 
 当前 isolated adapter 只从可信 `PreToolUse(spawn_agent)` 捕获新 assignment；尚未证明 native
 follow-up/send-input 的等价可信事件与 immutable receipt。因此 `review_continuation` 目前只是
@@ -406,6 +549,9 @@ owner provenance 与 dispatch decision；若未来把任意 executable probe 接
 不能依据后一 child 的 attestation 把所有 bytes 单独归因给后一 assignment。
 state lock 不是 filesystem transaction；fresh pre-stage snapshot 之后的剩余窗口仍由新 child
 首次 exact attestation 捕获。没有 host quiescence guarantee 时这两个检查都不能升级为强证明。
+同理，state lock 只会串行化 capsule 转换，不会阻止 parent 在 active child 的 tool call 之间或
+执行中直接修改 owned file。事后 hash mismatch 只能冻结混合 provenance，不能把已经发生的交错
+写入重新证明为安全；live qualification 仍需 host dispatch serialization 或独立 sandbox/block。
 
 ### 为什么 assignment 不能补足外层不可见性
 
@@ -421,7 +567,7 @@ runtime 看不见的 mutation，且 narrative 还可能在 compaction 后丢失�
 
 ### Parent capture
 
-`PreToolUse(spawn_agent)` 输入必须精确保存：
+候选协议要求 `PreToolUse(spawn_agent)` 输入必须精确保存：
 
 - `session_id`, `turn_id`, `tool_use_id`；
 - `tool_input.message`, `task_name`, `agent_type`, `fork_turns`；
@@ -430,6 +576,11 @@ runtime 看不见的 mutation，且 narrative 还可能在 compaction 后丢失�
 stage 失败必须 block spawn。非 plaintext worker 原样 pass。Hook 不返回
 `updatedInput`，以免 transport 层成为第二个 assignment source。
 
+2026-08-17 live probe 已证明当前 native collaboration 调用没有向上述 Hook seam 暴露
+plaintext assignment。观察到 agent-control event 并不等于捕获 assignment；在 Codex 提供
+可核验 plaintext seam，或存在能证明 staging bytes 与 child-delivered bytes exact equality
+的 trusted host mechanism 之前，parent staging 也不能单独闭合 P1。
+
 ### Child claim
 
 `SubagentStart` 自身不暴露 parent id、task name 或 AgentPath，因此 claim 必须读取它
@@ -437,9 +588,11 @@ stage 失败必须 block spawn。非 plaintext worker 原样 pass。Hook 不返�
 
 - Hook `session_id == SessionMeta.session_id`（root 与 descendants 共享）；
 - Hook `agent_id == SessionMeta.id`（child ThreadId）；
-- `SessionMeta.parent_thread_id == capsule.parent_thread_id`；
-- `SessionMeta.agent_role == capsule.agent_type`；
-- `SessionMeta.agent_path` 与 requested task name/parent AgentPath 的关系唯一；
+- `SessionMeta.parent_thread_id == capsule.parent_thread_id`，且与
+  `source.subagent.thread_spawn.parent_thread_id` 相等；
+- `SessionMeta.agent_role == capsule.agent_type`，且与 source role 相等；
+- `SessionMeta.agent_path` 与 source path 相等，并与 requested task name/parent
+  AgentPath 的关系唯一；
 - 预先算出的 expected path（如有）与实际 path 完全一致。
 
 任何零匹配或多匹配都 fail closed。bounded retry 只有在 live probe 证明存在短暂 flush
@@ -458,6 +611,11 @@ Phase 1 不以 prompt 里的 `TASK.CONTEXT_LOST` 代替 runtime gate：
    attestation/`TASK.CONTEXT_LOST` 的 continuation prompt。
 6. parent 以 actual disk、Git 和 capsule evidence 裁决；child narrative 只是一项输入。
 
+当前 0.148.0-alpha.9 本机二进制内嵌 schema 明确包含
+`PreToolUseHookSpecificOutputWire.additionalContext`，与 pinned `schema.rs` anchor 一致。
+这只证明输出字段可解析；仍须 live compact probe 证明该 context 在目标 child 中可见，不能
+用 provider-free JSON 解析测试替代。
+
 只缩小任务可以降低 compaction 风险，但不是协议修复。
 
 ### pre-write attestation deadline 与 fast-stop
@@ -472,7 +630,7 @@ PreToolUse 无法自行醒来或 cancel child。因此 bounded fast-stop 还依�
 isolated watchdog，并在 watchdog 返回 `parent_cancel_required=true` 时 interrupt/cancel child。
 没有该外层调度证据就只能证明“下一事件会被拒绝”，不能宣称“deadline 时刻已停止 provider
 turn”。这项限制不能用 assignment prompt 补足。
-当前 isolated API 只建模 trusted host receipt 的格式与状态转换；Codex 0.147.0 是否公开提供
+当前 isolated API 只建模 trusted host receipt 的格式与状态转换；Codex 0.148.0-alpha.9 是否公开提供
 满足该强语义的 termination receipt 仍未证明。因此 live direct-write handover 继续不合格。
 
 ## final-return attestation
@@ -548,22 +706,32 @@ test-only completion，但不能据此证明 child 没有撒谎；receipt digest
 
 ### 已重建事实
 
-- workflow checkout 为 `main@1377b76`，live install 未修改。
+- workflow checkout 的迁移基线为
+  `main@076ee0df9aca11fbc0c19a6ccd7cd8befc0051f7`，与 2026-08-15 fresh fetch 的
+  `origin/main` 相等。资格验证专用 G4 schema-2 overlay 后续已获用户明确安装/
+  trust 授权，当前 Hook config SHA-256 为
+  `ffaad5c3533a2016253af148c96721818807823f779845a35c5d7dad2c676c2b`；这不等于
+  fresh-process reload/rollback 资格，也不改变 direct-write 裁决。
 - 现有 repo/live Hook 是 schema 1、按 role 单槽、manual stage、initial delivery 后立即
   删除 claimed state。
 - 多次真实事件显示 initial assignment transport 正确且 owned-path changes 落盘；长
   turn compact/recovery 后 final narrative 丢失 assignment，或扩大 Git/scope/completion
   authority。它们是 continuity/final-attestation failure，不是 initial transport miss。
-- 本机 `codex-cli 0.147.0`；官方 `rust-v0.147.0` tag 的 peeled commit 为
-  `be6e8eac029b183056b7e4402879f15d2c85f61b`。
+- 本机 `codex-cli 0.148.0-alpha.9`；官方 `rust-v0.148.0-alpha.9` tag 的 peeled commit 为
+  `9392c3fa5bcda342b5b96a1a04d67b2f781617c2`。
 - 该源码从 parent AgentPath `join(requested task name)` 构造 child path，spawn 返回值的
   `task_name` 实际序列化 canonical path。
 - child rollout materialization 会在 Hook 取得 `transcript_path` 时落下 SessionMeta；
   是否在所有支持平台/host 上无 race 仍需 live probe。
+- 本机 live `PreToolUse` 对 native spawn 使用 `collaborationspawn_agent`，并暴露
+  `agent_type`、`fork_turns`、`message`、`task_name` 的 field/type shape；其中 `message`
+  与 rollout function call 同为 4600-byte opaque token-like value，和生成器的 3223-byte
+  plaintext assignment 不同。live `SubagentStart` shape 有 exact child/session/transcript
+  identity，但没有 assignment plaintext。原始 hashes 与 fail-closed 裁决记录在
+  `probes/g4-live-native-hook-schema-20260817.json`。
 
 ### 当前假设
 
-- trusted PreToolUse Hook 能稳定匹配 Codex 对 `spawn_agent` 的 canonical tool name。
 - child `SessionMeta` 在 SubagentStart 时已包含完整 parent/path/role；源码支持这一点，
   但 root/nested/concurrent live behavior 尚未资格认证。
 - 所有 direct-write 路径都能被一组可枚举的 PreToolUse matcher 覆盖。
@@ -583,6 +751,7 @@ test-only completion，但不能据此证明 child 没有撒谎；receipt digest
 | P6 | final attestation | no-assignment narrative、slice→parent claim、disk hash mismatch | 不 block 错误 final 即失败 |
 | P6a | causal provenance | hash-valid forged derived facts、test-only seam in real mode、owner-internal shared derivation | caller 可自授权 PASS 即失败 |
 | P6b | feasibility contract | budget/measurement domain drift、scale witness、owner-derived equivalence fan-out、recovery artifact baseline | mismatch、forged grouping 与 artifact authority expansion 即失败 |
+| P6c | end-to-end cost/phase continuity | dense-case p95、U1→R→U2、phase binding/conservation、mixed-frontier exactness、before/mid/after race | 小样本外推、跨 phase 漂移或 race 未 fail closed 即失败 |
 | P7 | parity/regression | POSIX/Windows protocol、DeepSeek existing path | 全绿后才能进入 Phase 2 |
 
 ## Decision gates
@@ -596,13 +765,20 @@ test-only completion，但不能据此证明 child 没有撒谎；receipt digest
 - **G4 — Phase 1 complete**：schema/hash、mismatch preserve、corrupt quarantine、
   nested/concurrent、expiry/recovery、Windows/POSIX 与 DeepSeek regression 全绿，并记录
   live evidence；parent-owned feasibility 必须证明 budget unit/cardinality domain 一致、scale
-  claim 有 monotonicity 或 adversarial witness、equivalence fan-out 守恒且 recovery artifact 不扩权。
+  claim 有 monotonicity 或 adversarial witness、equivalence fan-out 守恒、end-to-end latency/dense
+  witness 与 staged authority continuity 闭合，且 recovery artifact 不扩权。
   G4 前禁止 Phase 2；Phase 2 前禁止 Phase 3。
+
+Phase 2/3 的完整关闭状态合同分别见
+[Worker / Provider Profile](phase2-worker-provider-profiles.md) 与
+[ZHIPU child optional Responses bridge](phase3-zhipu-responses-bridge.md)。
 
 ## Rollback
 
-- Phase 0/1 开发只改仓库，不覆盖 live Hook/skill/state。
-- schema 2 与 hook matchers 在未资格认证前使用隔离 state directory/config。
+- 用户明确批准后，已将 qualification-only schema 2 overlay 安装在现有 v4
+  Hook 之旁；这不构成 direct-write 资格。首次五项定义已审批，但修复
+  `PreCompact`/`SubagentStop` 无效字段后，这两项需重新按精确哈希审核。
+- schema 2 在未资格认证前使用独立 state directory。
 - 保留 v4 wrapper/alias；失败时恢复到已记录的 schema 1 repo baseline，不伪造 continuity
   guarantee。
 - 不修改 OpenAI parent provider/base URL，不把 bridge 放进全局配置。
@@ -621,19 +797,19 @@ test-only completion，但不能据此证明 child 没有撒谎；receipt digest
 | `docs/advanced.en.md` | 1+/1- | `6bdfbee6a3fe056004bb16eda09271c4117ad29ced40cf873964a790648bfce4` |
 | `tests/test_plaintext_handoff.py` | 144+ | `a1061c3276c604b9bb608061b17198a52f50432b203da8a39a3f19e6b00e2689` |
 
-## Codex 0.147.0 源码证据
+## Codex 0.148.0-alpha.9 源码证据
 
 以下是版本锁定的源码观察，不冒充跨版本公开保证：
 
-- [`PreToolUse` input/output schema](https://github.com/openai/codex/blob/be6e8eac029b183056b7e4402879f15d2c85f61b/codex-rs/hooks/src/schema.rs)
-- [SubagentStart 仅在 child startup 分发](https://github.com/openai/codex/blob/be6e8eac029b183056b7e4402879f15d2c85f61b/codex-rs/core/src/hook_runtime.rs)
-- [compact Hook 是无 context 输出的 gate](https://github.com/openai/codex/blob/be6e8eac029b183056b7e4402879f15d2c85f61b/codex-rs/hooks/src/events/compact.rs)
-- [SubagentStop 可 block 并生成 continuation](https://github.com/openai/codex/blob/be6e8eac029b183056b7e4402879f15d2c85f61b/codex-rs/hooks/src/events/stop.rs)
-- [requested task name → canonical AgentPath](https://github.com/openai/codex/blob/be6e8eac029b183056b7e4402879f15d2c85f61b/codex-rs/core/src/tools/handlers/multi_agents_common.rs)
-- [V2 spawn 返回 canonical path](https://github.com/openai/codex/blob/be6e8eac029b183056b7e4402879f15d2c85f61b/codex-rs/core/src/tools/handlers/multi_agents_v2/spawn.rs)
-- [SessionMeta identity fields](https://github.com/openai/codex/blob/be6e8eac029b183056b7e4402879f15d2c85f61b/codex-rs/protocol/src/protocol.rs)
-- [Hook session id 是 root/descendants 共享 identity](https://github.com/openai/codex/blob/be6e8eac029b183056b7e4402879f15d2c85f61b/codex-rs/core/src/session/session.rs)
-- [Hook transcript materialization test](https://github.com/openai/codex/blob/be6e8eac029b183056b7e4402879f15d2c85f61b/codex-rs/core/src/session/tests.rs)
+- [`PreToolUse`/`PreCompact`/subagent input/output schema](https://github.com/openai/codex/blob/9392c3fa5bcda342b5b96a1a04d67b2f781617c2/codex-rs/hooks/src/schema.rs)
+- [SubagentStart、PreToolUse、PreCompact 与 SubagentStop runtime binding](https://github.com/openai/codex/blob/9392c3fa5bcda342b5b96a1a04d67b2f781617c2/codex-rs/core/src/hook_runtime.rs)
+- [compact Hook 是无 context 输出的 gate](https://github.com/openai/codex/blob/9392c3fa5bcda342b5b96a1a04d67b2f781617c2/codex-rs/hooks/src/events/compact.rs)
+- [SubagentStop 可 block 并生成 continuation](https://github.com/openai/codex/blob/9392c3fa5bcda342b5b96a1a04d67b2f781617c2/codex-rs/hooks/src/events/stop.rs)
+- [requested task name → canonical AgentPath](https://github.com/openai/codex/blob/9392c3fa5bcda342b5b96a1a04d67b2f781617c2/codex-rs/core/src/tools/handlers/multi_agents_common.rs)
+- [V2 spawn 返回 canonical path](https://github.com/openai/codex/blob/9392c3fa5bcda342b5b96a1a04d67b2f781617c2/codex-rs/core/src/tools/handlers/multi_agents_v2/spawn.rs)
+- [SessionMeta identity fields](https://github.com/openai/codex/blob/9392c3fa5bcda342b5b96a1a04d67b2f781617c2/codex-rs/protocol/src/protocol.rs)
+- [Hook session id 是 root/descendants 共享 identity](https://github.com/openai/codex/blob/9392c3fa5bcda342b5b96a1a04d67b2f781617c2/codex-rs/core/src/session/session.rs)
+- [Hook transcript materialization 与 persist/flush durability 区分](https://github.com/openai/codex/blob/9392c3fa5bcda342b5b96a1a04d67b2f781617c2/codex-rs/rollout/src/recorder.rs)
 
 未找到能够把上述源码行为提升为长期稳定 API guarantee 的官方文档。因此每个最低支持
 Codex baseline 都必须重新运行 probes；若 contract 改变，adapter fail closed，而不是

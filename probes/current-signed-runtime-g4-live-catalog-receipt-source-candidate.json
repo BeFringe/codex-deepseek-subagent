@@ -1,0 +1,121 @@
+{
+  "schema": 1,
+  "as_of": "2026-09-09",
+  "purpose": "Add an opt-in, stderr-only runtime receipt for the exact G4 child's finalized ToolRouter after every core, MCP, extension, dynamic, hosted, code-mode, and collaboration contributor; it grants no mutation authority.",
+  "source": {
+    "repository": "https://github.com/openai/codex",
+    "commit": "3d2ee51ca2d5db578f328aa75e20aa22c0197c9a",
+    "semantic_runtime_version": "codex-cli 0.153.4",
+    "tree": "/private/tmp/codex-current-plaintext.aTU9C2/source"
+  },
+  "reconstruction": {
+    "patch": "probes/current-signed-runtime-g4-live-catalog-receipt-source-candidate.patch",
+    "patch_sha256": "805ff02e28e7ddffa179697820bd1aa1af84a44ebf5458741d67e49d86326bc2",
+    "patch_bytes": 96326,
+    "patch_lines": 2431,
+    "changed_path_count": 29,
+    "cargo_lock_included": false,
+    "forward_apply_check_on_pristine_source": "pass",
+    "reverse_apply_check_on_candidate_source": "pass",
+    "predecessor": "probes/current-signed-runtime-g4-closed-tool-catalog-source-candidate.json"
+  },
+  "runtime_receipt_contract": {
+    "environment_opt_in": "CODEX_G4_TOOL_CATALOG_RECEIPT=stderr-v1",
+    "emission_channel": "stderr single-line JSON",
+    "emission_prefix": "G4_TOOL_CATALOG_RECEIPT_V1 ",
+    "exact_role": "g4_qualification_probe_worker",
+    "requires_thread_spawn_source": true,
+    "requires_parent_thread_id": true,
+    "requires_canonical_agent_path": true,
+    "requires_nonempty_turn_id": true,
+    "silent_for_root_and_other_roles": true,
+    "writes_files": false,
+    "records_credentials": false,
+    "identity_fields": [
+      "session_id",
+      "child_thread_id",
+      "turn_id",
+      "parent_thread_id",
+      "depth",
+      "agent_path",
+      "agent_role"
+    ],
+    "catalog_fields": [
+      "tool_mode",
+      "registered_tools",
+      "model_visible_tools",
+      "code_mode_tool_names",
+      "can_manage_children"
+    ]
+  },
+  "source_files": {
+    "receipt_emitter": {
+      "path": "codex-rs/core/src/tools/g4_catalog_receipt.rs",
+      "sha256": "a492f0b01d51318744a7e6f5fc0b4408cd8e6dc6b57cf71efd32fe623e9f94fe"
+    },
+    "final_router_projection": {
+      "path": "codex-rs/core/src/tools/router.rs",
+      "sha256": "69343acd2d30f537d24eb9321048009b4181676396e25bd8d782acafb5641262"
+    },
+    "post_planning_call_site": {
+      "path": "codex-rs/core/src/session/mod.rs",
+      "sha256": "00cb43be93dbb52dc6cadcc5c390e14795e64958318e69c9c35a1eb5cefb524e"
+    }
+  },
+  "verification": {
+    "format": {
+      "command": "cargo fmt --all",
+      "result": "pass",
+      "environment_drift": "the new host has no just executable; cargo fmt --all was used as the equivalent formatter"
+    },
+    "focused_rust": {
+      "command": "RUST_MIN_STACK=16777216 cargo test -p codex-core exact_g4_qualification_role_has_closed_tool_catalog -- --nocapture",
+      "result": "pass: 1 selected test; 2454 filtered out"
+    },
+    "spec_plan_regression": {
+      "command": "RUST_MIN_STACK=16777216 cargo test -p codex-core tools::spec_plan::tests:: -- --nocapture",
+      "result": "pass: 59 tests"
+    },
+    "candidate_build": {
+      "command": "RUST_MIN_STACK=16777216 cargo build -p codex-cli --bin codex",
+      "result": "pass"
+    },
+    "known_unrelated_warning": "codex-core all-test target reports one pre-existing unused body_json import"
+  },
+  "candidate": {
+    "path": "/private/tmp/codex-current-plaintext.aTU9C2/candidate-live-catalog-receipt/codex",
+    "sha256": "6e1f9675f876588786a98dfbe5db34b20572499f476c3cbd653465daa106e816",
+    "bytes": 589862136,
+    "build_profile": "dev",
+    "semantic_version": "codex-cli 0.153.4",
+    "selected_as_gui_app_server": false,
+    "installed_live": false,
+    "build_cache_removed_after_verification": true,
+    "build_cache_removed_bytes": "22G",
+    "candidate_preserved_after_cleanup": true,
+    "source_worktree_preserved_after_cleanup": true,
+    "source_worktree_size_after_cleanup": "85M"
+  },
+  "live_boundary": {
+    "receipt": "probes/g4-live-final-tool-catalog-receipt-20260909.json",
+    "real_child_receipt_count": 2,
+    "real_child_receipts_identical": true,
+    "empty_turn_receipts_observed": false,
+    "exact_sessionmeta_identity_joined": true,
+    "exact_apply_patch_pretool_denial_joined": true,
+    "candidate_exit_code": 0,
+    "post_termination_target_absent": true
+  },
+  "verdict": {
+    "source_runtime_catalog_receipt_qualified": true,
+    "exact_g4_final_router_catalog_absence_qualified": true,
+    "live_apply_patch_visibility_and_read_only_mediation_qualified": true,
+    "parent_and_host_control_negative_space_qualified": false,
+    "broad_sandbox_confinement_qualified": false,
+    "strong_mutation_quiescence_qualified": false,
+    "phase1_complete": false,
+    "direct_write_qualified": false,
+    "phase2_state": "closed",
+    "phase3_state": "closed"
+  }
+}

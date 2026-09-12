@@ -1,0 +1,94 @@
+{
+  "schema": 1,
+  "as_of": "2026-09-09",
+  "purpose": "Bind exact G4 parent and child allowlists to trusted core runtimes rather than tool-name equality, so an extension, MCP, or dynamic contributor cannot occupy an allowlisted name when the trusted runtime is absent.",
+  "source": {
+    "repository": "https://github.com/openai/codex",
+    "commit": "3d2ee51ca2d5db578f328aa75e20aa22c0197c9a",
+    "semantic_runtime_version": "codex-cli 0.153.4",
+    "tree": "/private/tmp/codex-current-plaintext.aTU9C2/source"
+  },
+  "predecessor": {
+    "receipt": "probes/current-signed-runtime-g4-p5b-tracked-termination-source-candidate.json",
+    "receipt_sha256": "61435ab941792a58a4016f846ee2cadc7cbc88ecafeb100d269411539f261ec6",
+    "state": "the retained source candidate immediately before trusted-origin binding"
+  },
+  "reconstruction": {
+    "patch": "probes/current-signed-runtime-g4-trusted-catalog-origin-source-candidate.patch",
+    "patch_sha256": "dcfd79f228f7df7b44f7cd7ecd1a5546d71eb2904fd2b76e3a78cc2b3a59f92e",
+    "patch_bytes": 5669,
+    "patch_lines": 134,
+    "changed_path_count": 3,
+    "cargo_lock_included": false,
+    "apply_mode": "git apply --unidiff-zero",
+    "forward_apply_check": "pass",
+    "reverse_apply_check": "pass",
+    "forward_result_matches_candidate_bytes": true
+  },
+  "trusted_origin_contract": {
+    "scope": [
+      "exact headless qualification parent",
+      "exact g4_qualification_probe_worker child"
+    ],
+    "trusted_origin": "successful register_trusted_with_exposure or prepend_trusted insertion by the core runtime",
+    "external_origins": [
+      "MCP",
+      "extension",
+      "dynamic runtime"
+    ],
+    "finalization": "retain_trusted applies after all tool contributors and before the model-visible ToolRouter is built",
+    "name_equality_alone_authorizes": false,
+    "trusted_runtime_absent_external_same_name_survives": false,
+    "removal_clears_trusted_membership": true,
+    "changes_non_qualification_catalogs": false,
+    "grants_mutation_authority": false
+  },
+  "source_files": {
+    "registry": {
+      "path": "codex-rs/core/src/tools/registry.rs",
+      "sha256": "147167fe563bb5f05af10ad4940ab63d72f6077a511d2de06e66a5ceb0d13781"
+    },
+    "final_router_projection": {
+      "path": "codex-rs/core/src/tools/spec_plan.rs",
+      "sha256": "8114614b91483a11c4d14ddf205458e59ef1b6614df69f9e7892016690364154"
+    },
+    "source_tests": {
+      "path": "codex-rs/core/src/tools/spec_plan_tests.rs",
+      "sha256": "1503699a478d959f92edc51ff60e42cb074e3fdb15b3ca0d2929bbae544da674"
+    }
+  },
+  "verification": {
+    "format": {
+      "command": "cargo fmt --all -- --check",
+      "result": "pass"
+    },
+    "focused_rust": {
+      "command": "cargo test -p codex-core exact_g4_qualification -- --nocapture",
+      "result": "pass: 4 selected; 2457 library tests and 1723 integration tests filtered out"
+    },
+    "negative_cases": [
+      "child external functions.apply_patch cannot replace absent trusted apply_patch",
+      "child external g4_assignment.list_agents cannot replace absent trusted list_agents",
+      "parent external functions.apply_patch cannot replace absent trusted apply_patch",
+      "parent external g4_assignment.spawn_agent cannot replace absent trusted spawn_agent"
+    ],
+    "preexisting_unrelated_warning": "unused wiremock::matchers::body_json in core/tests/suite/openai_file_mcp.rs"
+  },
+  "live_boundary": {
+    "candidate_rebuilt": false,
+    "candidate_selected_as_gui_app_server": false,
+    "candidate_installed_live": false,
+    "source_invariant_qualified": true,
+    "required_hook_fail_closed_qualified": false,
+    "independent_host_control_qualified": false,
+    "same_uid_hostile_mutation_qualified": false
+  },
+  "verdict": {
+    "trusted_runtime_origin_binding_qualified": true,
+    "p4_qualified": false,
+    "phase1_complete": false,
+    "direct_write_qualified": false,
+    "phase2_state": "closed",
+    "phase3_state": "closed"
+  }
+}

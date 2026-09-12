@@ -1,0 +1,336 @@
+--- a/codex-rs/core/src/tools/g4_catalog_receipt.rs
++++ b/codex-rs/core/src/tools/g4_catalog_receipt.rs
+@@ -7,7 +7,9 @@
+ 
+ const G4_CATALOG_RECEIPT_ENV: &str = "CODEX_G4_TOOL_CATALOG_RECEIPT";
+ const G4_CATALOG_RECEIPT_OPT_IN: &str = "stderr-v1";
++const G4_PARENT_CHILD_CATALOG_RECEIPT_OPT_IN: &str = "stderr-v2-parent-child-closed";
+ const G4_CATALOG_RECEIPT_PREFIX: &str = "G4_TOOL_CATALOG_RECEIPT_V1 ";
++const G4_PARENT_CHILD_CATALOG_RECEIPT_PREFIX: &str = "G4_TOOL_CATALOG_RECEIPT_V2 ";
+ const G4_QUALIFICATION_PROBE_ROLE: &str = "g4_qualification_probe_worker";
+ 
+ /// Emits an opt-in, credential-free receipt from the finalized router used by a real child step.
+@@ -19,39 +21,77 @@
+     turn_context: &TurnContext,
+     router: &ToolRouter,
+ ) {
+-    if std::env::var(G4_CATALOG_RECEIPT_ENV).as_deref() != Ok(G4_CATALOG_RECEIPT_OPT_IN) {
+-        return;
+-    }
+-
+-    let SessionSource::SubAgent(SubAgentSource::ThreadSpawn {
+-        parent_thread_id,
+-        depth,
+-        agent_path: Some(agent_path),
+-        agent_role: Some(agent_role),
+-        ..
+-    }) = &turn_context.session_source
+-    else {
+-        return;
+-    };
+-    if agent_role != G4_QUALIFICATION_PROBE_ROLE {
+-        return;
+-    }
+     if turn_context.sub_id.is_empty() {
+         return;
+     }
+-
+-    let receipt = json!({
+-        "schema": 1,
+-        "event": "finalized_tool_catalog",
+-        "source": "headless_candidate_runtime",
+-        "session_id": session.session_id().to_string(),
+-        "child_thread_id": session.thread_id().to_string(),
+-        "turn_id": turn_context.sub_id.as_str(),
+-        "parent_thread_id": parent_thread_id.to_string(),
+-        "depth": depth,
+-        "agent_path": agent_path.as_str(),
+-        "agent_role": agent_role,
+-        "catalog": router.qualification_catalog_receipt(),
+-    });
+-    eprintln!("{G4_CATALOG_RECEIPT_PREFIX}{receipt}");
++    match std::env::var(G4_CATALOG_RECEIPT_ENV).as_deref() {
++        Ok(G4_CATALOG_RECEIPT_OPT_IN) => {
++            let SessionSource::SubAgent(SubAgentSource::ThreadSpawn {
++                parent_thread_id,
++                depth,
++                agent_path: Some(agent_path),
++                agent_role: Some(agent_role),
++                ..
++            }) = &turn_context.session_source
++            else {
++                return;
++            };
++            if agent_role != G4_QUALIFICATION_PROBE_ROLE {
++                return;
++            }
++            let receipt = json!({
++                "schema": 1,
++                "event": "finalized_tool_catalog",
++                "source": "headless_candidate_runtime",
++                "session_id": session.session_id().to_string(),
++                "child_thread_id": session.thread_id().to_string(),
++                "turn_id": turn_context.sub_id.as_str(),
++                "parent_thread_id": parent_thread_id.to_string(),
++                "depth": depth,
++                "agent_path": agent_path.as_str(),
++                "agent_role": agent_role,
++                "catalog": router.qualification_catalog_receipt(),
++            });
++            eprintln!("{G4_CATALOG_RECEIPT_PREFIX}{receipt}");
++        }
++        Ok(G4_PARENT_CHILD_CATALOG_RECEIPT_OPT_IN) => {
++            let receipt = match &turn_context.session_source {
++                SessionSource::Exec => json!({
++                    "schema": 2,
++                    "event": "finalized_tool_catalog",
++                    "source": "headless_candidate_runtime",
++                    "actor_kind": "qualification_parent",
++                    "session_id": session.session_id().to_string(),
++                    "thread_id": session.thread_id().to_string(),
++                    "turn_id": turn_context.sub_id.as_str(),
++                    "agent_path": "/root",
++                    "agent_role": "root",
++                    "catalog": router.qualification_catalog_receipt(),
++                }),
++                SessionSource::SubAgent(SubAgentSource::ThreadSpawn {
++                    parent_thread_id,
++                    depth,
++                    agent_path: Some(agent_path),
++                    agent_role: Some(agent_role),
++                    ..
++                }) if agent_role == G4_QUALIFICATION_PROBE_ROLE => json!({
++                    "schema": 2,
++                    "event": "finalized_tool_catalog",
++                    "source": "headless_candidate_runtime",
++                    "actor_kind": "qualification_child",
++                    "session_id": session.session_id().to_string(),
++                    "thread_id": session.thread_id().to_string(),
++                    "turn_id": turn_context.sub_id.as_str(),
++                    "parent_thread_id": parent_thread_id.to_string(),
++                    "depth": depth,
++                    "agent_path": agent_path.as_str(),
++                    "agent_role": agent_role,
++                    "catalog": router.qualification_catalog_receipt(),
++                }),
++                _ => return,
++            };
++            eprintln!("{G4_PARENT_CHILD_CATALOG_RECEIPT_PREFIX}{receipt}");
++        }
++        _ => {}
++    }
+ }
+--- a/codex-rs/core/src/tools/spec_plan.rs
++++ b/codex-rs/core/src/tools/spec_plan.rs
+@@ -80,6 +80,7 @@
+ use codex_protocol::openai_models::ModelMessages;
+ use codex_protocol::openai_models::ToolMode;
+ use codex_protocol::protocol::MultiAgentVersion;
++use codex_protocol::protocol::SessionSource;
+ use codex_tools::ResponsesApiNamespace;
+ use codex_tools::ResponsesApiNamespaceTool;
+ use codex_tools::TOOL_SEARCH_TOOL_NAME;
+@@ -108,6 +109,8 @@
+ const IMAGE_GEN_NAMESPACE: &str = "image_gen";
+ const IMAGEGEN_TOOL_NAME: &str = "imagegen";
+ const G4_QUALIFICATION_PROBE_ROLE: &str = "g4_qualification_probe_worker";
++const G4_PARENT_CHILD_CATALOG_RECEIPT_ENV: &str = "CODEX_G4_TOOL_CATALOG_RECEIPT";
++const G4_PARENT_CHILD_CATALOG_RECEIPT_OPT_IN: &str = "stderr-v2-parent-child-closed";
+ 
+ #[derive(Clone, Copy)]
+ struct CoreToolPlanContext<'a> {
+@@ -414,6 +417,11 @@
+         registry.retain(|name| g4_qualification_tool_allowed(turn_context, name));
+         code_mode_tool_names.retain(|_, name| g4_qualification_tool_allowed(turn_context, name));
+         hosted_specs.clear();
++    } else if exact_g4_qualification_parent(turn_context) {
++        registry.retain(|name| g4_qualification_parent_tool_allowed(turn_context, name));
++        code_mode_tool_names
++            .retain(|_, name| g4_qualification_parent_tool_allowed(turn_context, name));
++        hosted_specs.clear();
+     }
+     let include_tool_namespaces_info = turn_context
+         .config
+@@ -687,6 +695,20 @@
+     turn_context.session_source.get_agent_role().as_deref() == Some(G4_QUALIFICATION_PROBE_ROLE)
+ }
+ 
++fn exact_g4_qualification_parent(turn_context: &TurnContext) -> bool {
++    if cfg!(test)
++        && matches!(
++            &turn_context.session_source,
++            SessionSource::Custom(source) if source == "g4_qualification_parent_test"
++        )
++    {
++        return true;
++    }
++    matches!(turn_context.session_source, SessionSource::Exec)
++        && std::env::var(G4_PARENT_CHILD_CATALOG_RECEIPT_ENV).as_deref()
++            == Ok(G4_PARENT_CHILD_CATALOG_RECEIPT_OPT_IN)
++}
++
+ fn g4_qualification_tool_allowed(turn_context: &TurnContext, tool_name: &ToolName) -> bool {
+     let tool_name = tool_name.clone().with_default_namespace();
+     if tool_name.namespace.as_deref() == Some(DEFAULT_FUNCTION_NAMESPACE) {
+@@ -697,10 +719,32 @@
+     }
+     let expected_namespace = turn_context.config.multi_agent_v2.tool_namespace.as_deref();
+     tool_name.name == "list_agents" && tool_name.namespace.as_deref() == expected_namespace
++}
++
++fn g4_qualification_parent_tool_allowed(turn_context: &TurnContext, tool_name: &ToolName) -> bool {
++    let tool_name = tool_name.clone().with_default_namespace();
++    if tool_name.namespace.as_deref() == Some(DEFAULT_FUNCTION_NAMESPACE) {
++        return matches!(
++            tool_name.name.as_str(),
++            "apply_patch" | "current_time" | "get_context_remaining" | "view_image"
++        );
++    }
++    let expected_namespace = turn_context.config.multi_agent_v2.tool_namespace.as_deref();
++    tool_name.namespace.as_deref() == expected_namespace
++        && matches!(
++            tool_name.name.as_str(),
++            "spawn_agent"
++                | "send_message"
++                | "followup_task"
++                | "close_agent"
++                | "interrupt_agent"
++                | "list_agents"
++                | "wait_agent"
++        )
+ }
+ 
+ fn planned_tool_mode(turn_context: &TurnContext, model_info: &ModelInfo) -> ToolMode {
+-    if exact_g4_qualification_role(turn_context) {
++    if exact_g4_qualification_role(turn_context) || exact_g4_qualification_parent(turn_context) {
+         ToolMode::Direct
+     } else {
+         effective_tool_mode(turn_context, model_info)
+--- a/codex-rs/core/src/tools/spec_plan_tests.rs
++++ b/codex-rs/core/src/tools/spec_plan_tests.rs
+@@ -3273,7 +3273,125 @@
+         &ToolName::namespaced("g4_assignment", "wait_agent").to_string(),
+         &ToolName::namespaced("g4_assignment", "close_agent").to_string(),
+         &ToolName::namespaced("g4_assignment", "interrupt_agent").to_string(),
++    ]);
++}
++
++#[tokio::test]
++async fn exact_g4_qualification_parent_has_direct_closed_tool_catalog() {
++    let plan = probe_with(
++        |turn| {
++            set_features(
++                turn,
++                &[
++                    Feature::ShellTool,
++                    Feature::RequestPermissionsTool,
++                    Feature::CodeMode,
++                    Feature::CodeModeOnly,
++                    Feature::MultiAgentV2,
++                    Feature::ToolSuggest,
++                    Feature::Apps,
++                    Feature::Plugins,
++                    Feature::StandaloneWebSearch,
++                ],
++            );
++            set_web_search_mode(turn, WebSearchMode::Live);
++            update_turn_settings_for_test(turn, |settings| {
++                Arc::make_mut(&mut settings.model_info).apply_patch_tool_type =
++                    Some(ApplyPatchToolType::Freeform);
++            });
++            update_config(turn, |config| {
++                config.multi_agent_v2.tool_namespace = Some("g4_assignment".to_string());
++                config.multi_agent_v2.non_code_mode_only = true;
++            });
++            turn.session_source = SessionSource::Custom("g4_qualification_parent_test".to_string());
++        },
++        ToolPlanInputs {
++            tool_runtimes: vec![mcp_runtime(
++                "g4_probe_server",
++                "mcp__g4_probe",
++                "lookup",
++                ToolExposure::Direct,
++            )],
++            extension_tool_executors: vec![Arc::new(TestNamespaceExtensionTool {
++                namespace: "g4_extension",
++                tool_name: "lookup",
++            })],
++            dynamic_tools: vec![dynamic_tool(
++                Some("g4_dynamic"),
++                "lookup",
++                /*defer_loading*/ false,
++            )],
++            tool_suggest_candidates: Some(plugin_candidates(ToolSuggestPresentation::ListTool)),
++            ..ToolPlanInputs::default()
++        },
++    )
++    .await;
++
++    assert_eq!(plan.tool_mode, ToolMode::Direct);
++    assert!(!plan.requires_code_mode_worker);
++    assert!(plan.code_mode_tool_names.is_empty());
++    assert!(plan.can_manage_children);
++    plan.assert_visible_contains(&["apply_patch", "g4_assignment"]);
++    for tool_name in [
++        "spawn_agent",
++        "send_message",
++        "followup_task",
++        "close_agent",
++        "interrupt_agent",
++        "list_agents",
++        "wait_agent",
++    ] {
++        assert!(
++            plan.namespace_function_names("g4_assignment")
++                .iter()
++                .any(|name| name == tool_name),
++            "missing required qualification-parent tool {tool_name}"
++        );
++    }
++    for registered in &plan.registered_names {
++        let allowed = matches!(
++            registered.as_str(),
++            "apply_patch" | "current_time" | "get_context_remaining" | "view_image"
++        ) || [
++            "spawn_agent",
++            "send_message",
++            "followup_task",
++            "close_agent",
++            "interrupt_agent",
++            "list_agents",
++            "wait_agent",
++        ]
++        .iter()
++        .any(|name| registered == &ToolName::namespaced("g4_assignment", *name).to_string());
++        assert!(
++            allowed,
++            "unexpected callable surface for qualification parent: {registered}; full catalog: {:?}",
++            plan.registered_names
++        );
++    }
++    plan.assert_visible_lacks(&[
++        "exec_command",
++        "write_stdin",
++        codex_code_mode::PUBLIC_TOOL_NAME,
++        codex_code_mode::WAIT_TOOL_NAME,
++        "tool_search",
++        "g4_dynamic",
++        "g4_extension",
++        "mcp__g4_probe",
++        "web_search",
+     ]);
++    plan.assert_registered_lacks(&[
++        "exec_command",
++        "write_stdin",
++        "request_permissions",
++        "request_user_input",
++        codex_code_mode::PUBLIC_TOOL_NAME,
++        codex_code_mode::WAIT_TOOL_NAME,
++        "tool_search",
++        &ToolName::namespaced("g4_dynamic", "lookup").to_string(),
++        &ToolName::namespaced("g4_extension", "lookup").to_string(),
++        &ToolName::namespaced("mcp__g4_probe", "lookup").to_string(),
++    ]);
+ }
+ 
+ #[tokio::test]

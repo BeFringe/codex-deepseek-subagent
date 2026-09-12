@@ -1,0 +1,100 @@
+diff --git a/codex-rs/core/src/tools/handlers/multi_agents_tests.rs b/codex-rs/core/src/tools/handlers/multi_agents_tests.rs
+index 76dea80..9d45380 100644
+--- a/codex-rs/core/src/tools/handlers/multi_agents_tests.rs
++++ b/codex-rs/core/src/tools/handlers/multi_agents_tests.rs
+@@ -3959,6 +3959,51 @@ async fn multi_agent_v2_close_agent_waits_for_target_and_descendant_session_loop
+     );
+ }
+ 
++#[tokio::test]
++async fn qualification_parent_rejects_default_and_non_g4_sibling_spawns() {
++    let (mut session, mut turn) = make_session_and_context().await;
++    let manager = thread_manager();
++    let root = manager
++        .start_thread(StartThreadOptions::new((*turn.config).clone()))
++        .await
++        .expect("root thread should start");
++    session.services.agent_control = manager.agent_control();
++    session.thread_id = root.thread_id;
++    turn.session_source = SessionSource::Custom("g4_qualification_parent_test".to_string());
++    let session = Arc::new(session);
++    let turn = Arc::new(turn);
++
++    for arguments in [
++        json!({
++            "message": "default sibling must not start",
++            "task_name": "default_sibling"
++        }),
++        json!({
++            "message": "ordinary sibling must not start",
++            "task_name": "ordinary_sibling",
++            "agent_type": "worker"
++        }),
++    ] {
++        let error = SpawnAgentHandlerV2::default()
++            .handle(invocation(
++                session.clone(),
++                turn.clone(),
++                "spawn_agent",
++                function_payload(arguments),
++            ))
++            .await
++            .err()
++            .expect("qualification parent should reject a non-G4 sibling");
++        assert_eq!(
++            error,
++            FunctionCallError::RespondToModel(
++                "Qualification parent may spawn only the exact g4_qualification_probe_worker role"
++                    .to_string(),
++            )
++        );
++    }
++}
++
+ #[tokio::test]
+ async fn multi_agent_v2_close_agent_claims_only_exact_closed_catalog_actor_quiescence() {
+     let (mut session, mut turn) = make_session_and_context().await;
+diff --git a/codex-rs/core/src/tools/handlers/multi_agents_v2/spawn.rs b/codex-rs/core/src/tools/handlers/multi_agents_v2/spawn.rs
+index 3684156..f952e65 100644
+--- a/codex-rs/core/src/tools/handlers/multi_agents_v2/spawn.rs
++++ b/codex-rs/core/src/tools/handlers/multi_agents_v2/spawn.rs
+@@ -15,8 +15,24 @@ use crate::turn_timing::now_unix_timestamp_ms;
+ use codex_protocol::AgentPath;
+ use codex_protocol::ThreadId;
+ use codex_protocol::protocol::MultiAgentVersion;
++use codex_protocol::protocol::SessionSource;
+ use codex_tools::ToolSpec;
+ 
++const G4_PARENT_CHILD_CATALOG_RECEIPT_ENV: &str = "CODEX_G4_TOOL_CATALOG_RECEIPT";
++const G4_PARENT_CHILD_CATALOG_RECEIPT_OPT_IN: &str = "stderr-v2-parent-child-closed";
++const G4_QUALIFICATION_PROBE_ROLE: &str = "g4_qualification_probe_worker";
++
++fn exact_g4_qualification_parent(source: &SessionSource) -> bool {
++    if cfg!(test)
++        && matches!(source, SessionSource::Custom(value) if value == "g4_qualification_parent_test")
++    {
++        return true;
++    }
++    matches!(source, SessionSource::Exec)
++        && std::env::var(G4_PARENT_CHILD_CATALOG_RECEIPT_ENV).as_deref()
++            == Ok(G4_PARENT_CHILD_CATALOG_RECEIPT_OPT_IN)
++}
++
+ #[derive(Default)]
+ pub(crate) struct Handler {
+     options: SpawnAgentToolOptions,
+@@ -121,6 +137,14 @@ async fn handle_spawn_agent(
+         .filter(|role| !role.is_empty());
+ 
+     let session_source = turn.session_source.clone();
++    if exact_g4_qualification_parent(&session_source)
++        && role_name != Some(G4_QUALIFICATION_PROBE_ROLE)
++    {
++        return Err(FunctionCallError::RespondToModel(
++            "Qualification parent may spawn only the exact g4_qualification_probe_worker role"
++                .to_string(),
++        ));
++    }
+     let child_depth = next_thread_spawn_depth(&session_source);
+     let mut config =
+         build_agent_spawn_config(&session.get_base_instructions().await, turn.as_ref())?;

@@ -1,0 +1,81 @@
+{
+  "schema": 1,
+  "as_of": "2026-09-09",
+  "purpose": "Prevent the exact headless G4 qualification parent from widening its closed native actor set by spawning a default or non-G4 sibling, while preserving the one exact g4_qualification_probe_worker path.",
+  "source": {
+    "repository": "https://github.com/openai/codex",
+    "commit": "3d2ee51ca2d5db578f328aa75e20aa22c0197c9a",
+    "semantic_runtime_version": "codex-cli 0.153.4",
+    "tree": "/private/tmp/codex-current-plaintext.aTU9C2/source"
+  },
+  "predecessor": {
+    "receipt": "probes/current-signed-runtime-g4-required-pretool-fail-closed-source-candidate.json",
+    "receipt_sha256": "7894f72196754d57cf51c1ec58c911c12d95ca7647709bb4ab3325f4cab476e0",
+    "state": "retained current-source candidate after required PreToolUse fail-closed mediation"
+  },
+  "reconstruction": {
+    "patch": "probes/current-signed-runtime-g4-sibling-admission-source-candidate.patch",
+    "patch_sha256": "45a2f8324cb5845adf8d171c802ef5c2f6fb8fa7454dfc98bbf7473266c5c0de",
+    "patch_bytes": 4093,
+    "patch_lines": 100,
+    "changed_path_count": 2,
+    "cargo_lock_included": false,
+    "forward_apply_check": "pass",
+    "reverse_apply_check": "pass",
+    "forward_result_matches_candidate_bytes": true
+  },
+  "source_files": {
+    "spawn_handler": {
+      "path": "codex-rs/core/src/tools/handlers/multi_agents_v2/spawn.rs",
+      "predecessor_sha256": "82f738243e40f075bdf2dc08613c5657e8ab5c6aa92aea0644c787a3ea65b317",
+      "candidate_sha256": "a18cdd12b25d17176afdd88ed4f9ee2bf13b9a77c1606c3c5c39f09cb9c78cf3"
+    },
+    "source_tests": {
+      "path": "codex-rs/core/src/tools/handlers/multi_agents_tests.rs",
+      "candidate_sha256": "6e4bbf002f911933a6193d024dcd199d24314239f80883408b42f7e02372276f"
+    }
+  },
+  "native_admission_contract": {
+    "scope": "SessionSource::Exec with CODEX_G4_TOOL_CATALOG_RECEIPT=stderr-v2-parent-child-closed",
+    "allowed_agent_role": "g4_qualification_probe_worker",
+    "denied_agent_roles": [
+      "omitted/default",
+      "worker",
+      "every other role"
+    ],
+    "denial_stage": "inside the native spawn handler before child depth/config construction and before child creation",
+    "denial_message": "Qualification parent may spawn only the exact g4_qualification_probe_worker role",
+    "ordinary_native_sessions_changed": false,
+    "grants_mutation_authority": false,
+    "creates_independent_app_server": false
+  },
+  "candidate": {
+    "path": "/private/tmp/codex-current-plaintext.aTU9C2/source/codex-rs/target/debug/codex",
+    "sha256": "49b45f5571a3c8966aa7dd6192583c88ff3df05e840208734ee51df8e1b3104e",
+    "size_bytes": 590357464,
+    "build_profile": "dev",
+    "selected_as_gui_app_server": false,
+    "installed_live": false
+  },
+  "verification": {
+    "format": "cargo fmt --all -- --check: pass",
+    "source_negative": "RUST_MIN_STACK=16777216 cargo test -p codex-core qualification_parent_rejects_default_and_non_g4_sibling_spawns -- --nocapture: pass 1",
+    "closed_child_catalog_regression": "RUST_MIN_STACK=16777216 cargo test -p codex-core exact_g4_qualification_role_has_closed_tool_catalog -- --nocapture: pass 1",
+    "close_regression": "RUST_MIN_STACK=16777216 cargo test -p codex-core multi_agent_v2_close_agent_claims_only_exact_closed_catalog_actor_quiescence -- --nocapture: pass 1",
+    "build": "RUST_MIN_STACK=16777216 cargo build -p codex-cli --bin codex: pass",
+    "known_test_harness_constraint": "the close regression needs RUST_MIN_STACK=16777216; default test-thread stack overflow is pre-existing and already recorded"
+  },
+  "live_probe": {
+    "evidence": "probes/g4-live-sibling-spawn-admission-20260909.json",
+    "state": "ordinary sibling denied and exact G4 child completed in one native headless session"
+  },
+  "verdict": {
+    "source_sibling_spawn_admission_qualified": true,
+    "live_sibling_spawn_admission_qualified": true,
+    "p4_qualified": false,
+    "phase1_complete": false,
+    "direct_write_qualified": false,
+    "phase2_state": "closed",
+    "phase3_state": "closed"
+  }
+}

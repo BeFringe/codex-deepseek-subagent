@@ -1,0 +1,160 @@
+{
+  "schema": 1,
+  "as_of": "2026-09-09",
+  "purpose": "Add an opt-in, qualification-only direct closed ToolRouter catalog for the real headless root parent, preserve the already-closed exact G4 child catalog, and emit runtime-final schema-2 receipts for both actors without granting mutation authority.",
+  "source": {
+    "repository": "https://github.com/openai/codex",
+    "commit": "3d2ee51ca2d5db578f328aa75e20aa22c0197c9a",
+    "semantic_runtime_version": "codex-cli 0.153.4",
+    "tree": "/private/tmp/codex-current-plaintext.aTU9C2/source"
+  },
+  "reconstruction": {
+    "kind": "incremental_patch_after_runtime_final_child_catalog_candidate",
+    "predecessor": "probes/current-signed-runtime-g4-live-catalog-receipt-source-candidate.json",
+    "predecessor_patch": "probes/current-signed-runtime-g4-live-catalog-receipt-source-candidate.patch",
+    "predecessor_patch_sha256": "805ff02e28e7ddffa179697820bd1aa1af84a44ebf5458741d67e49d86326bc2",
+    "patch": "probes/current-signed-runtime-g4-parent-child-closed-catalog-source-candidate.patch",
+    "patch_sha256": "2f932e542a181861266ecb50c778d45eaa73c89037f964617687e19e05df9944",
+    "patch_bytes": 13469,
+    "patch_lines": 336,
+    "incremental_changed_paths": 3,
+    "cargo_lock_included": false,
+    "forward_apply_to_predecessor": "pass",
+    "reverse_apply_on_candidate": "pass",
+    "full_reconstruction_from_pinned_source": "pass: predecessor plus incremental patch reproduced all 29 non-lockfile changed paths byte-for-byte"
+  },
+  "qualification_contract": {
+    "environment_opt_in": "CODEX_G4_TOOL_CATALOG_RECEIPT=stderr-v2-parent-child-closed",
+    "production_parent_source": "SessionSource::Exec",
+    "production_child_source": "SessionSource::SubAgent(ThreadSpawn)",
+    "exact_child_role": "g4_qualification_probe_worker",
+    "forced_tool_mode": "direct",
+    "parent_registered_allowlist": [
+      "apply_patch",
+      "view_image",
+      "g4_assignment.spawn_agent",
+      "g4_assignment.send_message",
+      "g4_assignment.followup_task",
+      "g4_assignment.close_agent",
+      "g4_assignment.interrupt_agent",
+      "g4_assignment.list_agents",
+      "g4_assignment.wait_agent"
+    ],
+    "child_registered_allowlist": [
+      "apply_patch",
+      "view_image",
+      "g4_assignment.list_agents"
+    ],
+    "removed_contributors": [
+      "shell",
+      "unified exec",
+      "already-open PTY continuation",
+      "code mode",
+      "MCP/app",
+      "extension",
+      "dynamic",
+      "tool discovery",
+      "hosted generation",
+      "web search"
+    ],
+    "wrapper_guard": {
+      "path": "probes/codex_plaintext_candidate_wrapper.sh",
+      "sha256": "dc426820cdd02657880fe655fb149779d036a1a0081e65ab48e4dfc7f8050055",
+      "required_guards": [
+        "CODEX_G4_LIVE_SELECTION_AUTHORIZED=schema2-paired-probe",
+        "CODEX_G4_SESSIONMETA_PROBE_AUTHORIZED=schema1-headless-stateful",
+        "CODEX_G4_EXACT_WRITE_PROBE_AUTHORIZED=schema1-exact-temporary-git-root",
+        "CODEX_G4_PARENT_CHILD_WRITER_CONFLICT_PROBE_AUTHORIZED=schema1-exact-active-child-claim"
+      ],
+      "root_namespace": "/private/tmp/codex-g4-write-parent-conflict.*",
+      "inherited_opt_in_removed_outside_exact_guard": true,
+      "gui_and_server_entrypoints_forbidden": true
+    },
+    "receipt": {
+      "channel": "stderr single-line JSON",
+      "prefix": "G4_TOOL_CATALOG_RECEIPT_V2 ",
+      "schema": 2,
+      "fields": [
+        "actor_kind",
+        "session_id",
+        "thread_id",
+        "turn_id",
+        "agent_path",
+        "agent_role",
+        "catalog"
+      ],
+      "child_additional_fields": [
+        "parent_thread_id",
+        "depth"
+      ],
+      "writes_files": false,
+      "records_credentials": false
+    }
+  },
+  "source_files": {
+    "receipt_emitter": {
+      "path": "codex-rs/core/src/tools/g4_catalog_receipt.rs",
+      "sha256": "959b76e42137bfb147b7d8c94bb00650946d0562ed71bfabac6890e0075c12bb"
+    },
+    "final_router_projection": {
+      "path": "codex-rs/core/src/tools/spec_plan.rs",
+      "sha256": "f7da14d78cb1a056a4e65ca448bc653c1e6dd73f59b9bcb9d3108c2f7deb503b"
+    },
+    "source_tests": {
+      "path": "codex-rs/core/src/tools/spec_plan_tests.rs",
+      "sha256": "3a13b22eed4e1e1b65461033c800e32c14962ea9af37c7bb4d59ad68ce1b4196"
+    }
+  },
+  "verification": {
+    "format": {
+      "command": "cargo fmt --all -- --check",
+      "result": "pass"
+    },
+    "focused_rust": {
+      "command": "RUST_MIN_STACK=16777216 cargo test -p codex-core --lib tools::spec_plan::tests::exact_g4_qualification_parent_has_direct_closed_tool_catalog -- --nocapture",
+      "result": "pass: 1 selected; 2455 filtered out"
+    },
+    "spec_plan_regression": {
+      "command": "RUST_MIN_STACK=16777216 cargo test -p codex-core --lib tools::spec_plan::tests:: -- --nocapture",
+      "result": "pass: 60 tests"
+    },
+    "wrapper": {
+      "command": "python3 -m unittest tests.test_plaintext_candidate_wrapper",
+      "result": "pass: 14 tests"
+    },
+    "candidate_build": {
+      "command": "RUST_MIN_STACK=16777216 cargo build -p codex-cli --bin codex",
+      "result": "pass"
+    },
+    "build_cache_current_size": "19G pending evidence freeze cleanup"
+  },
+  "candidate": {
+    "path": "/private/tmp/codex-current-plaintext.aTU9C2/candidate-parent-child-closed/codex",
+    "sha256": "d0fecc0b8b220fbae3a695d81847b014ec166fd054d8b236eb504bf5e3fad031",
+    "bytes": 589883848,
+    "build_profile": "dev",
+    "semantic_version": "codex-cli 0.153.4",
+    "selected_as_gui_app_server": false,
+    "installed_live": false
+  },
+  "live_boundary": {
+    "receipt": "probes/g4-live-parent-child-closed-catalog-20260909.json",
+    "parent_runtime_receipts": 6,
+    "child_runtime_receipts": 2,
+    "exact_parent_child_sessionmeta_joined": true,
+    "exact_parent_apply_patch_pretool_denial_joined": true,
+    "child_posttool_subagentstop_callback_joined": true,
+    "candidate_exit_code": 0
+  },
+  "verdict": {
+    "source_parent_final_catalog_absence_qualified": true,
+    "live_parent_and_child_catalog_receipts_qualified": true,
+    "exact_parent_apply_patch_mediation_under_child_lease_qualified": true,
+    "independent_host_control_and_same_uid_surfaces_qualified": false,
+    "strong_mutation_quiescence_qualified": false,
+    "phase1_complete": false,
+    "direct_write_qualified": false,
+    "phase2_state": "closed",
+    "phase3_state": "closed"
+  }
+}

@@ -1,0 +1,125 @@
+{
+  "schema": 1,
+  "as_of": "2026-09-09",
+  "purpose": "Make PreToolUse a required pre-dispatch mediation boundary only for the exact headless G4 qualification parent and g4_qualification_probe_worker child, while preserving stock Hook failure behavior for every ordinary Codex actor.",
+  "source": {
+    "repository": "https://github.com/openai/codex",
+    "commit": "3d2ee51ca2d5db578f328aa75e20aa22c0197c9a",
+    "semantic_runtime_version": "codex-cli 0.153.4",
+    "tree": "/private/tmp/codex-current-plaintext.aTU9C2/source"
+  },
+  "predecessor": {
+    "receipt": "probes/current-signed-runtime-g4-trusted-catalog-origin-source-candidate.json",
+    "receipt_sha256": "f4e1ab45aafa65d944907ac8031edc0f5d374194e1415930c336b586976e8fa1",
+    "state": "the retained current-source candidate immediately after trusted catalog-origin binding"
+  },
+  "reconstruction": {
+    "patch": "probes/current-signed-runtime-g4-required-pretool-fail-closed-source-candidate.patch",
+    "patch_sha256": "aa2f53b090b58e574da72f80f2bf09df42a2d31a14972fe43c921e7dafa2e97b",
+    "patch_bytes": 9717,
+    "patch_lines": 254,
+    "changed_path_count": 3,
+    "cargo_lock_included": false,
+    "apply_mode": "git apply --unidiff-zero",
+    "forward_apply_check": "pass",
+    "reverse_apply_check": "pass",
+    "forward_result_matches_candidate_bytes": true
+  },
+  "required_pretool_contract": {
+    "scope": [
+      "SessionSource::Exec with CODEX_G4_TOOL_CATALOG_RECEIPT=stderr-v2-parent-child-closed",
+      "exact g4_qualification_probe_worker child role"
+    ],
+    "required_for_each_hook_visible_closed_catalog_tool": true,
+    "minimum_synchronous_control_handlers": 1,
+    "all_selected_control_handlers_must_adjudicate": true,
+    "accepted_adjudications": [
+      "exit 0 with valid supported PreToolUse JSON, including an empty JSON object or additionalContext-only no-op",
+      "exit 2 with a non-empty stderr blocking reason"
+    ],
+    "rejected_as_indeterminate": [
+      "no matching synchronous control handler",
+      "handler spawn, timeout, or execution error",
+      "exit 0 with empty or non-JSON stdout",
+      "malformed JSON-like stdout",
+      "unsupported PreToolUse decision shape",
+      "nonzero exit other than a reasoned exit 2",
+      "fewer adjudications than selected control handlers"
+    ],
+    "denial_occurs_before_tool_handler": true,
+    "ordinary_codex_hook_failure_behavior_changed": false,
+    "grants_mutation_authority": false,
+    "establishes_same_uid_or_os_trust": false
+  },
+  "source_files": {
+    "hook_event": {
+      "path": "codex-rs/hooks/src/events/pre_tool_use.rs",
+      "sha256": "499f173f9c9750b91175138fc646f51241ffd2f8c1f12a55110f945011a7482f"
+    },
+    "hook_engine_tests": {
+      "path": "codex-rs/hooks/src/engine/mod_tests.rs",
+      "sha256": "fdd14d496952b9737846791508257995000e6ca143942f4d706dc0538ccabcf6"
+    },
+    "core_runtime": {
+      "path": "codex-rs/core/src/hook_runtime.rs",
+      "sha256": "cbdce4c6fd03e6ccf1d8c2e7fe6b35b2d18e35d08647ed64d0dc5eeb6c29e105"
+    }
+  },
+  "verification": {
+    "format": {
+      "command": "cargo fmt --all -- --check",
+      "result": "pass"
+    },
+    "hook_event_tests": {
+      "command": "cargo test -p codex-hooks events::pre_tool_use::tests:: --lib -- --nocapture",
+      "result": "pass: 17 selected; 160 filtered out"
+    },
+    "hook_engine_tests": {
+      "command": "cargo test -p codex-hooks requirements_managed_hooks_execute_ --lib -- --nocapture",
+      "result": "pass: 2 selected; 175 filtered out"
+    },
+    "core_runtime_tests": {
+      "command": "cargo test -p codex-core hook_runtime::tests:: --lib -- --nocapture",
+      "result": "pass: 9 selected; 2455 filtered out"
+    },
+    "closed_catalog_regression": {
+      "command": "cargo test -p codex-core exact_g4_qualification -- --nocapture",
+      "result": "pass: 4 selected; 2460 unit tests and 1723 integration tests filtered out"
+    },
+    "core_compile": {
+      "command": "cargo check -p codex-core --tests",
+      "result": "pass with one pre-existing unused-import warning in core/tests/suite/openai_file_mcp.rs"
+    },
+    "provider_free_suite": {
+      "command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPYCACHEPREFIX=<temporary outside repository> python3 -m unittest discover -s tests -p 'test_*.py'",
+      "result": "pass: 764 tests in 75.395 seconds; agent template checks passed"
+    },
+    "promotion_gates": {
+      "phase1_normal_exit": 0,
+      "phase1_required_exit": 2,
+      "mutation_normal_exit": 0,
+      "mutation_required_exit": 2,
+      "same_uid_normal_exit": 0,
+      "same_uid_required_exit": 2,
+      "semantic_runtime_index_exit": 0
+    }
+  },
+  "live_boundary": {
+    "candidate_rebuilt": false,
+    "candidate_selected_as_gui_app_server": false,
+    "candidate_installed_live": false,
+    "source_required_hook_fail_closed_qualified": true,
+    "live_missing_handler_denial_qualified": false,
+    "live_failed_handler_denial_qualified": false,
+    "independent_host_control_qualified": false,
+    "same_uid_hostile_mutation_qualified": false
+  },
+  "verdict": {
+    "required_pretool_source_contract_qualified": true,
+    "p4_qualified": false,
+    "phase1_complete": false,
+    "direct_write_qualified": false,
+    "phase2_state": "closed",
+    "phase3_state": "closed"
+  }
+}

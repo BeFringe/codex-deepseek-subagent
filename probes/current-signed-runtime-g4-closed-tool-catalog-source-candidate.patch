@@ -1,0 +1,2064 @@
+diff --git a/codex-rs/core/src/agent/control/spawn.rs b/codex-rs/core/src/agent/control/spawn.rs
+index e5518b2..300283a 100644
+--- a/codex-rs/core/src/agent/control/spawn.rs
++++ b/codex-rs/core/src/agent/control/spawn.rs
+@@ -381,7 +381,8 @@ impl AgentControl {
+             }
+         }
+         config.model_reasoning_effort = stored_reasoning_effort;
+-        if let Some(role_name) = session_source.get_agent_role() {
++        let resumed_role_name = session_source.get_agent_role();
++        if let Some(role_name) = resumed_role_name.as_deref() {
+             let runtime_approval_policy = config.permissions.approval_policy.value();
+             let runtime_approvals_reviewer = config.approvals_reviewer;
+             let runtime_cwd = config.cwd.clone();
+@@ -422,6 +423,11 @@ impl AgentControl {
+             config.model = Some(model);
+         }
+         if config.model_provider_id != stored_model_provider {
++            if resumed_role_name.is_some() {
++                return Err(CodexErr::InvalidRequest(format!(
++                    "cannot resume multi-agent v2 child {thread_id}: stored model provider does not match current exact role authorization"
++                )));
++            }
+             config.model_provider = config
+                 .model_providers
+                 .get(&stored_model_provider)
+diff --git a/codex-rs/core/src/agent/role.rs b/codex-rs/core/src/agent/role.rs
+index cb20377..facc2b6 100644
+--- a/codex-rs/core/src/agent/role.rs
++++ b/codex-rs/core/src/agent/role.rs
+@@ -37,6 +37,7 @@ const AGENT_TYPE_UNAVAILABLE_ERROR: &str = "agent type is currently not availabl
+ struct AgentRoleOverrides {
+     developer_instructions: Option<String>,
+     model: Option<String>,
++    model_provider: Option<String>,
+     model_reasoning_effort: Option<ReasoningEffort>,
+     model_reasoning_summary: Option<ReasoningSummary>,
+     model_verbosity: Option<Verbosity>,
+@@ -80,6 +81,11 @@ async fn apply_role_to_config_inner(
+     let mut overrides = AgentRoleOverrides {
+         developer_instructions: role_config.developer_instructions,
+         model: role_config.model,
++        model_provider: config
++            .multi_agent_v2
++            .child_model_providers
++            .get(role_name)
++            .cloned(),
+         model_reasoning_effort: role_config.model_reasoning_effort,
+         model_reasoning_summary: role_config.model_reasoning_summary,
+         model_verbosity: role_config.model_verbosity,
+@@ -185,6 +191,21 @@ mod role_overrides {
+         if let Some(model) = &overrides.model {
+             next_config.model = Some(model.clone());
+         }
++        if let Some(model_provider_id) = &overrides.model_provider {
++            let model_provider = next_config
++                .model_providers
++                .get(model_provider_id)
++                .cloned()
++                .ok_or_else(|| anyhow!("authorized child model provider not found"))?;
++            if model_provider_id != &config.model_provider_id && model_provider.requires_openai_auth
++            {
++                return Err(anyhow!(
++                    "authorized child model provider cannot require inherited OpenAI auth"
++                ));
++            }
++            next_config.model_provider_id = model_provider_id.clone();
++            next_config.model_provider = model_provider;
++        }
+         if let Some(instructions) = &overrides.developer_instructions {
+             next_config.developer_instructions = Some(instructions.clone());
+         }
+diff --git a/codex-rs/core/src/agent/role_tests.rs b/codex-rs/core/src/agent/role_tests.rs
+index 6abe361..61057f8 100644
+--- a/codex-rs/core/src/agent/role_tests.rs
++++ b/codex-rs/core/src/agent/role_tests.rs
+@@ -4,6 +4,7 @@ use crate::plugins::plugins_manager_for_config;
+ use crate::skills_load_input_from_config;
+ use codex_config::test_support::CloudConfigBundleFixture;
+ use codex_login::test_support::auth_manager_from_optional_auth;
++use codex_model_provider_info::ModelProviderInfo;
+ use codex_protocol::config_types::ServiceTier;
+ use codex_protocol::models::BaseInstructionsProvenance;
+ use codex_protocol::openai_models::ReasoningEffort;
+@@ -481,6 +482,113 @@ command = "attacker-command"
+     }
+ }
+ 
++#[tokio::test]
++async fn apply_role_uses_only_exact_parent_authorized_child_provider() {
++    let (home, mut config) = test_config_with_cli_overrides(Vec::new()).await;
++    let role_path = write_role_config(
++        &home,
++        "provider-role.toml",
++        r#"model = "glm-5.3"
++model_provider = "ollama"
++"#,
++    )
++    .await;
++    config.agent_roles.insert(
++        "custom".to_string(),
++        AgentRoleConfig {
++            description: None,
++            config_file: Some(role_path),
++            nickname_candidates: None,
++        },
++    );
++    let child_provider = ModelProviderInfo {
++        name: "ZHIPU isolated test".to_string(),
++        base_url: Some("https://provider.invalid/v1".to_string()),
++        env_key: Some("ZHIPU_API_KEY".to_string()),
++        ..Default::default()
++    };
++    config
++        .model_providers
++        .insert("zhipu".to_string(), child_provider.clone());
++    config
++        .multi_agent_v2
++        .child_model_providers
++        .insert("custom".to_string(), "zhipu".to_string());
++
++    apply_role_to_config(&mut config, Some("custom"))
++        .await
++        .expect("exact parent-authorized child provider should apply");
++
++    assert_eq!(config.model.as_deref(), Some("glm-5.3"));
++    assert_eq!(config.model_provider_id, "zhipu");
++    assert_eq!(config.model_provider, child_provider);
++    let role_layer = config
++        .config_layer_stack
++        .all_layers_low_to_high()
++        .rfind(|layer| layer.name == ConfigLayerSource::SessionFlags)
++        .expect("role should have a projected layer");
++    assert_eq!(
++        role_layer.config.get("model_provider"),
++        Some(&TomlValue::String("zhipu".to_string()))
++    );
++}
++
++#[tokio::test]
++async fn apply_role_rejects_unknown_authorized_child_provider() {
++    let (home, mut config) = test_config_with_cli_overrides(Vec::new()).await;
++    let role_path = write_role_config(&home, "provider-role.toml", "model = \"glm-5.3\"").await;
++    config.agent_roles.insert(
++        "custom".to_string(),
++        AgentRoleConfig {
++            description: None,
++            config_file: Some(role_path),
++            nickname_candidates: None,
++        },
++    );
++    config
++        .multi_agent_v2
++        .child_model_providers
++        .insert("custom".to_string(), "missing".to_string());
++
++    let err = apply_role_to_config(&mut config, Some("custom"))
++        .await
++        .expect_err("unknown child provider must fail closed");
++
++    assert_eq!(err, AGENT_TYPE_UNAVAILABLE_ERROR);
++}
++
++#[tokio::test]
++async fn apply_role_rejects_cross_provider_openai_auth_inheritance() {
++    let (home, mut config) = test_config_with_cli_overrides(Vec::new()).await;
++    let role_path = write_role_config(&home, "provider-role.toml", "model = \"other-model\"").await;
++    config.agent_roles.insert(
++        "custom".to_string(),
++        AgentRoleConfig {
++            description: None,
++            config_file: Some(role_path),
++            nickname_candidates: None,
++        },
++    );
++    config.model_providers.insert(
++        "other-openai-auth".to_string(),
++        ModelProviderInfo {
++            name: "other".to_string(),
++            requires_openai_auth: true,
++            ..Default::default()
++        },
++    );
++    config
++        .multi_agent_v2
++        .child_model_providers
++        .insert("custom".to_string(), "other-openai-auth".to_string());
++
++    let err = apply_role_to_config(&mut config, Some("custom"))
++        .await
++        .expect_err("parent ChatGPT auth must not cross provider boundaries");
++
++    assert_eq!(err, AGENT_TYPE_UNAVAILABLE_ERROR);
++}
++
+ #[tokio::test]
+ async fn apply_role_disables_plugins_unless_required_by_managed_policy() {
+     let home = TempDir::new().expect("create temp dir");
+diff --git a/codex-rs/core/src/config/config_tests.rs b/codex-rs/core/src/config/config_tests.rs
+index 8796f53..2fafd55 100644
+--- a/codex-rs/core/src/config/config_tests.rs
++++ b/codex-rs/core/src/config/config_tests.rs
+@@ -11523,6 +11523,10 @@ hide_spawn_agent_metadata = true
+ expose_spawn_agent_model_overrides = false
+ wait_agent_enabled = false
+ non_code_mode_only = true
++message_delivery = "plaintext"
++
++[features.multi_agent_v2.child_model_providers]
++zhipu_probe_worker = "zhipu"
+ 
+ [agents]
+ max_concurrent_threads_per_session = 9
+@@ -11578,6 +11582,14 @@ max_concurrent_threads_per_session = 9
+     assert!(!config.multi_agent_v2.expose_spawn_agent_model_overrides);
+     assert!(!config.multi_agent_v2.wait_agent_enabled);
+     assert!(config.multi_agent_v2.non_code_mode_only);
++    assert_eq!(
++        config.multi_agent_v2.message_delivery,
++        codex_features::MultiAgentV2MessageDelivery::Plaintext
++    );
++    assert_eq!(
++        config.multi_agent_v2.child_model_providers,
++        BTreeMap::from([("zhipu_probe_worker".to_string(), "zhipu".to_string(),)])
++    );
+ 
+     Ok(())
+ }
+@@ -11602,6 +11614,10 @@ enabled = true
+         config.multi_agent_v2,
+         resolve_multi_agent_v2_config(&ConfigToml::default())
+     );
++    assert_eq!(
++        config.multi_agent_v2.message_delivery,
++        codex_features::MultiAgentV2MessageDelivery::Encrypted
++    );
+     assert_eq!(
+         (
+             config.agent_max_threads,
+diff --git a/codex-rs/core/src/config/mod.rs b/codex-rs/core/src/config/mod.rs
+index dca329a..5678a7f 100644
+--- a/codex-rs/core/src/config/mod.rs
++++ b/codex-rs/core/src/config/mod.rs
+@@ -72,6 +72,7 @@ use codex_features::FeatureToml;
+ use codex_features::Features;
+ use codex_features::FeaturesToml;
+ use codex_features::MultiAgentV2ConfigToml;
++use codex_features::MultiAgentV2MessageDelivery;
+ use codex_features::NetworkProxyConfigToml;
+ use codex_features::SleepToolMode;
+ use codex_features::TokenBudgetConfigToml;
+@@ -1278,6 +1279,8 @@ pub struct MultiAgentV2Config {
+     pub expose_spawn_agent_model_overrides: bool,
+     pub wait_agent_enabled: bool,
+     pub non_code_mode_only: bool,
++    pub message_delivery: MultiAgentV2MessageDelivery,
++    pub child_model_providers: BTreeMap<String, String>,
+ }
+ 
+ impl MultiAgentV2Config {
+@@ -1297,6 +1300,8 @@ impl MultiAgentV2Config {
+             expose_spawn_agent_model_overrides: true,
+             wait_agent_enabled: true,
+             non_code_mode_only: true,
++            message_delivery: MultiAgentV2MessageDelivery::Encrypted,
++            child_model_providers: BTreeMap::new(),
+         }
+     }
+ }
+@@ -2744,6 +2749,13 @@ fn resolve_multi_agent_v2_config(config_toml: &ConfigToml) -> MultiAgentV2Config
+     let non_code_mode_only = base
+         .and_then(|config| config.non_code_mode_only)
+         .unwrap_or(default.non_code_mode_only);
++    let message_delivery = base
++        .and_then(|config| config.message_delivery)
++        .unwrap_or(default.message_delivery);
++    let child_model_providers = base
++        .and_then(|config| config.child_model_providers.as_ref())
++        .cloned()
++        .unwrap_or_default();
+ 
+     MultiAgentV2Config {
+         max_concurrent_threads_per_session,
+@@ -2760,6 +2772,8 @@ fn resolve_multi_agent_v2_config(config_toml: &ConfigToml) -> MultiAgentV2Config
+         expose_spawn_agent_model_overrides,
+         wait_agent_enabled,
+         non_code_mode_only,
++        message_delivery,
++        child_model_providers,
+     }
+ }
+ 
+diff --git a/codex-rs/core/src/stream_events_utils.rs b/codex-rs/core/src/stream_events_utils.rs
+index a75dbe2..b1d61d6 100644
+--- a/codex-rs/core/src/stream_events_utils.rs
++++ b/codex-rs/core/src/stream_events_utils.rs
+@@ -306,7 +306,18 @@ pub(crate) async fn handle_output_item_done(
+                 )
+                 .await;
+ 
+-            let payload_preview = tool_log_payload(&call.payload, &call.direct_source());
++            let source = call.direct_source_for_multi_agent_namespace(
++                ctx.turn_context
++                    .config
++                    .multi_agent_v2
++                    .tool_namespace
++                    .as_deref(),
++                matches!(
++                    ctx.turn_context.config.multi_agent_v2.message_delivery,
++                    codex_features::MultiAgentV2MessageDelivery::Plaintext
++                ),
++            );
++            let payload_preview = tool_log_payload(&call.payload, &source);
+             tracing::info!(
+                 thread_id = %ctx.sess.thread_id,
+                 "ToolCall: {} {}",
+diff --git a/codex-rs/core/src/tools/handlers/multi_agents_spec.rs b/codex-rs/core/src/tools/handlers/multi_agents_spec.rs
+index 8d9d48e..209d101 100644
+--- a/codex-rs/core/src/tools/handlers/multi_agents_spec.rs
++++ b/codex-rs/core/src/tools/handlers/multi_agents_spec.rs
+@@ -29,6 +29,7 @@ pub struct SpawnAgentToolOptions {
+     pub expose_spawn_agent_model_overrides: bool,
+     pub multi_agent_version: MultiAgentVersion,
+     pub usage_hint_text: Option<String>,
++    pub encrypt_message: bool,
+ }
+ 
+ impl Default for SpawnAgentToolOptions {
+@@ -41,6 +42,7 @@ impl Default for SpawnAgentToolOptions {
+             expose_spawn_agent_model_overrides: false,
+             multi_agent_version: MultiAgentVersion::Disabled,
+             usage_hint_text: None,
++            encrypt_message: true,
+         }
+     }
+ }
+@@ -104,7 +106,8 @@ pub fn create_spawn_agent_tool_v2(options: SpawnAgentToolOptions) -> ToolSpec {
+     let inherited_model_guidance = (options.expose_spawn_agent_model_overrides
+         && !options.hide_agent_type_model_reasoning)
+         .then_some(SPAWN_AGENT_INHERITED_MODEL_GUIDANCE);
+-    let mut properties = spawn_agent_common_properties_v2(&options.agent_type_description);
++    let mut properties =
++        spawn_agent_common_properties_v2(&options.agent_type_description, options.encrypt_message);
+     if !options.expose_agent_type {
+         properties.remove("agent_type");
+     }
+@@ -178,7 +181,7 @@ pub fn create_send_input_tool_v1() -> ToolSpec {
+     })
+ }
+ 
+-pub fn create_send_message_tool() -> ToolSpec {
++pub fn create_send_message_tool(encrypt_message: bool) -> ToolSpec {
+     let properties = BTreeMap::from([
+         (
+             "target".to_string(),
+@@ -188,10 +191,10 @@ pub fn create_send_message_tool() -> ToolSpec {
+         ),
+         (
+             "message".to_string(),
+-            JsonSchema::string(Some(
+-                "Message text to queue on the target agent.".to_string(),
+-            ))
+-            .with_encrypted(),
++            collaboration_message_schema(
++                "Message text to queue on the target agent.",
++                encrypt_message,
++            ),
+         ),
+     ]);
+ 
+@@ -210,7 +213,7 @@ pub fn create_send_message_tool() -> ToolSpec {
+     })
+ }
+ 
+-pub fn create_followup_task_tool() -> ToolSpec {
++pub fn create_followup_task_tool(encrypt_message: bool) -> ToolSpec {
+     let properties = BTreeMap::from([
+         (
+             "target".to_string(),
+@@ -221,10 +224,10 @@ pub fn create_followup_task_tool() -> ToolSpec {
+         ),
+         (
+             "message".to_string(),
+-            JsonSchema::string(Some(
+-                "Message text to send to the target agent.".to_string(),
+-            ))
+-            .with_encrypted(),
++            collaboration_message_schema(
++                "Message text to send to the target agent.",
++                encrypt_message,
++            ),
+         ),
+     ]);
+ 
+@@ -352,6 +355,57 @@ pub fn create_interrupt_agent_tool_v2() -> ToolSpec {
+     })
+ }
+ 
++pub fn create_close_agent_tool_v2() -> ToolSpec {
++    let properties = BTreeMap::from([(
++        "target".to_string(),
++        JsonSchema::string(Some(
++            "Agent id or canonical task name to close (from spawn_agent).".to_string(),
++        )),
++    )]);
++    let output_schema = json!({
++        "type": "object",
++        "properties": {
++            "previous_status": {
++                "description": "The agent status observed before shutdown was requested.",
++                "allOf": [agent_status_output_schema()]
++            },
++            "target_thread_id": {
++                "type": "string",
++                "description": "Exact thread identifier resolved by the host for the closed agent."
++            },
++            "target_agent_path": {
++                "type": "string",
++                "description": "Canonical AgentPath resolved by the host for the closed agent."
++            },
++            "session_loop_terminated": {
++                "type": "boolean",
++                "description": "Whether the target session loop and its live descendant session loops terminated before this result was returned."
++            },
++            "process_tree_quiescence_claimed": {
++                "type": "boolean",
++                "description": "Always false: session shutdown does not by itself prove quiescence of detached or untracked processes."
++            }
++        },
++        "required": [
++            "previous_status",
++            "target_thread_id",
++            "target_agent_path",
++            "session_loop_terminated",
++            "process_tree_quiescence_claimed"
++        ],
++        "additionalProperties": false
++    });
++
++    ToolSpec::Function(ResponsesApiTool {
++        name: "close_agent".to_string(),
++        description: "Shut down an agent and its live descendant sessions, wait for their session loops to terminate, and return an exact host lifecycle receipt. This does not by itself prove detached-process or filesystem-mutation quiescence.".to_string(),
++        strict: false,
++        defer_loading: None,
++        parameters: JsonSchema::object(properties, Some(vec!["target".to_string()]), Some(false.into())),
++        output_schema: Some(output_schema),
++    })
++}
++
+ fn agent_status_output_schema() -> Value {
+     json!({
+         "oneOf": [
+@@ -617,14 +671,17 @@ fn spawn_agent_common_properties_v1(agent_type_description: &str) -> BTreeMap<St
+     ])
+ }
+ 
+-fn spawn_agent_common_properties_v2(agent_type_description: &str) -> BTreeMap<String, JsonSchema> {
++fn spawn_agent_common_properties_v2(
++    agent_type_description: &str,
++    encrypt_message: bool,
++) -> BTreeMap<String, JsonSchema> {
+     BTreeMap::from([
+         (
+             "message".to_string(),
+-            JsonSchema::string(Some(
+-                "Initial plain-text task for the new agent.".to_string(),
+-            ))
+-            .with_encrypted(),
++            collaboration_message_schema(
++                "Initial plain-text task for the new agent.",
++                encrypt_message,
++            ),
+         ),
+         (
+             "agent_type".to_string(),
+@@ -655,6 +712,15 @@ fn spawn_agent_common_properties_v2(agent_type_description: &str) -> BTreeMap<St
+     ])
+ }
+ 
++fn collaboration_message_schema(description: &str, encrypt_message: bool) -> JsonSchema {
++    let schema = JsonSchema::string(Some(description.to_string()));
++    if encrypt_message {
++        schema.with_encrypted()
++    } else {
++        schema
++    }
++}
++
+ fn hide_spawn_agent_metadata_options(properties: &mut BTreeMap<String, JsonSchema>) {
+     properties.remove("agent_type");
+     properties.remove("model");
+diff --git a/codex-rs/core/src/tools/handlers/multi_agents_spec_tests.rs b/codex-rs/core/src/tools/handlers/multi_agents_spec_tests.rs
+index 9e100aa..9f3dadd 100644
+--- a/codex-rs/core/src/tools/handlers/multi_agents_spec_tests.rs
++++ b/codex-rs/core/src/tools/handlers/multi_agents_spec_tests.rs
+@@ -57,6 +57,7 @@ fn spawn_agent_tool_v2_requires_task_name_and_lists_visible_models() {
+         expose_spawn_agent_model_overrides: true,
+         multi_agent_version: MultiAgentVersion::V2,
+         usage_hint_text: None,
++        encrypt_message: true,
+     });
+ 
+     let ToolSpec::Function(ResponsesApiTool {
+@@ -136,6 +137,7 @@ fn spawn_agent_tool_v1_keeps_legacy_fork_context_field() {
+         expose_spawn_agent_model_overrides: true,
+         multi_agent_version: MultiAgentVersion::V1,
+         usage_hint_text: None,
++        encrypt_message: true,
+     });
+ 
+     let ToolSpec::Namespace(namespace) = tool else {
+@@ -196,6 +198,7 @@ fn spawn_agent_tool_caps_visible_model_summaries() {
+         expose_spawn_agent_model_overrides: true,
+         multi_agent_version: MultiAgentVersion::V2,
+         usage_hint_text: None,
++        encrypt_message: true,
+     });
+ 
+     let ToolSpec::Function(ResponsesApiTool { description, .. }) = tool else {
+@@ -242,6 +245,7 @@ fn spawn_agent_tool_keeps_model_controls_when_spawn_metadata_is_hidden() {
+         expose_spawn_agent_model_overrides: true,
+         multi_agent_version: MultiAgentVersion::V2,
+         usage_hint_text: None,
++        encrypt_message: true,
+     });
+ 
+     let ToolSpec::Function(ResponsesApiTool {
+@@ -275,6 +279,7 @@ fn spawn_agent_tool_hides_model_controls_without_override_exposure() {
+         expose_spawn_agent_model_overrides: false,
+         multi_agent_version: MultiAgentVersion::V2,
+         usage_hint_text: None,
++        encrypt_message: true,
+     });
+ 
+     let ToolSpec::Function(ResponsesApiTool {
+@@ -303,7 +308,7 @@ fn send_message_tool_requires_message_and_has_no_output_schema() {
+         parameters,
+         output_schema,
+         ..
+-    }) = create_send_message_tool()
++    }) = create_send_message_tool(/*encrypt_message*/ true)
+     else {
+         panic!("send_message should be a function tool");
+     };
+@@ -346,7 +351,7 @@ fn followup_task_tool_requires_message_and_has_no_output_schema() {
+         parameters,
+         output_schema,
+         ..
+-    }) = create_followup_task_tool()
++    }) = create_followup_task_tool(/*encrypt_message*/ true)
+     else {
+         panic!("followup_task should be a function tool");
+     };
+diff --git a/codex-rs/core/src/tools/handlers/multi_agents_tests.rs b/codex-rs/core/src/tools/handlers/multi_agents_tests.rs
+index 0979e8b..d3f618a 100644
+--- a/codex-rs/core/src/tools/handlers/multi_agents_tests.rs
++++ b/codex-rs/core/src/tools/handlers/multi_agents_tests.rs
+@@ -15,6 +15,7 @@ use crate::session::turn_context::TurnContext;
+ use crate::session_prefix::format_inter_agent_completion_message;
+ use crate::thread_manager::thread_store_from_config;
+ use crate::tools::context::ToolOutput;
++use crate::tools::handlers::multi_agents_v2::CloseAgentHandler as CloseAgentHandlerV2;
+ use crate::tools::handlers::multi_agents_v2::FollowupTaskHandler as FollowupTaskHandlerV2;
+ use crate::tools::handlers::multi_agents_v2::InterruptAgentHandler;
+ use crate::tools::handlers::multi_agents_v2::ListAgentsHandler as ListAgentsHandlerV2;
+@@ -216,6 +217,15 @@ struct InterruptAgentResult {
+     previous_status: AgentStatus,
+ }
+ 
++#[derive(Debug, Deserialize)]
++struct CloseAgentResultV2 {
++    previous_status: AgentStatus,
++    target_thread_id: String,
++    target_agent_path: String,
++    session_loop_terminated: bool,
++    process_tree_quiescence_claimed: bool,
++}
++
+ #[tokio::test]
+ async fn handler_rejects_non_function_payloads() {
+     let (session, turn) = make_session_and_context().await;
+@@ -1016,7 +1026,7 @@ async fn multi_agent_v2_spawn_returns_path_and_send_message_accepts_relative_pat
+             )
+     }));
+ 
+-    SendMessageHandlerV2
++    SendMessageHandlerV2::new(/*encrypt_message*/ true)
+         .handle(invocation(
+             session.clone(),
+             turn.clone(),
+@@ -1212,7 +1222,7 @@ async fn multi_agent_v2_send_message_accepts_root_target_from_child() {
+         agent_role: None,
+     });
+ 
+-    SendMessageHandlerV2
++    SendMessageHandlerV2::new(/*encrypt_message*/ true)
+         .handle(invocation(
+             Arc::new(session),
+             Arc::new(turn),
+@@ -1288,7 +1298,7 @@ async fn multi_agent_v2_followup_task_rejects_root_target_from_child() {
+         agent_role: None,
+     });
+ 
+-    let Err(err) = FollowupTaskHandlerV2
++    let Err(err) = FollowupTaskHandlerV2::new(/*encrypt_message*/ true)
+         .handle(invocation(
+             Arc::new(session),
+             Arc::new(turn),
+@@ -1670,7 +1680,10 @@ async fn multi_agent_v2_send_message_rejects_legacy_items_field() {
+         })),
+     );
+ 
+-    let Err(err) = SendMessageHandlerV2.handle(invocation).await else {
++    let Err(err) = SendMessageHandlerV2::new(/*encrypt_message*/ true)
++        .handle(invocation)
++        .await
++    else {
+         panic!("legacy items field should be rejected in v2");
+     };
+     let FunctionCallError::RespondToModel(message) = err else {
+@@ -1725,7 +1738,10 @@ async fn multi_agent_v2_send_message_rejects_interrupt_parameter() {
+         })),
+     );
+ 
+-    let Err(err) = SendMessageHandlerV2.handle(invocation).await else {
++    let Err(err) = SendMessageHandlerV2::new(/*encrypt_message*/ true)
++        .handle(invocation)
++        .await
++    else {
+         panic!("send_message interrupt parameter should be rejected");
+     };
+     let FunctionCallError::RespondToModel(message) = err else {
+@@ -1813,7 +1829,7 @@ async fn multi_agent_v2_followup_task_completion_notifies_parent_on_every_turn()
+         )
+         .await;
+ 
+-    FollowupTaskHandlerV2
++    FollowupTaskHandlerV2::new(/*encrypt_message*/ true)
+         .handle(invocation(
+             session,
+             turn,
+@@ -1953,7 +1969,10 @@ async fn multi_agent_v2_followup_task_rejects_legacy_items_field() {
+         })),
+     );
+ 
+-    let Err(err) = FollowupTaskHandlerV2.handle(invocation).await else {
++    let Err(err) = FollowupTaskHandlerV2::new(/*encrypt_message*/ true)
++        .handle(invocation)
++        .await
++    else {
+         panic!("legacy items field should be rejected in v2");
+     };
+     let FunctionCallError::RespondToModel(message) = err else {
+@@ -3795,6 +3814,105 @@ async fn multi_agent_v2_interrupt_agent_accepts_task_name_target() {
+     );
+ }
+ 
++#[tokio::test]
++async fn multi_agent_v2_close_agent_waits_for_target_and_descendant_session_loops() {
++    let (mut session, mut turn) = make_session_and_context().await;
++    let manager = thread_manager();
++    let root = manager
++        .start_thread(StartThreadOptions::new((*turn.config).clone()))
++        .await
++        .expect("root thread should start");
++    session.services.agent_control = manager.agent_control();
++    session.thread_id = root.thread_id;
++    let mut config = (*turn.config).clone();
++    config
++        .features
++        .enable(Feature::MultiAgentV2)
++        .expect("test config should allow feature update");
++    set_turn_config(&mut turn, config);
++
++    let session = Arc::new(session);
++    let turn = Arc::new(turn);
++    SpawnAgentHandlerV2::default()
++        .handle(invocation(
++            session.clone(),
++            turn.clone(),
++            "spawn_agent",
++            function_payload(json!({
++                "message": "inspect this repo",
++                "task_name": "worker"
++            })),
++        ))
++        .await
++        .expect("spawn_agent should succeed");
++    let agent_id = session
++        .services
++        .agent_control
++        .resolve_agent_reference(session.thread_id, &turn.session_source, "worker")
++        .await
++        .expect("worker path should resolve");
++    let worker_thread = manager
++        .get_thread(agent_id)
++        .await
++        .expect("worker thread should be resident");
++    let worker_session = worker_thread.session.clone();
++    SpawnAgentHandlerV2::default()
++        .handle(invocation(
++            worker_session.clone(),
++            worker_session.new_default_turn().await,
++            "spawn_agent",
++            function_payload(json!({
++                "message": "inspect a child task",
++                "task_name": "child"
++            })),
++        ))
++        .await
++        .expect("child spawn should succeed");
++    let child_id = session
++        .services
++        .agent_control
++        .resolve_agent_reference(session.thread_id, &turn.session_source, "worker/child")
++        .await
++        .expect("child path should resolve");
++
++    let output = CloseAgentHandlerV2
++        .handle(invocation(
++            session.clone(),
++            turn.clone(),
++            "close_agent",
++            function_payload(json!({"target": "worker"})),
++        ))
++        .await
++        .expect("close_agent should succeed for a v2 task name");
++    let (content, success) = expect_text_output(output);
++    let result: CloseAgentResultV2 =
++        serde_json::from_str(&content).expect("close_agent result should be json");
++
++    assert_ne!(result.previous_status, AgentStatus::NotFound);
++    assert_eq!(result.target_thread_id, agent_id.to_string());
++    assert_eq!(result.target_agent_path, "/root/worker");
++    assert!(result.session_loop_terminated);
++    assert!(!result.process_tree_quiescence_claimed);
++    assert_eq!(success, Some(true));
++    assert_eq!(
++        session.services.agent_control.get_status(agent_id).await,
++        AgentStatus::NotFound
++    );
++    assert_eq!(
++        session.services.agent_control.get_status(child_id).await,
++        AgentStatus::NotFound
++    );
++    let ops = manager.captured_ops();
++    assert!(
++        ops.iter()
++            .any(|(thread_id, op)| *thread_id == agent_id && matches!(op, Op::Shutdown))
++    );
++    assert!(
++        ops.iter()
++            .any(|(thread_id, op)| *thread_id == child_id && matches!(op, Op::Shutdown))
++    );
++}
++
+ #[tokio::test]
+ async fn multi_agent_v2_interrupt_agent_accepts_unloaded_task_name_target() {
+     let (mut session, mut turn) = make_session_and_context().await;
+diff --git a/codex-rs/core/src/tools/handlers/multi_agents_v2.rs b/codex-rs/core/src/tools/handlers/multi_agents_v2.rs
+index b82bdd6..4edb9ad 100644
+--- a/codex-rs/core/src/tools/handlers/multi_agents_v2.rs
++++ b/codex-rs/core/src/tools/handlers/multi_agents_v2.rs
+@@ -29,6 +29,7 @@ use serde::Deserialize;
+ use serde::Serialize;
+ use serde_json::Value as JsonValue;
+ 
++pub(crate) use close_agent::Handler as CloseAgentHandler;
+ pub(crate) use followup_task::Handler as FollowupTaskHandler;
+ pub(crate) use interrupt_agent::Handler as InterruptAgentHandler;
+ pub(crate) use list_agents::Handler as ListAgentsHandler;
+@@ -37,6 +38,7 @@ pub(crate) use spawn::Handler as SpawnAgentHandler;
+ pub(crate) use wait::Handler as WaitAgentHandler;
+ 
+ mod analytics;
++mod close_agent;
+ mod followup_task;
+ mod interrupt_agent;
+ mod list_agents;
+@@ -83,3 +85,62 @@ fn communication_from_tool_message(
+         InterAgentMessage::new(message_type, recipient.clone(), author.clone(), message).render();
+     InterAgentCommunication::new(author, recipient, Vec::new(), content, trigger_turn)
+ }
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++    use crate::tools::context::ToolCallSource;
++    use codex_protocol::models::ContentItem;
++    use codex_protocol::models::ResponseItem;
++
++    #[test]
++    fn plaintext_source_uses_user_message_wire_for_queue_and_trigger_modes() {
++        let author = AgentPath::root();
++        let recipient = author.join("worker").expect("recipient path");
++
++        for (trigger_turn, message_type) in [(false, "MESSAGE"), (true, "NEW_TASK")] {
++            let communication = communication_from_tool_message(
++                author.clone(),
++                recipient.clone(),
++                "bounded task".to_string(),
++                &ToolCallSource::DirectPlaintextMessage,
++                trigger_turn,
++            );
++            let expected = format!(
++                "Message Type: {message_type}\nTask name: /root/worker\nSender: /root\nPayload:\nbounded task"
++            );
++
++            assert_eq!(communication.content, expected);
++            assert_eq!(communication.encrypted_content, None);
++            assert!(matches!(
++                communication.to_model_input_item(),
++                ResponseItem::Message {
++                    role,
++                    content,
++                    ..
++                } if role == "user"
++                    && content == vec![ContentItem::InputText { text: expected }]
++            ));
++        }
++    }
++
++    #[test]
++    fn encrypted_source_keeps_agent_message_wire() {
++        let communication = communication_from_tool_message(
++            AgentPath::root(),
++            AgentPath::root().join("worker").expect("recipient path"),
++            "opaque payload".to_string(),
++            &ToolCallSource::Direct,
++            /*trigger_turn*/ false,
++        );
++
++        assert_eq!(
++            communication.encrypted_content.as_deref(),
++            Some("opaque payload")
++        );
++        assert!(matches!(
++            communication.to_model_input_item(),
++            ResponseItem::AgentMessage { .. }
++        ));
++    }
++}
+diff --git a/codex-rs/core/src/tools/handlers/multi_agents_v2/close_agent.rs b/codex-rs/core/src/tools/handlers/multi_agents_v2/close_agent.rs
+new file mode 100644
+index 0000000..f6c6a2b
+--- /dev/null
++++ b/codex-rs/core/src/tools/handlers/multi_agents_v2/close_agent.rs
+@@ -0,0 +1,137 @@
++use super::analytics::ToolCallAnalytics;
++use super::*;
++use crate::tools::handlers::multi_agents_spec::create_close_agent_tool_v2;
++use codex_protocol::error::CodexErrorDetails;
++use codex_tools::ToolSpec;
++
++pub(crate) struct Handler;
++
++impl ToolExecutor<ToolInvocation> for Handler {
++    fn tool_name(&self) -> ToolName {
++        ToolName::plain("close_agent")
++    }
++
++    fn spec(&self) -> ToolSpec {
++        create_close_agent_tool_v2()
++    }
++
++    fn handle<'a>(&'a self, invocation: ToolInvocation) -> codex_tools::ToolExecutorFuture<'a>
++    where
++        ToolInvocation: 'a,
++    {
++        Box::pin(async move {
++            let mut analytics = ToolCallAnalytics::new(&invocation, CollabAgentTool::CloseAgent);
++            let result = handle_close_agent(invocation, &mut analytics).await;
++            analytics.finish(&result);
++            result.map(boxed_tool_output)
++        })
++    }
++}
++
++async fn handle_close_agent(
++    invocation: ToolInvocation,
++    analytics: &mut ToolCallAnalytics,
++) -> Result<CloseAgentResult, FunctionCallError> {
++    let ToolInvocation {
++        session,
++        turn,
++        payload,
++        call_id,
++        ..
++    } = invocation;
++    let arguments = function_arguments(payload)?;
++    let args: CloseAgentArgs = parse_arguments(&arguments)?;
++    let agent_id = resolve_agent_target(&session, &turn, &args.target).await?;
++    analytics.set_receiver(agent_id);
++    let receiver_agent = session
++        .services
++        .agent_control
++        .ensure_agent_known(agent_id)
++        .map_err(|err| collab_agent_error(agent_id, err))?;
++    if receiver_agent
++        .agent_path
++        .as_ref()
++        .is_some_and(AgentPath::is_root)
++    {
++        return Err(FunctionCallError::RespondToModel(
++            "root is not a spawned agent".to_string(),
++        ));
++    }
++    if agent_id == session.thread_id {
++        return Err(FunctionCallError::RespondToModel(
++            "an agent cannot close itself; return your result and let the parent close you if needed"
++                .to_string(),
++        ));
++    }
++    let receiver_agent_path = receiver_agent.agent_path.clone().ok_or_else(|| {
++        FunctionCallError::RespondToModel("target agent is missing an agent_path".to_string())
++    })?;
++    let status = session.services.agent_control.get_status(agent_id).await;
++    match Box::pin(session.services.agent_control.close_agent(agent_id)).await {
++        Ok(_) => {}
++        Err(err)
++            if matches!(
++                err.details(),
++                CodexErrorDetails::ThreadNotFound(_) | CodexErrorDetails::InternalAgentDied
++            ) => {}
++        Err(err) => return Err(collab_agent_error(agent_id, err)),
++    }
++    emit_sub_agent_activity(
++        &session,
++        &turn,
++        SubAgentActivityItem {
++            id: call_id,
++            agent_thread_id: agent_id,
++            agent_path: receiver_agent_path.clone(),
++            kind: SubAgentActivityKind::Completed,
++        },
++    )
++    .await;
++
++    Ok(CloseAgentResult {
++        previous_status: status,
++        target_thread_id: agent_id.to_string(),
++        target_agent_path: receiver_agent_path.to_string(),
++        session_loop_terminated: true,
++        process_tree_quiescence_claimed: false,
++    })
++}
++
++impl CoreToolRuntime for Handler {
++    fn matches_kind(&self, payload: &ToolPayload) -> bool {
++        matches!(payload, ToolPayload::Function { .. })
++    }
++}
++
++#[derive(Debug, Deserialize)]
++#[serde(deny_unknown_fields)]
++struct CloseAgentArgs {
++    target: String,
++}
++
++#[derive(Debug, Deserialize, Serialize)]
++pub(crate) struct CloseAgentResult {
++    pub(crate) previous_status: AgentStatus,
++    pub(crate) target_thread_id: String,
++    pub(crate) target_agent_path: String,
++    pub(crate) session_loop_terminated: bool,
++    pub(crate) process_tree_quiescence_claimed: bool,
++}
++
++impl ToolOutput for CloseAgentResult {
++    fn log_output(&self) -> String {
++        tool_output_json_text(self, "close_agent")
++    }
++
++    fn success_for_logging(&self) -> bool {
++        true
++    }
++
++    fn to_response_item(&self, call_id: &str, payload: &ToolPayload) -> ResponseInputItem {
++        tool_output_response_item(call_id, payload, self, Some(true), "close_agent")
++    }
++
++    fn code_mode_result(&self, _payload: &ToolPayload) -> JsonValue {
++        tool_output_code_mode_result(self, "close_agent")
++    }
++}
+diff --git a/codex-rs/core/src/tools/handlers/multi_agents_v2/followup_task.rs b/codex-rs/core/src/tools/handlers/multi_agents_v2/followup_task.rs
+index 19de4d8..0fb8153 100644
+--- a/codex-rs/core/src/tools/handlers/multi_agents_v2/followup_task.rs
++++ b/codex-rs/core/src/tools/handlers/multi_agents_v2/followup_task.rs
+@@ -6,7 +6,15 @@ use super::*;
+ use crate::tools::handlers::multi_agents_spec::create_followup_task_tool;
+ use codex_tools::ToolSpec;
+ 
+-pub(crate) struct Handler;
++pub(crate) struct Handler {
++    encrypt_message: bool,
++}
++
++impl Handler {
++    pub(crate) fn new(encrypt_message: bool) -> Self {
++        Self { encrypt_message }
++    }
++}
+ 
+ impl ToolExecutor<ToolInvocation> for Handler {
+     fn tool_name(&self) -> ToolName {
+@@ -14,7 +22,7 @@ impl ToolExecutor<ToolInvocation> for Handler {
+     }
+ 
+     fn spec(&self) -> ToolSpec {
+-        create_followup_task_tool()
++        create_followup_task_tool(self.encrypt_message)
+     }
+ 
+     fn handle<'a>(&'a self, invocation: ToolInvocation) -> codex_tools::ToolExecutorFuture<'a>
+diff --git a/codex-rs/core/src/tools/handlers/multi_agents_v2/send_message.rs b/codex-rs/core/src/tools/handlers/multi_agents_v2/send_message.rs
+index 70fc7d4..3b40a0d 100644
+--- a/codex-rs/core/src/tools/handlers/multi_agents_v2/send_message.rs
++++ b/codex-rs/core/src/tools/handlers/multi_agents_v2/send_message.rs
+@@ -6,7 +6,15 @@ use super::*;
+ use crate::tools::handlers::multi_agents_spec::create_send_message_tool;
+ use codex_tools::ToolSpec;
+ 
+-pub(crate) struct Handler;
++pub(crate) struct Handler {
++    encrypt_message: bool,
++}
++
++impl Handler {
++    pub(crate) fn new(encrypt_message: bool) -> Self {
++        Self { encrypt_message }
++    }
++}
+ 
+ impl ToolExecutor<ToolInvocation> for Handler {
+     fn tool_name(&self) -> ToolName {
+@@ -14,7 +22,7 @@ impl ToolExecutor<ToolInvocation> for Handler {
+     }
+ 
+     fn spec(&self) -> ToolSpec {
+-        create_send_message_tool()
++        create_send_message_tool(self.encrypt_message)
+     }
+ 
+     fn handle<'a>(&'a self, invocation: ToolInvocation) -> codex_tools::ToolExecutorFuture<'a>
+diff --git a/codex-rs/core/src/tools/parallel.rs b/codex-rs/core/src/tools/parallel.rs
+index 7de5663..f8a0563 100644
+--- a/codex-rs/core/src/tools/parallel.rs
++++ b/codex-rs/core/src/tools/parallel.rs
+@@ -77,7 +77,22 @@ impl ToolCallRuntime {
+         cancellation_token: CancellationToken,
+     ) -> impl std::future::Future<Output = Result<ResponseItemEnvelope, CodexErr>> {
+         let error_call = call.clone();
+-        let source = call.direct_source();
++        let source = call.direct_source_for_multi_agent_namespace(
++            self.step_context
++                .turn
++                .config
++                .multi_agent_v2
++                .tool_namespace
++                .as_deref(),
++            matches!(
++                self.step_context
++                    .turn
++                    .config
++                    .multi_agent_v2
++                    .message_delivery,
++                codex_features::MultiAgentV2MessageDelivery::Plaintext
++            ),
++        );
+         let future = self.handle_tool_call_with_source(call, source, cancellation_token);
+         async move {
+             match future.await {
+diff --git a/codex-rs/core/src/tools/registry.rs b/codex-rs/core/src/tools/registry.rs
+index e73711f..37c8004 100644
+--- a/codex-rs/core/src/tools/registry.rs
++++ b/codex-rs/core/src/tools/registry.rs
+@@ -409,6 +409,10 @@ impl ToolRegistry {
+         self.tools.values_mut()
+     }
+ 
++    pub(crate) fn retain(&mut self, mut predicate: impl FnMut(&ToolName) -> bool) {
++        self.tools.retain(|name, _| predicate(name));
++    }
++
+     pub(crate) fn deferred_tool_namespaces(&self) -> BTreeMap<String, String> {
+         let mut namespaces = BTreeMap::<String, String>::new();
+         for (name, tool) in &self.tools {
+diff --git a/codex-rs/core/src/tools/router.rs b/codex-rs/core/src/tools/router.rs
+index 8d5bde3..0d4c90a 100644
+--- a/codex-rs/core/src/tools/router.rs
++++ b/codex-rs/core/src/tools/router.rs
+@@ -42,16 +42,21 @@ pub struct ToolCall {
+ }
+ 
+ impl ToolCall {
+-    pub(crate) fn direct_source(&self) -> ToolCallSource {
+-        if self.tool_name.namespace.as_deref() == Some("collaboration")
++    pub(crate) fn direct_source_for_multi_agent_namespace(
++        &self,
++        multi_agent_namespace: Option<&str>,
++        plaintext_delivery_configured: bool,
++    ) -> ToolCallSource {
++        if self.tool_name.namespace.as_deref() == multi_agent_namespace
+             && matches!(
+                 self.tool_name.name.as_str(),
+                 "spawn_agent" | "send_message" | "followup_task"
+             )
+-            && self
++            && (self
+                 .encrypted_function_args
+                 .as_ref()
+                 .is_some_and(Vec::is_empty)
++                || (plaintext_delivery_configured && self.encrypted_function_args.is_none()))
+         {
+             ToolCallSource::DirectPlaintextMessage
+         } else {
+diff --git a/codex-rs/core/src/tools/router_tests.rs b/codex-rs/core/src/tools/router_tests.rs
+index 1d6b1d3..894321e 100644
+--- a/codex-rs/core/src/tools/router_tests.rs
++++ b/codex-rs/core/src/tools/router_tests.rs
+@@ -228,7 +228,10 @@ async fn build_tool_call_uses_namespace_for_registry_name() -> anyhow::Result<()
+     );
+     assert_eq!(call.call_id, "call-namespace");
+     assert_eq!(call.encrypted_function_args, Some(Vec::new()));
+-    assert_eq!(call.direct_source(), ToolCallSource::Direct);
++    assert_eq!(
++        call.direct_source_for_multi_agent_namespace(Some("collaboration"), false),
++        ToolCallSource::Direct
++    );
+     match call.payload {
+         ToolPayload::Function { arguments } => {
+             assert_eq!(arguments, "{}");
+@@ -239,6 +242,62 @@ async fn build_tool_call_uses_namespace_for_registry_name() -> anyhow::Result<()
+     Ok(())
+ }
+ 
++#[test]
++fn direct_source_only_treats_configured_multi_agent_namespace_as_plaintext() {
++    let call = ToolCall {
++        tool_name: ToolName::namespaced("g4_assignment", "spawn_agent"),
++        call_id: "call-custom-multi-agent".to_string(),
++        payload: ToolPayload::Function {
++            arguments: r#"{"message":"bounded task"}"#.to_string(),
++        },
++        encrypted_function_args: Some(Vec::new()),
++    };
++
++    assert_eq!(
++        call.direct_source_for_multi_agent_namespace(Some("g4_assignment"), false),
++        ToolCallSource::DirectPlaintextMessage
++    );
++    assert_eq!(
++        call.direct_source_for_multi_agent_namespace(Some("collaboration"), false),
++        ToolCallSource::Direct
++    );
++    assert_eq!(
++        call.direct_source_for_multi_agent_namespace(None, false),
++        ToolCallSource::Direct
++    );
++}
++
++#[test]
++fn configured_plaintext_delivery_handles_absent_server_encryption_marker() {
++    let mut call = ToolCall {
++        tool_name: ToolName::namespaced("g4_assignment", "spawn_agent"),
++        call_id: "call-live-custom-multi-agent".to_string(),
++        payload: ToolPayload::Function {
++            arguments: r#"{"message":"bounded task"}"#.to_string(),
++        },
++        encrypted_function_args: None,
++    };
++
++    assert_eq!(
++        call.direct_source_for_multi_agent_namespace(Some("g4_assignment"), true),
++        ToolCallSource::DirectPlaintextMessage
++    );
++    assert_eq!(
++        call.direct_source_for_multi_agent_namespace(Some("g4_assignment"), false),
++        ToolCallSource::Direct
++    );
++    assert_eq!(
++        call.direct_source_for_multi_agent_namespace(Some("collaboration"), true),
++        ToolCallSource::Direct
++    );
++
++    call.encrypted_function_args = Some(vec!["message".to_string()]);
++    assert_eq!(
++        call.direct_source_for_multi_agent_namespace(Some("g4_assignment"), true),
++        ToolCallSource::Direct
++    );
++}
++
+ #[tokio::test]
+ async fn build_custom_tool_call_uses_namespace_for_registry_name() -> anyhow::Result<()> {
+     let tool_name = "exec".to_string();
+diff --git a/codex-rs/core/src/tools/spec_plan.rs b/codex-rs/core/src/tools/spec_plan.rs
+index 908bb14..84b4645 100644
+--- a/codex-rs/core/src/tools/spec_plan.rs
++++ b/codex-rs/core/src/tools/spec_plan.rs
+@@ -43,6 +43,7 @@ use crate::tools::handlers::multi_agents_common::MIN_WAIT_TIMEOUT_MS;
+ use crate::tools::handlers::multi_agents_spec::MULTI_AGENT_V1_NAMESPACE;
+ use crate::tools::handlers::multi_agents_spec::SpawnAgentToolOptions;
+ use crate::tools::handlers::multi_agents_spec::WaitAgentTimeoutOptions;
++use crate::tools::handlers::multi_agents_v2::CloseAgentHandler as CloseAgentHandlerV2;
+ use crate::tools::handlers::multi_agents_v2::FollowupTaskHandler as FollowupTaskHandlerV2;
+ use crate::tools::handlers::multi_agents_v2::InterruptAgentHandler;
+ use crate::tools::handlers::multi_agents_v2::ListAgentsHandler as ListAgentsHandlerV2;
+@@ -62,6 +63,7 @@ use crate::tools::router::ToolRouter;
+ use crate::tools::tool_namespaces_info::collect_tool_namespaces_info;
+ use codex_extension_api::ExtensionData;
+ use codex_features::Feature;
++use codex_features::MultiAgentV2MessageDelivery;
+ use codex_features::SleepToolMode;
+ use codex_login::AuthManager;
+ use codex_protocol::DEFAULT_FUNCTION_NAMESPACE;
+@@ -105,6 +107,7 @@ use tracing::instrument;
+ const MULTI_AGENT_V2_NAMESPACE_DESCRIPTION: &str = "Tools for spawning and managing sub-agents.";
+ const IMAGE_GEN_NAMESPACE: &str = "image_gen";
+ const IMAGEGEN_TOOL_NAME: &str = "imagegen";
++const G4_QUALIFICATION_PROBE_ROLE: &str = "g4_qualification_probe_worker";
+ 
+ #[derive(Clone, Copy)]
+ struct CoreToolPlanContext<'a> {
+@@ -352,11 +355,11 @@ pub(crate) fn finalize_tool_router(
+     turn_context: &TurnContext,
+     model_info: &ModelInfo,
+     mut registry: ToolRegistry,
+-    hosted_specs: Vec<ToolSpec>,
++    mut hosted_specs: Vec<ToolSpec>,
+     tool_search_handler_cache: &ToolSearchHandlerCache,
+ ) -> CodexResult<ToolRouter> {
+     apply_direct_model_only_namespace_overrides(turn_context, &mut registry);
+-    let tool_mode = effective_tool_mode(turn_context, model_info);
++    let tool_mode = planned_tool_mode(turn_context, model_info);
+     let code_mode_enabled = matches!(tool_mode, ToolMode::CodeMode | ToolMode::CodeModeOnly);
+     if code_mode_enabled {
+         for tool_name in [
+@@ -405,8 +408,13 @@ pub(crate) fn finalize_tool_router(
+         append_tool_search_executor(turn_context, &mut registry, tool_search_handler_cache);
+     }
+ 
+-    let code_mode_tool_names =
++    let mut code_mode_tool_names =
+         register_code_mode_executors(turn_context, model_info, &mut registry);
++    if exact_g4_qualification_role(turn_context) {
++        registry.retain(|name| g4_qualification_tool_allowed(turn_context, name));
++        code_mode_tool_names.retain(|_, name| g4_qualification_tool_allowed(turn_context, name));
++        hosted_specs.clear();
++    }
+     let include_tool_namespaces_info = turn_context
+         .config
+         .tool_registry
+@@ -574,7 +582,7 @@ fn spec_for_model_request(
+     code_mode_tool_names: &BTreeMap<String, ToolName>,
+     spec: ToolSpec,
+ ) -> ToolSpec {
+-    let tool_mode = effective_tool_mode(turn_context, model_info);
++    let tool_mode = planned_tool_mode(turn_context, model_info);
+     if matches!(tool_mode, ToolMode::CodeMode | ToolMode::CodeModeOnly)
+         && exposure.is_available_in_code_mode()
+         && !is_excluded_from_code_mode(turn_context, tool_name)
+@@ -654,10 +662,51 @@ fn collab_tools_enabled(turn_context: &TurnContext, model_info: &ModelInfo) -> b
+         MultiAgentVersion::V2 => {
+             turn_context.session_source.get_agent_path().is_none()
+                 || model_info.multi_agent_version == Some(MultiAgentVersion::V2)
++                || exact_child_provider_mapping_authorizes_v2_tools(turn_context)
+         }
+     }
+ }
+ 
++/// An explicitly mapped custom-provider role may use the standard local V2 management tools even
++/// when its model is absent from the OpenAI model catalog. The exact role and the provider applied
++/// to this child must both match the parent-owned mapping; the default empty map preserves the
++/// catalog-only behavior.
++fn exact_child_provider_mapping_authorizes_v2_tools(turn_context: &TurnContext) -> bool {
++    let Some(agent_role) = turn_context.session_source.get_agent_role() else {
++        return false;
++    };
++    turn_context
++        .config
++        .multi_agent_v2
++        .child_model_providers
++        .get(&agent_role)
++        == Some(&turn_context.config.model_provider_id)
++}
++
++fn exact_g4_qualification_role(turn_context: &TurnContext) -> bool {
++    turn_context.session_source.get_agent_role().as_deref() == Some(G4_QUALIFICATION_PROBE_ROLE)
++}
++
++fn g4_qualification_tool_allowed(turn_context: &TurnContext, tool_name: &ToolName) -> bool {
++    let tool_name = tool_name.clone().with_default_namespace();
++    if tool_name.namespace.as_deref() == Some(DEFAULT_FUNCTION_NAMESPACE) {
++        return matches!(
++            tool_name.name.as_str(),
++            "apply_patch" | "current_time" | "get_context_remaining" | "list_agents" | "view_image"
++        );
++    }
++    let expected_namespace = turn_context.config.multi_agent_v2.tool_namespace.as_deref();
++    tool_name.name == "list_agents" && tool_name.namespace.as_deref() == expected_namespace
++}
++
++fn planned_tool_mode(turn_context: &TurnContext, model_info: &ModelInfo) -> ToolMode {
++    if exact_g4_qualification_role(turn_context) {
++        ToolMode::Direct
++    } else {
++        effective_tool_mode(turn_context, model_info)
++    }
++}
++
+ fn required_child_management_tool_names(
+     turn_context: &TurnContext,
+     model_info: &ModelInfo,
+@@ -679,6 +728,7 @@ fn required_child_management_tool_names(
+             &[
+                 "send_message",
+                 "followup_task",
++                "close_agent",
+                 "interrupt_agent",
+                 "list_agents",
+             ],
+@@ -768,7 +818,7 @@ fn is_hidden_by_code_mode_only(
+     tool_name: &ToolName,
+     exposure: ToolExposure,
+ ) -> bool {
+-    let tool_mode = effective_tool_mode(turn_context, model_info);
++    let tool_mode = planned_tool_mode(turn_context, model_info);
+     tool_mode == ToolMode::CodeModeOnly
+         && exposure.is_available_in_code_mode()
+         && codex_code_mode::is_code_mode_nested_tool(&codex_tools::code_mode_name_for_tool_name(
+@@ -792,7 +842,7 @@ fn register_code_mode_executors(
+     model_info: &ModelInfo,
+     registry: &mut ToolRegistry,
+ ) -> BTreeMap<String, ToolName> {
+-    let tool_mode = effective_tool_mode(turn_context, model_info);
++    let tool_mode = planned_tool_mode(turn_context, model_info);
+     if !matches!(tool_mode, ToolMode::CodeMode | ToolMode::CodeModeOnly) {
+         return BTreeMap::new();
+     }
+@@ -1282,6 +1332,10 @@ fn add_collaboration_tools(context: &CoreToolPlanContext<'_>, registry: &mut Too
+                 agent_type_description(turn_context, context.default_agent_type_description);
+             let hide_spawn_agent_metadata =
+                 turn_context.config.multi_agent_v2.hide_spawn_agent_metadata;
++            let encrypt_messages = matches!(
++                turn_context.config.multi_agent_v2.message_delivery,
++                MultiAgentV2MessageDelivery::Encrypted
++            );
+             registry.register_trusted_with_exposure(
+                 multi_agent_v2_handler(
+                     SpawnAgentHandlerV2::new(SpawnAgentToolOptions {
+@@ -1295,17 +1349,21 @@ fn add_collaboration_tools(context: &CoreToolPlanContext<'_>, registry: &mut Too
+                             .expose_spawn_agent_model_overrides,
+                         multi_agent_version: turn_context.multi_agent_version,
+                         usage_hint_text: turn_context.config.multi_agent_v2.usage_hint_text.clone(),
++                        encrypt_message: encrypt_messages,
+                     }),
+                     tool_namespace,
+                 ),
+                 exposure,
+             );
+             registry.register_trusted_with_exposure(
+-                multi_agent_v2_handler(SendMessageHandlerV2, tool_namespace),
++                multi_agent_v2_handler(SendMessageHandlerV2::new(encrypt_messages), tool_namespace),
+                 exposure,
+             );
+             registry.register_trusted_with_exposure(
+-                multi_agent_v2_handler(FollowupTaskHandlerV2, tool_namespace),
++                multi_agent_v2_handler(
++                    FollowupTaskHandlerV2::new(encrypt_messages),
++                    tool_namespace,
++                ),
+                 exposure,
+             );
+             if turn_context.config.multi_agent_v2.wait_agent_enabled {
+@@ -1317,6 +1375,10 @@ fn add_collaboration_tools(context: &CoreToolPlanContext<'_>, registry: &mut Too
+                     exposure,
+                 );
+             }
++            registry.register_trusted_with_exposure(
++                multi_agent_v2_handler(CloseAgentHandlerV2, tool_namespace),
++                exposure,
++            );
+             registry.register_trusted_with_exposure(
+                 multi_agent_v2_handler(InterruptAgentHandler, tool_namespace),
+                 exposure,
+@@ -1342,6 +1404,7 @@ fn add_collaboration_tools(context: &CoreToolPlanContext<'_>, registry: &mut Too
+                     expose_spawn_agent_model_overrides: true,
+                     multi_agent_version: turn_context.multi_agent_version,
+                     usage_hint_text: turn_context.config.multi_agent_v2.usage_hint_text.clone(),
++                    encrypt_message: true,
+                 }),
+                 exposure,
+             );
+diff --git a/codex-rs/core/src/tools/spec_plan_tests.rs b/codex-rs/core/src/tools/spec_plan_tests.rs
+index c77936f..c3c3ca3 100644
+--- a/codex-rs/core/src/tools/spec_plan_tests.rs
++++ b/codex-rs/core/src/tools/spec_plan_tests.rs
+@@ -3,6 +3,7 @@ use std::collections::BTreeMap;
+ use std::sync::Arc;
+ 
+ use codex_features::Feature;
++use codex_features::MultiAgentV2MessageDelivery;
+ use codex_login::AuthManager;
+ use codex_login::CodexAuth;
+ use codex_mcp::ToolInfo;
+@@ -2745,6 +2746,7 @@ async fn multi_agent_feature_selects_one_agent_tool_family() {
+         "send_message",
+         "followup_task",
+         "wait_agent",
++        "close_agent",
+         "interrupt_agent",
+         "list_agents",
+     ] {
+@@ -2840,6 +2842,41 @@ async fn multi_agent_v2_message_schemas_are_encrypted() {
+     }
+ }
+ 
++#[tokio::test]
++async fn multi_agent_v2_message_schemas_can_be_explicit_plaintext() {
++    let plan = probe(|turn| {
++        set_feature(turn, Feature::MultiAgentV2, /*enabled*/ true);
++        update_config(turn, |config| {
++            config.multi_agent_v2.message_delivery = MultiAgentV2MessageDelivery::Plaintext;
++        });
++    })
++    .await;
++    let ToolSpec::Namespace(namespace) = plan.visible_spec(MULTI_AGENT_V2_NAMESPACE) else {
++        panic!("expected {MULTI_AGENT_V2_NAMESPACE} namespace");
++    };
++    for tool_name in ["spawn_agent", "send_message", "followup_task"] {
++        let Some(ResponsesApiNamespaceTool::Function(tool)) = namespace.tools.iter().find(|tool| {
++            matches!(
++                tool,
++                ResponsesApiNamespaceTool::Function(tool) if tool.name == tool_name
++            )
++        }) else {
++            panic!("expected {tool_name} in {MULTI_AGENT_V2_NAMESPACE} namespace");
++        };
++        let properties = tool
++            .parameters
++            .properties
++            .as_ref()
++            .expect("tool should use object params");
++        assert_eq!(
++            properties
++                .get("message")
++                .and_then(|schema| schema.encrypted),
++            None
++        );
++    }
++}
++
+ #[tokio::test]
+ async fn multi_agent_v2_can_disable_wait_agent() {
+     let plan = probe(|turn| {
+@@ -2853,6 +2890,7 @@ async fn multi_agent_v2_can_disable_wait_agent() {
+     assert_eq!(
+         plan.namespace_function_names(MULTI_AGENT_V2_NAMESPACE),
+         &[
++            "close_agent".to_string(),
+             "followup_task".to_string(),
+             "interrupt_agent".to_string(),
+             "list_agents".to_string(),
+@@ -2957,6 +2995,7 @@ async fn multi_agent_v2_can_use_configured_tool_namespace() {
+         "send_message",
+         "followup_task",
+         "wait_agent",
++        "close_agent",
+         "interrupt_agent",
+         "list_agents",
+     ] {
+@@ -3056,6 +3095,198 @@ async fn multi_agent_v2_bedrock_workers_only_delegate_when_model_supports_v2() {
+     }
+ }
+ 
++#[tokio::test]
++async fn exact_child_provider_mapping_exposes_v2_tools_for_unknown_external_model() {
++    let plan = probe(|turn| {
++        set_feature(turn, Feature::MultiAgentV2, /*enabled*/ true);
++        update_config(turn, |config| {
++            config.multi_agent_v2.child_model_providers.insert(
++                "external_probe".to_string(),
++                config.model_provider_id.clone(),
++            );
++        });
++        update_turn_settings_for_test(turn, |settings| {
++            Arc::make_mut(&mut settings.model_info).slug = "unknown-external-model".to_string();
++            Arc::make_mut(&mut settings.model_info).multi_agent_version = None;
++        });
++        turn.session_source = SessionSource::SubAgent(SubAgentSource::ThreadSpawn {
++            parent_thread_id: ThreadId::new(),
++            depth: 1,
++            agent_path: Some(
++                AgentPath::try_from("/root/external_probe").expect("valid agent path"),
++            ),
++            agent_nickname: None,
++            agent_role: Some("external_probe".to_string()),
++        });
++    })
++    .await;
++
++    assert!(plan.can_manage_children);
++    plan.assert_visible_contains(&[MULTI_AGENT_V2_NAMESPACE]);
++    plan.assert_registered_contains(&[
++        &ToolName::namespaced(MULTI_AGENT_V2_NAMESPACE, "list_agents").to_string(),
++        &ToolName::namespaced(MULTI_AGENT_V2_NAMESPACE, "followup_task").to_string(),
++    ]);
++}
++
++#[tokio::test]
++async fn exact_g4_qualification_role_has_closed_tool_catalog() {
++    let plan = probe_with(
++        |turn| {
++            set_features(
++                turn,
++                &[
++                    Feature::ShellTool,
++                    Feature::RequestPermissionsTool,
++                    Feature::CodeMode,
++                    Feature::CodeModeOnly,
++                    Feature::MultiAgentV2,
++                    Feature::ToolSuggest,
++                    Feature::Apps,
++                    Feature::Plugins,
++                    Feature::StandaloneWebSearch,
++                ],
++            );
++            set_web_search_mode(turn, WebSearchMode::Live);
++            update_turn_settings_for_test(turn, |settings| {
++                Arc::make_mut(&mut settings.model_info).apply_patch_tool_type =
++                    Some(ApplyPatchToolType::Freeform);
++            });
++            update_config(turn, |config| {
++                config.multi_agent_v2.child_model_providers.insert(
++                    "g4_qualification_probe_worker".to_string(),
++                    config.model_provider_id.clone(),
++                );
++                config.multi_agent_v2.tool_namespace = Some("g4_assignment".to_string());
++                config.multi_agent_v2.non_code_mode_only = true;
++            });
++            turn.session_source = SessionSource::SubAgent(SubAgentSource::ThreadSpawn {
++                parent_thread_id: ThreadId::new(),
++                depth: 1,
++                agent_path: Some(
++                    AgentPath::try_from("/root/g4_catalog").expect("valid agent path"),
++                ),
++                agent_nickname: None,
++                agent_role: Some("g4_qualification_probe_worker".to_string()),
++            });
++        },
++        ToolPlanInputs {
++            tool_runtimes: vec![mcp_runtime(
++                "g4_probe_server",
++                "mcp__g4_probe",
++                "lookup",
++                ToolExposure::Direct,
++            )],
++            extension_tool_executors: vec![Arc::new(TestNamespaceExtensionTool {
++                namespace: "g4_extension",
++                tool_name: "lookup",
++            })],
++            dynamic_tools: vec![dynamic_tool(
++                Some("g4_dynamic"),
++                "lookup",
++                /*defer_loading*/ false,
++            )],
++            tool_suggest_candidates: Some(plugin_candidates(ToolSuggestPresentation::ListTool)),
++            ..ToolPlanInputs::default()
++        },
++    )
++    .await;
++
++    let list_agents = ToolName::namespaced("g4_assignment", "list_agents").to_string();
++    assert_eq!(plan.tool_mode, ToolMode::Direct);
++    assert!(!plan.requires_code_mode_worker);
++    assert!(plan.code_mode_tool_names.is_empty());
++    assert!(!plan.can_manage_children);
++    plan.assert_visible_contains(&["apply_patch", "g4_assignment"]);
++    plan.assert_registered_contains(&["apply_patch", &list_agents]);
++    assert_eq!(
++        plan.namespace_function_names("g4_assignment"),
++        &["list_agents".to_string()]
++    );
++    for registered in &plan.registered_names {
++        assert!(
++            matches!(
++                registered.as_str(),
++                "apply_patch"
++                    | "current_time"
++                    | "get_context_remaining"
++                    | "list_agents"
++                    | "view_image"
++            ) || registered == &list_agents,
++            "unexpected callable surface for exact G4 role: {registered}; full catalog: {:?}",
++            plan.registered_names
++        );
++    }
++    plan.assert_visible_lacks(&[
++        "exec_command",
++        "write_stdin",
++        codex_code_mode::PUBLIC_TOOL_NAME,
++        codex_code_mode::WAIT_TOOL_NAME,
++        "tool_search",
++        "g4_dynamic",
++        "g4_extension",
++        "mcp__g4_probe",
++        "web_search",
++    ]);
++    plan.assert_registered_lacks(&[
++        "exec_command",
++        "write_stdin",
++        "request_permissions",
++        "request_user_input",
++        codex_code_mode::PUBLIC_TOOL_NAME,
++        codex_code_mode::WAIT_TOOL_NAME,
++        "tool_search",
++        &ToolName::namespaced("g4_dynamic", "lookup").to_string(),
++        &ToolName::namespaced("g4_extension", "lookup").to_string(),
++        &ToolName::namespaced("mcp__g4_probe", "lookup").to_string(),
++        &ToolName::namespaced("g4_assignment", "spawn_agent").to_string(),
++        &ToolName::namespaced("g4_assignment", "followup_task").to_string(),
++        &ToolName::namespaced("g4_assignment", "send_message").to_string(),
++        &ToolName::namespaced("g4_assignment", "wait_agent").to_string(),
++        &ToolName::namespaced("g4_assignment", "close_agent").to_string(),
++        &ToolName::namespaced("g4_assignment", "interrupt_agent").to_string(),
++    ]);
++}
++
++#[tokio::test]
++async fn child_provider_mapping_must_match_exact_role_and_applied_provider() {
++    for (agent_role, mapped_provider) in [
++        ("other_role", "openai"),
++        ("external_probe", "different_provider"),
++    ] {
++        let plan = probe(|turn| {
++            set_feature(turn, Feature::MultiAgentV2, /*enabled*/ true);
++            update_config(turn, |config| {
++                config
++                    .multi_agent_v2
++                    .child_model_providers
++                    .insert("external_probe".to_string(), mapped_provider.to_string());
++            });
++            update_turn_settings_for_test(turn, |settings| {
++                Arc::make_mut(&mut settings.model_info).slug = "unknown-external-model".to_string();
++                Arc::make_mut(&mut settings.model_info).multi_agent_version = None;
++            });
++            turn.session_source = SessionSource::SubAgent(SubAgentSource::ThreadSpawn {
++                parent_thread_id: ThreadId::new(),
++                depth: 1,
++                agent_path: Some(
++                    AgentPath::try_from("/root/external_probe").expect("valid agent path"),
++                ),
++                agent_nickname: None,
++                agent_role: Some(agent_role.to_string()),
++            });
++        })
++        .await;
++
++        assert!(!plan.can_manage_children);
++        plan.assert_visible_lacks(&[MULTI_AGENT_V2_NAMESPACE, "list_agents"]);
++        plan.assert_registered_lacks(&[
++            &ToolName::namespaced(MULTI_AGENT_V2_NAMESPACE, "list_agents").to_string(),
++            &ToolName::plain("list_agents").to_string(),
++        ]);
++    }
++}
++
+ #[tokio::test]
+ async fn code_mode_only_can_expose_namespaced_multi_agent_v2_as_normal_tools() {
+     let plan = probe(|turn| {
+@@ -3097,6 +3328,7 @@ async fn code_mode_only_can_expose_namespaced_multi_agent_v2_as_normal_tools() {
+         "send_message",
+         "followup_task",
+         "wait_agent",
++        "close_agent",
+         "interrupt_agent",
+         "list_agents",
+     ] {
+diff --git a/codex-rs/core/tests/suite/subagent_notifications.rs b/codex-rs/core/tests/suite/subagent_notifications.rs
+index 4adf018..162d61c 100644
+--- a/codex-rs/core/tests/suite/subagent_notifications.rs
++++ b/codex-rs/core/tests/suite/subagent_notifications.rs
+@@ -5,6 +5,7 @@ use codex_core::TurnInputRequest;
+ use codex_core::config::AgentRoleConfig;
+ use codex_core::config::CurrentTimeReminderConfig;
+ use codex_features::Feature;
++use codex_features::MultiAgentV2MessageDelivery;
+ use codex_history::RolloutItem;
+ use codex_models_manager::bundled_models_response;
+ use codex_protocol::ThreadId;
+@@ -2084,14 +2085,16 @@ async fn spawned_multi_agent_v2_child_inherits_parent_developer_context() -> Res
+     Ok(())
+ }
+ 
+-#[test_case(None, false; "encrypted")]
+-#[test_case(None, true; "plaintext")]
+-#[test_case(Some("gpt-5.6-luna"), false; "luna encrypted leaf")]
+-#[test_case(Some("gpt-5.5"), false; "legacy encrypted leaf")]
++#[test_case(None, false, None; "encrypted")]
++#[test_case(None, true, None; "plaintext")]
++#[test_case(None, true, Some("g4_assignment"); "plaintext custom namespace")]
++#[test_case(Some("gpt-5.6-luna"), false, None; "luna encrypted leaf")]
++#[test_case(Some("gpt-5.5"), false, None; "legacy encrypted leaf")]
+ #[tokio::test]
+ async fn multi_agent_v2_spawn_sends_agent_message_to_child(
+     model: Option<&str>,
+     plaintext: bool,
++    tool_namespace: Option<&str>,
+ ) -> Result<()> {
+     let output: &'static Mutex<Vec<u8>> = Box::leak(Box::new(Mutex::new(Vec::new())));
+     let subscriber = tracing_subscriber::fmt()
+@@ -2118,13 +2121,16 @@ async fn multi_agent_v2_spawn_sends_agent_message_to_child(
+         }
+     }
+     let spawn_args = serde_json::to_string(&spawn_args)?;
+-    let mut spawn_event = ev_function_call_with_namespace(
+-        SPAWN_CALL_ID,
+-        MULTI_AGENT_V2_NAMESPACE,
+-        "spawn_agent",
+-        &spawn_args,
++    let plaintext_envelope = format!(
++        "Message Type: NEW_TASK\nTask name: /root/worker\nSender: /root\nPayload:\n{message}"
+     );
+-    if plaintext {
++    let tool_namespace = tool_namespace
++        .unwrap_or(MULTI_AGENT_V2_NAMESPACE)
++        .to_string();
++    let configured_plaintext = plaintext && tool_namespace != MULTI_AGENT_V2_NAMESPACE;
++    let mut spawn_event =
++        ev_function_call_with_namespace(SPAWN_CALL_ID, &tool_namespace, "spawn_agent", &spawn_args);
++    if plaintext && !configured_plaintext {
+         spawn_event["item"]["encrypted_function_args"] = json!([]);
+     }
+     mount_sse_once_match(
+@@ -2139,7 +2145,16 @@ async fn multi_agent_v2_spawn_sends_agent_message_to_child(
+     .await;
+     let child_request_log = mount_sse_once_match(
+         &server,
+-        |req: &wiremock::Request| request_has_input_type(req, "agent_message"),
++        {
++            let plaintext_envelope = plaintext_envelope.clone();
++            move |req: &wiremock::Request| {
++                if plaintext {
++                    body_contains(req, &plaintext_envelope)
++                } else {
++                    request_has_input_type(req, "agent_message")
++                }
++            }
++        },
+         sse(vec![
+             ev_response_created("resp-child-1"),
+             ev_completed("resp-child-1"),
+@@ -2164,16 +2179,23 @@ async fn multi_agent_v2_spawn_sends_agent_message_to_child(
+     } else {
+         "koffing"
+     };
+-    let mut builder = test_codex().with_model(parent_model).with_config(|config| {
+-        config
+-            .features
+-            .enable(Feature::Collab)
+-            .expect("test config should allow feature update");
+-        config
+-            .features
+-            .enable(Feature::MultiAgentV2)
+-            .expect("test config should allow feature update");
+-    });
++    let configured_namespace = tool_namespace.clone();
++    let mut builder = test_codex()
++        .with_model(parent_model)
++        .with_config(move |config| {
++            config
++                .features
++                .enable(Feature::Collab)
++                .expect("test config should allow feature update");
++            config
++                .features
++                .enable(Feature::MultiAgentV2)
++                .expect("test config should allow feature update");
++            config.multi_agent_v2.tool_namespace = Some(configured_namespace);
++            if configured_plaintext {
++                config.multi_agent_v2.message_delivery = MultiAgentV2MessageDelivery::Plaintext;
++            }
++        });
+     let test = builder.build(&server).await?;
+     let root_thread_id = test.session_configured.thread_id;
+ 
+@@ -2183,11 +2205,13 @@ async fn multi_agent_v2_spawn_sends_agent_message_to_child(
+     // the child request instead of assuming the latest recorded request is already it.
+     let deadline = Instant::now() + Duration::from_secs(2);
+     let child_request = loop {
+-        if let Some(request) = child_request_log
+-            .requests()
+-            .into_iter()
+-            .find(|request| !request.inputs_of_type("agent_message").is_empty())
+-        {
++        if let Some(request) = child_request_log.requests().into_iter().find(|request| {
++            if plaintext {
++                request.body_contains_text(&plaintext_envelope)
++            } else {
++                !request.inputs_of_type("agent_message").is_empty()
++            }
++        }) {
+             break request;
+         }
+         if Instant::now() >= deadline {
+@@ -2195,15 +2219,20 @@ async fn multi_agent_v2_spawn_sends_agent_message_to_child(
+         }
+         sleep(Duration::from_millis(10)).await;
+     };
+-    let content = if plaintext {
+-        vec![json!({
+-            "type": "input_text",
+-            "text": format!(
+-                "Message Type: NEW_TASK\nTask name: /root/worker\nSender: /root\nPayload:\n{message}"
+-            ),
+-        })]
++    if plaintext {
++        assert!(child_request.input().iter().any(|item| {
++            item["type"] == "message"
++                && item["role"] == "user"
++                && item["content"].as_array().is_some_and(|content| {
++                    content.iter().any(|part| {
++                        part["type"] == "input_text"
++                            && part["text"].as_str() == Some(plaintext_envelope.as_str())
++                    })
++                })
++        }));
++        assert!(child_request.inputs_of_type("agent_message").is_empty());
+     } else {
+-        vec![
++        let content = vec![
+             json!({
+                 "type": "input_text",
+                 "text": "Message Type: NEW_TASK\nTask name: /root/worker\nSender: /root\nPayload:\n",
+@@ -2212,19 +2241,19 @@ async fn multi_agent_v2_spawn_sends_agent_message_to_child(
+                 "type": "encrypted_content",
+                 "encrypted_content": message,
+             }),
+-        ]
+-    };
+-    assert_eq!(
+-        strip_response_item_ids_from_json(strip_metadata_from_json(Value::Array(
+-            child_request.inputs_of_type("agent_message"),
+-        ))),
+-        Value::Array(vec![json!({
+-            "type": "agent_message",
+-            "author": "/root",
+-            "recipient": "/root/worker",
+-            "content": content,
+-        })])
+-    );
++        ];
++        assert_eq!(
++            strip_response_item_ids_from_json(strip_metadata_from_json(Value::Array(
++                child_request.inputs_of_type("agent_message"),
++            ))),
++            Value::Array(vec![json!({
++                "type": "agent_message",
++                "author": "/root",
++                "recipient": "/root/worker",
++                "content": content,
++            })])
++        );
++    }
+     if let Some(model) = model {
+         assert_eq!(child_request.body_json()["model"], json!(model));
+         assert!(
+@@ -2236,14 +2265,19 @@ async fn multi_agent_v2_spawn_sends_agent_message_to_child(
+         );
+     }
+     if plaintext {
++        let expected_encryption_marker = if configured_plaintext {
++            Value::Null
++        } else {
++            json!([])
++        };
+         assert!(
+             parent_request_log.requests().into_iter().any(|request| {
+                 request.input().iter().any(|item| {
+                     item["call_id"].as_str() == Some(SPAWN_CALL_ID)
+-                        && item["encrypted_function_args"] == json!([])
++                        && item["encrypted_function_args"] == expected_encryption_marker
+                 })
+             }),
+-            "plaintext function-call metadata should survive replay"
++            "the live-shaped encryption marker should survive replay"
+         );
+     }
+ 
+diff --git a/codex-rs/features/src/feature_configs.rs b/codex-rs/features/src/feature_configs.rs
+index 32d3cba..b9fed88 100644
+--- a/codex-rs/features/src/feature_configs.rs
++++ b/codex-rs/features/src/feature_configs.rs
+@@ -73,6 +73,14 @@ impl FeatureConfig for NonPrefixedMcpToolNamesConfigToml {
+     }
+ }
+ 
++#[derive(Serialize, Deserialize, Debug, Clone, Copy, Default, PartialEq, Eq, JsonSchema)]
++#[serde(rename_all = "snake_case")]
++pub enum MultiAgentV2MessageDelivery {
++    #[default]
++    Encrypted,
++    Plaintext,
++}
++
+ /// Optional conversation sources available to the Guardian v2 classifier.
+ #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, JsonSchema)]
+ #[serde(rename_all = "snake_case")]
+@@ -285,6 +293,14 @@ pub struct MultiAgentV2ConfigToml {
+     pub wait_agent_enabled: Option<bool>,
+     #[serde(skip_serializing_if = "Option::is_none")]
+     pub non_code_mode_only: Option<bool>,
++    /// Controls whether collaboration message arguments use encrypted or explicit plaintext
++    /// Responses function arguments. Defaults to encrypted.
++    #[serde(skip_serializing_if = "Option::is_none")]
++    pub message_delivery: Option<MultiAgentV2MessageDelivery>,
++    /// Exact agent-role to model-provider selections authorized by the parent session.
++    /// An absent role keeps the inherited parent provider.
++    #[serde(skip_serializing_if = "Option::is_none")]
++    pub child_model_providers: Option<BTreeMap<String, String>>,
+ }
+ 
+ impl FeatureConfig for MultiAgentV2ConfigToml {
+diff --git a/codex-rs/features/src/lib.rs b/codex-rs/features/src/lib.rs
+index fdeae5c..05d0858 100644
+--- a/codex-rs/features/src/lib.rs
++++ b/codex-rs/features/src/lib.rs
+@@ -27,6 +27,7 @@ pub use feature_configs::GuardianV2ReviewScopeConfigToml;
+ pub use feature_configs::GuardianV2TranscriptConfigToml;
+ pub use feature_configs::GuardianV2TranscriptSource;
+ pub use feature_configs::MultiAgentV2ConfigToml;
++pub use feature_configs::MultiAgentV2MessageDelivery;
+ pub use feature_configs::NetworkProxyConfigToml;
+ pub use feature_configs::NetworkProxyDomainPermissionToml;
+ pub use feature_configs::NetworkProxyModeToml;
+diff --git a/codex-rs/features/src/tests.rs b/codex-rs/features/src/tests.rs
+index 5ad5132..b475dc8 100644
+--- a/codex-rs/features/src/tests.rs
++++ b/codex-rs/features/src/tests.rs
+@@ -655,6 +655,10 @@ hide_spawn_agent_metadata = true
+ expose_spawn_agent_model_overrides = true
+ wait_agent_enabled = false
+ non_code_mode_only = true
++message_delivery = "plaintext"
++
++[multi_agent_v2.child_model_providers]
++zhipu_probe_worker = "zhipu"
+ "#,
+     )
+     .expect("features table should deserialize");
+@@ -682,6 +686,11 @@ non_code_mode_only = true
+             expose_spawn_agent_model_overrides: Some(true),
+             wait_agent_enabled: Some(false),
+             non_code_mode_only: Some(true),
++            message_delivery: Some(crate::MultiAgentV2MessageDelivery::Plaintext),
++            child_model_providers: Some(BTreeMap::from([(
++                "zhipu_probe_worker".to_string(),
++                "zhipu".to_string(),
++            )])),
+         }))
+     );
+ }
+diff --git a/codex-rs/protocol/src/protocol.rs b/codex-rs/protocol/src/protocol.rs
+index ae2107b..fc88340 100644
+--- a/codex-rs/protocol/src/protocol.rs
++++ b/codex-rs/protocol/src/protocol.rs
+@@ -879,29 +879,39 @@ impl InterAgentCommunication {
+     }
+ 
+     pub fn to_model_input_item(&self) -> ResponseItem {
+-        let content = match &self.encrypted_content {
+-            Some(encrypted_content) => {
+-                let message_type = if self.trigger_turn {
+-                    "NEW_TASK"
+-                } else {
+-                    "MESSAGE"
+-                };
+-                vec![
+-                    AgentMessageInputContent::InputText {
+-                        text: format!(
+-                            "Message Type: {message_type}\nTask name: {}\nSender: {}\nPayload:\n",
+-                            self.recipient, self.author
+-                        ),
+-                    },
+-                    AgentMessageInputContent::EncryptedContent {
+-                        encrypted_content: encrypted_content.clone(),
+-                    },
+-                ]
+-            }
+-            None => vec![AgentMessageInputContent::InputText {
+-                text: self.content.clone(),
+-            }],
++        let Some(encrypted_content) = &self.encrypted_content else {
++            // The ChatGPT agent-message wire is an encrypted transport. Plaintext
++            // compatibility messages retain their durable inter-agent envelope in
++            // the rollout, but enter model context through the supported user-message
++            // wire instead of masquerading as encrypted agent content.
++            return ResponseItem::Message {
++                id: self.id.clone(),
++                role: "user".to_string(),
++                content: vec![ContentItem::InputText {
++                    text: self.content.clone(),
++                }],
++                phase: None,
++                internal_chat_message_metadata_passthrough: self
++                    .internal_chat_message_metadata_passthrough
++                    .clone(),
++            };
++        };
++        let message_type = if self.trigger_turn {
++            "NEW_TASK"
++        } else {
++            "MESSAGE"
+         };
++        let content = vec![
++            AgentMessageInputContent::InputText {
++                text: format!(
++                    "Message Type: {message_type}\nTask name: {}\nSender: {}\nPayload:\n",
++                    self.recipient, self.author
++                ),
++            },
++            AgentMessageInputContent::EncryptedContent {
++                encrypted_content: encrypted_content.clone(),
++            },
++        ];
+         ResponseItem::AgentMessage {
+             id: self.id.clone(),
+             author: self.author.to_string(),
+@@ -4654,6 +4664,34 @@ mod tests {
+         );
+     }
+ 
++    #[test]
++    fn plaintext_inter_agent_communication_uses_supported_user_message_wire() {
++        let mut communication = InterAgentCommunication::new(
++            AgentPath::root(),
++            AgentPath::root().join("worker").expect("recipient path"),
++            Vec::new(),
++            "Message Type: NEW_TASK\nTask name: /root/worker\nSender: /root\nPayload:\nread only"
++                .to_string(),
++            /*trigger_turn*/ true,
++        );
++        communication.set_turn_id_if_missing("turn-1");
++
++        assert_eq!(
++            communication.to_model_input_item(),
++            ResponseItem::Message {
++                id: None,
++                role: "user".to_string(),
++                content: vec![ContentItem::InputText {
++                    text: communication.content.clone(),
++                }],
++                phase: None,
++                internal_chat_message_metadata_passthrough: communication
++                    .internal_chat_message_metadata_passthrough
++                    .clone(),
++            }
++        );
++    }
++
+     #[test]
+     fn session_source_from_startup_arg_normalizes_custom_values() {
+         assert_eq!(

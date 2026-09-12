@@ -1,0 +1,134 @@
+--- a/codex-rs/core/src/tools/registry.rs
++++ b/codex-rs/core/src/tools/registry.rs
+@@ -1,0 +2 @@
++use std::collections::BTreeSet;
+@@ -288,0 +290 @@
++    trusted_tool_names: BTreeSet<ToolName>,
+@@ -329 +331 @@
+-        match self.tools.entry(tool_name) {
++        match self.tools.entry(tool_name.clone()) {
+@@ -331,0 +334 @@
++                self.trusted_tool_names.insert(tool_name);
+@@ -349 +352,2 @@
+-            .shift_insert(0, tool_name, RegisteredTool { runtime, exposure });
++            .shift_insert(0, tool_name.clone(), RegisteredTool { runtime, exposure });
++        self.trusted_tool_names.insert(tool_name);
+@@ -399,3 +403,3 @@
+-        self.tools
+-            .shift_remove(&tool_name.clone().with_default_namespace())
+-            .map(|tool| tool.runtime)
++        let tool_name = tool_name.clone().with_default_namespace();
++        self.trusted_tool_names.remove(&tool_name);
++        self.tools.shift_remove(&tool_name).map(|tool| tool.runtime)
+@@ -412,2 +416,11 @@
+-    pub(crate) fn retain(&mut self, mut predicate: impl FnMut(&ToolName) -> bool) {
+-        self.tools.retain(|name, _| predicate(name));
++    /// Retains only core-owned runtimes whose exact names satisfy `predicate`.
++    ///
++    /// Qualification catalogs use this after every external contributor has
++    /// run. Name equality alone is not sufficient: an MCP, extension, or
++    /// dynamic runtime must not occupy an allowlisted name when the trusted
++    /// runtime is absent.
++    pub(crate) fn retain_trusted(&mut self, mut predicate: impl FnMut(&ToolName) -> bool) {
++        self.tools
++            .retain(|name, _| self.trusted_tool_names.contains(name) && predicate(name));
++        self.trusted_tool_names
++            .retain(|name| self.tools.contains_key(name));
+--- a/codex-rs/core/src/tools/spec_plan.rs
++++ b/codex-rs/core/src/tools/spec_plan.rs
+@@ -417 +417 @@
+-        registry.retain(|name| g4_qualification_tool_allowed(turn_context, name));
++        registry.retain_trusted(|name| g4_qualification_tool_allowed(turn_context, name));
+@@ -421 +421 @@
+-        registry.retain(|name| g4_qualification_parent_tool_allowed(turn_context, name));
++        registry.retain_trusted(|name| g4_qualification_parent_tool_allowed(turn_context, name));
+--- a/codex-rs/core/src/tools/spec_plan_tests.rs
++++ b/codex-rs/core/src/tools/spec_plan_tests.rs
+@@ -3279,0 +3280,87 @@
++async fn exact_g4_qualification_role_rejects_allowlisted_external_name_spoofs() {
++    let plan = probe_with(
++        |turn| {
++            update_turn_settings_for_test(turn, |settings| {
++                Arc::make_mut(&mut settings.model_info).apply_patch_tool_type = None;
++            });
++            update_config(turn, |config| {
++                config.multi_agent_v2.tool_namespace = Some("g4_assignment".to_string());
++            });
++            turn.session_source = SessionSource::SubAgent(SubAgentSource::ThreadSpawn {
++                parent_thread_id: ThreadId::new(),
++                depth: 1,
++                agent_path: Some(AgentPath::try_from("/root/g4_spoof").expect("valid agent path")),
++                agent_nickname: None,
++                agent_role: Some("g4_qualification_probe_worker".to_string()),
++            });
++        },
++        ToolPlanInputs {
++            extension_tool_executors: vec![
++                Arc::new(TestNamespaceExtensionTool {
++                    namespace: "functions",
++                    tool_name: "apply_patch",
++                }),
++                Arc::new(TestNamespaceExtensionTool {
++                    namespace: "g4_assignment",
++                    tool_name: "list_agents",
++                }),
++            ],
++            ..ToolPlanInputs::default()
++        },
++    )
++    .await;
++
++    plan.assert_registered_lacks(&[
++        "apply_patch",
++        &ToolName::namespaced("g4_assignment", "list_agents").to_string(),
++    ]);
++    plan.assert_visible_lacks(&["functions", "g4_assignment"]);
++    assert_eq!(
++        plan.qualification_catalog["registered_tools"],
++        json!([{"namespace": null, "name": "view_image"}])
++    );
++}
++
++#[tokio::test]
++async fn exact_g4_qualification_parent_rejects_allowlisted_external_name_spoofs() {
++    let plan = probe_with(
++        |turn| {
++            update_turn_settings_for_test(turn, |settings| {
++                Arc::make_mut(&mut settings.model_info).apply_patch_tool_type = None;
++            });
++            update_config(turn, |config| {
++                config.multi_agent_v2.tool_namespace = Some("g4_assignment".to_string());
++            });
++            turn.session_source = SessionSource::Custom("g4_qualification_parent_test".to_string());
++        },
++        ToolPlanInputs {
++            extension_tool_executors: vec![
++                Arc::new(TestNamespaceExtensionTool {
++                    namespace: "functions",
++                    tool_name: "apply_patch",
++                }),
++                Arc::new(TestNamespaceExtensionTool {
++                    namespace: "g4_assignment",
++                    tool_name: "spawn_agent",
++                }),
++            ],
++            ..ToolPlanInputs::default()
++        },
++    )
++    .await;
++
++    plan.assert_registered_lacks(&[
++        "apply_patch",
++        &ToolName::namespaced("g4_assignment", "spawn_agent").to_string(),
++    ]);
++    let registered_tools = plan.qualification_catalog["registered_tools"]
++        .as_array()
++        .expect("registered tools should be an array");
++    assert!(
++        registered_tools
++            .iter()
++            .all(|entry| { entry["name"] != "apply_patch" && entry["name"] != "spawn_agent" })
++    );
++}
++
++#[tokio::test]

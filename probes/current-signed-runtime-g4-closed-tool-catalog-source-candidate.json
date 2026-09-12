@@ -1,0 +1,111 @@
+{
+  "schema": 1,
+  "as_of": "2026-09-08",
+  "purpose": "Isolated current-source candidate that closes the exact G4 qualification child's callable tool catalog before live mutation mediation; it does not grant direct-write authority.",
+  "source": {
+    "repository": "https://github.com/openai/codex",
+    "commit": "3d2ee51ca2d5db578f328aa75e20aa22c0197c9a",
+    "semantic_runtime_version": "codex-cli 0.153.4",
+    "tree": "/private/tmp/codex-current-plaintext.aTU9C2/source"
+  },
+  "reconstruction": {
+    "patch": "probes/current-signed-runtime-g4-closed-tool-catalog-source-candidate.patch",
+    "patch_sha256": "fb9f65f0a6ac7b41a906b828dcdf39c614b9bbb2c2f616947b0da24132a0c21b",
+    "patch_bytes": 81983,
+    "patch_lines": 2064,
+    "changed_path_count": 24,
+    "cargo_lock_included": false,
+    "reverse_apply_check": "pass",
+    "predecessor": "probes/current-signed-runtime-session-close-source-candidate.json"
+  },
+  "tool_catalog_contract": {
+    "role": "g4_qualification_probe_worker",
+    "identity_source": "TurnContext.session_source.get_agent_role",
+    "exact_role_match_required": true,
+    "tool_mode": "direct",
+    "default_namespace_allowlist": [
+      "apply_patch",
+      "current_time",
+      "get_context_remaining",
+      "list_agents",
+      "view_image"
+    ],
+    "configured_v2_namespace_allowlist": [
+      "list_agents"
+    ],
+    "registry_pruned_after_core_mcp_extension_dynamic_and_tool_search_contributions": true,
+    "hosted_specs_removed": true,
+    "code_mode_tool_map_empty": true,
+    "requires_code_mode_worker": false,
+    "can_manage_children": false,
+    "excluded_classes": [
+      "shell and terminal controls",
+      "code mode and nested code-mode tools",
+      "MCP tools",
+      "extension tools",
+      "dynamic tools",
+      "tool discovery",
+      "hosted web and image tools",
+      "spawn, message, followup, wait, close, and interrupt agent control"
+    ],
+    "grants_mutation_authority": false,
+    "changes_non_g4_roles": false
+  },
+  "verification": {
+    "focused_rust": {
+      "command": "RUST_MIN_STACK=16777216 cargo test -p codex-core exact_g4_qualification_role_has_closed_tool_catalog -- --nocapture",
+      "result": "pass: 1 selected test; 2454 filtered out"
+    },
+    "spec_plan_regression": {
+      "command": "RUST_MIN_STACK=16777216 cargo test -p codex-core tools::spec_plan::tests:: -- --nocapture",
+      "result": "pass: 59 tests"
+    },
+    "tested_open_surfaces": [
+      "ShellTool",
+      "RequestPermissionsTool",
+      "CodeMode",
+      "CodeModeOnly",
+      "MultiAgentV2",
+      "ToolSuggest",
+      "Apps",
+      "Plugins",
+      "StandaloneWebSearch",
+      "MCP runtime",
+      "extension runtime",
+      "dynamic runtime"
+    ],
+    "known_unrelated_warning": "codex-core all-test target reports one pre-existing unused body_json import"
+  },
+  "candidate": {
+    "path": "/private/tmp/codex-current-plaintext.aTU9C2/candidate-closed-catalog/codex",
+    "sha256": "90dbd98a2eb12328f6febf4eb52e1cf67ec10cda049841d16dcf7f25abb3420d",
+    "bytes": 589719816,
+    "build_profile": "dev",
+    "build_command": "RUST_MIN_STACK=16777216 cargo build -p codex-cli --bin codex",
+    "selected_as_gui_app_server": false,
+    "installed_live": false,
+    "build_cache_removed_after_verification": true,
+    "build_cache_removed_bytes": "23.8GiB",
+    "candidate_preserved_after_cleanup": true
+  },
+  "live_boundary": {
+    "receipt": "probes/g4-live-closed-tool-catalog-apply-patch-denial-20260908.json",
+    "exact_role_apply_patch_call_observed": true,
+    "pretool_denied_before_execution": true,
+    "fallback_shell_or_code_mode_call_observed": false,
+    "target_bytes_mutated": false,
+    "parent_callback_observed": true,
+    "candidate_exit_code": 0
+  },
+  "verdict": {
+    "source_closed_catalog_qualified": true,
+    "live_apply_patch_visibility_and_read_only_mediation_qualified": true,
+    "full_live_catalog_absence_qualified": false,
+    "positive_child_write_qualified": false,
+    "strong_mutation_quiescence_qualified": false,
+    "phase1_complete": false,
+    "direct_write_qualified": false,
+    "phase2_state": "closed",
+    "phase3_state": "closed"
+  }
+}

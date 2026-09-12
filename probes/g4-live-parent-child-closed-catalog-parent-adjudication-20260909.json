@@ -1,0 +1,42 @@
+{
+  "schema": 1,
+  "evidence_kind": "g4_live_parent_child_closed_catalog_fresh_owner_adjudication",
+  "assignment_id": "d12d82cc-b31f-4083-91fd-383907a2566f",
+  "input": {
+    "path": "probes/g4-live-parent-child-closed-catalog-20260909.json",
+    "sha256": "bc21e22734bc4363a240ada77137e2bf85f3b099b0085527cab413b6a1089a1e"
+  },
+  "fresh_owner": {
+    "location_integrity": "pass",
+    "mutation_scope_integrity": "pass",
+    "verification_freshness": "pass",
+    "derivation_provenance_integrity": "pass",
+    "feasibility_contract_integrity": "pass"
+  },
+  "state_transition": {
+    "before": "reported",
+    "after": "consumed",
+    "consumed_envelope_path": "/Users/pearly/.codex/state/codex-deepseek-subagent-g4/consumed/d12d82cc-b31f-4083-91fd-383907a2566f.json",
+    "consumed_envelope_sha256": "f6722a6a542560879ddbb0aca7784af577fa7f5f247e845234b9cbf3e4563723",
+    "reported_envelope_sha256_before_adjudication": "833bd56d3e37591c906a534aae736ad875baad24ca5559b4cdaa15662252bf86",
+    "reported_exists_after_adjudication": false
+  },
+  "authority": {
+    "worker_narrative_is_integration_authority": false,
+    "runtime_catalog_receipts_are_boundary_evidence": true,
+    "writer_receipt_is_contribution_evidence": true,
+    "fresh_owner_disk_and_state_adjudication_required": true,
+    "global_direct_write_promoted": false
+  },
+  "verdict": {
+    "one_parent_child_closed_catalog_contribution_consumed": true,
+    "catalog_closed_actor_set_qualified_for_this_run": true,
+    "posttooluse_stop_callback_continuity_qualified_for_this_run": true,
+    "strong_global_quiescence_qualified": false,
+    "all_mutation_surfaces_qualified": false,
+    "phase1_complete": false,
+    "direct_write_qualified": false,
+    "phase2_state": "closed",
+    "phase3_state": "closed"
+  }
+}
