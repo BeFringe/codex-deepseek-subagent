@@ -1,0 +1,57 @@
+{
+  "schema": 1,
+  "evidence_kind": "current_signed_runtime_compact_resume_parent_adjudication",
+  "assignment_id": "94ebad83-b11e-47d9-bda6-3d0851eac953",
+  "input": {
+    "path": "probes/g4-live-compact-resume-20260908.json",
+    "sha256": "12052fcdfd17ea604ab195f7dcd99c684c744bc8f66974642413f0358734ff6e"
+  },
+  "fresh_owner": {
+    "location_integrity": "pass",
+    "mutation_scope_integrity": "pass",
+    "verification_freshness": "pass",
+    "derivation_provenance_integrity": "pass",
+    "feasibility_contract_integrity": "pass"
+  },
+  "state_transition": {
+    "before": "reported",
+    "after": "consumed",
+    "consumed_envelope_sha256": "52687cb5bb2e15c2425a0654ebc1249320a4b8e58170c314163984ca7fa4e41e"
+  },
+  "authority": {
+    "worker_narrative_is_integration_authority": false,
+    "final_attestation_is_contribution_evidence": true,
+    "fresh_owner_disk_rollout_hook_and_state_adjudication_required": true,
+    "global_direct_write_promoted": false
+  },
+  "verification": {
+    "provider_free_suite": {
+      "command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPYCACHEPREFIX=/private/tmp/codex-pycache-phase1-compact-final-20260908 python3 -m unittest discover -s tests -p 'test_*.py'",
+      "test_count": 578,
+      "duration_seconds": 59.160,
+      "exit_code": 0,
+      "agent_template_checks": "passed"
+    },
+    "phase1_gate_normal_exit_code": 0,
+    "phase1_gate_require_complete_exit_code": 2,
+    "mutation_matrix_normal_exit_code": 0,
+    "mutation_matrix_blocker_count": 13,
+    "mutation_matrix_require_qualified_exit_code": 2,
+    "same_uid_probe_exit_code": 0,
+    "same_uid_require_protected_exit_code": 2,
+    "same_uid_rollout_protected": false,
+    "same_uid_state_protected": false
+  },
+  "verdict": {
+    "one_live_compact_resume_contribution_consumed": true,
+    "process_restart_resume_qualified": false,
+    "postcompact_scope_expansion_negative_live_qualified": false,
+    "representative_dense_cost_qualified": false,
+    "mixed_frontier_qualified": false,
+    "strong_global_quiescence_qualified": false,
+    "phase1_complete": false,
+    "direct_write_qualified": false,
+    "phase2_state": "closed",
+    "phase3_state": "closed"
+  }
+}

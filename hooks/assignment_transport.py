@@ -4,6 +4,9 @@
 
 from __future__ import annotations
 
+import tempfile
+import sys
+
 import datetime as dt
 import hashlib
 import json
@@ -19,10 +22,19 @@ from compatibility_state import (
     capsule_sha256,
     canonical_json,
     git_snapshot_sha256,
+    QUALIFICATION_WRITE_CONSENT_SOURCE,
+    qualification_write_consent_receipt_sha256,
     sha256_bytes,
 )
 from compatibility_state import compact_invariant
-from runtime_guard import GuardError, _git, child_identity_from_hook, collect_git_snapshot, read_session_meta
+from runtime_guard import (
+    GuardError,
+    _git,
+    child_identity_from_hook,
+    collect_git_snapshot,
+    final_attestation_seed,
+    read_session_meta,
+)
 
 
 AUTHORITY_RE = re.compile(
@@ -31,6 +43,8 @@ AUTHORITY_RE = re.compile(
 )
 AUTHORITY_FIELDS = {
     "schema",
+    "assignment_mutation_mode",
+    "parent_recorded_user_write_intent",
     "owned_paths",
     "excluded_paths",
     "git_authority",
@@ -45,6 +59,19 @@ AUTHORITY_FIELDS = {
 GIT_AUTHORITY_FIELDS = {"stage", "commit", "branch", "push"}
 TASK_NAME_RE = re.compile(r"^[a-z0-9_]+$")
 GIT_OID_RE = re.compile(r"^(?:[0-9a-f]{40}|[0-9a-f]{64})$")
+PLAINTEXT_COMPAT_TOOL_NAMESPACE = "g4_assignment"
+PLAINTEXT_COMPAT_SPAWN_TOOL_NAME = f"{PLAINTEXT_COMPAT_TOOL_NAMESPACE}spawn_agent"
+QUALIFICATION_WRITE_PROBE_VERIFICATION = "exact-path child apply_patch qualification probe"
+QUALIFICATION_HANDOVER_WRITE_PROBE_VERIFICATION = (
+    "exact-path post-quiescence child handover qualification probe"
+)
+QUALIFICATION_HANDOVER_INVARIANT = "exact prior quiescence barrier handover"
+SPAWN_TOOL_NAMES = {
+    "spawn_agent",
+    "Agent",
+    "collaborationspawn_agent",
+    PLAINTEXT_COMPAT_SPAWN_TOOL_NAME,
+}
 LOCATION_PREFLIGHT_FIELDS = {
     "expected_root",
     "expected_branch",
@@ -78,6 +105,16 @@ def parse_authority_declaration(message: object) -> dict:
         raise GuardError("authority declaration fields are not exact")
     if value.get("schema") != 1:
         raise GuardError("authority declaration schema is invalid")
+    mutation_mode = value.get("assignment_mutation_mode")
+    if mutation_mode not in {"read_only", "write"}:
+        raise GuardError("assignment_mutation_mode must be read_only or write")
+    parent_intent = value.get("parent_recorded_user_write_intent")
+    if parent_intent not in {"deny", "allow"}:
+        raise GuardError("parent_recorded_user_write_intent must be deny or allow")
+    if mutation_mode == "read_only" and parent_intent != "deny":
+        raise GuardError("read-only assignment cannot record user write intent")
+    if mutation_mode == "write" and parent_intent != "allow":
+        raise GuardError("write assignment lacks parent-recorded explicit user intent")
     ttl_seconds = value.get("ttl_seconds")
     if type(ttl_seconds) is not int or not 1 <= ttl_seconds <= 3600:
         raise GuardError("authority ttl_seconds must be between 1 and 3600")
@@ -170,6 +207,11 @@ def _check_execution_contract(
         raise GuardError("execution_contract must be an object")
     posture = execution.get("posture")
     review_range = execution.get("review_range")
+    mutation_mode = declaration["assignment_mutation_mode"]
+    if mutation_mode == "read_only" and posture != "strict_read_only":
+        raise GuardError("read-only mutation mode requires strict_read_only posture")
+    if mutation_mode == "write" and posture != "direct_write_unqualified":
+        raise GuardError("write mutation mode requires direct_write_unqualified posture")
     if posture == "strict_read_only":
         if snapshot["index_changed"] or snapshot["git_status_short"] or snapshot["changed_paths"]:
             raise GuardError("strict read-only review requires a clean captured worktree")
@@ -282,7 +324,13 @@ def _parent_runtime_identity(hook_input: Mapping[str, object]) -> tuple[dict, st
     if not isinstance(parent_path, str) or not parent_path:
         if meta.get("parent_thread_id") is not None:
             raise GuardError("nested parent SessionMeta has no canonical AgentPath")
+        if meta["id"] != session_id:
+            raise GuardError("root parent SessionMeta id does not match Hook session_id")
         parent_path = "/root"
+    else:
+        hook_agent_type = hook_input.get("agent_type")
+        if hook_agent_id is None or hook_agent_type != meta.get("agent_role"):
+            raise GuardError("nested spawn Hook lacks exact parent identity")
     return meta, parent_path.rstrip("/")
 
 
@@ -292,10 +340,12 @@ def capture_spawn(
     *,
     plaintext_agent_types: Collection[str],
     now: dt.datetime | None = None,
+    qualification_write_probes: Mapping[str, Path] | None = None,
+    qualification_handover_write_probes: Mapping[str, Path] | None = None,
 ) -> dict:
     if hook_input.get("hook_event_name") != "PreToolUse":
         return {}
-    if hook_input.get("tool_name") != "spawn_agent":
+    if hook_input.get("tool_name") not in SPAWN_TOOL_NAMES:
         return {}
     tool_input = hook_input.get("tool_input")
     if not isinstance(tool_input, dict):
@@ -314,12 +364,78 @@ def capture_spawn(
         if tool_input.get("fork_turns") != "none":
             raise GuardError("plaintext-v2 spawn requires fork_turns=none")
         parent_meta, parent_path = _parent_runtime_identity(hook_input)
+        parent_turn_id = hook_input.get("turn_id")
         cwd = hook_input.get("cwd")
         if not isinstance(cwd, str):
             raise GuardError("spawn Hook has no cwd")
         snapshot = collect_git_snapshot(cwd)
         _check_location_preflight(snapshot, declaration["location_preflight"])
         _check_execution_contract(Path(snapshot["root"]), snapshot, declaration)
+        qualification_target = (
+            qualification_write_probes.get(requested_task_name)
+            if qualification_write_probes
+            else None
+        )
+        handover_target = (
+            qualification_handover_write_probes.get(requested_task_name)
+            if qualification_handover_write_probes
+            else None
+        )
+        if qualification_target is not None and handover_target is not None:
+            raise GuardError("write probe task has two qualification ceilings")
+        qualification_target = qualification_target or handover_target
+        if qualification_target is not None:
+            root_path = Path(snapshot["root"])
+            target = Path(qualification_target)
+            if root_path.parent != Path(tempfile.gettempdir() if sys.platform == "win32" else "/private/tmp").resolve() or root_path.resolve() != root_path:
+                raise GuardError("qualification write probe root is not canonical temporary Git root")
+            if not target.is_absolute() or target.parent.resolve() != root_path:
+                raise GuardError("qualification write probe target is not a direct root child")
+            if target.resolve(strict=False) != target or target.is_symlink():
+                raise GuardError("qualification write probe target is not canonical")
+            if handover_target is None and target.exists():
+                raise GuardError("qualification write probe target is not absent")
+            if handover_target is not None and not target.is_file():
+                raise GuardError("handover write probe target is not an existing regular file")
+            relative_target = target.relative_to(root_path).as_posix()
+            if declaration["assignment_mutation_mode"] != "write":
+                raise GuardError("qualification write probe requires write mode")
+            if declaration["owned_paths"] != [relative_target] or declaration["excluded_paths"]:
+                raise GuardError("qualification write probe ownership is not exact")
+            if any(declaration["git_authority"].values()):
+                raise GuardError("qualification write probe cannot grant Git operations")
+            expected_verification = (
+                QUALIFICATION_HANDOVER_WRITE_PROBE_VERIFICATION
+                if handover_target is not None
+                else QUALIFICATION_WRITE_PROBE_VERIFICATION
+            )
+            if declaration["verification"] != [expected_verification]:
+                raise GuardError("qualification write probe verification is not exact")
+            has_handover_invariant = QUALIFICATION_HANDOVER_INVARIANT in declaration[
+                "execution_contract"
+            ]["required_invariants"]
+            if has_handover_invariant != (handover_target is not None):
+                raise GuardError("handover write probe invariant is not exact")
+            if handover_target is not None:
+                expected_handover_frontier = [
+                    {
+                        "kind": "file",
+                        "path": relative_target,
+                        "sha256": hashlib.sha256(target.read_bytes()).hexdigest(),
+                    }
+                ]
+                if (
+                    snapshot["changed_paths"] != expected_handover_frontier
+                    or snapshot["index_changed"]
+                    or snapshot["git_status_short"] != f"?? {relative_target}"
+                ):
+                    raise GuardError("handover write probe root is not the exact prior frontier")
+            elif (
+                snapshot["changed_paths"]
+                or snapshot["index_changed"]
+                or snapshot["git_status_short"]
+            ):
+                raise GuardError("qualification write probe root is not clean")
         created_at = now or dt.datetime.now(dt.timezone.utc)
         if created_at.tzinfo is None or created_at.utcoffset() is None:
             raise GuardError("capture time must include a UTC offset")
@@ -327,7 +443,19 @@ def capture_spawn(
             declaration["owned_paths"],
             snapshot,
             observed_at=created_at,
+            require_quiet_root=(
+                declaration["execution_contract"]["posture"] == "strict_read_only"
+            ),
         )
+        if qualification_target is not None:
+            if handover_target is not None and len(ownership_handover) != 1:
+                raise GuardError("handover write probe lacks one exact quiescence barrier")
+            if handover_target is not None and ownership_handover[0][
+                "snapshot_sha256"
+            ] != git_snapshot_sha256(snapshot):
+                raise GuardError("handover barrier does not bind the capture snapshot")
+            if handover_target is None and ownership_handover:
+                raise GuardError("absent-target write probe unexpectedly inherited ownership")
         assignment_id = str(uuid.uuid4())
         handoff_id = str(uuid.uuid4())
         git_authority = declaration["git_authority"]
@@ -337,7 +465,7 @@ def capture_spawn(
             "handoff_id": handoff_id,
             "runtime_session_id": str(hook_input["session_id"]),
             "parent_thread_id": parent_meta["id"],
-            "parent_turn_id": str(hook_input.get("turn_id") or ""),
+            "parent_turn_id": str(parent_turn_id or ""),
             "spawn_tool_use_id": str(hook_input.get("tool_use_id") or ""),
             "worker_profile": str(agent_type),
             "agent_type": str(agent_type),
@@ -353,6 +481,16 @@ def capture_spawn(
             },
             "capture_preflight": declaration["location_preflight"],
             "capture_snapshot_sha256": git_snapshot_sha256(snapshot),
+            "assignment_mutation_mode": declaration["assignment_mutation_mode"],
+            "parent_recorded_user_write_intent": declaration[
+                "parent_recorded_user_write_intent"
+            ],
+            "trusted_host_user_write_consent": {
+                "schema": 1,
+                "status": "unavailable",
+                "source": None,
+                "receipt_sha256": None,
+            },
             "owned_paths": declaration["owned_paths"],
             "excluded_paths": declaration["excluded_paths"],
             "git_authority": git_authority,
@@ -374,6 +512,13 @@ def capture_spawn(
                 created_at + dt.timedelta(seconds=declaration["ttl_seconds"])
             ).isoformat(),
         }
+        if qualification_target is not None:
+            capsule["trusted_host_user_write_consent"] = {
+                "schema": 1,
+                "status": "verified",
+                "source": QUALIFICATION_WRITE_CONSENT_SOURCE,
+                "receipt_sha256": qualification_write_consent_receipt_sha256(capsule),
+            }
         capsule["capsule_sha256"] = capsule_sha256(capsule)
         staging_snapshot = collect_git_snapshot(cwd)
         store.stage_with_ownership_recheck(
@@ -406,12 +551,21 @@ def subagent_start(store: StateStore, hook_input: Mapping[str, object]) -> dict:
         capsule = envelope["capsule"]
         capsule_json = canonical_json(capsule).decode("utf-8")
         invariant_json = canonical_json(compact_invariant(capsule)).decode("utf-8")
+        seed_json = canonical_json(
+            final_attestation_seed(
+                capsule, envelope["runtime"]["recovery_count"]
+            )
+        ).decode("utf-8")
         context = (
             "You are an external worker child bound to the immutable authority capsule below. "
             "The complete spawn message remains the assignment source. Re-attest this capsule "
-            "after recovery and before final return.\n\n"
+            "after recovery and before final return. The final-attestation seed contains only "
+            "mechanically derived values; it does not authorize a provenance origin, claim a "
+            "verification result, describe final disk state, or claim completion.\n\n"
             f"BEGIN CODEX WORKER COMPACT INVARIANT\n{invariant_json}\n"
             "END CODEX WORKER COMPACT INVARIANT\n\n"
+            f"BEGIN CODEX WORKER FINAL ATTESTATION SEED\n{seed_json}\n"
+            "END CODEX WORKER FINAL ATTESTATION SEED\n\n"
             f"BEGIN CODEX WORKER CAPSULE\n{capsule_json}\nEND CODEX WORKER CAPSULE\n\n"
             f"BEGIN PARENT ASSIGNMENT\n{envelope['assignment']}\nEND PARENT ASSIGNMENT"
         )
@@ -432,7 +586,9 @@ def subagent_start(store: StateStore, hook_input: Mapping[str, object]) -> dict:
                 "hookEventName": "SubagentStart",
                 "additionalContext": (
                     "TASK.CONTEXT_LOST: runtime could not uniquely bind an authority capsule. "
-                    f"Do not call tools or claim completion. Binding error: {error}"
+                    "Do not call tools or claim completion. Return exactly "
+                    "TASK.CONTEXT_LOST and no other text. "
+                    f"Binding error: {error}"
                 ),
             }
         }

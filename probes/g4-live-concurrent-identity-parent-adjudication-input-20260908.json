@@ -1,0 +1,178 @@
+{
+  "schema": 1,
+  "evidence_kind": "current_signed_runtime_provider_free_concurrent_identity_parent_adjudication_input",
+  "observed_at": "2026-09-08T06:06:19Z",
+  "authorization": "explicit_user_phase1_g4_probe_authorization",
+  "runtime_role": "current_signed_runtime",
+  "source_probe": {
+    "path": "probes/g4-live-concurrent-identity-20260908.json",
+    "sha256": "1e1f44f80814331b633271ff2b88cc1e41ddc31374e452dddf9fae001a31ad3a"
+  },
+  "runtime": {
+    "codex_version": "0.153.4",
+    "base_source_commit": "3d2ee51ca2d5db578f328aa75e20aa22c0197c9a",
+    "candidate_binary_sha256": "60f7c933064d330c0d73444315172873d6158d2d060580891a746de34684fafd",
+    "candidate_entry_point": "headless_codex_exec_only",
+    "gui_app_server_selected": false,
+    "sandbox": "read-only",
+    "approval_policy": "never",
+    "parent_model_provider": "openai",
+    "child_model_provider": "openai",
+    "credential_values_observed_or_recorded": false
+  },
+  "worker_git_frontier": {
+    "root": "/Users/pearly/文档/CAT/codex-deepseek-subagent",
+    "branch": "main",
+    "head": "da0cdcbafc80439f1589685af3731d0b34a3a95b",
+    "head_tree": "f09ca887d5033dec0d7da23d9f863e69a6a692ce",
+    "index_sha256": "134a495426dbf672a7a38a9ea5101efec00150171a9db190222e85f96c307a09",
+    "status_short": "",
+    "index_changed": false
+  },
+  "fresh_parent_git_frontier_before_evidence_write": {
+    "root": "/Users/pearly/文档/CAT/codex-deepseek-subagent",
+    "branch": "main",
+    "head": "00d6db7c0de6461109fa8157bc237b0f33673360",
+    "head_tree": "d4346b02fc306a7e60abf8aed37bee6d85b34f1b",
+    "write_tree": "d4346b02fc306a7e60abf8aed37bee6d85b34f1b",
+    "index_sha256": "9ea75fcfbb633561b97e9f55ddb3b30d537727bf0e867bb06f8435dd03f36c8f",
+    "status_short": "",
+    "index_changed": false,
+    "worker_head_is_ancestor": true,
+    "changes_since_worker_head": [
+      "docs/phase1-evidence.md",
+      "probes/build_g4_concurrent_identity_probe_prompt.py",
+      "probes/g4-live-concurrent-identity-20260908.json",
+      "probes/phase1-g4-status.json",
+      "tests/test_g4_concurrent_identity_probe_prompt.py",
+      "tests/test_g4_live_concurrent_identity.py"
+    ],
+    "changes_since_worker_head_owner": "fresh_parent_phase1_evidence_and_acceptance_wording_only"
+  },
+  "parent_identity": {
+    "thread_id": "01a00147-39cb-7b50-b78d-7baed910eb45",
+    "runtime_session_id": "01a00147-39cb-7b50-b78d-7baed910eb45",
+    "canonical_agent_path": "/root",
+    "adjudication_authority": "fresh_owner"
+  },
+  "source_parent_identity": {
+    "thread_id": "01a07f8f-c0aa-74a2-8662-888b04b37dcf",
+    "runtime_session_id": "01a07f8f-c0aa-74a2-8662-888b04b37dcf",
+    "turn_id": "01a07f8f-c115-7071-aef7-554a84edfbfe",
+    "canonical_agent_path": "/root"
+  },
+  "assignments": [
+    {
+      "concurrent_position": "A",
+      "assignment_id": "44b01bc1-80ba-49da-8f25-5a370f24f020",
+      "handoff_id": "12716e7f-7fad-424a-90f8-30dd50a47db2",
+      "requested_task_name": "g4_concurrent_identity_a2",
+      "canonical_agent_path": "/root/g4_concurrent_identity_a2",
+      "child_thread_id": "01a07f90-611b-7d80-a74d-b0d39727cf30",
+      "child_turn_id": "01a07f90-6171-7642-8629-f4846727e86d",
+      "assignment_sha256": "a7503b7a7240bb8342fc2ab4cf6434b3ed5a5b6e6b5b34f9c264a6e0325d9cb1",
+      "capsule_sha256": "d9ea32b75c238ee1dc7df97bdfadd16402f1ff6397f6a9ed2f015732f0671fe2",
+      "compact_invariant_sha256": "8f2dda49495fc9a7ab7e6b6f9d24ef0ca950d470f7cee435e3ca73a1d165eaee",
+      "reported_state_sha256": "0ea7f97221f666705de590d4d9f1583bdeda1044c08ff1f326d80442742f6f6b",
+      "rollout_sha256": "63b61c81e36255f62d241d8cccabc685e1d2ae67d74cc23bfbc809a199c01c37",
+      "native_tool": "list_agents",
+      "native_tool_call_count": 1,
+      "subagent_stop_attempts": 3,
+      "final_correction_count": 2,
+      "final_attestation_exact": true,
+      "assignment_mutation_mode": "read_only",
+      "changed_paths": [],
+      "authority_violation": false,
+      "assigned_slice_complete": true
+    },
+    {
+      "concurrent_position": "B",
+      "assignment_id": "f957955f-1e81-420d-9c40-e5facd685e35",
+      "handoff_id": "ae188b8c-f052-4ead-aa19-236cf9bb499d",
+      "requested_task_name": "g4_concurrent_identity_b2",
+      "canonical_agent_path": "/root/g4_concurrent_identity_b2",
+      "child_thread_id": "01a07f90-f9cb-7562-b916-4a930e74b08d",
+      "child_turn_id": "01a07f90-fa1e-78f1-adce-ebdbc36d6774",
+      "assignment_sha256": "76d12905f1f160a9ddf044ffb1eabf5db9c76d5236ecd70bd4bbeb58c0a9f06f",
+      "capsule_sha256": "dc9b7bb17868957a3374302c052089f8966d25dd6730ca79af82e8d78a3c36e2",
+      "compact_invariant_sha256": "11fba4f299737933d12dfab751283ed7f19cfb1c37e300faed74095248b30f2b",
+      "reported_state_sha256": "30989eb81d03306a1661beb537ab5130d9c2692e69072c01c5127cddfc803869",
+      "rollout_sha256": "a4d536eb80260c553d1eaed893200f3a27808e9b0750a068d5423e3f078e2b07",
+      "native_tool": "list_agents",
+      "native_tool_call_count": 1,
+      "subagent_stop_attempts": 2,
+      "final_correction_count": 1,
+      "final_attestation_exact": true,
+      "assignment_mutation_mode": "read_only",
+      "changed_paths": [],
+      "authority_violation": false,
+      "assigned_slice_complete": true
+    }
+  ],
+  "concurrent_lifecycle": {
+    "child_b_start_at": "2026-09-08T05:50:11.037500+00:00",
+    "child_b_list_result_at": "2026-09-08T05:50:15.602Z",
+    "child_a_accepted_stop_at": "2026-09-08T05:50:39.414345+00:00",
+    "child_b_start_before_child_a_accepted_stop": true,
+    "child_b_list_observed_both_children_running": true,
+    "observed_overlap_until_child_a_accepted_stop_ms": 28377,
+    "actual_child_execution_overlap_observed": true,
+    "both_parent_waits_timed_out": false,
+    "both_parent_callbacks_observed": true,
+    "both_reported_states_present": true,
+    "both_active_states_absent": true,
+    "both_unresolved_states_absent": true,
+    "both_consumed_states_absent": true
+  },
+  "parent_projection": {
+    "source_parent_declared_failure": true,
+    "spawn_results_exposed_child_thread_ids": false,
+    "wait_results_exposed_child_thread_ids": false,
+    "source_parent_self_adjudication_complete": false,
+    "fresh_owner_sessionmeta_hook_join_complete": true,
+    "projection_gap_does_not_invalidate_fresh_owner_identity_evidence": true
+  },
+  "fresh_parent_observation": {
+    "source_probe_hash_exact": true,
+    "reported_state_hashes_exact": true,
+    "sessionmeta_and_rollout_hashes_exact": true,
+    "worker_head_and_tree_exact_at_recorded_barrier": true,
+    "current_head_is_clean_parent_evidence_descendant": true,
+    "candidate_parent_and_child_processes_absent": true,
+    "worker_report_is_contribution_evidence_only": true,
+    "headless_candidate_exit_code_observed": true,
+    "headless_candidate_exit_code": 0,
+    "strong_global_quiescence_claimed": false
+  },
+  "adjudication_input": {
+    "location_integrity": "pass",
+    "mutation_scope_integrity": "pass",
+    "verification_freshness": "pass",
+    "derivation_provenance_integrity": "pass",
+    "feasibility_contract_integrity": "pass"
+  },
+  "adjudication_basis": {
+    "location_integrity": "both real SessionMeta records, Hook actors, capsules, final attestations, and the worker barrier bind the exact root, branch, full worker HEAD, distinct child threads, and distinct canonical AgentPaths; the current clean HEAD is a strict descendant containing only parent Phase 1 evidence and acceptance wording",
+    "mutation_scope_integrity": "both assignments were strict read-only, each called only list_agents, both final changed_paths are empty, and the recorded worker barrier is clean",
+    "verification_freshness": "the fresh owner independently re-read both immutable rollouts, SessionMeta, Hook receipts, exact reported envelopes, overlap witness, and the post-run disk/process barrier",
+    "derivation_provenance_integrity": "each worker claims only its own list_agents observation; B observed both children running, while the fresh owner independently adjudicates identity, overlap, disk, and integration authority",
+    "feasibility_contract_integrity": "the strict read-only assignments have null mutation feasibility and completed exactly one permitted native observation each"
+  },
+  "scope_verdict": {
+    "both_assignments_may_advance_reported_to_consumed": true,
+    "concurrent_identity_sample_parent_adjudication_ready": true,
+    "actual_overlap_parent_adjudication_ready": true,
+    "parent_projection_complete": false,
+    "identity_cohort_complete": false,
+    "nested_identity_complete": false,
+    "concurrent_identity_cohort_complete": false,
+    "resume_identity_complete": false,
+    "mutation_negative_space_complete": false,
+    "strong_global_quiescence_complete": false,
+    "representative_cost_or_latency_cohort_complete": false,
+    "phase1_complete": false,
+    "direct_write_qualified": false,
+    "phase2_state": "closed",
+    "phase3_state": "closed"
+  }
+}

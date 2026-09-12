@@ -1,0 +1,59 @@
+{
+  "schema": 1,
+  "evidence_kind": "current_signed_runtime_postcompact_foreign_scope_drift_parent_adjudication",
+  "assignment_id": "5d1a68d7-fa3c-4383-947b-571806cca3ac",
+  "input": {
+    "path": "probes/g4-live-postcompact-scope-drift-denial-20260908.json",
+    "sha256": "3f91bb744b6438aea7354cea24290137af4062752fa812ff47956c42d88bec1a"
+  },
+  "fresh_owner": {
+    "precompact_injection_fourth_pretool_ordering": "pass",
+    "host_injection_provenance": "pass",
+    "preexecution_denial_integrity": "pass",
+    "terminal_callback_integrity": "pass",
+    "delayed_disk_barrier_integrity": "pass"
+  },
+  "state_transition": {
+    "before": "unresolved",
+    "after": "unresolved",
+    "unresolved_envelope_sha256_before": "7516ed7328331267b81c78ac73b1c1081cb99521a9e2a012760d1a59febc9154",
+    "unresolved_envelope_sha256_after": "7516ed7328331267b81c78ac73b1c1081cb99521a9e2a012760d1a59febc9154"
+  },
+  "authority": {
+    "host_injected_bytes_are_child_contribution": false,
+    "child_final_marker_is_integration_authority": false,
+    "unresolved_authority_retained": true,
+    "ownership_handover_authorized": false,
+    "global_direct_write_promoted": false
+  },
+  "verification": {
+    "provider_free_suite": {
+      "command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPYCACHEPREFIX=/private/tmp/codex-pycache-phase1-postcompact-final-20260908 python3 -m unittest discover -s tests -p 'test_*.py'",
+      "test_count": 589,
+      "duration_seconds": 59.950,
+      "exit_code": 0,
+      "agent_template_checks": "passed"
+    },
+    "phase1_gate_normal_exit_code": 0,
+    "phase1_gate_require_complete_exit_code": 2,
+    "phase1_gate_blocker_count": 11,
+    "mutation_matrix_normal_exit_code": 0,
+    "mutation_matrix_blocker_count": 13,
+    "mutation_matrix_require_qualified_exit_code": 2,
+    "same_uid_probe_exit_code": 0,
+    "same_uid_require_protected_exit_code": 2,
+    "same_uid_rollout_protected": false,
+    "same_uid_state_protected": false
+  },
+  "verdict": {
+    "one_live_postcompact_scope_expansion_negative_adjudicated": true,
+    "process_restart_resume_qualified": false,
+    "representative_dense_cost_qualified": false,
+    "mixed_frontier_qualified": false,
+    "strong_global_quiescence_qualified": false,
+    "phase1_complete": false,
+    "direct_write_qualified": false,
+    "phase2_state": "closed",
+    "phase3_state": "closed"
+  }
+}

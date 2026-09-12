@@ -1,6 +1,7 @@
 import datetime as dt
 from concurrent.futures import ThreadPoolExecutor
 import importlib.util
+import json
 from pathlib import Path
 import tempfile
 import unittest
@@ -8,6 +9,7 @@ import uuid
 
 
 MODULE_PATH = Path(__file__).resolve().parents[1] / "hooks" / "compatibility_state.py"
+FIXTURE_ROOT = str(Path(tempfile.gettempdir()).resolve() / "codex-state-fixture" / "repository")
 SPEC = importlib.util.spec_from_file_location("compatibility_state", MODULE_PATH)
 compatibility_state = importlib.util.module_from_spec(SPEC)
 assert SPEC.loader is not None
@@ -39,7 +41,7 @@ def capsule(assignment, **overrides):
         "requested_task_name": "bounded_task",
         "canonical_agent_path": None,
         "root": {
-            "path": "/workspace/repository",
+            "path": FIXTURE_ROOT,
             "branch": "main",
             "base_commit": "a" * 64,
             "allow_descendant_head": False,
@@ -48,6 +50,14 @@ def capsule(assignment, **overrides):
         },
         "capture_preflight": None,
         "capture_snapshot_sha256": "e" * 64,
+        "assignment_mutation_mode": "write",
+        "parent_recorded_user_write_intent": "allow",
+        "trusted_host_user_write_consent": {
+            "schema": 1,
+            "status": "unavailable",
+            "source": None,
+            "receipt_sha256": None,
+        },
         "owned_paths": ["owned"],
         "excluded_paths": ["owned/excluded"],
         "git_authority": {
@@ -176,6 +186,20 @@ class CompatibilityStateTests(unittest.TestCase):
         with self.assertRaisesRegex(CorruptState, "capsule_sha256"):
             validate_capsule(reordered, assignment)
 
+    def test_parent_intent_cannot_fabricate_trusted_host_consent(self):
+        assignment = "bounded task"
+        value = capsule(assignment)
+        value["trusted_host_user_write_consent"] = {
+            "schema": 1,
+            "status": "verified",
+            "source": "parent_claim",
+            "receipt_sha256": "f" * 64,
+        }
+        value["capsule_sha256"] = capsule_sha256(value)
+
+        with self.assertRaisesRegex(CorruptState, "unavailable in isolated schema 2"):
+            validate_capsule(value, assignment)
+
     def test_compact_invariant_preserves_diagnostics_and_non_authorizing_baselines(self):
         assignment = "strict read-only review"
         execution = {
@@ -211,6 +235,14 @@ class CompatibilityStateTests(unittest.TestCase):
         }
         value = capsule(
             assignment,
+            assignment_mutation_mode="read_only",
+            parent_recorded_user_write_intent="deny",
+            trusted_host_user_write_consent={
+                "schema": 1,
+                "status": "unavailable",
+                "source": None,
+                "receipt_sha256": None,
+            },
             owned_paths=[],
             excluded_paths=[],
             preexisting_dirty=[],
@@ -222,6 +254,17 @@ class CompatibilityStateTests(unittest.TestCase):
         invariant = compatibility_state.compact_invariant(value)
 
         self.assertEqual(invariant["execution_contract"], execution)
+        self.assertEqual(invariant["assignment_mutation_mode"], "read_only")
+        self.assertEqual(invariant["parent_recorded_user_write_intent"], "deny")
+        self.assertEqual(
+            invariant["trusted_host_user_write_consent"],
+            {
+                "schema": 1,
+                "status": "unavailable",
+                "source": None,
+                "receipt_sha256": None,
+            },
+        )
         self.assertTrue(
             invariant["execution_contract"]["proven_input_baselines"][0][
                 "non_authorizing"
@@ -231,6 +274,8 @@ class CompatibilityStateTests(unittest.TestCase):
     def test_strict_read_only_contract_rejects_owned_paths_or_authorizing_baseline(self):
         assignment = "reject authority smuggling"
         value = capsule(assignment)
+        value["assignment_mutation_mode"] = "read_only"
+        value["parent_recorded_user_write_intent"] = "deny"
         value["execution_contract"] = {
             "posture": "strict_read_only",
             "review_range": {"base_oid": "a" * 64, "head_oid": "a" * 64},
@@ -279,6 +324,14 @@ class CompatibilityStateTests(unittest.TestCase):
         prior_assignment_id = str(uuid.uuid4())
         value = capsule(
             assignment,
+            assignment_mutation_mode="read_only",
+            parent_recorded_user_write_intent="deny",
+            trusted_host_user_write_consent={
+                "schema": 1,
+                "status": "unavailable",
+                "source": None,
+                "receipt_sha256": None,
+            },
             owned_paths=[],
             excluded_paths=[],
             preexisting_dirty=[],
@@ -302,8 +355,8 @@ class CompatibilityStateTests(unittest.TestCase):
                     "require_clean_worktree": True,
                 },
                 "evidence_binding": {
-                    "executed_root": "/workspace/repository",
-                    "hashed_root": "/workspace/repository",
+                    "executed_root": FIXTURE_ROOT,
+                    "hashed_root": FIXTURE_ROOT,
                     "source_identity": {"kind": "git_commit", "value": "a" * 64},
                     "canonical_output": "evidence/review.json",
                     "no_follow_dirfd_walk": True,
@@ -465,17 +518,58 @@ class CompatibilityStateTests(unittest.TestCase):
         self.assertTrue(active.exists())
         self.assertFalse(self.store.path("pending", value["handoff_id"]).exists())
         self.assertFalse(self.store.path("claimed", value["handoff_id"]).exists())
-        self.assertEqual(self.store.mark_recovery(value["assignment_id"]), 1)
+        self.assertEqual(
+            self.store.mark_recovery(
+                value["assignment_id"],
+                identity(),
+                root=FIXTURE_ROOT,
+                branch="main",
+                head="a" * 64,
+            ),
+            1,
+        )
         self.assertTrue(active.exists())
+
+    def test_recovery_epoch_requires_exact_bound_identity_and_location(self):
+        value, active = self.activate()
+        wrong_identity = identity()
+        wrong_identity["child_thread_id"] = "wrong-child"
+        wrong_identity["agent_id"] = "wrong-child"
+
+        with self.assertRaises(IdentityMismatch):
+            self.store.mark_recovery(
+                value["assignment_id"],
+                wrong_identity,
+                root=FIXTURE_ROOT,
+                branch="main",
+                head="a" * 64,
+            )
+        with self.assertRaises(AuthorityViolation):
+            self.store.mark_recovery(
+                value["assignment_id"],
+                identity(),
+                root=FIXTURE_ROOT,
+                branch="main",
+                head="b" * 64,
+            )
+
+        envelope = json.loads(active.read_text(encoding="utf-8"))
+        self.assertEqual(envelope["runtime"]["recovery_count"], 0)
 
     def test_post_recovery_reattestation_blocks_path_and_git_expansion(self):
         value, _ = self.activate()
-        self.store.mark_recovery(value["assignment_id"])
+        self.store.mark_recovery(
+            value["assignment_id"],
+            identity(),
+            root=FIXTURE_ROOT,
+            branch="main",
+            head="a" * 64,
+        )
 
         self.store.attest_tool_use(
             value["assignment_id"],
             identity(),
-            root="/workspace/repository",
+            root=FIXTURE_ROOT,
             branch="main",
             head="a" * 64,
             changed_paths=["owned/result.txt"],
@@ -484,7 +578,7 @@ class CompatibilityStateTests(unittest.TestCase):
             self.store.attest_tool_use(
                 value["assignment_id"],
                 identity(),
-                root="/workspace/repository",
+                root=FIXTURE_ROOT,
                 branch="main",
                 head="a" * 64,
                 changed_paths=["outside/result.txt"],
@@ -493,7 +587,7 @@ class CompatibilityStateTests(unittest.TestCase):
             self.store.attest_tool_use(
                 value["assignment_id"],
                 identity(),
-                root="/workspace/repository",
+                root=FIXTURE_ROOT,
                 branch="main",
                 head="a" * 64,
                 git_operation="commit",
@@ -506,7 +600,7 @@ class CompatibilityStateTests(unittest.TestCase):
             self.store.attest_tool_use(
                 value["assignment_id"],
                 identity(child_thread_id="other", agent_id="other"),
-                root="/workspace/repository",
+                root=FIXTURE_ROOT,
                 branch="main",
                 head="a" * 64,
             )
@@ -609,7 +703,7 @@ class CompatibilityStateTests(unittest.TestCase):
     def test_atomic_stage_recheck_rejects_capture_snapshot_drift(self):
         assignment = "stage only if the capture snapshot remains exact"
         baseline = {
-            "root": "/workspace/repository",
+            "root": FIXTURE_ROOT,
             "branch": "main",
             "head": "a" * 64,
             "index_changed": False,

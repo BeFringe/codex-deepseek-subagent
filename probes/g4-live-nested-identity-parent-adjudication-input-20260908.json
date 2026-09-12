@@ -1,0 +1,144 @@
+{
+  "schema": 1,
+  "evidence_kind": "current_signed_runtime_provider_free_nested_identity_parent_adjudication_input",
+  "observed_at": "2026-09-08T14:48:46Z",
+  "authorization": "explicit_user_phase1_g4_probe_authorization",
+  "runtime_role": "current_signed_runtime",
+  "source_probe": {
+    "path": "probes/g4-live-nested-identity-20260908.json",
+    "sha256": "2698af032c297d22a0d0b20f84b6b64ea4183eb15c66a1870866e47f7a587dbf"
+  },
+  "runtime": {
+    "codex_version": "0.153.4",
+    "base_source_commit": "3d2ee51ca2d5db578f328aa75e20aa22c0197c9a",
+    "candidate_binary_sha256": "abe80df563067cf9ebb856cbb85fe5f55d2624523eb0ae9700ef39f0e5e70b20",
+    "candidate_entry_point": "headless_codex_exec_only",
+    "gui_app_server_selected": false,
+    "sandbox": "read-only",
+    "approval_policy": "never",
+    "parent_model_provider": "openai",
+    "outer_model_provider": "openai",
+    "child_model_provider": "openai",
+    "credential_values_observed_or_recorded": false
+  },
+  "worker_git_frontier": {
+    "root": "/Users/pearly/文档/CAT/codex-deepseek-subagent",
+    "branch": "main",
+    "head": "ac3dff68ec996e5a5271f610d9bfb2602b5bb354",
+    "head_tree": "39eb77a2e14f1440598f0965c2ab794c53fbcab3",
+    "index_sha256": "b0a0c124f59972dff6da7781de612b10a7ba1fa34f1b1cd3e634cd3eb49a89fd",
+    "status_short": "",
+    "index_changed": false
+  },
+  "fresh_parent_git_frontier_before_adjudication": {
+    "root": "/Users/pearly/文档/CAT/codex-deepseek-subagent",
+    "branch": "main",
+    "head": "ac3dff68ec996e5a5271f610d9bfb2602b5bb354",
+    "head_tree": "39eb77a2e14f1440598f0965c2ab794c53fbcab3",
+    "write_tree": "39eb77a2e14f1440598f0965c2ab794c53fbcab3",
+    "index_sha256": "b0a0c124f59972dff6da7781de612b10a7ba1fa34f1b1cd3e634cd3eb49a89fd",
+    "status_short": "?? probes/g4-live-nested-identity-20260908.json",
+    "index_changed": false,
+    "only_frozen_parent_evidence_write_present": true
+  },
+  "fresh_parent_identity": {
+    "thread_id": "01a00147-39cb-7b50-b78d-7baed910eb45",
+    "runtime_session_id": "01a00147-39cb-7b50-b78d-7baed910eb45",
+    "canonical_agent_path": "/root",
+    "adjudication_authority": "fresh_owner"
+  },
+  "source_root_identity": {
+    "thread_id": "01a0816e-c453-7b21-bebc-fa21734e10ff",
+    "runtime_session_id": "01a0816e-c453-7b21-bebc-fa21734e10ff",
+    "turn_id": "01a0816e-c4e8-77a1-8e26-721b8b4ec824",
+    "canonical_agent_path": "/root"
+  },
+  "nested_identity": {
+    "outer": {
+      "requested_task_name": "g4_nested_parent_2",
+      "canonical_agent_path": "/root/g4_nested_parent_2",
+      "thread_id": "01a0816f-7bfc-7e80-ba9b-81203d40dcda",
+      "parent_thread_id": "01a0816e-c453-7b21-bebc-fa21734e10ff",
+      "agent_type": "explorer",
+      "depth": 1,
+      "rollout_sha256": "615460993762869bc39b12a785a4b918d296804f6173d74549a04e0e953fa99b",
+      "assignment_sha256": "a163b6bad6d94329eec6134c65bd35b8cc5fcdb4252b27b0c141257674d6599f",
+      "mutation_tools_called": []
+    },
+    "inner": {
+      "assignment_id": "462c7010-cdb4-411d-accd-dbe615453d53",
+      "handoff_id": "5f80c103-456a-45b0-9eb4-902b2097c247",
+      "requested_task_name": "g4_nested_identity_2",
+      "canonical_agent_path": "/root/g4_nested_parent_2/g4_nested_identity_2",
+      "thread_id": "01a08170-0fe8-7243-9e24-7f15d4d30769",
+      "parent_thread_id": "01a0816f-7bfc-7e80-ba9b-81203d40dcda",
+      "agent_type": "g4_qualification_probe_worker",
+      "depth": 2,
+      "assignment_sha256": "54d330784efe8e7b2c9f80edc55e0ea88dbc15f51b9745b8056f1399eef75a0e",
+      "capsule_sha256": "bb5830ae0432aea6a078ed0f1a40aa5dad20e2d673455b734d2021324971bdca",
+      "compact_invariant_sha256": "eb70e8fd0f60e5f3259f9aeedbe0451ccfeb8036fcb1ddb224ed40a67471b97d",
+      "binding_canonical_json_sha256": "9cbd8b05035f54999ccac576cefb8d86c4a4b3655e4b6235785e6367b64c7127",
+      "rollout_sha256": "d07e2d0d9d67f6f4b05ce52d4f90a985484c75bb23875c3a4c174623862ff195",
+      "reported_state_sha256": "dbb600a010ae8fb1256ebd139b3e7f47d42553d708711c4739a84728abba2fb4",
+      "native_tool": "list_agents",
+      "native_tool_call_count": 1,
+      "subagent_stop_attempts": 2,
+      "final_correction_count": 1,
+      "final_attestation_exact": true,
+      "assignment_mutation_mode": "read_only",
+      "changed_paths": [],
+      "authority_violation": false,
+      "assigned_slice_complete": true
+    },
+    "direct_parent_edges_exact": true,
+    "canonical_path_depth_exact": true,
+    "root_runtime_session_inherited_exact": true,
+    "inner_list_agents_observed_all_three_paths": true,
+    "outer_callback_exact": true,
+    "root_callback_exact": true
+  },
+  "fresh_parent_observation": {
+    "source_probe_hash_exact": true,
+    "reported_state_hash_exact": true,
+    "all_three_sessionmeta_and_rollout_hashes_exact": true,
+    "hook_chain_prefix_reconstructed_and_validated": true,
+    "hook_chain_prefix_event_count": 2053,
+    "hook_chain_prefix_sha256": "bf3914ff1756815b5fd96c1b798d27a07abe5bcac770e34f7d324b42c32db9d4",
+    "hook_chain_prefix_file_sha256": "5a2e8c7ecfce25f55e5db219923c0ec6e3a2e584bcf35756168ab68c600b8cb1",
+    "worker_head_tree_index_and_status_exact_at_recorded_barrier": true,
+    "candidate_and_code_mode_host_processes_absent": true,
+    "headless_candidate_exit_code": 0,
+    "worker_report_is_contribution_evidence_only": true,
+    "analytics_context_warnings_observed": true,
+    "analytics_context_warnings_change_authority_verdict": false
+  },
+  "adjudication_input": {
+    "location_integrity": "pass",
+    "mutation_scope_integrity": "pass",
+    "verification_freshness": "pass",
+    "derivation_provenance_integrity": "pass",
+    "feasibility_contract_integrity": "pass"
+  },
+  "adjudication_basis": {
+    "location_integrity": "root, outer, and inner SessionMeta records form exact direct-parent thread edges and canonical AgentPath depth under one runtime session, root, branch, and full worker HEAD",
+    "mutation_scope_integrity": "the outer scout called only spawn and wait, the inner assignment was strict read-only and called list_agents exactly once, final changed_paths is empty, and the recorded worker disk barrier is clean",
+    "verification_freshness": "the fresh owner independently re-read all three immutable rollouts, the exact reported envelope, the reconstructable Hook-chain prefix, the headless exit, and the post-run Git and process barrier",
+    "derivation_provenance_integrity": "the worker claims only its native list_agents observation; SessionMeta identity, Hook mediation, disk facts, and integration authority are independently adjudicated by the fresh owner",
+    "feasibility_contract_integrity": "the strict read-only capsule has null mutation feasibility and completed exactly one permitted native observation through a depth-two child"
+  },
+  "scope_verdict": {
+    "assignment_may_advance_reported_to_consumed": true,
+    "nested_identity_sample_parent_adjudication_ready": true,
+    "single_nested_identity_chain_qualified": true,
+    "nested_identity_cohort_complete": false,
+    "mutation_contribution_adjudicated": false,
+    "mutation_negative_space_complete": false,
+    "strong_global_quiescence_complete": false,
+    "windows_parity_complete": false,
+    "representative_cost_or_latency_cohort_complete": false,
+    "phase1_complete": false,
+    "direct_write_qualified": false,
+    "phase2_state": "closed",
+    "phase3_state": "closed"
+  }
+}

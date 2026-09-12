@@ -1,0 +1,43 @@
+{
+  "schema": 1,
+  "evidence_kind": "live_root_plaintext_parent_adjudication_result",
+  "observed_at_date": "2026-08-17",
+  "assignment_id": "726eeea3-b88e-4e85-bd5b-cdab0f2095f0",
+  "input_evidence": {
+    "path": "probes/g4-live-root-lifecycle-adjudication-input-20260817.json",
+    "sha256": "1e170afdaa09b22d40fc545833c89eb0acfd3130a5883d0c68319db6f71fb76d"
+  },
+  "transition": {
+    "source": "reported",
+    "destination": "consumed",
+    "reported_absent_after": true,
+    "active_absent_after": true,
+    "consumed_envelope_sha256": "8ea05c504453b37de78bca0c8c23cdb7701095e9bedc2775ff2892cf057d64c9"
+  },
+  "parent_adjudication": {
+    "location_integrity": "pass",
+    "mutation_scope_integrity": "pass",
+    "verification_freshness": "pass",
+    "derivation_provenance_integrity": "pass",
+    "feasibility_contract_integrity": "pass"
+  },
+  "post_transition_barrier": {
+    "root": "/private/tmp/codex-g4-headless-p1-20260817/worktree",
+    "branch": "main",
+    "head": "ba5df0d078ef479c8d0bf7fce6961cbd60f40061",
+    "status_short": "",
+    "candidate_process_absent": true
+  },
+  "scope_verdict": {
+    "root_read_only_assignment_consumed": true,
+    "identity_cohort_complete": false,
+    "mutation_negative_space_complete": false,
+    "strong_global_quiescence_complete": false,
+    "p1_complete": false,
+    "phase1_complete": false,
+    "direct_write_qualified": false,
+    "phase2_state": "closed",
+    "phase3_state": "closed"
+  },
+  "credential_values_stored": false
+}

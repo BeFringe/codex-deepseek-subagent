@@ -4,6 +4,9 @@
 
 from __future__ import annotations
 
+import tempfile
+import sys
+
 import datetime as dt
 import hashlib
 import json
@@ -20,6 +23,8 @@ from compatibility_state import (
     IdentityMismatch,
     MissingState,
     provenance_policy_sha256,
+    QUALIFICATION_WRITE_CONSENT_SOURCE,
+    qualification_write_consent_receipt_sha256,
     registry_items_sha256,
     StateError,
     StateStore,
@@ -27,6 +32,12 @@ from compatibility_state import (
 
 
 MAX_SESSION_META_LINE = 1024 * 1024
+LIVE_HOOK_SCHEMA_RUNTIME_ROLES = {
+    "migration_handoff_runtime": "0.148.0-alpha.9",
+    "prior_signed_runtime": "0.150.0-alpha.8",
+    "current_signed_runtime": "0.153.4",
+}
+SUPPORTED_LIVE_CODEX_VERSIONS = frozenset(LIVE_HOOK_SCHEMA_RUNTIME_ROLES.values())
 ATTESTATION_RE = re.compile(
     r"\ABEGIN CODEX WORKER ATTESTATION\n(\{.*\})\nEND CODEX WORKER ATTESTATION\Z",
     re.DOTALL,
@@ -41,10 +52,134 @@ READ_ONLY_TOOL_NAMES = {
     "tool_search",
     "view_image",
 }
+READ_ONLY_TOOL_NAME_ALIASES = {
+    # The isolated candidate exposes native Multi-Agent V2 tools under this
+    # exact non-reserved namespace. Codex flattens namespace + function name in
+    # Hook input, so retain a closed alias instead of stripping arbitrary
+    # prefixes (which could authorize an unknown tool by suffix).
+    "g4_assignmentlist_agents": "list_agents",
+}
+QUALIFICATION_SANDBOX_PROBE_ROOT = Path(tempfile.gettempdir() if sys.platform == "win32" else "/private/tmp").resolve()
+QUALIFICATION_SANDBOX_PROBE_VERIFICATION = (
+    "code-mode nested Bash read-only sandbox denial probe"
+)
+QUALIFICATION_WRITE_PROBE_VERIFICATION = "exact-path child apply_patch qualification probe"
+QUALIFICATION_HANDOVER_WRITE_PROBE_VERIFICATION = (
+    "exact-path post-quiescence child handover qualification probe"
+)
+QUALIFICATION_HANDOVER_INVARIANT = "exact prior quiescence barrier handover"
+HASH_BOUND_POST_MUTATION_RECEIPT_INVARIANT = (
+    "hash-bound trusted PostToolUse observation for final Git snapshot"
+)
+MAX_FINAL_RETURN_REJECTIONS = 2
+TERMINAL_AUTHORITY_REASONS = frozenset(
+    {
+        "assignment_timeout",
+        "authority_reattestation_mismatch",
+        "initial_disk_baseline_mismatch",
+        "initial_location_or_scope_mismatch",
+        "pre_write_attestation_timeout",
+        "read_only_mutation_attempt",
+        "sandbox_probe_dispatched",
+        "write_authority_gates_missing",
+        "final_return_context_lost",
+        "final_return_correction_exhausted",
+    }
+)
+PARENT_CANCEL_REQUIRED_REASONS = frozenset(
+    {
+        "assignment_timeout",
+        "pre_write_attestation_timeout",
+    }
+)
+
+
+def qualified_read_only_tool_name(value: object) -> str | None:
+    if not isinstance(value, str):
+        return None
+    if value in READ_ONLY_TOOL_NAMES:
+        return value
+    return READ_ONLY_TOOL_NAME_ALIASES.get(value)
+
+
+def guard_terminated_unresolved(envelope: Mapping[str, object]) -> bool:
+    evidence = envelope.get("termination_evidence")
+    if not isinstance(evidence, Mapping) or evidence.get("schema") != 1:
+        return False
+    if evidence.get("reason") not in TERMINAL_AUTHORITY_REASONS:
+        return False
+    if not isinstance(evidence.get("classification"), str):
+        return False
+    if type(evidence.get("baseline_comparable")) is not bool:
+        return False
+    if evidence.get("disk_changed") is not None and type(
+        evidence.get("disk_changed")
+    ) is not bool:
+        return False
+    if not isinstance(evidence.get("snapshot"), Mapping):
+        return False
+    try:
+        _session_meta_timestamp(evidence.get("observed_at"), "termination observed_at")
+    except IdentityMismatch:
+        return False
+    if evidence.get("reason") == "sandbox_probe_dispatched":
+        target = evidence.get("sandbox_probe_target")
+        command = evidence.get("sandbox_probe_command")
+        if not isinstance(target, str) or not isinstance(command, str):
+            return False
+        if evidence.get("attempted_tool_name") != "Bash":
+            return False
+        if evidence.get("mutation_blocked_before_execution") is not False:
+            return False
+    return True
 
 
 class GuardError(StateError):
     pass
+
+
+def _session_meta_timestamp(value: object, label: str) -> dt.datetime:
+    if not isinstance(value, str) or not value:
+        raise IdentityMismatch(f"{label} is missing")
+    normalized = f"{value[:-1]}+00:00" if value.endswith("Z") else value
+    try:
+        parsed = dt.datetime.fromisoformat(normalized)
+    except ValueError as error:
+        raise IdentityMismatch(f"{label} is invalid") from error
+    if parsed.tzinfo is None or parsed.utcoffset() is None:
+        raise IdentityMismatch(f"{label} lacks a UTC offset")
+    return parsed
+
+
+def _session_meta_thread_spawn(source: object) -> dict | None:
+    if isinstance(source, str) and source:
+        return None
+    if not isinstance(source, dict) or set(source) != {"subagent"}:
+        raise IdentityMismatch("SessionMeta source is invalid")
+    subagent = source.get("subagent")
+    if not isinstance(subagent, dict) or set(subagent) != {"thread_spawn"}:
+        raise IdentityMismatch("SessionMeta subagent source is invalid")
+    spawn = subagent.get("thread_spawn")
+    fields = {
+        "parent_thread_id",
+        "depth",
+        "agent_path",
+        "agent_nickname",
+        "agent_role",
+    }
+    if not isinstance(spawn, dict) or set(spawn) != fields:
+        raise IdentityMismatch("SessionMeta thread-spawn source fields are not exact")
+    for field in ("parent_thread_id", "agent_path", "agent_role"):
+        if not isinstance(spawn.get(field), str) or not spawn[field]:
+            raise IdentityMismatch(f"SessionMeta thread-spawn {field} is invalid")
+    if type(spawn.get("depth")) is not int or spawn["depth"] < 1:
+        raise IdentityMismatch("SessionMeta thread-spawn depth is invalid")
+    nickname = spawn.get("agent_nickname")
+    if nickname is not None and (not isinstance(nickname, str) or not nickname):
+        raise IdentityMismatch("SessionMeta thread-spawn nickname is invalid")
+    if not spawn["agent_path"].startswith("/"):
+        raise IdentityMismatch("SessionMeta thread-spawn AgentPath is invalid")
+    return spawn
 
 
 def _active_runtime(envelope: Mapping[str, object]) -> dict:
@@ -72,6 +207,47 @@ def _active_runtime(envelope: Mapping[str, object]) -> dict:
     return runtime
 
 
+def final_attestation_seed(
+    capsule: Mapping[str, object], recovery_count: int
+) -> dict[str, object]:
+    """Return only mechanically derived fields needed to build a final claim.
+
+    This seed is deliberately non-authorizing.  It does not assert disk state,
+    provenance origin, verification results, completion, or the absence of an
+    authority violation; the worker must still make those claims and the stop
+    hook must independently adjudicate them against fresh host state.
+    """
+    if type(recovery_count) is not int or recovery_count < 0:
+        raise GuardError("final-attestation seed recovery_count is invalid")
+    string_fields = {
+        field: capsule.get(field)
+        for field in (
+            "assignment_id",
+            "handoff_id",
+            "capsule_sha256",
+            "canonical_agent_path",
+        )
+    }
+    if any(
+        not isinstance(value, str) or not value
+        for value in string_fields.values()
+    ):
+        raise GuardError("final-attestation seed identity fields are invalid")
+    verification = capsule.get("verification")
+    if not isinstance(verification, list) or any(
+        not isinstance(command, str) or not command for command in verification
+    ):
+        raise GuardError("final-attestation seed verification contract is invalid")
+    return {
+        "schema": 1,
+        **string_fields,
+        "compact_invariant_sha256": compact_invariant_sha256(capsule),
+        "authority_provenance_policy_sha256": provenance_policy_sha256(capsule),
+        "recovery_count": recovery_count,
+        "verification_commands": list(verification),
+    }
+
+
 def read_session_meta(transcript_path: str, *, require_child_fields: bool = True) -> dict:
     path = Path(transcript_path)
     if not path.is_absolute():
@@ -89,20 +265,57 @@ def read_session_meta(transcript_path: str, *, require_child_fields: bool = True
         raise IdentityMismatch("child SessionMeta line is invalid") from error
     if not isinstance(item, dict) or item.get("type") != "session_meta":
         raise IdentityMismatch("the first rollout record is not SessionMeta")
+    record_timestamp = _session_meta_timestamp(
+        item.get("timestamp"), "SessionMeta rollout-record timestamp"
+    )
     payload = item.get("payload")
     if not isinstance(payload, dict):
         raise IdentityMismatch("SessionMeta payload is invalid")
-    required = ("session_id", "id")
-    if require_child_fields:
-        required += ("parent_thread_id", "agent_role", "agent_path")
-    if any(not isinstance(payload.get(field), str) or not payload[field] for field in required):
-        raise IdentityMismatch("SessionMeta lacks child identity fields")
+    for field in ("session_id", "id", "cwd"):
+        if not isinstance(payload.get(field), str) or not payload[field]:
+            raise IdentityMismatch(f"SessionMeta {field} is invalid")
+    cli_version = payload.get("cli_version")
+    if cli_version not in SUPPORTED_LIVE_CODEX_VERSIONS:
+        raise IdentityMismatch("SessionMeta cli_version is not in the pinned live set")
+    created_timestamp = _session_meta_timestamp(
+        payload.get("timestamp"), "SessionMeta payload timestamp"
+    )
+    if created_timestamp > record_timestamp:
+        raise IdentityMismatch(
+            "SessionMeta payload timestamp is later than its rollout record"
+        )
+    spawn = _session_meta_thread_spawn(payload.get("source"))
+    child_fields = {
+        "parent_thread_id": payload.get("parent_thread_id"),
+        "agent_role": payload.get("agent_role"),
+        "agent_path": payload.get("agent_path"),
+        "agent_nickname": payload.get("agent_nickname"),
+    }
+    if spawn is None:
+        if any(value is not None for value in child_fields.values()):
+            raise IdentityMismatch("root SessionMeta carries child identity fields")
+        if require_child_fields:
+            raise IdentityMismatch("SessionMeta is not a spawned child")
+        payload["agent_depth"] = None
+        return payload
+    for field in ("parent_thread_id", "agent_role", "agent_path", "agent_nickname"):
+        if child_fields[field] != spawn[field]:
+            raise IdentityMismatch(
+                f"SessionMeta {field} disagrees with thread-spawn source"
+            )
+    payload["agent_depth"] = spawn["depth"]
     return payload
 
 
 def child_identity_from_hook(hook_input: Mapping[str, object]) -> dict[str, str]:
     event_name = hook_input.get("hook_event_name")
-    if event_name not in {"SubagentStart", "PreToolUse", "PreCompact", "PostCompact"}:
+    if event_name not in {
+        "SubagentStart",
+        "PreToolUse",
+        "PostToolUse",
+        "PreCompact",
+        "PostCompact",
+    }:
         raise IdentityMismatch("hook event does not carry direct child identity")
     transcript_path = hook_input.get("transcript_path")
     if not isinstance(transcript_path, str):
@@ -124,6 +337,7 @@ def child_identity_from_hook(hook_input: Mapping[str, object]) -> dict[str, str]
         "parent_thread_id": meta["parent_thread_id"],
         "agent_type": str(agent_type),
         "canonical_agent_path": meta["agent_path"],
+        "codex_version": meta["cli_version"],
     }
 
 
@@ -140,7 +354,9 @@ def child_identity_from_stop(hook_input: Mapping[str, object]) -> dict[str, str]
     if agent_id != meta["id"]:
         raise IdentityMismatch("SubagentStop agent_id does not match SessionMeta.id")
     if runtime_session_id != meta["session_id"]:
-        raise IdentityMismatch("SubagentStop session does not match child SessionMeta.session_id")
+        raise IdentityMismatch(
+            "SubagentStop session does not match child SessionMeta.session_id"
+        )
     if agent_type != meta["agent_role"]:
         raise IdentityMismatch("SubagentStop role does not match SessionMeta.agent_role")
     parent_transcript = hook_input.get("transcript_path")
@@ -151,6 +367,10 @@ def child_identity_from_stop(hook_input: Mapping[str, object]) -> dict[str, str]
         raise IdentityMismatch("parent and child runtime sessions do not match")
     if parent_meta["id"] != meta["parent_thread_id"]:
         raise IdentityMismatch("stopping thread is not the direct parent")
+    if parent_meta.get("parent_thread_id") is None and parent_meta["id"] != runtime_session_id:
+        raise IdentityMismatch("root parent does not match Hook runtime session")
+    if parent_meta["cli_version"] != meta["cli_version"]:
+        raise IdentityMismatch("parent and child Codex versions do not match")
     return {
         "runtime_session_id": meta["session_id"],
         "child_thread_id": meta["id"],
@@ -158,7 +378,170 @@ def child_identity_from_stop(hook_input: Mapping[str, object]) -> dict[str, str]
         "parent_thread_id": meta["parent_thread_id"],
         "agent_type": meta["agent_role"],
         "canonical_agent_path": meta["agent_path"],
+        "codex_version": meta["cli_version"],
     }
+
+
+def _consume_qualification_sandbox_probe(
+    store: StateStore,
+    assignment_id: str,
+    envelope: Mapping[str, object],
+    hook_input: Mapping[str, object],
+    identity: Mapping[str, str],
+    probe_targets: Mapping[str, Path],
+    *,
+    observed_at: dt.datetime,
+) -> bool:
+    capsule = envelope["capsule"]
+    task_name = capsule["requested_task_name"]
+    target_value = probe_targets.get(task_name)
+    if target_value is None:
+        return False
+    if hook_input.get("tool_name") != "Bash":
+        return False
+    target = Path(target_value)
+    probe_root = QUALIFICATION_SANDBOX_PROBE_ROOT.resolve(strict=True)
+    if not target.is_absolute() or target.parent.resolve(strict=True) != probe_root:
+        raise AuthorityViolation(
+            "qualification sandbox probe target is outside the fixed temporary root"
+        )
+    if target.resolve(strict=False) != target:
+        raise AuthorityViolation("qualification sandbox probe target is not canonical")
+    if target.exists() or target.is_symlink():
+        raise AuthorityViolation("qualification sandbox probe target is not absent")
+    expected_command = f"/usr/bin/touch {target}"
+    tool_input = hook_input.get("tool_input")
+    if not isinstance(tool_input, Mapping) or set(tool_input) != {"command"}:
+        return False
+    if tool_input["command"] != expected_command:
+        return False
+    if capsule["assignment_mutation_mode"] != "read_only":
+        raise AuthorityViolation("qualification sandbox probe requires read-only authority")
+    if capsule["parent_recorded_user_write_intent"] != "deny":
+        raise AuthorityViolation("qualification sandbox probe cannot carry parent write intent")
+    if capsule["trusted_host_user_write_consent"] != {
+        "schema": 1,
+        "status": "unavailable",
+        "source": None,
+        "receipt_sha256": None,
+    }:
+        raise AuthorityViolation("qualification sandbox probe cannot carry user write consent")
+    if capsule["owned_paths"] or capsule["excluded_paths"]:
+        raise AuthorityViolation("qualification sandbox probe cannot carry path ownership")
+    if any(capsule["git_authority"].values()):
+        raise AuthorityViolation("qualification sandbox probe cannot carry Git authority")
+    if capsule["verification"] != [QUALIFICATION_SANDBOX_PROBE_VERIFICATION]:
+        raise AuthorityViolation("qualification sandbox probe verification is not exact")
+    if identity["canonical_agent_path"] != f"/root/{task_name}":
+        raise AuthorityViolation("qualification sandbox probe AgentPath is not exact")
+    cwd = hook_input.get("cwd")
+    if not isinstance(cwd, str) or Path(cwd).resolve() != Path(
+        capsule["root"]["path"]
+    ).resolve():
+        raise AuthorityViolation("qualification sandbox probe cwd is not the capsule root")
+    snapshot = collect_git_snapshot(capsule["root"]["path"])
+    if disk_change_from_baseline(snapshot, capsule) is not False:
+        raise AuthorityViolation(
+            "qualification sandbox probe requires an unchanged captured baseline"
+        )
+    evidence = _termination_evidence(
+        capsule,
+        snapshot,
+        reason="sandbox_probe_dispatched",
+        observed_at=observed_at,
+        attempted_tool_name="Bash",
+    )
+    evidence["mutation_blocked_before_execution"] = False
+    evidence["sandbox_probe_target"] = str(target)
+    evidence["sandbox_probe_command"] = expected_command
+    store.terminate_active(assignment_id, evidence)
+    return True
+
+
+def _qualification_write_probe_authorized(
+    envelope: Mapping[str, object],
+    hook_input: Mapping[str, object],
+    identity: Mapping[str, str],
+    probe_targets: Mapping[str, Path],
+    *,
+    handover: bool = False,
+) -> bool:
+    capsule = envelope["capsule"]
+    task_name = capsule["requested_task_name"]
+    target_value = probe_targets.get(task_name)
+    if target_value is None or hook_input.get("tool_name") != "apply_patch":
+        return False
+    root = Path(capsule["root"]["path"])
+    target = Path(target_value)
+    if root.parent != Path(tempfile.gettempdir() if sys.platform == "win32" else "/private/tmp").resolve() or root.resolve() != root:
+        raise AuthorityViolation("qualification write probe root is not canonical temporary root")
+    if not target.is_absolute() or target.parent.resolve() != root:
+        raise AuthorityViolation("qualification write probe target is not an exact root child")
+    if target.resolve(strict=False) != target or target.is_symlink():
+        raise AuthorityViolation("qualification write probe target is not canonical")
+    if not handover and target.exists():
+        raise AuthorityViolation("qualification write probe target is not absent")
+    if handover and not target.is_file():
+        raise AuthorityViolation("handover write probe target is not an existing regular file")
+    relative_target = target.relative_to(root).as_posix()
+    if capsule["assignment_mutation_mode"] != "write":
+        raise AuthorityViolation("qualification write probe requires write authority")
+    if capsule["owned_paths"] != [relative_target] or capsule["excluded_paths"]:
+        raise AuthorityViolation("qualification write probe ownership is not exact")
+    if any(capsule["git_authority"].values()):
+        raise AuthorityViolation("qualification write probe cannot carry Git authority")
+    expected_verification = (
+        QUALIFICATION_HANDOVER_WRITE_PROBE_VERIFICATION
+        if handover
+        else QUALIFICATION_WRITE_PROBE_VERIFICATION
+    )
+    if capsule["verification"] != [expected_verification]:
+        raise AuthorityViolation("qualification write probe verification is not exact")
+    has_handover_invariant = QUALIFICATION_HANDOVER_INVARIANT in capsule[
+        "execution_contract"
+    ]["required_invariants"]
+    if has_handover_invariant != handover:
+        raise AuthorityViolation("handover write probe invariant is not exact")
+    if handover:
+        status = _git(
+            root,
+            "status",
+            "--porcelain=v1",
+            "-z",
+            "--untracked-files=all",
+            "--",
+            relative_target,
+        ).decode("utf-8")
+        dirty = {
+            "kind": "file",
+            "path": relative_target,
+            "sha256": hashlib.sha256(target.read_bytes()).hexdigest(),
+            "status": status,
+        }
+        handovers = capsule["ownership_handover"]
+        if (
+            status != f"?? {relative_target}\0"
+            or len(handovers) != 1
+            or handovers[0]["snapshot_sha256"] != capsule["capture_snapshot_sha256"]
+            or capsule["preexisting_dirty"] != [dirty]
+        ):
+            raise AuthorityViolation("handover write probe lacks one exact frozen frontier")
+    elif capsule["ownership_handover"] or capsule["preexisting_dirty"]:
+        raise AuthorityViolation("absent-target write probe inherited prior ownership")
+    expected_consent = {
+        "schema": 1,
+        "status": "verified",
+        "source": QUALIFICATION_WRITE_CONSENT_SOURCE,
+        "receipt_sha256": qualification_write_consent_receipt_sha256(capsule),
+    }
+    if capsule["trusted_host_user_write_consent"] != expected_consent:
+        raise AuthorityViolation("qualification write probe lacks exact trusted-host receipt")
+    if identity["canonical_agent_path"] != capsule["canonical_agent_path"]:
+        raise AuthorityViolation("qualification write probe AgentPath is not exact")
+    cwd = hook_input.get("cwd")
+    if not isinstance(cwd, str) or Path(cwd).resolve() != root:
+        raise AuthorityViolation("qualification write probe cwd is not the capsule root")
+    return True
 
 
 def pre_tool_use(
@@ -166,6 +549,9 @@ def pre_tool_use(
     hook_input: Mapping[str, object],
     *,
     now: dt.datetime | None = None,
+    qualification_sandbox_probes: Mapping[str, Path] | None = None,
+    qualification_write_probes: Mapping[str, Path] | None = None,
+    qualification_handover_write_probes: Mapping[str, Path] | None = None,
 ) -> dict:
     try:
         if hook_input.get("hook_event_name") != "PreToolUse":
@@ -173,16 +559,84 @@ def pre_tool_use(
         identity = child_identity_from_hook(hook_input)
         assignment_id, envelope = store.find_active(identity)
         tool_name = hook_input.get("tool_name")
-        if tool_name not in READ_ONLY_TOOL_NAMES:
+        observed_at = now or dt.datetime.now(dt.timezone.utc)
+        if qualification_sandbox_probes and _consume_qualification_sandbox_probe(
+            store,
+            assignment_id,
+            envelope,
+            hook_input,
+            identity,
+            qualification_sandbox_probes,
+            observed_at=observed_at,
+        ):
+            return {}
+        qualified_tool_name = qualified_read_only_tool_name(tool_name)
+        task_name = envelope["capsule"]["requested_task_name"]
+        ordinary_write = bool(
+            qualification_write_probes and task_name in qualification_write_probes
+        )
+        handover_write = bool(
+            qualification_handover_write_probes
+            and task_name in qualification_handover_write_probes
+        )
+        if ordinary_write and handover_write:
+            raise AuthorityViolation("write probe task has two qualification ceilings")
+        selected_write_probes = (
+            qualification_handover_write_probes
+            if handover_write
+            else qualification_write_probes
+        )
+        qualification_write = bool(
+            (ordinary_write or handover_write)
+            and selected_write_probes
+            and _qualification_write_probe_authorized(
+                envelope,
+                hook_input,
+                identity,
+                selected_write_probes,
+                handover=handover_write,
+            )
+        )
+        if qualified_tool_name is None and not qualification_write:
+            capsule = envelope["capsule"]
+            snapshot = collect_git_snapshot(capsule["root"]["path"])
+            mutation_mode = capsule["assignment_mutation_mode"]
+            reason = "read_only_mutation_attempt"
+            blocking_gates = None
+            if mutation_mode == "write":
+                reason = "write_authority_gates_missing"
+                blocking_gates = [
+                    "trusted_host_user_write_consent",
+                    "direct_write_qualification",
+                    "live_mutation_mediation",
+                ]
+            evidence = _termination_evidence(
+                capsule,
+                snapshot,
+                reason=reason,
+                observed_at=observed_at,
+                attempted_tool_name=(
+                    tool_name if isinstance(tool_name, str) and tool_name else "<invalid>"
+                ),
+                blocking_gates=blocking_gates,
+            )
+            store.terminate_active(assignment_id, evidence)
+            if mutation_mode == "read_only":
+                raise AuthorityViolation(
+                    f"tool {tool_name!r} is not in the qualified read-only allowlist; "
+                    "active authority terminated before execution"
+                )
             raise AuthorityViolation(
-                f"tool {tool_name!r} is not in the qualified read-only allowlist"
+                f"tool {tool_name!r} requested mutation with parent-recorded user intent, "
+                "but trusted host user consent is unavailable, direct_write_qualified=false, "
+                "and live mutation mediation is unproven; "
+                "active authority terminated before execution"
             )
         capsule = envelope["capsule"]
         cwd = hook_input.get("cwd")
         if not isinstance(cwd, str):
             raise GuardError("PreToolUse has no cwd")
         snapshot = collect_git_snapshot(cwd)
-        observed_at = now or dt.datetime.now(dt.timezone.utc)
         runtime = _active_runtime(envelope)
         if (
             runtime["first_git_attested_at"] is None
@@ -223,6 +677,17 @@ def pre_tool_use(
                     observed_at=observed_at,
                 )
                 store.terminate_active(assignment_id, evidence)
+            else:
+                evidence = _termination_evidence(
+                    capsule,
+                    snapshot,
+                    reason="authority_reattestation_mismatch",
+                    observed_at=observed_at,
+                    attempted_tool_name=(
+                        tool_name if isinstance(tool_name, str) and tool_name else "<invalid>"
+                    ),
+                )
+                store.terminate_active(assignment_id, evidence)
             raise AuthorityViolation("; ".join(violations))
         store.attest_tool_use(
             assignment_id,
@@ -233,6 +698,12 @@ def pre_tool_use(
             now=observed_at,
         )
         recovery_count = envelope["runtime"]["recovery_count"]
+        attestation_seed = json.dumps(
+            final_attestation_seed(capsule, recovery_count),
+            ensure_ascii=False,
+            separators=(",", ":"),
+            sort_keys=True,
+        )
         context = (
             "AUTHORITY.REATTESTED "
             f"assignment_id={assignment_id} "
@@ -241,6 +712,9 @@ def pre_tool_use(
             "BEGIN CODEX WORKER COMPACT INVARIANT\n"
             f"{json.dumps(compact_invariant(capsule), ensure_ascii=False, separators=(',', ':'), sort_keys=True)}\n"
             "END CODEX WORKER COMPACT INVARIANT\n"
+            "BEGIN CODEX WORKER FINAL ATTESTATION SEED\n"
+            f"{attestation_seed}\n"
+            "END CODEX WORKER FINAL ATTESTATION SEED\n"
             "BEGIN CODEX WORKER CAPSULE\n"
             f"{json.dumps(capsule, ensure_ascii=False, separators=(',', ':'), sort_keys=True)}\n"
             "END CODEX WORKER CAPSULE\n"
@@ -266,8 +740,23 @@ def pre_tool_use(
 
 def pre_compact(store: StateStore, hook_input: Mapping[str, object]) -> dict:
     identity = child_identity_from_hook(hook_input)
-    assignment_id, _ = store.find_active(identity)
-    store.mark_recovery(assignment_id)
+    assignment_id, envelope = store.find_active(identity)
+    capsule = envelope["capsule"]
+    _active_runtime(envelope)
+    cwd = hook_input.get("cwd")
+    if not isinstance(cwd, str):
+        raise GuardError("PreCompact has no cwd")
+    snapshot = collect_git_snapshot(cwd)
+    violations = _snapshot_authority_violations(snapshot, capsule)
+    if violations:
+        raise AuthorityViolation("; ".join(violations))
+    store.mark_recovery(
+        assignment_id,
+        identity,
+        root=snapshot["root"],
+        branch=snapshot["branch"],
+        head=snapshot["head"],
+    )
     return {}
 
 
@@ -303,8 +792,15 @@ def parse_attestation(message: object) -> dict:
         "assigned_slice_complete",
         "inventory_summaries",
     }
-    if set(value) != required:
-        raise GuardError("final attestation fields are not exact")
+    observed = set(value)
+    if observed != required:
+        missing = sorted(required - observed)
+        unexpected = sorted(observed - required)
+        raise GuardError(
+            "final attestation fields are not exact: "
+            f"missing={json.dumps(missing, separators=(',', ':'))} "
+            f"unexpected={json.dumps(unexpected, separators=(',', ':'))}"
+        )
     if type(value["recovery_count"]) is not int or value["recovery_count"] < 0:
         raise GuardError("recovery_count must be a non-negative integer")
     for field in (
@@ -357,6 +853,49 @@ def parse_attestation(message: object) -> dict:
     ):
         raise GuardError("derivation_receipt_sha256 is invalid")
     return value
+
+
+def validate_complete_write_observation(
+    store: StateStore,
+    identity: Mapping[str, str],
+    capsule: Mapping[str, object],
+    attestation: Mapping[str, object],
+    snapshot: Mapping[str, object],
+) -> None:
+    invariants = capsule["execution_contract"]["required_invariants"]
+    if HASH_BOUND_POST_MUTATION_RECEIPT_INVARIANT not in invariants:
+        return
+    if capsule["assignment_mutation_mode"] != "write":
+        raise GuardError("post-mutation receipt invariant requires write mode")
+    if not attestation["assigned_slice_complete"]:
+        return
+    receipt_sha256 = attestation["authority_provenance"][
+        "derivation_receipt_sha256"
+    ]
+    if receipt_sha256 is None:
+        raise GuardError("complete write return has no post-mutation receipt")
+    actor = {
+        "runtime_session_id": identity["runtime_session_id"],
+        "thread_id": identity["child_thread_id"],
+        "agent_type": identity["agent_type"],
+        "canonical_agent_path": identity["canonical_agent_path"],
+    }
+    try:
+        receipt = store.find_writer_receipt(actor, receipt_sha256)
+    except StateError as error:
+        raise GuardError(f"complete write receipt is unavailable: {error}") from error
+    if receipt["root"] != capsule["root"]["path"]:
+        raise GuardError("complete write receipt root does not match capsule")
+    if receipt["after_snapshot"] != dict(snapshot):
+        raise GuardError("complete write receipt does not bind final Git snapshot")
+    if any(
+        not any(
+            Path(path) == Path(owner) or Path(owner) in Path(path).parents
+            for owner in capsule["owned_paths"]
+        )
+        for path in receipt["paths"]
+    ):
+        raise GuardError("complete write receipt exceeds exact owned paths")
 
 
 def _git(root: Path, *arguments: str, allow_code_one: bool = False) -> bytes:
@@ -490,9 +1029,13 @@ def _termination_evidence(
     *,
     reason: str,
     observed_at: dt.datetime,
+    attempted_tool_name: str | None = None,
+    blocking_gates: list[str] | None = None,
 ) -> dict:
     disk_changed = disk_change_from_baseline(snapshot, capsule)
-    if disk_changed is None:
+    if reason == "authority_reattestation_mismatch":
+        classification = "post_attestation_authority_drift"
+    elif disk_changed is None:
         classification = "initial_authority_mismatch"
     elif reason == "pre_write_attestation_timeout":
         classification = (
@@ -512,14 +1055,40 @@ def _termination_evidence(
             if capsule["ownership_handover"]
             else "unresponsive_with_disk_change_before_attestation"
         )
+    elif reason == "read_only_mutation_attempt":
+        classification = "read_only_child_mutation_attempt"
+    elif reason == "sandbox_probe_dispatched":
+        classification = "qualification_sandbox_probe_dispatched"
+    elif reason == "write_authority_gates_missing":
+        classification = "write_authority_gates_missing"
+    elif reason == "final_return_context_lost":
+        if disk_changed is None:
+            classification = "return_context_loss_with_untrusted_location"
+        elif disk_changed:
+            classification = "return_context_loss_with_contribution"
+        else:
+            classification = "return_context_loss_without_contribution"
+    elif reason == "final_return_correction_exhausted":
+        if disk_changed is None:
+            classification = "invalid_final_with_untrusted_location"
+        elif disk_changed:
+            classification = "return_context_loss_with_contribution"
+        else:
+            classification = "invalid_final_without_contribution"
     else:
         classification = "initial_authority_mismatch"
-    provenance_status = (
-        "overlapping_assignment_provenance"
-        if classification == "late_mutation_after_interrupt"
-        else None
-    )
-    return {
+    if classification == "post_attestation_authority_drift":
+        provenance_status = "post_attestation_authority_drift_unattributed"
+    elif classification == "late_mutation_after_interrupt":
+        provenance_status = "overlapping_assignment_provenance"
+    elif classification in {
+        "read_only_child_mutation_attempt",
+        "write_authority_gates_missing",
+    } and disk_changed:
+        provenance_status = "pre_attempt_disk_drift_unattributed"
+    else:
+        provenance_status = None
+    evidence = {
         "schema": 1,
         "reason": reason,
         "classification": classification,
@@ -529,18 +1098,38 @@ def _termination_evidence(
         "observed_at": observed_at.isoformat(),
         "snapshot": dict(snapshot),
     }
+    if attempted_tool_name is not None:
+        evidence["attempted_tool_name"] = attempted_tool_name
+        evidence["mutation_blocked_before_execution"] = True
+    if blocking_gates is not None:
+        evidence["blocking_gates"] = list(blocking_gates)
+    return evidence
 
 
 def sweep_deadlines(
     store: StateStore,
     *,
     now: dt.datetime | None = None,
+    assignment_ids: set[str] | None = None,
 ) -> list[dict]:
     observed_at = now or dt.datetime.now(dt.timezone.utc)
     if observed_at.tzinfo is None or observed_at.utcoffset() is None:
         raise GuardError("watchdog time must include a UTC offset")
+    if assignment_ids is not None and not assignment_ids:
+        raise GuardError("watchdog assignment selector must not be empty")
+    active = store.list_active()
+    if assignment_ids is not None:
+        available = {assignment_id for assignment_id, _ in active}
+        missing = sorted(assignment_ids - available)
+        if missing:
+            raise GuardError(
+                "requested active assignment not found: " + ", ".join(missing)
+            )
+        active = [
+            item for item in active if item[0] in assignment_ids
+        ]
     results = []
-    for assignment_id, envelope in store.list_active():
+    for assignment_id, envelope in active:
         capsule = envelope["capsule"]
         runtime = _active_runtime(envelope)
         reason = None
@@ -566,12 +1155,89 @@ def sweep_deadlines(
     return results
 
 
+def _final_rejection_result(
+    store: StateStore,
+    assignment_id: str,
+    identity: Mapping[str, str],
+    capsule: Mapping[str, object],
+    snapshot: Mapping[str, object],
+    message: object,
+    error: StateError,
+) -> dict:
+    disk_changed = disk_change_from_baseline(snapshot, capsule)
+    if disk_changed is None:
+        classification = "invalid_final_with_untrusted_location"
+    elif disk_changed:
+        classification = "return_context_loss_with_contribution"
+    else:
+        classification = "invalid_final_without_contribution"
+    canonical_message = json.dumps(
+        message, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+    ).encode("utf-8")
+    canonical_snapshot = json.dumps(
+        dict(snapshot), ensure_ascii=False, sort_keys=True, separators=(",", ":")
+    ).encode("utf-8")
+    rejection = {
+        "schema": 1,
+        "classification": classification,
+        "reason": str(error),
+        "message_sha256": hashlib.sha256(canonical_message).hexdigest(),
+        "snapshot_sha256": hashlib.sha256(canonical_snapshot).hexdigest(),
+        "observed_at": dt.datetime.now(dt.timezone.utc).isoformat(),
+    }
+    rejection_count = store.record_final_rejection(
+        assignment_id,
+        identity,
+        rejection,
+    )
+    if rejection_count >= MAX_FINAL_RETURN_REJECTIONS:
+        evidence = _termination_evidence(
+            capsule,
+            snapshot,
+            reason="final_return_correction_exhausted",
+            observed_at=dt.datetime.now(dt.timezone.utc),
+        )
+        evidence["final_rejection_count"] = rejection_count
+        evidence["last_message_sha256"] = rejection["message_sha256"]
+        evidence["last_snapshot_sha256"] = rejection["snapshot_sha256"]
+        store.terminate_active(assignment_id, evidence)
+        return {}
+    return {
+        "decision": "block",
+        "reason": (
+            f"TASK.FINAL_{classification.upper()}: {error}. "
+            "Disk evidence does not restore missing authority; return a corrected attestation. "
+            f"correction_attempt={rejection_count}/{MAX_FINAL_RETURN_REJECTIONS}"
+        ),
+    }
+
+
 def subagent_stop(store: StateStore, hook_input: Mapping[str, object]) -> dict:
+    assignment_id = None
+    identity = None
+    capsule = None
+    snapshot = None
     try:
         identity = child_identity_from_stop(hook_input)
         try:
             assignment_id, envelope = store.find_active(identity)
         except MissingState:
+            terminal = store.find_unresolved(identity)
+            if terminal is not None and guard_terminated_unresolved(terminal[1]):
+                termination_evidence = terminal[1]["termination_evidence"]
+                termination_reason = termination_evidence["reason"]
+                if termination_reason in PARENT_CANCEL_REQUIRED_REASONS:
+                    return {
+                        "decision": "block",
+                        "reason": (
+                            "TASK.PARENT_CANCEL_REQUIRED: authority terminated by watchdog "
+                            f"reason={termination_reason}; the child cannot self-complete "
+                            "after a no-event timeout. The parent must use native interrupt "
+                            "or cancel. An interrupt acknowledgement alone does not authorize "
+                            "ownership handover."
+                        ),
+                    }
+                return {}
             lost = store.context_lost_for(identity)
             message = hook_input.get("last_assistant_message")
             if lost is not None and isinstance(message, str) and message.strip() == "TASK.CONTEXT_LOST":
@@ -579,23 +1245,17 @@ def subagent_stop(store: StateStore, hook_input: Mapping[str, object]) -> dict:
             raise
         capsule = envelope["capsule"]
         snapshot = collect_git_snapshot(capsule["root"]["path"])
-        try:
-            attestation = parse_attestation(hook_input.get("last_assistant_message"))
-        except GuardError as error:
-            disk_changed = disk_change_from_baseline(snapshot, capsule)
-            if disk_changed is None:
-                classification = "invalid_final_with_untrusted_location"
-            elif disk_changed:
-                classification = "return_context_loss_with_contribution"
-            else:
-                classification = "invalid_final_without_contribution"
-            return {
-                "decision": "block",
-                "reason": (
-                    f"TASK.FINAL_{classification.upper()}: {error}. "
-                    "Disk evidence does not restore missing authority; return a corrected attestation."
-                ),
-            }
+        message = hook_input.get("last_assistant_message")
+        if isinstance(message, str) and message.strip() == "TASK.CONTEXT_LOST":
+            evidence = _termination_evidence(
+                capsule,
+                snapshot,
+                reason="final_return_context_lost",
+                observed_at=dt.datetime.now(dt.timezone.utc),
+            )
+            store.terminate_active(assignment_id, evidence)
+            return {}
+        attestation = parse_attestation(message)
         violations = _snapshot_authority_violations(snapshot, capsule)
         expected = {
             "assignment_id": assignment_id,
@@ -659,9 +1319,29 @@ def subagent_stop(store: StateStore, hook_input: Mapping[str, object]) -> dict:
             raise GuardError("complete return includes failed verification")
         if complete and _active_runtime(envelope)["first_git_attested_at"] is None:
             raise GuardError("complete return has no durable first Git attestation")
+        validate_complete_write_observation(
+            store,
+            identity,
+            capsule,
+            attestation,
+            snapshot,
+        )
         store.finalize(assignment_id, attestation, complete=complete)
         return {}
     except StateError as error:
+        if all(
+            value is not None
+            for value in (assignment_id, identity, capsule, snapshot)
+        ):
+            return _final_rejection_result(
+                store,
+                assignment_id,
+                identity,
+                capsule,
+                snapshot,
+                hook_input.get("last_assistant_message"),
+                error,
+            )
         return {
             "decision": "block",
             "reason": (

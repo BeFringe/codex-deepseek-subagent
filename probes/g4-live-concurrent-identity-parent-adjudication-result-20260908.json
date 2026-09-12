@@ -1,0 +1,99 @@
+{
+  "schema": 1,
+  "evidence_kind": "current_signed_runtime_provider_free_concurrent_identity_parent_adjudication_result",
+  "observed_at": "2026-09-08T06:09:41Z",
+  "runtime_role": "current_signed_runtime",
+  "input_evidence": {
+    "path": "probes/g4-live-concurrent-identity-parent-adjudication-input-20260908.json",
+    "sha256": "a55a69180b34fa6a7b2f7ed72af2596c0471fe9b08ab4f576284bb0de5389a9e"
+  },
+  "transitions": [
+    {
+      "concurrent_position": "A",
+      "assignment_id": "44b01bc1-80ba-49da-8f25-5a370f24f020",
+      "source": "reported",
+      "destination": "consumed",
+      "active_absent_after": true,
+      "reported_absent_after": true,
+      "unresolved_absent_after": true,
+      "consumed_present_after": true,
+      "consumed_envelope_sha256": "25f749ffd4d23dc2572b68c89dec44d62ad405fd4e4312a68258cb837fb78fe8"
+    },
+    {
+      "concurrent_position": "B",
+      "assignment_id": "f957955f-1e81-420d-9c40-e5facd685e35",
+      "source": "reported",
+      "destination": "consumed",
+      "active_absent_after": true,
+      "reported_absent_after": true,
+      "unresolved_absent_after": true,
+      "consumed_present_after": true,
+      "consumed_envelope_sha256": "9657e60f5d0eb4ec0facaf16382c4077f214c9d470d903f1e2b2b3d427cd6459"
+    }
+  ],
+  "parent_adjudication": {
+    "location_integrity": "pass",
+    "mutation_scope_integrity": "pass",
+    "verification_freshness": "pass",
+    "derivation_provenance_integrity": "pass",
+    "feasibility_contract_integrity": "pass",
+    "evidence_sha256": "a55a69180b34fa6a7b2f7ed72af2596c0471fe9b08ab4f576284bb0de5389a9e"
+  },
+  "post_transition_barrier": {
+    "root": "/Users/pearly/文档/CAT/codex-deepseek-subagent",
+    "branch": "main",
+    "head": "00d6db7c0de6461109fa8157bc237b0f33673360",
+    "head_tree": "d4346b02fc306a7e60abf8aed37bee6d85b34f1b",
+    "write_tree": "d4346b02fc306a7e60abf8aed37bee6d85b34f1b",
+    "index_sha256": "9ea75fcfbb633561b97e9f55ddb3b30d537727bf0e867bb06f8435dd03f36c8f",
+    "status_porcelain_v1": [
+      "?? probes/g4-live-concurrent-identity-parent-adjudication-input-20260908.json"
+    ],
+    "only_parent_evidence_write_present": true,
+    "candidate_process_absent": true,
+    "headless_candidate_exit_code_observed": true,
+    "headless_candidate_exit_code": 0,
+    "strong_global_quiescence_claimed": false
+  },
+  "scope_verdict": {
+    "provider_free_concurrent_identity_pair_consumed": true,
+    "two_distinct_assignment_ids_consumed": true,
+    "two_distinct_child_sessionmeta_identities_consumed": true,
+    "actual_execution_overlap_adjudicated": true,
+    "subagentstop_corrections_adjudicated": true,
+    "read_only_provenance_adjudicated": true,
+    "read_only_null_feasibility_adjudicated": true,
+    "parent_projection_complete": false,
+    "identity_cohort_complete": false,
+    "nested_identity_complete": false,
+    "concurrent_identity_cohort_complete": false,
+    "resume_identity_complete": false,
+    "mutation_contribution_adjudicated": false,
+    "mutation_negative_space_complete": false,
+    "strong_global_quiescence_complete": false,
+    "representative_cost_or_latency_cohort_complete": false,
+    "phase1_complete": false,
+    "direct_write_qualified": false,
+    "phase2_state": "closed",
+    "phase3_state": "closed"
+  },
+  "verification": {
+    "provider_free_suite": {
+      "command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPYCACHEPREFIX=/private/tmp/codex-pycache-phase1-concurrent-adjudication-full-20260908 python3 -m unittest discover -s tests -p 'test_*.py'",
+      "test_count": 495,
+      "duration_seconds": 56.504,
+      "exit_code": 0,
+      "agent_template_checks": "passed"
+    },
+    "phase1_gate_normal_exit_code": 0,
+    "phase1_gate_require_complete_exit_code": 2,
+    "mutation_matrix_normal_exit_code": 0,
+    "mutation_matrix_blocker_count": 13,
+    "mutation_matrix_require_qualified_exit_code": 2,
+    "same_uid_probe_exit_code": 0,
+    "same_uid_require_protected_exit_code": 2,
+    "same_uid_rollout_protected": false,
+    "same_uid_state_protected": false
+  },
+  "credential_values_stored": false
+}

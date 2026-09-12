@@ -1,0 +1,87 @@
+{
+  "schema": 1,
+  "evidence_kind": "live_root_plaintext_reported_parent_adjudication_input",
+  "observed_at": "2026-08-17T10:55:31Z",
+  "authorization": "explicit_user_phase1_g4_probe_and_live_overlay_install",
+  "runtime": {
+    "codex_version": "0.148.0-alpha.9",
+    "candidate_binary_sha256": "0d6a185f7e0b12097056fbd826c46e0f7457b933a5d7f295195e0a9381475967",
+    "candidate_entry_point": "headless_codex_exec_only",
+    "gui_app_server_selected": false,
+    "official_app_resource_sha256": "6170ff5578170ee9b74ad92bfcff96e6186f41d02b60815a7c2b01ad424c754f",
+    "official_app_signature_valid": true,
+    "launchd_candidate_selection_present": false,
+    "hooks_json_sha256": "ffaad5c3533a2016253af148c96721818807823f779845a35c5d7dad2c676c2b",
+    "installed_runtime_guard_sha256": "b9f9151ad191593b9d8ecd6b5384df28d3eeea2eb6a94ff231837d70e236845f",
+    "sandbox": "read-only",
+    "approval_policy": "never",
+    "code_mode_host_enabled": false,
+    "provider_auth": "current ChatGPT login",
+    "credential_values_observed_or_recorded": false
+  },
+  "git_frontier": {
+    "root": "/private/tmp/codex-g4-headless-p1-20260817/worktree",
+    "branch": "main",
+    "head": "ba5df0d078ef479c8d0bf7fce6961cbd60f40061",
+    "status_short": "",
+    "index_changed": false
+  },
+  "identity": {
+    "parent_thread_id": "01a00f59-a291-7502-b4af-c97ceec1cadb",
+    "child_thread_id": "01a00f5a-0f8b-7e22-b8bc-e997946babdb",
+    "requested_task_name": "g4_cli_lifecycle_6",
+    "canonical_agent_path": "/root/g4_cli_lifecycle_6",
+    "assignment_id": "726eeea3-b88e-4e85-bd5b-cdab0f2095f0",
+    "handoff_id": "a13ba5e6-dfab-4ea0-89b2-334d371e178d",
+    "assignment_sha256": "f8eaa88acdaa0cf64d727ac1c2874c05905bb827f31eb37ef88f9645b618630c",
+    "capsule_sha256": "e3f7a4186ed15736b85a0d64d38a2aef4e3db20dab382ce3edb16ec34a213f29",
+    "compact_invariant_sha256": "76c393f327bdf74a1d13c4d87d0e71c9d9a81d8a070f78c2ec25d87d80770234",
+    "provenance_policy_sha256": "adde5392c2d7252c581ce596a996a7bbc7096ea5def04e1efd3147e0abea2eb0"
+  },
+  "live_chain": {
+    "sequence_start": 606,
+    "sequence_end": 611,
+    "spawn_pretool_receipt_sha256": "fa1619d995ab7f37a0ba889a0f55b0b94cf2ddab3b3401391b71d23f4d987adb",
+    "subagent_start_receipt_sha256": "5e1fbdb8711a889a4140a56bcb7681e290d436a24a504361116c1c8cfb25944b",
+    "child_pretool_receipt_sha256": "e049c4c1317de4d8a7dd4054d13b8c815544abe949c48ee8e7703065529ebd6d",
+    "accepted_subagent_stop_receipt_sha256": "b4d0b31a1406cef4855a670257f4ab9e9b8d7896a33db4b444bd78e7f9039192",
+    "child_tool_name": "g4_assignmentlist_agents",
+    "child_function_output_sha256": "0f5882463ea391d2fdc9d954b618ea968f15b780cfc077e7802a4d9233721d51",
+    "child_function_output_status": "success",
+    "first_git_attested_at": "2026-08-17T10:52:44.549089+00:00",
+    "stop_attempts": 3,
+    "stop_correction_sequence": [
+      "missing inventory_summaries",
+      "non-exact authority_provenance fields",
+      "accepted exact attestation"
+    ],
+    "reported_envelope_sha256": "88fe0122868db0491065f51da3ee85d4c1da0f2396895263177b74d8769c2ae4",
+    "parent_final_output_sha256": "fc8880e79bf8a32acc666078f414745a4fbdefaccd9dbff50cbc58f17926abed",
+    "child_rollout_sha256": "da56219d9bb9bd0d1f91388f085f41419d6cbb5743c20660907e9dfa259e10d9"
+  },
+  "fresh_parent_observation": {
+    "reported_state_present": true,
+    "active_state_for_assignment_absent": true,
+    "candidate_parent_and_child_processes_absent": true,
+    "post_termination_barrier_observed_at": "2026-08-17T10:55:31Z",
+    "post_termination_root_clean": true,
+    "post_termination_branch_exact": true,
+    "post_termination_head_exact": true,
+    "worker_report_is_contribution_evidence_only": true
+  },
+  "adjudication_input": {
+    "location_integrity": "pass",
+    "mutation_scope_integrity": "pass",
+    "verification_freshness": "pass",
+    "derivation_provenance_integrity": "pass",
+    "feasibility_contract_integrity": "pass"
+  },
+  "scope_verdict": {
+    "this_assignment_may_advance_reported_to_consumed": true,
+    "p1_complete": false,
+    "phase1_complete": false,
+    "direct_write_qualified": false,
+    "phase2_state": "closed",
+    "phase3_state": "closed"
+  }
+}

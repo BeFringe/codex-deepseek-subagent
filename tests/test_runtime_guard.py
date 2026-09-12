@@ -7,6 +7,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 import uuid
 
 
@@ -27,6 +28,16 @@ compatibility_state = load_module(
     "compatibility_state", REPO / "hooks" / "compatibility_state.py"
 )
 runtime_guard = load_module("runtime_guard", REPO / "hooks" / "runtime_guard.py")
+
+MIGRATION_HANDOFF_VERSION = runtime_guard.LIVE_HOOK_SCHEMA_RUNTIME_ROLES[
+    "migration_handoff_runtime"
+]
+PRIOR_SIGNED_VERSION = runtime_guard.LIVE_HOOK_SCHEMA_RUNTIME_ROLES[
+    "prior_signed_runtime"
+]
+CURRENT_SIGNED_VERSION = runtime_guard.LIVE_HOOK_SCHEMA_RUNTIME_ROLES[
+    "current_signed_runtime"
+]
 
 
 StateStore = compatibility_state.StateStore
@@ -75,43 +86,74 @@ class RuntimeGuardTests(unittest.TestCase):
         payload = {
             "session_id": "runtime-session",
             "id": "child-thread",
-            "parent_thread_id": "parent-thread",
+            "parent_thread_id": "runtime-session",
             "timestamp": "2026-08-12T00:00:00Z",
             "cwd": str(self.repository),
             "originator": "fixture",
-            "cli_version": "0.147.0",
-            "source": "sub_agent",
+            "cli_version": MIGRATION_HANDOFF_VERSION,
+            "source": {
+                "subagent": {
+                    "thread_spawn": {
+                        "parent_thread_id": "runtime-session",
+                        "depth": 1,
+                        "agent_path": "/root/bounded_task",
+                        "agent_nickname": None,
+                        "agent_role": "fixture_worker",
+                    }
+                }
+            },
             "agent_role": "fixture_worker",
             "agent_path": "/root/bounded_task",
             "model_provider": "fixture-provider",
         }
+        spawn = payload["source"]["subagent"]["thread_spawn"]
+        for field in (
+            "parent_thread_id",
+            "agent_path",
+            "agent_nickname",
+            "agent_role",
+            "depth",
+        ):
+            if field in overrides:
+                spawn[field] = overrides.pop(field)
+                if field in {"parent_thread_id", "agent_path", "agent_role"}:
+                    payload[field] = spawn[field]
         payload.update(overrides)
-        item = {"timestamp": payload["timestamp"], "type": "session_meta", "payload": payload}
+        item = {
+            "timestamp": "2026-08-12T00:00:00.070Z",
+            "type": "session_meta",
+            "payload": payload,
+        }
         self.child_transcript.write_text(json.dumps(item) + "\n", encoding="utf-8")
 
     def write_parent_session_meta(self, **overrides):
         payload = {
             "session_id": "runtime-session",
-            "id": "parent-thread",
+            "id": "runtime-session",
             "timestamp": "2026-08-12T00:00:00Z",
             "cwd": str(self.repository),
             "originator": "fixture",
-            "cli_version": "0.147.0",
-            "source": "sub_agent",
+            "cli_version": MIGRATION_HANDOFF_VERSION,
+            "source": "vscode",
             "model_provider": "fixture-provider",
         }
         payload.update(overrides)
-        item = {"timestamp": payload["timestamp"], "type": "session_meta", "payload": payload}
+        item = {
+            "timestamp": "2026-08-12T00:00:00.070Z",
+            "type": "session_meta",
+            "payload": payload,
+        }
         self.parent_transcript.write_text(json.dumps(item) + "\n", encoding="utf-8")
 
-    def make_capsule(self):
+    def make_capsule(self, *, mutation_mode="write"):
         now = dt.datetime.now(dt.timezone.utc)
+        read_only = mutation_mode == "read_only"
         value = {
             "schema": 2,
             "assignment_id": str(uuid.uuid4()),
             "handoff_id": str(uuid.uuid4()),
             "runtime_session_id": "runtime-session",
-            "parent_thread_id": "parent-thread",
+            "parent_thread_id": "runtime-session",
             "parent_turn_id": "parent-turn",
             "spawn_tool_use_id": "spawn-tool-use",
             "worker_profile": "fixture-worker",
@@ -128,8 +170,16 @@ class RuntimeGuardTests(unittest.TestCase):
             },
             "capture_preflight": None,
             "capture_snapshot_sha256": "e" * 64,
-            "owned_paths": ["owned"],
-            "excluded_paths": ["owned/excluded"],
+            "assignment_mutation_mode": mutation_mode,
+            "parent_recorded_user_write_intent": "deny" if read_only else "allow",
+            "trusted_host_user_write_consent": {
+                "schema": 1,
+                "status": "unavailable",
+                "source": None,
+                "receipt_sha256": None,
+            },
+            "owned_paths": [] if read_only else ["owned"],
+            "excluded_paths": [] if read_only else ["owned/excluded"],
             "git_authority": {"stage": False, "commit": False, "branch": False, "push": False},
             "ownership_handover": [],
             "stop_condition": "assigned slice completion only",
@@ -142,8 +192,12 @@ class RuntimeGuardTests(unittest.TestCase):
                 "required_derivation_boundary": "fixture.owner.derive",
             },
             "execution_contract": {
-                "posture": "direct_write_unqualified",
-                "review_range": None,
+                "posture": "strict_read_only" if read_only else "direct_write_unqualified",
+                "review_range": (
+                    {"base_oid": self.base, "head_oid": self.base}
+                    if read_only
+                    else None
+                ),
                 "required_invariants": [],
                 "diagnostics": {
                     "stable_failure_codes": [],
@@ -158,7 +212,7 @@ class RuntimeGuardTests(unittest.TestCase):
                 "review_continuation": None,
                 "closed_registries": [],
                 "relation_contracts": [],
-                "capsule_feasibility_attestation": {
+                "capsule_feasibility_attestation": None if read_only else {
                     "parent_owner_id": "fixture.owner",
                     "exact_claimed_invariant": "the assigned slice closes within budget",
                     "counterexample_probe": {
@@ -202,6 +256,14 @@ class RuntimeGuardTests(unittest.TestCase):
         }
         value["capsule_sha256"] = capsule_sha256(value)
         return value
+
+    def replace_active_capsule(self, capsule):
+        self.store.finalize(self.capsule["assignment_id"], {}, complete=False)
+        self.capsule = capsule
+        self.store.stage(self.capsule, self.assignment)
+        identity = runtime_guard.child_identity_from_hook(self.child_hook("SubagentStart"))
+        self.store.claim(self.capsule["handoff_id"], identity)
+        self.store.activate(self.capsule["handoff_id"])
 
     def child_hook(self, event, **overrides):
         value = {
@@ -271,19 +333,131 @@ class RuntimeGuardTests(unittest.TestCase):
 
     def test_session_meta_exactly_binds_parent_role_and_canonical_path(self):
         identity = runtime_guard.child_identity_from_hook(self.child_hook("PreToolUse"))
+        post_identity = runtime_guard.child_identity_from_hook(
+            self.child_hook("PostToolUse")
+        )
 
         self.assertEqual(identity["runtime_session_id"], "runtime-session")
         self.assertEqual(identity["child_thread_id"], "child-thread")
-        self.assertEqual(identity["parent_thread_id"], "parent-thread")
+        self.assertEqual(identity["parent_thread_id"], "runtime-session")
         self.assertEqual(identity["agent_type"], "fixture_worker")
         self.assertEqual(identity["canonical_agent_path"], "/root/bounded_task")
+        self.assertEqual(identity["codex_version"], MIGRATION_HANDOFF_VERSION)
+        self.assertEqual(post_identity, identity)
+
+    def test_previous_signed_codex_version_is_accepted_and_bound(self):
+        self.write_session_meta(cli_version=PRIOR_SIGNED_VERSION)
+        child_identity = runtime_guard.child_identity_from_hook(
+            self.child_hook("SubagentStart")
+        )
+        self.write_parent_session_meta(cli_version=PRIOR_SIGNED_VERSION)
+        stop_identity = runtime_guard.child_identity_from_stop(
+            self.stop_hook(self.attestation())
+        )
+
+        self.assertEqual(child_identity["codex_version"], PRIOR_SIGNED_VERSION)
+        self.assertEqual(stop_identity["codex_version"], PRIOR_SIGNED_VERSION)
+
+    def test_current_signed_codex_version_is_accepted_and_bound(self):
+        self.write_session_meta(cli_version=CURRENT_SIGNED_VERSION)
+        child_identity = runtime_guard.child_identity_from_hook(
+            self.child_hook("SubagentStart")
+        )
+        self.write_parent_session_meta(cli_version=CURRENT_SIGNED_VERSION)
+        stop_identity = runtime_guard.child_identity_from_stop(
+            self.stop_hook(self.attestation())
+        )
+
+        self.assertEqual(child_identity["codex_version"], CURRENT_SIGNED_VERSION)
+        self.assertEqual(stop_identity["codex_version"], CURRENT_SIGNED_VERSION)
+
+    def test_live_hook_schema_versions_match_semantic_evidence_roles(self):
+        index = json.loads(
+            (REPO / "probes" / "codex-runtime-evidence-index.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        expected = {
+            role: index["runtime_roles"][role]["codex_version"]
+            for role in index["live_hook_schema_roles"]
+        }
+
+        self.assertEqual(runtime_guard.LIVE_HOOK_SCHEMA_RUNTIME_ROLES, expected)
+
+    def test_stop_rejects_parent_child_codex_version_mismatch(self):
+        self.write_session_meta(cli_version=PRIOR_SIGNED_VERSION)
+
+        with self.assertRaisesRegex(
+            compatibility_state.IdentityMismatch,
+            "parent and child Codex versions do not match",
+        ):
+            runtime_guard.child_identity_from_stop(self.stop_hook(self.attestation()))
 
     def test_root_parent_meta_needs_no_child_role_or_agent_path(self):
         identity = runtime_guard.child_identity_from_stop(
             self.stop_hook(self.attestation())
         )
 
-        self.assertEqual(identity["parent_thread_id"], "parent-thread")
+        self.assertEqual(identity["parent_thread_id"], "runtime-session")
+
+    def test_runtime_parser_rejects_source_duplicate_mismatch(self):
+        item = json.loads(self.child_transcript.read_text(encoding="utf-8"))
+        item["payload"]["source"]["subagent"]["thread_spawn"]["agent_path"] = (
+            "/root/forged"
+        )
+        self.child_transcript.write_text(json.dumps(item) + "\n", encoding="utf-8")
+
+        with self.assertRaisesRegex(
+            compatibility_state.IdentityMismatch,
+            "agent_path disagrees with thread-spawn source",
+        ):
+            runtime_guard.read_session_meta(str(self.child_transcript))
+
+    def test_runtime_parser_rejects_cli_version_drift(self):
+        item = json.loads(self.child_transcript.read_text(encoding="utf-8"))
+        item["payload"]["cli_version"] = "0.148.0-alpha.10"
+        self.child_transcript.write_text(json.dumps(item) + "\n", encoding="utf-8")
+
+        with self.assertRaisesRegex(
+            compatibility_state.IdentityMismatch,
+            "cli_version is not in the pinned live set",
+        ):
+            runtime_guard.read_session_meta(str(self.child_transcript))
+
+    def test_runtime_parser_rejects_unpinned_stable_version(self):
+        item = json.loads(self.child_transcript.read_text(encoding="utf-8"))
+        item["payload"]["cli_version"] = "0.153.5"
+        self.child_transcript.write_text(json.dumps(item) + "\n", encoding="utf-8")
+
+        with self.assertRaisesRegex(
+            compatibility_state.IdentityMismatch,
+            "cli_version is not in the pinned live set",
+        ):
+            runtime_guard.read_session_meta(str(self.child_transcript))
+
+    def test_supported_codex_version_drift_does_not_match_active_binding(self):
+        self.write_session_meta(cli_version=PRIOR_SIGNED_VERSION)
+
+        result = runtime_guard.pre_tool_use(
+            self.store, self.child_hook("PreToolUse", tool_name="view_image")
+        )
+
+        self.assertEqual(result["hookSpecificOutput"]["permissionDecision"], "deny")
+        self.assertIn(
+            "expected one active authority capsule, found 0",
+            result["hookSpecificOutput"]["permissionDecisionReason"],
+        )
+
+    def test_runtime_parser_rejects_payload_time_after_record(self):
+        item = json.loads(self.child_transcript.read_text(encoding="utf-8"))
+        item["payload"]["timestamp"] = "2026-08-12T00:00:00.071Z"
+        self.child_transcript.write_text(json.dumps(item) + "\n", encoding="utf-8")
+
+        with self.assertRaisesRegex(
+            compatibility_state.IdentityMismatch,
+            "payload timestamp is later",
+        ):
+            runtime_guard.read_session_meta(str(self.child_transcript))
 
     def test_every_pre_tool_use_revalidates_session_meta(self):
         first = runtime_guard.pre_tool_use(
@@ -296,6 +470,48 @@ class RuntimeGuardTests(unittest.TestCase):
 
         self.assertIn("AUTHORITY.REATTESTED", first["hookSpecificOutput"]["additionalContext"])
         self.assertEqual(second["hookSpecificOutput"]["permissionDecision"], "deny")
+
+    def test_final_attestation_seed_is_mechanical_and_non_authorizing(self):
+        seed = runtime_guard.final_attestation_seed(self.capsule, 3)
+
+        self.assertEqual(
+            set(seed),
+            {
+                "schema",
+                "assignment_id",
+                "handoff_id",
+                "capsule_sha256",
+                "compact_invariant_sha256",
+                "authority_provenance_policy_sha256",
+                "canonical_agent_path",
+                "recovery_count",
+                "verification_commands",
+            },
+        )
+        self.assertEqual(seed["recovery_count"], 3)
+        self.assertEqual(seed["verification_commands"], self.capsule["verification"])
+        self.assertEqual(
+            seed["compact_invariant_sha256"],
+            compatibility_state.compact_invariant_sha256(self.capsule),
+        )
+        self.assertEqual(
+            seed["authority_provenance_policy_sha256"],
+            compatibility_state.provenance_policy_sha256(self.capsule),
+        )
+        for forbidden in (
+            "worker_claimed_origin",
+            "test_only_injection_used",
+            "derivation_receipt_sha256",
+            "root",
+            "branch",
+            "head",
+            "git_status_short",
+            "changed_paths",
+            "verification",
+            "authority_violation",
+            "assigned_slice_complete",
+        ):
+            self.assertNotIn(forbidden, seed)
 
     def test_corrupt_active_runtime_metadata_fails_closed(self):
         active = self.store.path("active", self.capsule["assignment_id"])
@@ -323,8 +539,25 @@ class RuntimeGuardTests(unittest.TestCase):
         self.assertIn("recovery_count=1", allowed["hookSpecificOutput"]["additionalContext"])
         self.assertEqual(blocked["hookSpecificOutput"]["permissionDecision"], "deny")
 
+    def test_precompact_rejects_disk_scope_drift_before_epoch_increment(self):
+        (self.repository / "outside.txt").write_text("unauthorized\n", encoding="utf-8")
+
+        with self.assertRaisesRegex(
+            compatibility_state.AuthorityViolation,
+            "outside.txt",
+        ):
+            runtime_guard.pre_compact(self.store, self.child_hook("PreCompact"))
+
+        active = self.store.path("active", self.capsule["assignment_id"])
+        envelope = json.loads(active.read_text(encoding="utf-8"))
+        self.assertEqual(envelope["runtime"]["recovery_count"], 0)
+
     def test_pre_tool_use_reads_actual_head_and_blocks_unauthorized_commit(self):
         runtime_guard.pre_compact(self.store, self.child_hook("PreCompact"))
+        allowed = runtime_guard.pre_tool_use(
+            self.store, self.child_hook("PreToolUse", tool_name="view_image")
+        )
+        self.assertNotIn("permissionDecision", allowed["hookSpecificOutput"])
         (self.repository / "owned").mkdir()
         (self.repository / "owned" / "result.txt").write_text("result\n", encoding="utf-8")
         self.git("add", "owned/result.txt")
@@ -336,6 +569,20 @@ class RuntimeGuardTests(unittest.TestCase):
 
         self.assertEqual(result["hookSpecificOutput"]["permissionDecision"], "deny")
         self.assertIn("HEAD", result["hookSpecificOutput"]["permissionDecisionReason"])
+        unresolved = json.loads(
+            self.store.path("unresolved", self.capsule["assignment_id"]).read_text(
+                encoding="utf-8"
+            )
+        )
+        evidence = unresolved["termination_evidence"]
+        self.assertEqual(evidence["reason"], "authority_reattestation_mismatch")
+        self.assertEqual(evidence["classification"], "post_attestation_authority_drift")
+        self.assertEqual(
+            evidence["provenance_status"],
+            "post_attestation_authority_drift_unattributed",
+        )
+        self.assertTrue(evidence["mutation_blocked_before_execution"])
+        self.assertFalse(self.store.path("active", self.capsule["assignment_id"]).exists())
 
     def test_first_git_attestation_exact_base_mismatch_fast_stops(self):
         self.store.finalize(self.capsule["assignment_id"], {}, complete=False)
@@ -379,14 +626,351 @@ class RuntimeGuardTests(unittest.TestCase):
 
         self.assertEqual(result["hookSpecificOutput"]["permissionDecision"], "deny")
         self.assertIn("outside.txt", result["hookSpecificOutput"]["permissionDecisionReason"])
+        unresolved_path = self.store.path("unresolved", self.capsule["assignment_id"])
+        unresolved = json.loads(unresolved_path.read_text(encoding="utf-8"))
+        evidence = unresolved["termination_evidence"]
+        self.assertEqual(evidence["reason"], "authority_reattestation_mismatch")
+        self.assertEqual(evidence["classification"], "post_attestation_authority_drift")
+        self.assertEqual(
+            evidence["provenance_status"],
+            "post_attestation_authority_drift_unattributed",
+        )
+        self.assertEqual(evidence["attempted_tool_name"], "view_image")
+        self.assertTrue(evidence["mutation_blocked_before_execution"])
+        self.assertTrue(evidence["disk_changed"])
+        self.assertFalse(self.store.path("active", self.capsule["assignment_id"]).exists())
 
-    def test_unqualified_mutation_tool_is_blocked_even_with_valid_identity(self):
+        frozen = hashlib.sha256(unresolved_path.read_bytes()).hexdigest()
+        stopped = runtime_guard.subagent_stop(
+            self.store,
+            self.stop_hook("authority was terminated before the fourth tool"),
+        )
+        self.assertEqual(stopped, {})
+        self.assertEqual(hashlib.sha256(unresolved_path.read_bytes()).hexdigest(), frozen)
+
+    def test_parent_recorded_intent_does_not_bypass_write_authority_gates(self):
         result = runtime_guard.pre_tool_use(
             self.store, self.child_hook("PreToolUse", tool_name="apply_patch")
         )
 
         self.assertEqual(result["hookSpecificOutput"]["permissionDecision"], "deny")
+        self.assertIn(
+            "direct_write_qualified=false",
+            result["hookSpecificOutput"]["permissionDecisionReason"],
+        )
+        self.assertIn(
+            "trusted host user consent is unavailable",
+            result["hookSpecificOutput"]["permissionDecisionReason"],
+        )
+        self.assertFalse(self.store.path("active", self.capsule["assignment_id"]).exists())
+        unresolved = json.loads(
+            self.store.path("unresolved", self.capsule["assignment_id"]).read_text(
+                encoding="utf-8"
+            )
+        )
+        self.assertEqual(
+            unresolved["termination_evidence"]["classification"],
+            "write_authority_gates_missing",
+        )
+        self.assertEqual(
+            unresolved["termination_evidence"]["blocking_gates"],
+            [
+                "trusted_host_user_write_consent",
+                "direct_write_qualification",
+                "live_mutation_mediation",
+            ],
+        )
+        self.assertTrue(
+            unresolved["termination_evidence"]["mutation_blocked_before_execution"]
+        )
+
+    def test_read_only_child_cannot_restore_foreign_parent_dirty_bytes(self):
+        self.replace_active_capsule(self.make_capsule(mutation_mode="read_only"))
+        target = self.repository / "baseline.txt"
+        target.write_text("parent-owned update\n", encoding="utf-8")
+        before = hashlib.sha256(target.read_bytes()).hexdigest()
+
+        result = runtime_guard.pre_tool_use(
+            self.store,
+            self.child_hook(
+                "PreToolUse",
+                tool_name="apply_patch",
+                tool_input={
+                    "patch": (
+                        "*** Begin Patch\n"
+                        "*** Update File: baseline.txt\n"
+                        "@@\n"
+                        "-parent-owned update\n"
+                        "+baseline\n"
+                        "*** End Patch"
+                    )
+                },
+            ),
+        )
+
+        self.assertEqual(result["hookSpecificOutput"]["permissionDecision"], "deny")
         self.assertIn("read-only allowlist", result["hookSpecificOutput"]["permissionDecisionReason"])
+        self.assertEqual(target.read_text(encoding="utf-8"), "parent-owned update\n")
+        self.assertEqual(hashlib.sha256(target.read_bytes()).hexdigest(), before)
+        self.assertIn(" M baseline.txt", self.git("status", "--short").stdout)
+        unresolved = json.loads(
+            self.store.path("unresolved", self.capsule["assignment_id"]).read_text(
+                encoding="utf-8"
+            )
+        )
+        self.assertEqual(
+            unresolved["termination_evidence"]["provenance_status"],
+            "pre_attempt_disk_drift_unattributed",
+        )
+        self.assertEqual(
+            unresolved["termination_evidence"]["attempted_tool_name"],
+            "apply_patch",
+        )
+
+    def test_exact_sandbox_probe_consumes_authority_once_before_runtime_execution(self):
+        prior_assignment_id = self.capsule["assignment_id"]
+        capsule = self.make_capsule(mutation_mode="read_only")
+        capsule["verification"] = [
+            runtime_guard.QUALIFICATION_SANDBOX_PROBE_VERIFICATION
+        ]
+        capsule["capsule_sha256"] = capsule_sha256(capsule)
+        self.replace_active_capsule(capsule)
+        self.store.path("unresolved", prior_assignment_id).unlink()
+        probe_root = self.root / "sandbox-probe-root"
+        probe_root.mkdir()
+        probe_root = probe_root.resolve()
+        target = probe_root / "one-shot.txt"
+        hook = self.child_hook(
+            "PreToolUse",
+            tool_name="Bash",
+            tool_input={"command": f"/usr/bin/touch {target}"},
+        )
+
+        with mock.patch.object(
+            runtime_guard, "QUALIFICATION_SANDBOX_PROBE_ROOT", probe_root
+        ):
+            allowed = runtime_guard.pre_tool_use(
+                self.store,
+                hook,
+                qualification_sandbox_probes={"bounded_task": target},
+            )
+            repeated = runtime_guard.pre_tool_use(
+                self.store,
+                hook,
+                qualification_sandbox_probes={"bounded_task": target},
+            )
+
+        self.assertEqual(allowed, {})
+        self.assertEqual(repeated["hookSpecificOutput"]["permissionDecision"], "deny")
+        self.assertFalse(self.store.path("active", self.capsule["assignment_id"]).exists())
+        unresolved_path = self.store.path("unresolved", self.capsule["assignment_id"])
+        unresolved = json.loads(unresolved_path.read_text(encoding="utf-8"))
+        evidence = unresolved["termination_evidence"]
+        self.assertEqual(evidence["reason"], "sandbox_probe_dispatched")
+        self.assertEqual(
+            evidence["classification"], "qualification_sandbox_probe_dispatched"
+        )
+        self.assertFalse(evidence["disk_changed"])
+        self.assertFalse(evidence["mutation_blocked_before_execution"])
+        self.assertEqual(evidence["sandbox_probe_target"], str(target))
+        self.assertFalse(target.exists())
+
+        stopped = runtime_guard.subagent_stop(
+            self.store,
+            self.stop_hook("sandbox probe terminal narrative"),
+        )
+        self.assertEqual(stopped, {})
+        self.assertTrue(unresolved_path.exists())
+
+    def test_sandbox_probe_wrong_command_falls_back_to_read_only_denial(self):
+        prior_assignment_id = self.capsule["assignment_id"]
+        capsule = self.make_capsule(mutation_mode="read_only")
+        capsule["verification"] = [
+            runtime_guard.QUALIFICATION_SANDBOX_PROBE_VERIFICATION
+        ]
+        capsule["capsule_sha256"] = capsule_sha256(capsule)
+        self.replace_active_capsule(capsule)
+        self.store.path("unresolved", prior_assignment_id).unlink()
+        probe_root = self.root / "sandbox-probe-root"
+        probe_root.mkdir()
+        probe_root = probe_root.resolve()
+        target = probe_root / "one-shot.txt"
+
+        with mock.patch.object(
+            runtime_guard, "QUALIFICATION_SANDBOX_PROBE_ROOT", probe_root
+        ):
+            denied = runtime_guard.pre_tool_use(
+                self.store,
+                self.child_hook(
+                    "PreToolUse",
+                    tool_name="Bash",
+                    tool_input={"command": f"/usr/bin/touch {target}.different"},
+                ),
+                qualification_sandbox_probes={"bounded_task": target},
+            )
+
+        self.assertEqual(denied["hookSpecificOutput"]["permissionDecision"], "deny")
+        unresolved = json.loads(
+            self.store.path("unresolved", self.capsule["assignment_id"]).read_text(
+                encoding="utf-8"
+            )
+        )
+        self.assertEqual(
+            unresolved["termination_evidence"]["reason"],
+            "read_only_mutation_attempt",
+        )
+        self.assertTrue(
+            unresolved["termination_evidence"]["mutation_blocked_before_execution"]
+        )
+        self.assertFalse(target.exists())
+
+    def test_subagent_stop_acknowledges_exact_guard_terminated_unresolved(self):
+        prior_assignment_id = self.capsule["assignment_id"]
+        self.replace_active_capsule(self.make_capsule(mutation_mode="read_only"))
+        self.store.path("unresolved", prior_assignment_id).unlink()
+        blocked = runtime_guard.pre_tool_use(
+            self.store,
+            self.child_hook(
+                "PreToolUse",
+                tool_name="apply_patch",
+                tool_input={"patch": "*** Begin Patch\n*** End Patch"},
+            ),
+        )
+        unresolved_path = self.store.path(
+            "unresolved", self.capsule["assignment_id"]
+        )
+        before = hashlib.sha256(unresolved_path.read_bytes()).hexdigest()
+
+        stopped = runtime_guard.subagent_stop(
+            self.store,
+            self.stop_hook("terminal unresolved contribution narrative"),
+        )
+
+        self.assertEqual(
+            blocked["hookSpecificOutput"]["permissionDecision"], "deny"
+        )
+        self.assertEqual(stopped, {})
+        self.assertEqual(
+            hashlib.sha256(unresolved_path.read_bytes()).hexdigest(), before
+        )
+        self.assertFalse(
+            self.store.path("reported", self.capsule["assignment_id"]).exists()
+        )
+        self.assertFalse(
+            self.store.path("consumed", self.capsule["assignment_id"]).exists()
+        )
+
+    def test_subagent_stop_blocks_pre_write_timeout_until_parent_cancel(self):
+        assignment_id = self.capsule["assignment_id"]
+        deadline = dt.datetime.fromisoformat(
+            self.capsule["pre_write_attestation_deadline"]
+        )
+        terminated = runtime_guard.sweep_deadlines(
+            self.store,
+            now=deadline + dt.timedelta(microseconds=1),
+            assignment_ids={assignment_id},
+        )
+        unresolved_path = self.store.path("unresolved", assignment_id)
+        before = hashlib.sha256(unresolved_path.read_bytes()).hexdigest()
+
+        stopped = runtime_guard.subagent_stop(
+            self.store,
+            self.stop_hook("WAITING_FOR_PARENT_INTERRUPT"),
+        )
+
+        self.assertEqual(terminated[0]["reason"], "pre_write_attestation_timeout")
+        self.assertEqual(stopped["decision"], "block")
+        self.assertIn("TASK.PARENT_CANCEL_REQUIRED", stopped["reason"])
+        self.assertIn("reason=pre_write_attestation_timeout", stopped["reason"])
+        self.assertIn("native interrupt or cancel", stopped["reason"])
+        self.assertIn("does not authorize ownership handover", stopped["reason"])
+        self.assertEqual(hashlib.sha256(unresolved_path.read_bytes()).hexdigest(), before)
+
+    def test_subagent_stop_blocks_assignment_timeout_until_parent_cancel(self):
+        assignment_id = self.capsule["assignment_id"]
+        created_at = dt.datetime.fromisoformat(self.capsule["created_at"])
+        allowed = runtime_guard.pre_tool_use(
+            self.store,
+            self.child_hook("PreToolUse", tool_name="list_agents"),
+            now=created_at + dt.timedelta(seconds=1),
+        )
+        expires_at = dt.datetime.fromisoformat(self.capsule["expires_at"])
+        terminated = runtime_guard.sweep_deadlines(
+            self.store,
+            now=expires_at + dt.timedelta(microseconds=1),
+            assignment_ids={assignment_id},
+        )
+
+        stopped = runtime_guard.subagent_stop(
+            self.store,
+            self.stop_hook("WAITING_FOR_PARENT_INTERRUPT"),
+        )
+
+        self.assertIn("additionalContext", allowed["hookSpecificOutput"])
+        self.assertEqual(terminated[0]["reason"], "assignment_timeout")
+        self.assertEqual(stopped["decision"], "block")
+        self.assertIn("TASK.PARENT_CANCEL_REQUIRED", stopped["reason"])
+        self.assertIn("reason=assignment_timeout", stopped["reason"])
+        self.assertTrue(self.store.path("unresolved", assignment_id).exists())
+        self.assertFalse(self.store.path("reported", assignment_id).exists())
+
+    def test_subagent_stop_rejects_forged_terminal_unresolved_reason(self):
+        prior_assignment_id = self.capsule["assignment_id"]
+        self.replace_active_capsule(self.make_capsule(mutation_mode="read_only"))
+        self.store.path("unresolved", prior_assignment_id).unlink()
+        runtime_guard.pre_tool_use(
+            self.store,
+            self.child_hook("PreToolUse", tool_name="apply_patch"),
+        )
+        unresolved_path = self.store.path(
+            "unresolved", self.capsule["assignment_id"]
+        )
+        unresolved = json.loads(unresolved_path.read_text(encoding="utf-8"))
+        unresolved["termination_evidence"]["reason"] = "caller_forged_reason"
+        unresolved_path.write_text(json.dumps(unresolved), encoding="utf-8")
+
+        stopped = runtime_guard.subagent_stop(
+            self.store,
+            self.stop_hook("terminal unresolved contribution narrative"),
+        )
+
+        self.assertEqual(stopped["decision"], "block")
+        self.assertIn("expected one active authority capsule", stopped["reason"])
+
+    def test_exact_candidate_namespace_list_agents_alias_is_read_only(self):
+        result = runtime_guard.pre_tool_use(
+            self.store,
+            self.child_hook(
+                "PreToolUse",
+                tool_name="g4_assignmentlist_agents",
+                tool_input={},
+            ),
+        )
+
+        self.assertIn("additionalContext", result["hookSpecificOutput"])
+        self.assertTrue(self.store.path("active", self.capsule["assignment_id"]).exists())
+
+    def test_candidate_namespace_alias_does_not_strip_arbitrary_prefixes(self):
+        result = runtime_guard.pre_tool_use(
+            self.store,
+            self.child_hook(
+                "PreToolUse",
+                tool_name="g4_assignmentlist_agents_extra",
+                tool_input={},
+            ),
+        )
+
+        self.assertEqual(result["hookSpecificOutput"]["permissionDecision"], "deny")
+        self.assertFalse(self.store.path("active", self.capsule["assignment_id"]).exists())
+        unresolved = json.loads(
+            self.store.path("unresolved", self.capsule["assignment_id"]).read_text(
+                encoding="utf-8"
+            )
+        )
+        self.assertEqual(
+            unresolved["termination_evidence"]["attempted_tool_name"],
+            "g4_assignmentlist_agents_extra",
+        )
 
     def test_ambiguous_active_capsules_fail_closed(self):
         second = self.make_capsule()
@@ -464,6 +1048,21 @@ class RuntimeGuardTests(unittest.TestCase):
 
         self.assertEqual(result["decision"], "block")
         self.assertIn("fields are not exact", result["reason"])
+
+    def test_final_attestation_field_error_names_only_schema_drift(self):
+        message = self.attestation()
+        attestation = json.loads(message.split("\n", 1)[1].rsplit("\n", 1)[0])
+        attestation["schema"] = 1
+
+        with self.assertRaisesRegex(
+            runtime_guard.GuardError,
+            r'fields are not exact: missing=\[\] unexpected=\["schema"\]',
+        ):
+            runtime_guard.parse_attestation(
+                "BEGIN CODEX WORKER ATTESTATION\n"
+                + json.dumps(attestation)
+                + "\nEND CODEX WORKER ATTESTATION"
+            )
 
     def test_subagent_stop_blocks_complete_claim_using_test_only_provenance(self):
         message = self.attestation()
@@ -568,6 +1167,63 @@ class RuntimeGuardTests(unittest.TestCase):
         )
         self.assertTrue(terminated[0]["disk_changed"])
 
+    def test_watchdog_exact_selector_ignores_unrelated_invalid_root(self):
+        other = self.make_capsule(mutation_mode="read_only")
+        other["requested_task_name"] = "stale_task"
+        other["canonical_agent_path"] = "/root/stale_task"
+        other["root"]["path"] = str(self.root / "missing-repository")
+        other["capsule_sha256"] = capsule_sha256(other)
+        self.store.stage(other, self.assignment)
+        self.store.claim(
+            other["handoff_id"],
+            {
+                "runtime_session_id": "runtime-session",
+                "child_thread_id": "stale-child",
+                "agent_id": "stale-child",
+                "parent_thread_id": "runtime-session",
+                "agent_type": "fixture_worker",
+                "canonical_agent_path": "/root/stale_task",
+                "codex_version": MIGRATION_HANDOFF_VERSION,
+            },
+        )
+        self.store.activate(other["handoff_id"])
+        deadline = dt.datetime.fromisoformat(
+            self.capsule["pre_write_attestation_deadline"]
+        )
+
+        terminated = runtime_guard.sweep_deadlines(
+            self.store,
+            now=deadline + dt.timedelta(seconds=1),
+            assignment_ids={self.capsule["assignment_id"]},
+        )
+
+        self.assertEqual(
+            [item["assignment_id"] for item in terminated],
+            [self.capsule["assignment_id"]],
+        )
+        self.assertTrue(
+            self.store.path("active", other["assignment_id"]).exists()
+        )
+
+    def test_watchdog_exact_selector_validates_before_mutation(self):
+        deadline = dt.datetime.fromisoformat(
+            self.capsule["pre_write_attestation_deadline"]
+        )
+        missing = str(uuid.uuid4())
+
+        with self.assertRaisesRegex(
+            runtime_guard.GuardError, "requested active assignment not found"
+        ):
+            runtime_guard.sweep_deadlines(
+                self.store,
+                now=deadline + dt.timedelta(seconds=1),
+                assignment_ids={self.capsule["assignment_id"], missing},
+            )
+
+        self.assertTrue(
+            self.store.path("active", self.capsule["assignment_id"]).exists()
+        )
+
     def test_executable_watchdog_requests_parent_cancel_on_deadline(self):
         deadline = dt.datetime.fromisoformat(self.capsule["pre_write_attestation_deadline"])
 
@@ -579,6 +1235,8 @@ class RuntimeGuardTests(unittest.TestCase):
                 str(self.store.root),
                 "--now",
                 (deadline + dt.timedelta(seconds=1)).isoformat(),
+                "--assignment-id",
+                self.capsule["assignment_id"],
                 "--fail-on-termination",
             ],
             text=True,
@@ -589,6 +1247,10 @@ class RuntimeGuardTests(unittest.TestCase):
         result = json.loads(completed.stdout)
 
         self.assertEqual(completed.returncode, 2, completed.stderr)
+        self.assertEqual(result["selection"], "exact")
+        self.assertEqual(
+            result["requested_assignment_ids"], [self.capsule["assignment_id"]]
+        )
         self.assertTrue(result["parent_cancel_required"])
         self.assertEqual(
             result["terminated"][0]["classification"],
