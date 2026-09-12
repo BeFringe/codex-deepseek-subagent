@@ -1,0 +1,80 @@
+{
+  "schema": 1,
+  "classification": "current_signed_runtime_g4_explicit_plaintext_delivery_candidate",
+  "captured_at": "2026-09-12T01:17:15+08:00",
+  "source": {
+    "repository": "https://github.com/openai/codex",
+    "tag": "rust-v0.153.4",
+    "base_commit": "3d2ee51ca2d5db578f328aa75e20aa22c0197c9a",
+    "semantic_version": "0.153.4"
+  },
+  "patch_chain": [
+    {
+      "path": "probes/current-signed-runtime-g4-custom-tool-pairing-source-candidate.patch",
+      "sha256": "4f61f37ae46f6160055fde7b7ce95d095b2456ce1b9f1a96f5947669baab63b8",
+      "role": "prior_full_index_cumulative_candidate"
+    },
+    {
+      "path": "probes/current-signed-runtime-g4-explicit-plaintext-delivery-source-candidate.patch",
+      "sha256": "14acd83f16c35acef0be7d9e511f3012ffa0bff8b6438a5890dbd3eddddc99d7",
+      "bytes": 18625,
+      "lines": 412,
+      "changed_paths": 8,
+      "role": "explicit_delivery_callback_and_regression_closure"
+    }
+  ],
+  "fresh_replay": {
+    "detached_exact_base": true,
+    "patch_order_required": true,
+    "git_apply_check_passed": true,
+    "canonical_cumulative_diff_sha256": "9804546dabff267b30230ac0b9007867febf9f3c5ea147ce62647dd7603f4bf5",
+    "git_diff_check_passed": true
+  },
+  "behavior": {
+    "plaintext_projection_requires_explicit_durable_marker": true,
+    "legacy_missing_marker_projects_as_agent_message": true,
+    "completion_callback_uses_configured_delivery": true,
+    "plaintext_delivery_metadata_preserves_fork_turn_boundaries": true,
+    "config_schema_regenerated": true,
+    "assignment_transport_wire_transport_request_normalization_remain_orthogonal": true
+  },
+  "originating_host_build": {
+    "platform": "darwin-arm64",
+    "codex_sha256": "386a551d909eb3e53e3a9274b006519644b7a534b7d6b1f8998ebade7519a235",
+    "semantic_version_derived_from_source": true,
+    "binary_installed_or_selected_by_gui": false
+  },
+  "rust_validation": {
+    "targeted_regressions_passed": [
+      "record_initial_history_reconstructs_typed_inter_agent_message",
+      "record_inter_agent_communication_preserves_item_id_in_rollout_and_resume",
+      "record_inter_agent_communication_sets_turn_id_in_rollout_and_resume",
+      "fork_turn_positions_use_canonical_agent_messages_and_delivery_metadata",
+      "fork_turn_positions_use_plaintext_messages_and_delivery_metadata",
+      "plaintext_source_uses_user_message_wire_for_queue_and_trigger_modes",
+      "plaintext_inter_agent_communication_uses_supported_user_message_wire",
+      "multi_agent_v2_completion_queues_message_for_direct_parent",
+      "config_schema_matches_fixture"
+    ],
+    "serial_core_suite": {
+      "tests_run": 2470,
+      "passed": 2468,
+      "failed": 2,
+      "patch_regressions": 0,
+      "host_test_boundaries": [
+        "managed_network_proxy_decider_survives_full_access_start: local network baseline denies before the injected policy decider",
+        "post_sampling_token_estimate_is_disabled_by_always_on_sinks: process-global tracing subscriber was installed by an earlier test; isolated exact test passes"
+      ]
+    },
+    "credential_values_recorded": false
+  },
+  "portable_boundary": {
+    "product_independent": true,
+    "windows_rebuild_required": true,
+    "windows_live_replay_required": true,
+    "phase1_complete": false,
+    "direct_write_qualified": false,
+    "phase2_state": "closed",
+    "phase3_state": "closed"
+  }
+}

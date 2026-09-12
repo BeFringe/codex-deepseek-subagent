@@ -1,0 +1,412 @@
+diff --git a/codex-rs/core/config.schema.json b/codex-rs/core/config.schema.json
+index 24d7988b04e801005ee926ea8381ae21f6ff1ab6..a4dc8f3eedbac500e41dedf410056afe79fd345b 100644
+--- a/codex-rs/core/config.schema.json
++++ b/codex-rs/core/config.schema.json
+@@ -2259,6 +2259,11 @@
+           "minimum": 0.0,
+           "type": "integer"
+         },
++        "requires_function_call_output_adjacency": {
++          "default": false,
++          "description": "Whether the Responses-compatible endpoint requires function calls and their outputs to remain contiguous in the submitted input history.\n\nCodex Hooks can add developer context while a tool is executing. Providers with stricter pairing rules can enable this request normalization so that context is delivered after all currently pending function-call outputs without changing the durable rollout order.",
++          "type": "boolean"
++        },
+         "requires_openai_auth": {
+           "default": false,
+           "description": "Does this provider require an OpenAI API Key or ChatGPT login token? If true, user is presented with login screen on first run, and login preference and token/key are stored in auth.json. If false (which is the default), login screen is skipped, and API key (if needed) comes from the \"env_key\" environment variable.",
+@@ -2276,6 +2281,11 @@
+           "minimum": 0.0,
+           "type": "integer"
+         },
++        "supports_namespace_tools": {
++          "default": null,
++          "description": "Whether this provider supports Responses API namespace tool definitions and calls.\n\n`None` preserves the historical default (`true`). Providers whose Responses-compatible endpoint accepts only ordinary function tools can set this to `false`; tool planning then exposes the same local handlers as ordinary functions for that provider session.",
++          "type": "boolean"
++        },
+         "supports_standalone_web_search": {
+           "default": false,
+           "description": "Whether this provider supports the standalone web-search endpoint.",
+@@ -2307,6 +2317,13 @@
+     "MultiAgentV2ConfigToml": {
+       "additionalProperties": false,
+       "properties": {
++        "child_model_providers": {
++          "additionalProperties": {
++            "type": "string"
++          },
++          "description": "Exact agent-role to model-provider selections authorized by the parent session. An absent role keeps the inherited parent provider.",
++          "type": "object"
++        },
+         "default_wait_timeout_ms": {
+           "format": "int64",
+           "maximum": 3600000.0,
+@@ -2334,6 +2351,14 @@
+           "minimum": 0.0,
+           "type": "integer"
+         },
++        "message_delivery": {
++          "allOf": [
++            {
++              "$ref": "#/definitions/MultiAgentV2MessageDelivery"
++            }
++          ],
++          "description": "Controls whether collaboration message arguments use encrypted or explicit plaintext Responses function arguments. Defaults to encrypted."
++        },
+         "min_wait_timeout_ms": {
+           "format": "int64",
+           "maximum": 3600000.0,
+@@ -2376,6 +2401,13 @@
+       },
+       "type": "object"
+     },
++    "MultiAgentV2MessageDelivery": {
++      "enum": [
++        "encrypted",
++        "plaintext"
++      ],
++      "type": "string"
++    },
+     "NetworkDomainPermissionToml": {
+       "enum": [
+         "allow",
+diff --git a/codex-rs/core/src/thread_rollout_truncation.rs b/codex-rs/core/src/thread_rollout_truncation.rs
+index cdbde89414640a439bc704671acb9fbfcc248d80..cbf81f3c0503222f22de27a7341d68c22cd74aa3 100644
+--- a/codex-rs/core/src/thread_rollout_truncation.rs
++++ b/codex-rs/core/src/thread_rollout_truncation.rs
+@@ -77,17 +77,18 @@ pub(crate) fn fork_turn_positions_in_rollout(items: &[RolloutItem]) -> Vec<usize
+     for (idx, item) in items.iter().enumerate() {
+         match item {
+             RolloutItem::ResponseItem(item) => {
+-                let has_delivery_metadata = matches!(&item.item, ResponseItem::AgentMessage { .. })
+-                    && idx.checked_sub(1).is_some_and(|previous_idx| {
+-                        matches!(
+-                            items.get(previous_idx),
+-                            Some(RolloutItem::InterAgentCommunicationMetadata { .. })
+-                        )
+-                    });
++                let has_delivery_metadata = idx.checked_sub(1).is_some_and(|previous_idx| {
++                    matches!(
++                        items.get(previous_idx),
++                        Some(RolloutItem::InterAgentCommunicationMetadata { .. })
++                    )
++                });
+                 if is_user_turn_boundary(item) && !has_delivery_metadata {
+                     rollback_turn_positions.push(idx);
+                 }
+-                if is_real_user_message_boundary(item) || is_trigger_turn_boundary(item) {
++                if (!has_delivery_metadata && is_real_user_message_boundary(item))
++                    || is_trigger_turn_boundary(item)
++                {
+                     fork_turn_positions.push(idx);
+                 }
+             }
+diff --git a/codex-rs/core/src/thread_rollout_truncation_tests.rs b/codex-rs/core/src/thread_rollout_truncation_tests.rs
+index 9bdef1a08c8dbc0079c5b2733a817235f82f036e..8a4a9be5968f75cb891ae0af1c75443cce5b9bb3 100644
+--- a/codex-rs/core/src/thread_rollout_truncation_tests.rs
++++ b/codex-rs/core/src/thread_rollout_truncation_tests.rs
+@@ -471,6 +471,38 @@ fn fork_turn_positions_use_canonical_agent_messages_and_delivery_metadata() {
+     assert_eq!(fork_turn_positions_in_rollout(&rollout), vec![0, 8]);
+ }
+ 
++#[test]
++fn fork_turn_positions_use_plaintext_messages_and_delivery_metadata() {
++    let queued = InterAgentCommunication::new_plaintext(
++        AgentPath::root(),
++        AgentPath::try_from("/root/worker").expect("agent path"),
++        Vec::new(),
++        "queued during user turn".to_string(),
++        /*trigger_turn*/ false,
++    );
++    let triggered = InterAgentCommunication::new_plaintext(
++        AgentPath::root(),
++        AgentPath::try_from("/root/worker").expect("agent path"),
++        Vec::new(),
++        "follow-up task".to_string(),
++        /*trigger_turn*/ true,
++    );
++    let rollout = vec![
++        response_item(user_msg("user task")),
++        RolloutItem::InterAgentCommunicationMetadata {
++            trigger_turn: false,
++        },
++        response_item(queued.to_model_input_item()),
++        response_item(assistant_msg("first answer")),
++        RolloutItem::InterAgentCommunicationMetadata { trigger_turn: true },
++        response_item(triggered.to_model_input_item()),
++        response_item(assistant_msg("second answer")),
++        response_item(user_msg("next user task")),
++    ];
++
++    assert_eq!(fork_turn_positions_in_rollout(&rollout), vec![0, 4, 7]);
++}
++
+ #[test]
+ fn truncates_rollout_to_last_n_fork_turns_drops_startup_prefix_even_when_under_limit() {
+     let rollout = vec![
+diff --git a/codex-rs/core/src/tools/handlers/multi_agents_v2.rs b/codex-rs/core/src/tools/handlers/multi_agents_v2.rs
+index 4edb9adafda6a9e7bc5214ec44786234c98354a0..9c105ec8556700b86e4f39f659dd7a9fc4463130 100644
+--- a/codex-rs/core/src/tools/handlers/multi_agents_v2.rs
++++ b/codex-rs/core/src/tools/handlers/multi_agents_v2.rs
+@@ -83,7 +83,7 @@ fn communication_from_tool_message(
+     };
+     let content =
+         InterAgentMessage::new(message_type, recipient.clone(), author.clone(), message).render();
+-    InterAgentCommunication::new(author, recipient, Vec::new(), content, trigger_turn)
++    InterAgentCommunication::new_plaintext(author, recipient, Vec::new(), content, trigger_turn)
+ }
+ 
+ #[cfg(test)]
+@@ -112,6 +112,7 @@ mod tests {
+ 
+             assert_eq!(communication.content, expected);
+             assert_eq!(communication.encrypted_content, None);
++            assert_eq!(communication.plaintext_message_wire, Some(true));
+             assert!(matches!(
+                 communication.to_model_input_item(),
+                 ResponseItem::Message {
+diff --git a/codex-rs/protocol/src/protocol.rs b/codex-rs/protocol/src/protocol.rs
+index fc88340c560b6607ff949cf8f361e2c341796ea5..9705b199e65e4aa3f8836fc06db8da9bd60eb4ce 100644
+--- a/codex-rs/protocol/src/protocol.rs
++++ b/codex-rs/protocol/src/protocol.rs
+@@ -813,6 +813,12 @@ pub struct InterAgentCommunication {
+     #[serde(default, skip_serializing_if = "Option::is_none")]
+     #[ts(optional)]
+     pub encrypted_content: Option<String>,
++    /// Whether this communication is intentionally projected onto the supported
++    /// plaintext user-message wire.  Older rollouts omit this field and retain
++    /// the legacy agent-message projection.
++    #[serde(default, skip_serializing_if = "Option::is_none")]
++    #[ts(optional)]
++    pub plaintext_message_wire: Option<bool>,
+     #[serde(default, skip_serializing_if = "Option::is_none")]
+     #[ts(optional)]
+     pub internal_chat_message_metadata_passthrough: Option<InternalChatMessageMetadataPassthrough>,
+@@ -834,11 +840,25 @@ impl InterAgentCommunication {
+             other_recipients,
+             content,
+             encrypted_content: None,
++            plaintext_message_wire: None,
+             internal_chat_message_metadata_passthrough: None,
+             trigger_turn,
+         }
+     }
+ 
++    pub fn new_plaintext(
++        author: AgentPath,
++        recipient: AgentPath,
++        other_recipients: Vec<AgentPath>,
++        content: String,
++        trigger_turn: bool,
++    ) -> Self {
++        let mut communication =
++            Self::new(author, recipient, other_recipients, content, trigger_turn);
++        communication.plaintext_message_wire = Some(true);
++        communication
++    }
++
+     pub fn new_encrypted(
+         author: AgentPath,
+         recipient: AgentPath,
+@@ -853,6 +873,7 @@ impl InterAgentCommunication {
+             other_recipients,
+             content: String::new(),
+             encrypted_content: Some(encrypted_content),
++            plaintext_message_wire: None,
+             internal_chat_message_metadata_passthrough: None,
+             trigger_turn,
+         }
+@@ -879,7 +900,7 @@ impl InterAgentCommunication {
+     }
+ 
+     pub fn to_model_input_item(&self) -> ResponseItem {
+-        let Some(encrypted_content) = &self.encrypted_content else {
++        if self.plaintext_message_wire == Some(true) {
+             // The ChatGPT agent-message wire is an encrypted transport. Plaintext
+             // compatibility messages retain their durable inter-agent envelope in
+             // the rollout, but enter model context through the supported user-message
+@@ -896,22 +917,29 @@ impl InterAgentCommunication {
+                     .clone(),
+             };
+         };
+-        let message_type = if self.trigger_turn {
+-            "NEW_TASK"
+-        } else {
+-            "MESSAGE"
++        let content = match &self.encrypted_content {
++            Some(encrypted_content) => {
++                let message_type = if self.trigger_turn {
++                    "NEW_TASK"
++                } else {
++                    "MESSAGE"
++                };
++                vec![
++                    AgentMessageInputContent::InputText {
++                        text: format!(
++                            "Message Type: {message_type}\nTask name: {}\nSender: {}\nPayload:\n",
++                            self.recipient, self.author
++                        ),
++                    },
++                    AgentMessageInputContent::EncryptedContent {
++                        encrypted_content: encrypted_content.clone(),
++                    },
++                ]
++            }
++            None => vec![AgentMessageInputContent::InputText {
++                text: self.content.clone(),
++            }],
+         };
+-        let content = vec![
+-            AgentMessageInputContent::InputText {
+-                text: format!(
+-                    "Message Type: {message_type}\nTask name: {}\nSender: {}\nPayload:\n",
+-                    self.recipient, self.author
+-                ),
+-            },
+-            AgentMessageInputContent::EncryptedContent {
+-                encrypted_content: encrypted_content.clone(),
+-            },
+-        ];
+         ResponseItem::AgentMessage {
+             id: self.id.clone(),
+             author: self.author.to_string(),
+@@ -4613,6 +4641,7 @@ mod tests {
+             other_recipients: vec![AgentPath::root().join("worker").expect("recipient path")],
+             content: "review the diff".to_string(),
+             encrypted_content: None,
++            plaintext_message_wire: None,
+             internal_chat_message_metadata_passthrough: None,
+             trigger_turn: true,
+         };
+@@ -4666,7 +4695,7 @@ mod tests {
+ 
+     #[test]
+     fn plaintext_inter_agent_communication_uses_supported_user_message_wire() {
+-        let mut communication = InterAgentCommunication::new(
++        let mut communication = InterAgentCommunication::new_plaintext(
+             AgentPath::root(),
+             AgentPath::root().join("worker").expect("recipient path"),
+             Vec::new(),
+diff --git a/codex-rs/core/src/agent/control.rs b/codex-rs/core/src/agent/control.rs
+index 141aaddc6ec762ecbdaebae10d328a80207b7994..4b63869d7d29de8401155e3d5fce2238d53cd2a8 100644
+--- a/codex-rs/core/src/agent/control.rs
++++ b/codex-rs/core/src/agent/control.rs
+@@ -26,6 +26,7 @@ use crate::thread_manager::default_thread_id_generator;
+ use crate::thread_rollout_truncation::truncate_rollout_to_last_n_fork_turns;
+ use crate::turn_timing::now_unix_timestamp_ms;
+ use arc_swap::ArcSwapOption;
++use codex_features::MultiAgentV2MessageDelivery;
+ use codex_history::InitialHistory;
+ use codex_history::ResumedHistory;
+ use codex_history::RolloutItem;
+@@ -613,6 +614,13 @@ impl AgentControl {
+                 }
+                 None => true,
+             };
++            let child_uses_plaintext_delivery = match child_thread.as_ref() {
++                Some(child_thread) => {
++                    child_thread.config().await.multi_agent_v2.message_delivery
++                        == MultiAgentV2MessageDelivery::Plaintext
++                }
++                None => false,
++            };
+             if child_agent_path.is_some() && child_uses_multi_agent_v2 {
+                 let Some(child_agent_path) = child_agent_path.clone() else {
+                     return;
+@@ -631,13 +639,23 @@ impl AgentControl {
+                 ) else {
+                     return;
+                 };
+-                let communication = InterAgentCommunication::new(
+-                    child_agent_path,
+-                    parent_agent_path,
+-                    Vec::new(),
+-                    message,
+-                    /*trigger_turn*/ false,
+-                );
++                let communication = if child_uses_plaintext_delivery {
++                    InterAgentCommunication::new_plaintext(
++                        child_agent_path,
++                        parent_agent_path,
++                        Vec::new(),
++                        message,
++                        /*trigger_turn*/ false,
++                    )
++                } else {
++                    InterAgentCommunication::new(
++                        child_agent_path,
++                        parent_agent_path,
++                        Vec::new(),
++                        message,
++                        /*trigger_turn*/ false,
++                    )
++                };
+                 let context =
+                     AgentCommunicationContext::new(AgentCommunicationKind::Result, child_thread_id);
+                 let _ = control
+diff --git a/codex-rs/core/src/agent/control_tests.rs b/codex-rs/core/src/agent/control_tests.rs
+index a7acf931693c7229b629c948b049bb91dd1cbb7f..4635498c596442fc30d87b29ab3d6ebc8743e93c 100644
+--- a/codex-rs/core/src/agent/control_tests.rs
++++ b/codex-rs/core/src/agent/control_tests.rs
+@@ -3325,6 +3325,8 @@ async fn multi_agent_v2_completion_queues_message_for_direct_parent() {
+     let (worker_thread_id, _worker_thread) = harness.start_thread().await;
+     let mut tester_config = harness.config.clone();
+     let _ = tester_config.features.enable(Feature::MultiAgentV2);
++    tester_config.multi_agent_v2.message_delivery =
++        codex_features::MultiAgentV2MessageDelivery::Plaintext;
+     let tester_thread_id = harness
+         .manager
+         .start_thread(StartThreadOptions::new(tester_config.clone()))
+@@ -3376,7 +3378,7 @@ async fn multi_agent_v2_completion_queues_message_for_direct_parent() {
+     let expected = (
+         worker_thread_id,
+         Op::InterAgentCommunication {
+-            communication: InterAgentCommunication::new(
++            communication: InterAgentCommunication::new_plaintext(
+                 tester_path.clone(),
+                 worker_path.clone(),
+                 Vec::new(),
+diff --git a/codex-rs/core/src/session/mod.rs b/codex-rs/core/src/session/mod.rs
+index f97647eed4c4f798015c9cf97cbfd517a9c70a58..322deb2cfde652786d517cf448bb34cbfe6853ff 100644
+--- a/codex-rs/core/src/session/mod.rs
++++ b/codex-rs/core/src/session/mod.rs
+@@ -71,6 +71,7 @@ use codex_extension_api::PromptSlot;
+ use codex_extension_api::TurnContextContributionInput;
+ use codex_features::FEATURES;
+ use codex_features::Feature;
++use codex_features::MultiAgentV2MessageDelivery;
+ use codex_features::unstable_features_warning_event;
+ use codex_history::RolloutItem;
+ use codex_hooks::Hooks;
+@@ -2256,13 +2257,25 @@ impl Session {
+             .rollout_thread_trace
+             .is_enabled()
+             .then(|| message.clone());
+-        let communication = InterAgentCommunication::new(
+-            child_agent_path.clone(),
+-            parent_agent_path,
+-            Vec::new(),
+-            message,
+-            /*trigger_turn*/ false,
+-        );
++        let communication = if turn_context.config.multi_agent_v2.message_delivery
++            == MultiAgentV2MessageDelivery::Plaintext
++        {
++            InterAgentCommunication::new_plaintext(
++                child_agent_path.clone(),
++                parent_agent_path,
++                Vec::new(),
++                message,
++                /*trigger_turn*/ false,
++            )
++        } else {
++            InterAgentCommunication::new(
++                child_agent_path.clone(),
++                parent_agent_path,
++                Vec::new(),
++                message,
++                /*trigger_turn*/ false,
++            )
++        };
+         let context =
+             AgentCommunicationContext::new(AgentCommunicationKind::Result, self.thread_id);
+         if let Err(err) = self

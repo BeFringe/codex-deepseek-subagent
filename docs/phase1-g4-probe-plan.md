@@ -547,9 +547,29 @@ without reference to any business repository or workload.
 ## VI. Platform and regression exit sequence
 
 Run the full provider-free suite and isolated protocol probes on POSIX and native
-Windows/PowerShell. Then run the existing DeepSeek path as a regression only;
-its worker output remains contribution evidence. Finally perform an isolated
-install/rollback drill that restores every pre-install Hook/skill/state hash.
+Windows/PowerShell. The POSIX lifecycle and existing DeepSeek path have now run
+as product-independent live regressions: the OpenAI parent remained native, the
+DeepSeek child received the one-shot plaintext assignment, performed one
+read-only native tool call, and returned through native wait/callback with a
+clean disk barrier and fresh-process adjudication. Worker output remains
+contribution evidence; the fresh parent/disk owner is authoritative. Native
+Windows parity remains open. Finally perform an isolated install/rollback drill
+that restores every pre-install Hook/skill/state hash and exercises the fixed
+failed-PostToolUse callback path without selecting the candidate as the GUI App
+Server. This drill is now qualified by
+`probes/p7-live-isolated-install-rollback-20260910.json`: an installed headless
+process observed exact failed-`apply_patch` Pre/Post identity and released its
+lease, all managed paths were archived, and a distinct post-rollback process
+did not recreate removed Hook state. The live App and v4 hashes remained exact.
+Only native Windows parity remains open.
+
+The Windows build input is now one cumulative full-index patch against exact
+`rust-v0.153.4` commit `3d2ee51ca2d5db578f328aa75e20aa22c0197c9a`, rather than an
+ordered stack of incremental probe patches. A fresh detached worktree replayed
+the patch byte-for-byte; the receipt is
+`probes/current-signed-runtime-g4-cumulative-source-candidate.json`. This only
+removes build-input ambiguity. It is not a Windows binary or live-runtime
+receipt and does not change `windows_live=pending`.
 
 Only after P1–P7, including P5a/P5b/P6a/P6b/P6c, are green with raw live evidence
 may a separate adjudication change `direct_write_qualified`. Until then:

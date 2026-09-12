@@ -1,0 +1,430 @@
+{
+  "schema": 1,
+  "manifest_sha256": "5b7c3ad311c20476aa1e431830e2c0611d56225cda6bb38f0e7399c64dbae999",
+  "raw_manifest": {
+    "schema": 1,
+    "classification": "p7_windows_mutation_raw_attempt",
+    "mutation_case": "positive",
+    "worktree_acl": {
+      "allowed_sids": [
+        "S-1-5-18",
+        "S-1-5-21-3453884970-201755637-3764772110-1001",
+        "S-1-5-32-544"
+      ],
+      "sddl": "O:S-1-5-21-3453884970-201755637-3764772110-1001D:PAI(A;OICI;FA;;;SY)(A;OICI;FA;;;BA)(A;OICI;FA;;;S-1-5-21-3453884970-201755637-3764772110-1001)",
+      "schema": 1,
+      "owner_sid": "S-1-5-21-3453884970-201755637-3764772110-1001",
+      "protected": true
+    },
+    "measured_feasibility": true,
+    "parent_claim_barrier": true,
+    "model_catalog_sha256": "595aa5ef1458652043b72faf4578b212b937bbcc53f6f915e6147ebd9e6ae2f6",
+    "bundled_catalog_sha256": "13e7a442c6da032c96bea2cd833f83f0997b7d7ff4193e51adfd16dc85ecd355",
+    "bundled_catalog_path": "E:\\Archives\\Project\\subagent\\.p7-windows\\source-custom-pairing\\codex-rs\\models-manager\\models.json",
+    "parent_model": "gpt-6-astra",
+    "temporary_role_sha256": "12cb773350755fc9fde22f25192b4768a825396bf6036e5b661e01c5057821bc",
+    "user_ceiling": {
+      "scope": "isolated qualification only",
+      "owned_path": "C:\\Users\\BonBon\\AppData\\Local\\Temp\\codex-g4-write-windows-87_aueht\\qualified.txt",
+      "foreign_path": "C:\\Users\\BonBon\\AppData\\Local\\Temp\\codex-g4-write-windows-87_aueht\\foreign.txt",
+      "foreign_mutation_authorized": false
+    },
+    "runner_pid": 22148,
+    "run_id": "p7-mutation-positive-8b29eed8cc254243a9247e9dadd3a729",
+    "provider": "deepseek",
+    "qualification_base_commit": "785b945d46a9a8879f659a428ff0a03d940cf7a1",
+    "qualification_checkout_head": "c9bc913468c5b3e5156ae764710b618298c37e89",
+    "run_directory_acl": {
+      "allowed_sids": [
+        "S-1-5-18",
+        "S-1-5-21-3453884970-201755637-3764772110-1001",
+        "S-1-5-32-544"
+      ],
+      "sddl": "O:S-1-5-21-3453884970-201755637-3764772110-1001D:PAI(A;OICI;FA;;;SY)(A;OICI;FA;;;BA)(A;OICI;FA;;;S-1-5-21-3453884970-201755637-3764772110-1001)",
+      "schema": 1,
+      "owner_sid": "S-1-5-21-3453884970-201755637-3764772110-1001",
+      "protected": true
+    },
+    "home_acl": {
+      "allowed_sids": [
+        "S-1-5-18",
+        "S-1-5-21-3453884970-201755637-3764772110-1001",
+        "S-1-5-32-544"
+      ],
+      "sddl": "O:S-1-5-21-3453884970-201755637-3764772110-1001D:PAI(A;OICI;FA;;;SY)(A;OICI;FA;;;BA)(A;OICI;FA;;;S-1-5-21-3453884970-201755637-3764772110-1001)",
+      "schema": 1,
+      "owner_sid": "S-1-5-21-3453884970-201755637-3764772110-1001",
+      "protected": true
+    },
+    "model": "deepseek-v4-flash",
+    "requested_task_name": "p7_windows_positive",
+    "platform": {
+      "system": "Windows",
+      "release": "11",
+      "version": "10.0.26200",
+      "machine": "AMD64"
+    },
+    "build_receipt": "E:\\Archives\\Project\\subagent\\.p7-windows\\deterministic-c9bc913\\probes\\p7-windows-custom-pairing-build-20260911.json",
+    "build_receipt_sha256": "d4e612bb0c1dee777f9925df4041e051cb2deec43e74e01f4e332fad28c97b61",
+    "baseline": {
+      "root": "C:\\Users\\BonBon\\AppData\\Local\\Temp\\codex-g4-write-windows-87_aueht",
+      "branch": "main",
+      "head": "23dbe8c86101bf741dfe021b5ac4ca219f728d93",
+      "status": "",
+      "index_sha256": "1529602f55036d4f2295b3a1e23023c9c856cba31124c13c07e8fb694fedb8b6",
+      "files": {
+        "docs/phase1-evidence.md": "be184ddd64c540fe895635e2810c0cd44ca7fd8c961801fa1ed23ac0fe618158",
+        "foreign.txt": "7e6c7d8c21ae9a4cbee3c4853682b4dc598d2ec7b64376d3463f86fd40d05f33"
+      }
+    },
+    "candidate": "E:\\Archives\\Project\\subagent\\.p7-windows\\source-custom-pairing\\candidate\\codex.exe",
+    "candidate_sha256": "be617eb1ebe44d9df02b64b689a140804600e91b0d7b352e8a23223e5d664e80",
+    "root": "C:\\Users\\BonBon\\AppData\\Local\\Temp\\codex-g4-write-windows-87_aueht",
+    "state": "C:\\Users\\BonBon\\.codex-p7-artifacts\\p7-mutation-positive-8b29eed8cc254243a9247e9dadd3a729\\state",
+    "home": "C:\\Users\\BonBon\\.codex-p7-qualification\\p7-mutation-positive-8b29eed8cc254243a9247e9dadd3a729",
+    "hook_events": "C:\\Users\\BonBon\\.codex-p7-artifacts\\p7-mutation-positive-8b29eed8cc254243a9247e9dadd3a729\\hook-events",
+    "argv": [
+      "E:\\Archives\\Project\\subagent\\.p7-windows\\source-custom-pairing\\candidate\\codex.exe",
+      "-c",
+      "model_provider=\"openai\"",
+      "-c",
+      "model=\"gpt-6-astra\"",
+      "-c",
+      "model_catalog_json=\"C:\\\\Users\\\\BonBon\\\\.codex-p7-artifacts\\\\p7-mutation-positive-8b29eed8cc254243a9247e9dadd3a729\\\\models.json\"",
+      "-c",
+      "forced_login_method=\"chatgpt\"",
+      "-c",
+      "features.multi_agent_v2.enabled=true",
+      "-c",
+      "features.multi_agent_v2.message_delivery=\"plaintext\"",
+      "-c",
+      "features.multi_agent_v2.tool_namespace=\"g4_assignment\"",
+      "-c",
+      "features.multi_agent_v2.child_model_providers.g4_qualification_probe_worker=\"deepseek\"",
+      "-c",
+      "agents.g4_qualification_probe_worker.config_file=\"C:\\\\Users\\\\BonBon\\\\.codex-p7-artifacts\\\\p7-mutation-positive-8b29eed8cc254243a9247e9dadd3a729\\\\role.toml\"",
+      "-c",
+      "model_providers.deepseek.name=\"P7 deepseek\"",
+      "-c",
+      "model_providers.deepseek.base_url=\"https://api.deepseek.com\"",
+      "-c",
+      "model_providers.deepseek.env_key=\"DEEPSEEK_API_KEY\"",
+      "-c",
+      "model_providers.deepseek.wire_api=\"responses\"",
+      "-c",
+      "model_providers.deepseek.requires_openai_auth=false",
+      "-c",
+      "model_providers.deepseek.request_max_retries=0",
+      "-c",
+      "model_providers.deepseek.stream_max_retries=0",
+      "-c",
+      "features.code_mode_host=false",
+      "-c",
+      "windows.sandbox=\"unelevated\"",
+      "-c",
+      "model_providers.deepseek.supports_namespace_tools=false",
+      "-c",
+      "model_providers.deepseek.requires_function_call_output_adjacency=true",
+      "-a",
+      "never",
+      "-s",
+      "workspace-write",
+      "exec",
+      "--ignore-user-config",
+      "--ignore-rules",
+      "--dangerously-bypass-hook-trust",
+      "--json",
+      "-C",
+      "C:\\Users\\BonBon\\AppData\\Local\\Temp\\codex-g4-write-windows-87_aueht",
+      "-"
+    ],
+    "credential_present": true,
+    "credential_values_recorded": false,
+    "parent_api_key_override_removed": true,
+    "prepared_only": false,
+    "windows_live_qualified": false,
+    "phase1_complete": false,
+    "direct_write_qualified": false,
+    "harness_sha256": {
+      "run_p7_windows_mutation.py": "85926fbdf0f6033d96412f7f563f4e9b30f4785b45ad58ee5fd38119a6ebaf3c",
+      "p7_windows_mutation_hook.py": "80b218911b7ebf6064a0944421064ad38afb66e703c982b261cd20935f412c0c",
+      "p7_windows_acl.py": "d70cb50eb2056f2703f6f308e75c737ad3e21481ad4a209fae52d3cf4a193c7e",
+      "p7_windows_sandbox_acl.py": "fe2d4e1149c152d44d82ccabf047234ac4cfc84e713bbfdf8deee55b3b3f6f88",
+      "p7_write_feasibility.py": "9012f39f494b3f9a89f70a4f694b6ba27dc638d014eb2a0c0d962b05b6df4a19",
+      "adjudicate_p7_windows_writer.py": "38490c8e5b9af75ff58fc3bc03cedcc37836a4a24a797f7c2c844e534101a83a",
+      "p7_windows_model_catalog.py": "f053920580b5ad190896f4f3b52fa8fa4d69775ef5a25c96c30717b3898cdb86",
+      "build_g4_native_probe_prompt.py": "6bfb9fc5afb78281b1d4b4530e6d1cf25affdaeab3998f44043318fa0e3108b3",
+      "build_g4_write_probe_prompt.py": "0212f48b92ab01338795061cf65487e888eb2be45e202d15eba974a21e1b466d",
+      "verify_p7_windows_mutation_outcome.py": "bf2034504eea90124ef38f9a8d174c9acb86181ad9710b66a2255ff4a7e0f288",
+      "adjudicate_p7_windows_live.py": "b6089b8fdb96a28b973441a436b7ea54338a21a4bd024c6d23d96f9dd584708e",
+      "adjudicate_g4_sibling_admission_live.py": "d7c6ecc99ac9bfd790287c749339a84eefcc64083ad6a822c87e7c4ae06c3541",
+      "run_p7_windows_live.py": "20216fad9d5f139cbb5d539a3f1de95a46ed5543da8b9af07bf0a93fd6d22b39"
+    },
+    "started_ns": 1789139910814041000,
+    "candidate_pid": 11288,
+    "exit_code": 0,
+    "isolated_auth_removed": true,
+    "process_exited_ns": 1789140025175618900,
+    "sandbox_cap_sid_artifact": "sandbox-cap-sids.json",
+    "barrier_first": {
+      "observed_ns": 1789140027647152100,
+      "snapshot": {
+        "root": "C:\\Users\\BonBon\\AppData\\Local\\Temp\\codex-g4-write-windows-87_aueht",
+        "branch": "main",
+        "head": "23dbe8c86101bf741dfe021b5ac4ca219f728d93",
+        "status": "?? qualified.txt",
+        "index_sha256": "1529602f55036d4f2295b3a1e23023c9c856cba31124c13c07e8fb694fedb8b6",
+        "files": {
+          "qualified.txt": "4fd8e8f97e640e495fefed6d4fdb0467c4e5835d9bd006173da14af37698ac8c",
+          "docs/phase1-evidence.md": "be184ddd64c540fe895635e2810c0cd44ca7fd8c961801fa1ed23ac0fe618158",
+          "foreign.txt": "7e6c7d8c21ae9a4cbee3c4853682b4dc598d2ec7b64376d3463f86fd40d05f33"
+        }
+      },
+      "worktree_acl": {
+        "sddl": "O:S-1-5-21-3453884970-201755637-3764772110-1001D:PAI(A;OICI;FA;;;SY)(A;OICI;FA;;;BA)(A;OICI;FA;;;S-1-5-21-3453884970-201755637-3764772110-1001)(A;OICI;0x1301bf;;;S-1-5-21-587394175-4261091128-2631848328-3606270611)",
+        "rules": [
+          {
+            "inheritance": 3,
+            "propagation": 0,
+            "type": 0,
+            "mask": 2032127,
+            "inherited": false,
+            "sid": "S-1-5-18"
+          },
+          {
+            "inheritance": 3,
+            "propagation": 0,
+            "type": 0,
+            "mask": 2032127,
+            "inherited": false,
+            "sid": "S-1-5-32-544"
+          },
+          {
+            "inheritance": 3,
+            "propagation": 0,
+            "type": 0,
+            "mask": 2032127,
+            "inherited": false,
+            "sid": "S-1-5-21-3453884970-201755637-3764772110-1001"
+          },
+          {
+            "inheritance": 3,
+            "propagation": 0,
+            "type": 0,
+            "mask": 1245631,
+            "inherited": false,
+            "sid": "S-1-5-21-587394175-4261091128-2631848328-3606270611"
+          }
+        ],
+        "owner_sid": "S-1-5-21-3453884970-201755637-3764772110-1001",
+        "protected": true
+      }
+    },
+    "barrier_second": {
+      "observed_ns": 1789140031616477900,
+      "snapshot": {
+        "root": "C:\\Users\\BonBon\\AppData\\Local\\Temp\\codex-g4-write-windows-87_aueht",
+        "branch": "main",
+        "head": "23dbe8c86101bf741dfe021b5ac4ca219f728d93",
+        "status": "?? qualified.txt",
+        "index_sha256": "1529602f55036d4f2295b3a1e23023c9c856cba31124c13c07e8fb694fedb8b6",
+        "files": {
+          "qualified.txt": "4fd8e8f97e640e495fefed6d4fdb0467c4e5835d9bd006173da14af37698ac8c",
+          "docs/phase1-evidence.md": "be184ddd64c540fe895635e2810c0cd44ca7fd8c961801fa1ed23ac0fe618158",
+          "foreign.txt": "7e6c7d8c21ae9a4cbee3c4853682b4dc598d2ec7b64376d3463f86fd40d05f33"
+        }
+      },
+      "worktree_acl": {
+        "sddl": "O:S-1-5-21-3453884970-201755637-3764772110-1001D:PAI(A;OICI;FA;;;SY)(A;OICI;FA;;;BA)(A;OICI;FA;;;S-1-5-21-3453884970-201755637-3764772110-1001)(A;OICI;0x1301bf;;;S-1-5-21-587394175-4261091128-2631848328-3606270611)",
+        "rules": [
+          {
+            "inheritance": 3,
+            "propagation": 0,
+            "type": 0,
+            "mask": 2032127,
+            "inherited": false,
+            "sid": "S-1-5-18"
+          },
+          {
+            "inheritance": 3,
+            "propagation": 0,
+            "type": 0,
+            "mask": 2032127,
+            "inherited": false,
+            "sid": "S-1-5-32-544"
+          },
+          {
+            "inheritance": 3,
+            "propagation": 0,
+            "type": 0,
+            "mask": 2032127,
+            "inherited": false,
+            "sid": "S-1-5-21-3453884970-201755637-3764772110-1001"
+          },
+          {
+            "inheritance": 3,
+            "propagation": 0,
+            "type": 0,
+            "mask": 1245631,
+            "inherited": false,
+            "sid": "S-1-5-21-587394175-4261091128-2631848328-3606270611"
+          }
+        ],
+        "owner_sid": "S-1-5-21-3453884970-201755637-3764772110-1001",
+        "protected": true
+      }
+    },
+    "state_snapshot_files": {
+      ".compatibility-state.lock": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "hook_event_chain/current.json": "4dde797e368f6f3de1ddff9f69c0ac32c165aa340f8fcbbca8bbf6b3186a9bd1",
+      "reported/7b0272b3-4ebe-4118-8374-509fd74e9206.json": "00e9fd6527d4e7bd7475dd88b45eb650a20e72376b484c74a57cae5efa21e126",
+      "writer_conflict/bd4b243f-a1f8-4c53-9835-813c7e3bb92f.json": "e1db6125260161b0942695ceab2742b3cc19aad0460b846a10e532422b7080e3",
+      "writer_receipt/f1ac678b-f1ff-4d5c-90f9-a58ec6026e98.json": "ecbb16861ce0f156a5d5d03994e52f36043baef45b04a41ca6b48dbdd4609d58"
+    },
+    "artifacts": {
+      "stdout.jsonl": "078857f3942293037058ccefc91da82c08360ebe35fd8bf7fad5f1fc7ba51751",
+      "stderr.log": "4ef47386792851c8970c68311390146a2b7151dd8dc62fbeebeac18a6fb1f16d",
+      "prompt.txt": "c724a5e6c79d6b823a719d622f28ba54784f5d596eefac55efcf55e13a5a34d9",
+      "assignment.txt": "1adec31975049daa59dae243c4eb4dbf9c6bf875c7c63bd0293536bb35d10057",
+      "role.toml": "12cb773350755fc9fde22f25192b4768a825396bf6036e5b661e01c5057821bc",
+      "models.json": "595aa5ef1458652043b72faf4578b212b937bbcc53f6f915e6147ebd9e6ae2f6",
+      "hook-runtime/assignment_transport.py": "25ca5159092ca1feecf6a2374470287e6e0d53688e15a2af7df076e91d2f2199",
+      "hook-runtime/authority_watchdog.py": "8b4079de60360276d655e3e035cce266f2421eb46268ce762920cd1202fb4d3a",
+      "hook-runtime/closed_world_guard.py": "e06ffbfaa8e9854f05973d9b6958108b25111da8db0ad42e00273e593cea3a9a",
+      "hook-runtime/compatibility_hook.py": "52c31042e68ea99278f444112d9c524e1b3cf87e3907233ecf449a5fb0858304",
+      "hook-runtime/compatibility_state.py": "8ebb6a64f5d04191ff70ff0ca4ffd3e52435239a6199bddab8062e67f6befdc6",
+      "hook-runtime/cost_phase_guard.py": "4f24c2133e6d45567713ca040d1ce15c43e26b9414295fd219ae752b36abc052",
+      "hook-runtime/diagnostic_guard.py": "0b58223fd03233a9976d251271a2a4dec2fede0b5bb5e3433dfa40ce8ecb668e",
+      "hook-runtime/evidence_binding.py": "8f90af1618a2325704a5d810a7415779f81a28a30eb92301a1e09c7437add71a",
+      "hook-runtime/feasibility_guard.py": "a73932062293a574681209af5fd8d8540bdd27d03da16eb23952ef2e117f7ce4",
+      "hook-runtime/hook_event_receipts.py": "7bfc729d6997e2db2c43b3f95757c721bfb718b3346cb64bd4f0ce0c6f544c2d",
+      "hook-runtime/hook_schema_observation_arm.py": "1df811c56c20fbc558cb40d9dd169535d227af2b3250224b70079bd11940f157",
+      "hook-runtime/p7_windows_mutation_hook.py": "80b218911b7ebf6064a0944421064ad38afb66e703c982b261cd20935f412c0c",
+      "hook-runtime/plaintext_handoff.py": "16353e6eb4484412bd7560a10eeae4dcf1533709910a373a4e98d414dc725a49",
+      "hook-runtime/plaintext_pair_probe_guard.py": "a3d3e4712444801ed729b4f0f6f30f0f50e6a4f12d3fded6aaafe112c4d5b864",
+      "hook-runtime/pretool_schema_observation.py": "d10fe923f6f3813e51080ea7059e21cf7624bad6aa2356dd6a5b71e6e917d1bf",
+      "hook-runtime/provenance_guard.py": "036e748a1ce4a7bc5d77e61a551f1b6b9619b1067b0bddbbe886384c7eac73de",
+      "hook-runtime/runtime_guard.py": "5c26b7059fe63925b7e58906e3ebcbc542d03970e8e6e58df483fddfa533b998",
+      "hook-runtime/subagentstart_schema_observation.py": "bc59717c8cbb0d176ade45780e6089cadbdd99702b813151f3fa6643add11575",
+      "hook-runtime/termination_guard.py": "321c29ee7f91a4271be43fad0e73195e104294d37b1946f171dfe8caa17388da",
+      "hook-runtime/windows_evidence_binding.py": "51d5f3ec39a213b6758055d7accab258bf7e940b4161dc10c9dae9157b237d01",
+      "hook-runtime/writer_lease_guard.py": "e6f7ff4887d6818b0de388425bd27b008dde4f721ba19dca47418f58634b03c3",
+      "hook-events/1789139974952686500-8dd41c720a894fe7b1ff878193aae10a.json": "9eddc4eb501ccfac44a7cc1e1995d59dd91a9b5c08b27e96d4c6114c8060a19a",
+      "hook-events/1789139979970685900-bb1a169be87b446a916deb33f063f7fa.json": "2a299a9e2d5c1b7da9a6a86bb8c25b7c0f72b8a93a1b2196c76c13a8ead82229",
+      "hook-events/1789139983299291100-c68311a16c6b478e930020a9f5933d58.json": "55ff7897ba57fea46c021ac6cf91fee8b76b5346c84d2bca698c1f1b26eb97fc",
+      "hook-events/1789139983876693100-57db7b25ccf1418d885b76f7ff0e0424.json": "b93ec03698304af1017cf09a5c4affa274c8929c284cf89690745ad125f44888",
+      "hook-events/1789139988158639500-baa1c8fe5dd742a59d45644293c12354.json": "61bbefeea0b1b5cb79583f8f69ca259379d29b0d6cbeea392cce3480e87c78e2",
+      "hook-events/1789139988524808400-c48f447a0c42483eb4b1274fd68756a1.json": "efb0a27e2419e55e8a3e4c948be576c3db7b9c9cd325db1d97ad8e3d99e5a7c5",
+      "hook-events/1789139993490003500-bdf4a64669b64e1494a4d5cb245e1a38.json": "dda77a84bbf9d221a895e34e0949a5a94be042acebc2c0c663e4ecb54a894dec",
+      "hook-events/1789139998640178600-8b9862dac3f647b68520152236f208dd.json": "fc1c1ce2a7cd1bf232c5c37fce359d4becfc416c5e2fefcc885b99ade1737fd6",
+      "hook-events/1789140001387748000-b03d056582de479ea3f9b5c16d0f732c.json": "c7578164fb6ac47b8ae99e8b2b69c282f7b81f5eaf1eaa2db0792939b59212bd",
+      "hook-events/schedule-ready.marker": "7d02c9bf55c7a03eae0e3ff45be753d4e415c45f2b5636be97cd7dd0f3ec8436",
+      "hook-events/schedule-release.marker": "d7fd5d57d1b2482a1e68985f7cf086dbc97b67cd103c0e9e31cfd7d167896fa7",
+      "rollouts/rollout-2026-09-11T23-18-34-01a0910c-8e53-7732-9a80-3a3d3340a9a9.jsonl": "3d0eb6e6e965fdaf0dc3882f974aa34ecb4272e5022cec4fb75270b2231d8484",
+      "rollouts/rollout-2026-09-11T23-19-36-01a0910d-7f1f-7300-a09c-ab1f5b28504b.jsonl": "dcda0745addf10496963ab9cf2a8c4789446e5edcf8ea0463b89a6a8a25f4c9b",
+      "state-snapshot/.compatibility-state.lock": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "state-snapshot/hook_event_chain/current.json": "4dde797e368f6f3de1ddff9f69c0ac32c165aa340f8fcbbca8bbf6b3186a9bd1",
+      "state-snapshot/reported/7b0272b3-4ebe-4118-8374-509fd74e9206.json": "00e9fd6527d4e7bd7475dd88b45eb650a20e72376b484c74a57cae5efa21e126",
+      "state-snapshot/writer_conflict/bd4b243f-a1f8-4c53-9835-813c7e3bb92f.json": "e1db6125260161b0942695ceab2742b3cc19aad0460b846a10e532422b7080e3",
+      "state-snapshot/writer_receipt/f1ac678b-f1ff-4d5c-90f9-a58ec6026e98.json": "ecbb16861ce0f156a5d5d03994e52f36043baef45b04a41ca6b48dbdd4609d58",
+      "sandbox-cap-sids.json": "50a440afc1f94989ffdd227915a25d02a53bef652cacff028dad389db71161d1",
+      "feasibility.json": "2fcb108cdf14679180c225ef1e3416d038f90d7021e7ed6c3f7792121310f2d1"
+    },
+    "hooks_config_sha256": "005250d58f409752ac35a8d2c154dd85980125216bd30767e971accfeda418ae"
+  },
+  "owner_receipt": "p7-windows-deterministic-writer-owner-20260911.json",
+  "owner_receipt_sha256": "de1d3d190fd9613e5679366c42e0857449c6f68b45903bfe2739af126835fa13",
+  "feasibility": {
+    "schema": 1,
+    "inputs": {
+      "baseline": {
+        "root": "C:\\Users\\BonBon\\AppData\\Local\\Temp\\codex-g4-write-windows-87_aueht",
+        "branch": "main",
+        "head": "23dbe8c86101bf741dfe021b5ac4ca219f728d93",
+        "status": "",
+        "index_sha256": "1529602f55036d4f2295b3a1e23023c9c856cba31124c13c07e8fb694fedb8b6",
+        "files": {
+          "docs/phase1-evidence.md": "be184ddd64c540fe895635e2810c0cd44ca7fd8c961801fa1ed23ac0fe618158",
+          "foreign.txt": "7e6c7d8c21ae9a4cbee3c4853682b4dc598d2ec7b64376d3463f86fd40d05f33"
+        }
+      },
+      "authoritative_input_utf8": "Product-independent Windows read-only native lifecycle fixture.\r\n",
+      "patch": "*** Begin Patch\n*** Add File: C:\\Users\\BonBon\\AppData\\Local\\Temp\\codex-g4-write-windows-87_aueht\\qualified.txt\n+G4_CHILD_WRITE_QUALIFIED\n*** End Patch"
+    },
+    "probe_evidence": {
+      "parsed_paths": [
+        "C:\\Users\\BonBon\\AppData\\Local\\Temp\\codex-g4-write-windows-87_aueht\\qualified.txt"
+      ],
+      "checks": {
+        "exact_target": true,
+        "clean_baseline": true,
+        "target_absent": true,
+        "exact_bytes": true,
+        "authoritative_input_bound": true
+      }
+    },
+    "scale_evidence": {
+      "domain": [
+        "C:\\Users\\BonBon\\AppData\\Local\\Temp\\codex-g4-write-windows-87_aueht\\qualified.txt"
+      ],
+      "operations": [
+        {
+          "kind": "Add",
+          "path": "C:\\Users\\BonBon\\AppData\\Local\\Temp\\codex-g4-write-windows-87_aueht\\qualified.txt"
+        }
+      ],
+      "distinct_paths": 1,
+      "compression_applied": false
+    },
+    "bounded_evidence": {
+      "patch_utf8_bytes": 150,
+      "required_calls": 1,
+      "derivation": "one exact freeform patch contains the sole Add operation; no fanout or batching assumption"
+    },
+    "attestation": {
+      "parent_owner_id": "phase1.parent",
+      "exact_claimed_invariant": "the concrete absent-target addition has an exact one-call apply_patch representation",
+      "counterexample_probe": {
+        "probe_id": "exact-addition-input-counterexample",
+        "probe_input_sha256": "d64dd88e6083ce0844ffcb07d6687bd049675e43b426395615ef4b33fda95cd1",
+        "executed": true,
+        "counterexample_found": false,
+        "evidence_sha256": "d6dadea45003ba882f14636d0d25a5bfe912b3c62034e099c0d0810a97820515"
+      },
+      "bounded_completion": {
+        "completion_condition": "one exact owned-path apply_patch",
+        "work_budget": {
+          "unit": "tool-call",
+          "cardinality_domain": "owned-path",
+          "limit": 1
+        },
+        "proposed_mechanism": "one concrete Add operation, exact Hook ceiling and writer lease",
+        "mechanism_measurement": {
+          "unit": "tool-call",
+          "cardinality_domain": "owned-path",
+          "required_lower_bound": 1
+        },
+        "scale_evidence": {
+          "basis": "adversarial_scale_witness",
+          "witness_input_sha256": "d64dd88e6083ce0844ffcb07d6687bd049675e43b426395615ef4b33fda95cd1",
+          "evidence_sha256": "c89e4a5b83062c86aeaaa3ff3c03c809651475ea26c1ea75dccd58ff9f17c6a7"
+        },
+        "equivalence_compression": null,
+        "mechanism_satisfies": true,
+        "evidence_sha256": "bb667dd0799a1384fd9af2c94f83e897578bdf56c1d1bcf5afc61a3a82cefaba"
+      },
+      "unresolved_assumptions": [],
+      "owner_decision": "dispatch"
+    },
+    "limits": [
+      "single concrete input only",
+      "does not prove provider completion, exclusion, or global process quiescence"
+    ]
+  },
+  "authority_consumed": true,
+  "exact_closed_writer_run_qualified": true,
+  "native_sibling_live_qualified": false,
+  "direct_write_qualified": false,
+  "phase1_complete": false,
+  "p7_complete": false
+}

@@ -1,1 +1,5 @@
 * text=auto eol=lf
+*.patch whitespace=-blank-at-eol,-blank-at-eof
+# Fresh-owner receipts are byte-hashed raw output; preserve Windows newlines.
+probes/p7-windows-*-readonly-*.json -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+probes/p7-windows-deterministic-*.json -text whitespace=-blank-at-eol,blank-at-eof,space-before-tab

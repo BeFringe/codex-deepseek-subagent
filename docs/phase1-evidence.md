@@ -4729,3 +4729,313 @@ entry reachable by the exact native qualification actors. P4,
 installed callback/platform/regression receipts remain partial, so
 `phase1_complete=false`, `direct_write_qualified=false`, and Phases 2/3 remain
 closed.
+
+## Product-independent native DeepSeek regression
+
+P7 now has a real product-independent OpenAI-parent to DeepSeek-child regression
+receipt. The run deliberately used the repository's generic read-only
+`agents/v4-flash-worker.toml`, not the installed business-specific role. It ran
+under a narrow headless-only wrapper in a disposable Git root and an isolated
+handoff directory. The current-source candidate was neither installed nor
+selected as the GUI App Server, and live Codex configuration was not modified.
+The DeepSeek credential was checked only for presence; its value was never read,
+printed, hashed, retained, or committed.
+
+The native parent thread
+`01a086f6-7a5e-7e31-9c39-6135134a4c8a` retained provider `openai`. It spawned
+the real `v4_flash_worker` child thread
+`01a086f6-aaf5-72b3-b4ad-ad22c03f57e0`, provider `deepseek`, model
+`deepseek-v4-flash`, at canonical AgentPath
+`/root/p7_deepseek_readonly_3`. The one-shot SubagentStart Hook delivered the
+exact staged assignment; its child-only marker was absent from both the parent
+prompt and native spawn message. The handoff moved to consumed state.
+
+The child made exactly one native `exec_command` call in the disposable root.
+It read the third nonempty fixture line as `responses` and computed the complete
+file SHA-256
+`b7383fea044646d48d597239385c40246df3ef511a3486053d4711d171589bc1`.
+Its three-line final answer is byte-identical to the callback payload observed
+by the parent. Native wait did not time out. The root retained full HEAD
+`d4b950f158c9f0c6f879a7e7cb289c63eebacee9`, empty Git status, and no handoff
+state other than the role lock.
+
+A distinct process, PID 2606, re-read the raw manifest, parent and child
+rollouts, candidate output, staged assignment, Hook delivery, tool call/result,
+callback, handoff state, runtime/source pins, and final disk. Its canonical
+output SHA-256 is
+`76d24b5e06c6bb87c0a3415e08fab7adbd4c23fa6141860064f4250d5fbe700c`;
+the raw manifest SHA-256 is
+`eeeb573cc243af5d3e5cec1e7ca2924264af1868bfdad3e66684889e2c0e059b`.
+The committed decision, originating-host replay test, and reusable harness are
+`probes/p7-live-deepseek-regression-20260910.json` and
+`tests/test_p7_live_deepseek_regression.py`. A clean clone without the frozen
+out-of-repository raw rollouts verifies their exact hashes and skips only the
+originating-host re-adjudication; it does not silently synthesize live evidence.
+
+Two harness calibration runs are not counted as qualification samples. The
+first exposed an implicit skill-read dependency while code mode was disabled;
+the second exposed ambiguity between the third-line digest and whole-file
+digest. The final contract removed both ambiguities and succeeded; no broader
+or workload-derived cohort is required.
+
+This qualifies `deepseek_regression`, `posix_live`, and
+`callback_continuity`. P7 remains `partial` only because native Windows parity
+and safe installed-runtime candidate reload/rollback remain open. Consequently
+`phase1_complete=false`, `direct_write_qualified=false`, and Phases 2/3 remain
+closed.
+
+After the promotion, the complete provider-free suite passed all 805 tests in
+70.265 seconds, including agent-template checks. The normal Phase 1,
+mutation-surface, same-UID, and semantic runtime-index checks returned zero.
+Phase 1 promotion mode returned two with exactly P7 plus the Windows and
+install/rollback receipts open. The deliberately broader host mutation inventory
+and same-UID mode-bit probes also returned two in qualification-required mode;
+they remain explicit non-authoritative host boundaries rather than being
+silently relabeled as native child guarantees.
+
+## Isolated headless install, functional reload, and rollback
+
+The remaining P7 install receipt was closed without changing the GUI App
+Server. `probes/run_p7_isolated_install_rollback.py` created a private
+`CODEX_HOME`, a clean disposable Git root, and managed paths that were all
+absent at baseline. It installed exact copies of the failed-PostToolUse source
+candidate and adjacent code-mode host, plus the repository Hook scripts and a
+two-event `hooks.json`. The isolated home reused the existing ChatGPT login by
+an auth-file symlink. No credential content was read, printed, hashed, retained
+in evidence, or committed.
+
+The installed candidate process retained provider `openai` and root AgentPath
+`/root`. Its deliberately stale `apply_patch` failed context verification on
+`baseline.txt`. Hook sequence one authorized PreToolUse and sequence two
+recorded PostToolUse for the same tool-use id
+`exec-488e4133-dcaf-4e17-9b8d-7eb61e1ac587`. The matching writer receipt has
+identical before/after snapshots, an empty changed-path set, and no surviving
+claim. The disposable root remained on branch `main`, full HEAD
+`18ba5040905f70711e418bcc6ad96bcef3adaa32`, with empty status and the original
+file hash.
+
+Rollback moved the installed candidate, code-mode host, Hook registry, Hook
+scripts, and diagnostic state into a recoverable archive. Every managed install
+path returned to its absent baseline. A distinct post-rollback process, thread
+`01a0871f-b383-7761-89f7-b95d33400436`, reused the same login and executed the
+same failed tool contract, but the removed Hook state was not recreated. No
+candidate or code-mode-host process remained at the final barrier. The official
+App binary, live `hooks.json`, installed v4 agent, and installed v4 Hook all
+retained their exact pre-run hashes; `CODEX_CLI_PATH` was not changed.
+
+A distinct process, PID 15396, recomputed the install/source/harness hashes,
+both native rollouts, SessionMeta, nested tool call/results, Hook chain, writer
+receipt, Git disk, rollback absence, process barrier, and live hashes. The raw
+manifest SHA-256 is
+`4da90d2152826b1fccaca4eb3bda4d2895df6436c485318f7dec8c83b7895c77`;
+the fresh output SHA-256 is
+`1fce24cfe59d3b4278da27c257061a68b9ff39b4ebb96a10f3db7a39a79e70ae`.
+The committed decision is
+`probes/p7-live-isolated-install-rollback-20260910.json`, with off-host static
+checks and originating-host replay in
+`tests/test_p7_isolated_install_rollback.py`.
+
+One excluded calibration omitted the adjacent code-mode host. The model's outer
+code-mode call then failed before nested `apply_patch`, so it produced no Hook
+chain or writer receipt. The runner now requires both artifacts before even a
+preliminary success. Only the final hash-bound run above is qualification
+evidence.
+
+This promotes `install_rollback` to `qualified`. P7 remains `partial` solely for
+native Windows parity. Phase 1 and direct write remain false, and Phases 2/3
+remain closed.
+
+Fresh provider-free verification passed all 813 tests in 65.654 seconds,
+including agent-template checks. The normal Phase 1, mutation-surface,
+same-UID, and semantic runtime-index checks returned zero. Phase 1 promotion
+mode returned two with exactly P7 and `windows_live` open. The broader host
+mutation inventory and same-UID mode-bit probes retained their explicit
+qualification-required exit two; no host guarantee was inferred from the
+isolated install receipt.
+
+## Cumulative current-source candidate for Windows replay
+
+The current G4 source candidate is now available as one portable full-index
+patch instead of an ordered stack of incremental probe patches. The exact base
+is upstream `rust-v0.153.4` commit
+`3d2ee51ca2d5db578f328aa75e20aa22c0197c9a`; the 57-path patch is
+`probes/current-signed-runtime-g4-cumulative-source-candidate.patch`, 228346
+bytes with SHA-256
+`94ec3d6140868055662ca43b0d0d464f5bda8d41cd40433a20facb4fb600f72d`.
+A fresh detached worktree passed `git apply --check`, applied the patch to the
+index, and reproduced the same full-index diff byte-for-byte. The machine
+receipt and executable static checks are
+`probes/current-signed-runtime-g4-cumulative-source-candidate.json` and
+`tests/test_current_g4_cumulative_source_candidate.py`.
+
+This closes only the reproducible build-input ambiguity that previously made
+multi-patch transfer fragile. It is not a Windows binary, Windows SessionMeta,
+native child, Hook, callback, termination, or disk-barrier observation. P7 and
+`windows_live` therefore remain open; Phase 1 and direct write remain false.
+Fresh provider-free verification passed all 817 tests in 77.805 seconds,
+including agent-template checks.
+
+## DeepSeek G4 Responses pairing and Hook continuity
+
+A same-shape macOS/Windows negative isolated the remaining G4 DeepSeek failure
+below assignment delivery and identity binding. Both hosts observed a real
+DeepSeek child, exact SessionMeta/canonical AgentPath, one `list_agents {}`
+call, and a local `function_call_output` with the same nonempty `call_id`.
+DeepSeek rejected the next Responses request with `No tool output found for
+tool call`. The macOS negative first retained the `g4_assignment` namespace;
+a second run exposed the same error after flattening the catalog to an ordinary
+function, proving that namespace removal alone was insufficient.
+
+The second macOS rollout made the stricter pairing boundary visible. The
+synchronous PreToolUse Hook recorded its `AUTHORITY.REATTESTED` developer
+message between the function call and its output. The candidate now expresses
+two independent provider capabilities: whether namespace tools are supported,
+and whether submitted Responses history requires contiguous function-call
+outputs. The latter normalization changes only the external request ordering;
+the durable rollout retains the original Hook event order. OpenAI parent
+defaults remain unchanged.
+
+The final isolated run used candidate SHA-256
+`a10fd9fcd753687c26285f9c5e0447986e42d0dfc00780e14b59b5abebed297f`.
+The OpenAI/ChatGPT parent spawned DeepSeek child
+`01a08c00-c36d-7f41-9e12-08737b2f7ca6` at
+`/root/p7_macos_deepseek`. The child issued exactly one ordinary function
+`list_agents` with exact arguments `{}` and call id
+`call_00_MPcr7CS2Du3Se88AUMhC0016`; one output matched it. DeepSeek accepted the
+next turn, the child returned a schema-exact final attestation, SubagentStop
+moved the durable assignment to `reported`, native wait/callback completed,
+and `close_agent` removed the child from the post-close catalog. The Git root
+remained clean and two post-exit disk barriers were identical. The raw manifest
+SHA-256 is
+`c85ebb96d68bb5750d0f12246df972f8cbf935010bc52f53cb52a3e074bf4746`;
+the committed adjudication summary is
+`probes/p7-live-deepseek-g4-responses-compat-20260910.json`.
+
+This is a positive G4 external-wire and SubagentStop/callback result on macOS,
+not Phase 1 completion. The close receipt reports an absent process bootstrap,
+empty tracked/confirmed/unconfirmed/unresolved process maps, terminated session
+loop, and closed-catalog quiescence, but still reports
+`process_tree_quiescence_claimed=false`; this no-process P7 run does not replace
+or weaken the separate nonempty-process receipt that already qualifies P5b and
+`termination_quiescence`. The exact updated source patch still awaits native
+Windows replay. Therefore only `windows_live` keeps P7 partial;
+`phase1_complete=false`, `direct_write_qualified=false`, and Phases 2/3 remain
+closed.
+
+Fresh provider-free verification after adding the request-normalization and
+evidence checks ran 826 tests in 78.233 seconds and passed, including the agent
+template checks. Two originating-host replay tests skipped explicitly because
+their external raw anchors had drifted: the earlier candidate path had been
+rebuilt and the installed App runtime had been upgraded. Their committed,
+off-host evidence validation still ran and passed; neither skip is counted as a
+live replay or as a qualification success.
+
+## Explicit plaintext delivery and closed macOS writer
+
+The current-source candidate now distinguishes intentional plaintext
+collaboration delivery from legacy persisted inter-agent messages with a
+durable marker. Only an explicitly constructed plaintext communication is
+projected onto the supported user-message wire; a missing marker retains the
+legacy AgentMessage projection. The same configured delivery is used by
+spawn/send/follow-up and both child-completion callback paths. Resume
+reconstruction, item and turn ids, and canonical/plaintext fork boundaries were
+retested so the compatibility route does not reinterpret older rollouts.
+
+The incremental eight-path full-index patch is
+`probes/current-signed-runtime-g4-explicit-plaintext-delivery-source-candidate.patch`
+with SHA-256
+`14acd83f16c35acef0be7d9e511f3012ffa0bff8b6438a5890dbd3eddddc99d7`.
+Applied after the preceding cumulative candidate on exact upstream commit
+`3d2ee51ca2d5db578f328aa75e20aa22c0197c9a`, it yields cumulative diff
+SHA-256
+`9804546dabff267b30230ac0b9007867febf9f3c5ea147ce62647dd7603f4bf5`.
+The rebuilt macOS candidate SHA-256 is
+`386a551d909eb3e53e3a9274b006519644b7a534b7d6b1f8998ebade7519a235`.
+The source-chain receipt and executable checks are
+`probes/current-signed-runtime-g4-explicit-plaintext-delivery-source-candidate.json`
+and `tests/test_current_g4_explicit_plaintext_delivery_candidate.py`.
+
+A final single-thread core run executed 2470 tests: 2467 passed and three
+reported nonpasses were retained. Two network tests reproduced with the same
+behavior on the unpatched upstream source under this host's network/proxy
+baseline. The tracing-subscriber test passed in isolated current-source and
+upstream-source processes, identifying serial process-global order rather than
+a callback-patch regression. The immutable live source-chain receipt was not
+rewritten after use; the supplemental classification and checks are
+`probes/current-signed-runtime-g4-explicit-plaintext-delivery-rust-validation-20260912.json`
+and `tests/test_current_g4_explicit_plaintext_delivery_rust_validation.py`.
+
+One pre-fix raw calibration remains preserved and unpromoted: its exact child
+write reached stable disk, but the parent final callback was absent. The
+candidate had not yet applied plaintext delivery to child-completion
+communications. Its manifest SHA-256 is
+`03bbd84bca79823cf0b25272cc97e4a528793ccc284575a43741808de8cd004c`;
+the later green runs do not rewrite or erase that negative.
+
+The fixed candidate then completed a three-step macOS qualification sequence.
+First, an unqualified positive calibration established exact native
+OpenAI-parent/DeepSeek-child SessionMeta, canonical AgentPath, one owned
+`apply_patch`, paired custom tool output, byte-identical final callback,
+bounded close, child absence, and two stable post-exit disk barriers. Second, a
+separate negative requested an exact foreign dirty-byte restoration; trusted
+PreToolUse denied it, no PostToolUse was emitted, the dirty bytes survived, and
+the authority was revoked before close. Those independent outcomes produced a
+parent-owned feasibility decision for the concrete one-call addition.
+
+The parent then removed only the calibrated added file, fsynced the isolated
+directory, and proved the exact clean baseline had returned. A final positive
+run on that same root carried the feasibility receipt in its immutable capsule.
+A fresh verifier repeated identity, tool, Hook, callback, close and double
+barrier checks; a distinct fresh owner recomputed the final attestation and
+provenance, required empty in-flight authority, and atomically consumed the
+reported assignment. The final raw manifest SHA-256 is
+`08b53412a50d8855aa92b146dddcb06af84867a4fee3a91ceb7774dd83992b70`;
+the fresh-owner receipt SHA-256 is
+`eaecd762a4ff17769aabd94db72ab5c8f2f0e5e6f2a245ccce17b40d18e63e1d`.
+The committed product-independent summary and checks are
+`probes/p7-macos-current-candidate-writer-live-20260912.json` and
+`tests/test_p7_macos_current_candidate_live_evidence.py`. Raw runtime artifacts
+remain private on the originating host and are referenced only by hashes;
+credential presence was recorded but no credential value was read or retained.
+
+The full provider-free suite after this change passed 856 tests and skipped 13
+explicit originating-host cases, for 869 total with no failures; agent-template
+checks also passed. This closes the current candidate's macOS exact-writer and
+foreign-path negative slice. It does not substitute macOS for Windows: P7
+remains partial, `windows_live` remains pending, and
+`phase1_complete=false`, `direct_write_qualified=false`, with Phases 2/3 still
+closed.
+
+## Cross-platform final promotion adjudication contract (2026-09-12)
+
+`probes/adjudicate_phase1_completion.py` adds the final parent-owned decision
+boundary without changing a qualification state. It binds the immutable final
+source receipt and supplemental Rust classification to the macOS live receipt,
+the native sibling-admission receipt, DeepSeek regression, isolated rollback,
+and one future compact Windows current-candidate receipt. The macOS and Windows
+binaries must be distinct, while their full source base, semantic version,
+incremental patch, cumulative replay, and source-receipt identities must match
+exactly.
+
+The Windows input contract requires targeted and full Rust regression results,
+at least six deterministic state/lease schedules with no unexplained negative,
+a durable parent same-path denial, a foreign-dirty-byte negative, an exact
+owned-path positive, fresh-owner consumption, exact callback/tool pairing,
+strong termination/quiescence, a two-second-or-longer stable disk barrier, and
+the complete Windows provider-free/equivalence cohort. Its compact receipt may
+contain only product-independent identities and hashes; an originating-host
+path or LocalCAT reference is rejected. The Windows producer must leave its own
+`p7_complete`, `phase1_complete`, and `direct_write_qualified` fields false so
+that it cannot grant itself integration authority.
+
+`tests/test_adjudicate_phase1_completion.py` covers the accepted contract only
+with an explicitly synthetic schema fixture. It also proves fail-closed
+behavior for source-patch drift, missing foreign-byte preservation, Windows
+self-promotion, host-path leakage, and a status boolean that jumps ahead of P7.
+Supplying the historical deterministic Windows writer receipt to the real
+command exits two with `Windows classification drifted`; therefore the clean
+`ed57e0e` history rewrite remains useful historical evidence but cannot be
+mistaken for the final candidate replay. Until a real Windows receipt satisfies
+this contract, P7 remains partial, `windows_live` remains pending,
+`phase1_complete=false`, and `direct_write_qualified=false`; Phases 2/3 remain
+closed.

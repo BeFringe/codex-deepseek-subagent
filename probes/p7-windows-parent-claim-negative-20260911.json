@@ -1,0 +1,45 @@
+{
+  "schema": 1,
+  "classification": "retained_windows_parent_claim_concurrency_failure",
+  "audit_sha256": "c72e4fe46d1c247be6e6b01ca1c88b48f9585e48dd9422cd7c13280ee5ce6000",
+  "case": {
+    "test_id": "test_assignment_transport.AssignmentTransportTests.test_concurrent_parent_claims_allow_only_one_overlapping_writer",
+    "status": "failed",
+    "events": [
+      {
+        "status": "failed",
+        "diagnostic": "Traceback (most recent call last):\n  File \"E:\\Archives\\Project\\subagent\\.p7-windows\\replay-785b945\\tests\\test_assignment_transport.py\", line 2019, in test_concurrent_parent_claims_allow_only_one_overlapping_writer\n    self.assertEqual(len(list((self.store.root / \"writer_conflict\").glob(\"*.json\"))), 1)\nAssertionError: 0 != 1\n"
+      }
+    ],
+    "classification": {
+      "category": "d",
+      "reason": "Unresolved failure; manual review required, no automatic platform exclusion",
+      "windows_equivalence_proven": false
+    }
+  },
+  "tested_source_sha256": "1823e52c5e916812db29c2cefc9c35ec31f93af3545c6b1e0f7b28512f912f34",
+  "original_fixture_path": null,
+  "original_denial_reason": null,
+  "original_state_bytes": null,
+  "missing_data_reason": "The original assertion did not include raw results, and teardown removed the temporary fixture. Subsequent instrumentation cannot recover them.",
+  "inferred_from_prior_passed_assertions": {
+    "decisions_sorted": [
+      "deny",
+      "pass"
+    ],
+    "writer_claim_count": 1
+  },
+  "failed_assertion": {
+    "writer_conflict_count": 0,
+    "expected": 1
+  },
+  "root_cause_established": false,
+  "failure_waived": false,
+  "subsequent_bounded_cohort": {
+    "runs": 30,
+    "passed": 30,
+    "fix_claimed": false
+  },
+  "phase1_complete": false,
+  "direct_write_qualified": false
+}

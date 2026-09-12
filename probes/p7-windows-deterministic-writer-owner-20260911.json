@@ -1,0 +1,80 @@
+{
+  "schema": 1,
+  "classification": "fresh_owner_exact_closed_windows_writer",
+  "fresh_adjudicator_pid": 5904,
+  "manifest_sha256": "5b7c3ad311c20476aa1e431830e2c0611d56225cda6bb38f0e7399c64dbae999",
+  "assignment_id": "7b0272b3-4ebe-4118-8374-509fd74e9206",
+  "consumed_sha256": "e3fe5dea1f04bbfa074fa756bdb62c24c66fdeba4e07e98d0ea1ef40c4285ac9",
+  "adjudication": {
+    "location_integrity": "pass",
+    "mutation_scope_integrity": "pass",
+    "verification_freshness": "pass",
+    "derivation_provenance_integrity": "pass",
+    "feasibility_contract_integrity": "pass",
+    "evidence_sha256": "5b7c3ad311c20476aa1e431830e2c0611d56225cda6bb38f0e7399c64dbae999"
+  },
+  "outcome": {
+    "schema": 1,
+    "classification": "fresh_windows_mutation_outcome_only",
+    "manifest_sha256": "5b7c3ad311c20476aa1e431830e2c0611d56225cda6bb38f0e7399c64dbae999",
+    "verifier_pid": 5904,
+    "case": "positive",
+    "parent_thread_id": "01a0910c-8e53-7732-9a80-3a3d3340a9a9",
+    "child_thread_id": "01a0910d-7f1f-7300-a09c-ab1f5b28504b",
+    "agent_path": "/root/p7_windows_positive",
+    "tool_call_id": "call_00_asOaeinpwT0O41qFIv7D9330",
+    "tool_output": "Exit code: 0\nWall time: 3.4 seconds\nOutput:\nSuccess. Updated the following files:\nA C:/Users/BonBon/AppData/Local/Temp/codex-g4-write-windows-87_aueht/qualified.txt\n",
+    "close_receipt": {
+      "previous_status": {
+        "completed": "BEGIN CODEX WORKER ATTESTATION\n{\"assignment_id\":\"7b0272b3-4ebe-4118-8374-509fd74e9206\",\"handoff_id\":\"6d561c6e-c591-4ad2-979a-b07d0d48db54\",\"capsule_sha256\":\"893d1a19de958c4a6eeeabd9bb159bff40a712fcbf424423ac41cb169f4f8415\",\"compact_invariant_sha256\":\"2507ce3d4366d8cc77337136d42ce8585ceb9cac6f43a590d1f46c71a2045c52\",\"canonical_agent_path\":\"/root/p7_windows_positive\",\"recovery_count\":0,\"root\":\"C:\\\\Users\\\\BonBon\\\\AppData\\\\Local\\\\Temp\\\\codex-g4-write-windows-87_aueht\",\"branch\":\"main\",\"head\":\"23dbe8c86101bf741dfe021b5ac4ca219f728d93\",\"index_changed\":false,\"git_status_short\":\"?? qualified.txt\",\"changed_paths\":[{\"kind\":\"file\",\"path\":\"qualified.txt\",\"sha256\":\"4fd8e8f97e640e495fefed6d4fdb0467c4e5835d9bd006173da14af37698ac8c\"}],\"authority_provenance\":{\"policy_sha256\":\"0d8a41eb35bbc44d0adada71c8028437534424b3fda6d15515ea8645a2b5ec77\",\"worker_claimed_origin\":\"owner_internal\",\"test_only_injection_used\":false,\"derivation_receipt_sha256\":\"355bb0541543d916b3b5d920543823476e1543dbe1aa8e116269e3faa8cae44c\"},\"verification\":[{\"command\":\"exact-path child apply_patch qualification probe\",\"exit_code\":0}],\"inventory_summaries\":[],\"context_lost\":false,\"authority_violation\":false,\"assigned_slice_complete\":true}\nEND CODEX WORKER ATTESTATION"
+      },
+      "target_thread_id": "01a0910d-7f1f-7300-a09c-ab1f5b28504b",
+      "target_agent_path": "/root/p7_windows_positive",
+      "session_loop_terminated": true,
+      "model_callable_process_bootstrap_absent": true,
+      "tracked_background_processes_before_close": 0,
+      "tracked_process_ids_by_thread": {
+        "01a0910d-7f1f-7300-a09c-ab1f5b28504b": []
+      },
+      "confirmed_exit_process_ids_by_thread": {
+        "01a0910d-7f1f-7300-a09c-ab1f5b28504b": []
+      },
+      "unconfirmed_exit_process_ids_by_thread": {
+        "01a0910d-7f1f-7300-a09c-ab1f5b28504b": []
+      },
+      "unresolved_start_process_ids_by_thread": {
+        "01a0910d-7f1f-7300-a09c-ab1f5b28504b": []
+      },
+      "tracked_process_termination_confirmed": true,
+      "closed_catalog_actor_quiescence_claimed": true,
+      "process_tree_quiescence_claimed": false
+    },
+    "native_write_root_acl": {
+      "workspace_capability_sid": "S-1-5-21-587394175-4261091128-2631848328-3606270611",
+      "capability_mask": 1245631,
+      "scope": "exact native workspace capability, no additional ACL principals"
+    },
+    "negative_boundary": null,
+    "disk_barriers_verified": true,
+    "outcome_verified": true,
+    "authority_consumed": false,
+    "direct_write_qualified": false,
+    "phase1_complete": false,
+    "remaining": [
+      "parent/sibling writer exclusion",
+      "complete fresh-owner writer adjudication",
+      "unexplained historical concurrent binding and parent-claim failures"
+    ]
+  },
+  "authority_consumed": true,
+  "exact_closed_writer_run_qualified": true,
+  "scope": "one native parent, one child, one owned addition, one durable parent denial, then closed",
+  "native_sibling_live_qualified": false,
+  "direct_write_qualified": false,
+  "phase1_complete": false,
+  "p7_complete": false,
+  "historical_concurrency_negatives_explained": false,
+  "global_process_tree_qualified": false,
+  "phase2_state": "closed",
+  "phase3_state": "closed"
+}

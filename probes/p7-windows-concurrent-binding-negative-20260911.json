@@ -1,0 +1,70 @@
+{
+  "schema": 1,
+  "classification": "retained_unresolved_concurrent_binding_failure",
+  "test_id": "test_assignment_transport.AssignmentTransportTests.test_concurrent_distinct_spawns_bind_to_their_own_children",
+  "original_case": {
+    "test_id": "test_assignment_transport.AssignmentTransportTests.test_concurrent_distinct_spawns_bind_to_their_own_children",
+    "status": "failed",
+    "events": [
+      {
+        "status": "failed",
+        "diagnostic": "Traceback (most recent call last):\n  File \"E:\\Archives\\Project\\subagent\\.p7-windows\\replay-785b945\\tests\\test_assignment_transport.py\", line 1674, in test_concurrent_distinct_spawns_bind_to_their_own_children\n    self.assertTrue(all(\"BEGIN CODEX WORKER CAPSULE\" in item[\"hookSpecificOutput\"][\"additionalContext\"] for item in started))\nAssertionError: False is not true\n"
+      }
+    ],
+    "classification": {
+      "category": "d",
+      "reason": "Unresolved failure; manual review required, no automatic platform exclusion",
+      "windows_equivalence_proven": false
+    }
+  },
+  "original_audit_path": "E:\\Archives\\Project\\subagent\\.p7-windows\\parity-closure-04.json",
+  "original_audit_sha256": "41dee3312f63e1a744cfc8d920d5940d401049c5fbce06a88dcaeafc66f3d120",
+  "original_suite_counts": {
+    "passed": 842,
+    "failed": 1,
+    "skipped": 4
+  },
+  "tested_source_sha256": {
+    "tests/test_assignment_transport.py": "b6a5199a8574e1b9e168217c5b3330019eae374e042453b335fb4773032c9661",
+    "hooks/assignment_transport.py": "25ca5159092ca1feecf6a2374470287e6e0d53688e15a2af7df076e91d2f2199",
+    "hooks/compatibility_state.py": "8ebb6a64f5d04191ff70ff0ca4ffd3e52435239a6199bddab8062e67f6befdc6",
+    "hooks/runtime_guard.py": "5c26b7059fe63925b7e58906e3ebcbc542d03970e8e6e58df483fddfa533b998"
+  },
+  "expected_tasks": [
+    "task_one",
+    "task_two",
+    "task_three"
+  ],
+  "expected_child_thread_ids": [
+    "child-task_one",
+    "child-task_two",
+    "child-task_three"
+  ],
+  "actual_assignment_claim_identity": null,
+  "original_temp_state_root": null,
+  "original_process_thread_order": null,
+  "original_state_before_after_hashes": null,
+  "original_lock_publish_trace": null,
+  "missing_evidence_reason": "The original unittest assertion omitted actual payload/state. tearDown removed its temporary fixture before diagnosis. These observations cannot be reconstructed and are not invented.",
+  "root_cause_established": false,
+  "failure_reclassified_or_waived": false,
+  "subsequent_success_does_not_erase_negative": true,
+  "finite_reproduction_cohorts": [
+    {
+      "purpose": "Attempt to reproduce the single concurrent binding failure with assertion diagnostics; not a protocol fix",
+      "runs": 40,
+      "failed": 0,
+      "log_path": "E:\\Archives\\Project\\subagent\\.p7-windows\\parity-concurrent-bind-diagnostic.log",
+      "log_sha256": "87554066fe8a6ac9898e2af600367ef78244e43f518819bed26f0a079863cc71"
+    },
+    {
+      "purpose": "Attempt to reproduce the single concurrent binding failure with assertion diagnostics; not a protocol fix",
+      "runs": 100,
+      "failed": 0,
+      "log_path": "E:\\Archives\\Project\\subagent\\.p7-windows\\parity-concurrent-bind-diagnostic-02.log",
+      "log_sha256": "91f9c59dcc5a5e6272d8cd0f20061052e86958a477d1be4baf21e7beb3840b29"
+    }
+  ],
+  "direct_write_qualified": false,
+  "phase1_complete": false
+}

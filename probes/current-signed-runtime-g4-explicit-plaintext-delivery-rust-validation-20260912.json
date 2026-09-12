@@ -1,0 +1,67 @@
+{
+  "schema": 1,
+  "classification": "current_signed_runtime_g4_explicit_plaintext_delivery_rust_validation",
+  "source_chain_receipt": "probes/current-signed-runtime-g4-explicit-plaintext-delivery-source-candidate.json",
+  "source_chain_receipt_sha256": "6f5e5b6819287f82eb1ea76b51c6c8659b52ded7d067bf7d52196c945e32f12b",
+  "source": {
+    "base_commit": "3d2ee51ca2d5db578f328aa75e20aa22c0197c9a",
+    "semantic_version": "0.153.4",
+    "patch_sha256": "14acd83f16c35acef0be7d9e511f3012ffa0bff8b6438a5890dbd3eddddc99d7",
+    "cumulative_replay_sha256": "9804546dabff267b30230ac0b9007867febf9f3c5ea147ce62647dd7603f4bf5",
+    "candidate_sha256": "386a551d909eb3e53e3a9274b006519644b7a534b7d6b1f8998ebade7519a235"
+  },
+  "current_source_serial_core": {
+    "tests_run": 2470,
+    "passed": 2467,
+    "failed": 3,
+    "ignored": 0,
+    "patch_regressions": 0,
+    "test_threads": 1,
+    "failed_tests": [
+      {
+        "name": "session::tests::managed_network_proxy_decider_survives_full_access_start",
+        "classification": "originating_host_network_baseline",
+        "isolated_current_source": "failed_same",
+        "upstream_source_comparison": "failed_same"
+      },
+      {
+        "name": "session::tests::user_shell_commands_do_not_inherit_managed_network_proxy",
+        "classification": "originating_host_baseline_proxy",
+        "isolated_current_source": "failed_same",
+        "upstream_source_comparison": "failed_same"
+      },
+      {
+        "name": "session::turn::tests::post_sampling_token_estimate_is_disabled_by_always_on_sinks",
+        "classification": "serial_process_global_tracing_order",
+        "isolated_current_source": "passed",
+        "upstream_source_comparison": "passed"
+      }
+    ]
+  },
+  "upstream_source_comparison": {
+    "base_commit": "3d2ee51ca2d5db578f328aa75e20aa22c0197c9a",
+    "project_code_changes": false,
+    "cargo_lock_refreshed_offline_for_current_toolchain": true,
+    "comparison_scope": "the three named test behaviors only; not an exact upstream build receipt",
+    "credential_values_recorded": false
+  },
+  "targeted_current_source": {
+    "all_passed": true,
+    "tests": [
+      "multi_agent_v2_completion_queues_message_for_direct_parent",
+      "record_initial_history_reconstructs_resumed_transcript",
+      "record_inter_agent_communication_sets_turn_id_in_rollout_and_resume",
+      "record_inter_agent_communication_preserves_item_id_in_rollout_and_resume",
+      "fork_turn_positions_use_canonical_agent_messages_and_delivery_metadata",
+      "fork_turn_positions_use_plaintext_messages_and_delivery_metadata",
+      "plaintext_source_uses_user_message_wire_for_queue_and_trigger_modes",
+      "plaintext_inter_agent_communication_uses_supported_user_message_wire"
+    ]
+  },
+  "decision": {
+    "callback_patch_regression_observed": false,
+    "host_boundaries_promoted_as_phase1_evidence": false,
+    "phase1_complete": false,
+    "direct_write_qualified": false
+  }
+}

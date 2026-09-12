@@ -1,0 +1,125 @@
+{
+  "schema": 1,
+  "classification": "product_independent_deepseek_g4_responses_tool_loop_qualified_on_macos",
+  "adjudicated_at": "2026-09-10T15:49:00Z",
+  "runtime": {
+    "codex_semantic_version": "0.153.4",
+    "upstream_source_ref": "rust-v0.153.4",
+    "upstream_source_commit": "3d2ee51",
+    "candidate_sha256": "a10fd9fcd753687c26285f9c5e0447986e42d0dfc00780e14b59b5abebed297f",
+    "candidate_bytes": 590367448,
+    "cumulative_source_patch": "probes/current-signed-runtime-g4-cumulative-source-candidate.patch",
+    "cumulative_source_patch_sha256": "94ec3d6140868055662ca43b0d0d464f5bda8d41cd40433a20facb4fb600f72d",
+    "gui_app_server_selected": false
+  },
+  "provider_contract": {
+    "parent_provider": "openai",
+    "parent_login": "chatgpt",
+    "child_provider": "deepseek",
+    "child_model": "deepseek-v4-flash",
+    "assignment_transport": "plaintext SubagentStart Hook",
+    "wire_transport": "responses-direct",
+    "request_normalization": [
+      "ordinary-function tool exposure",
+      "contiguous function_call/function_call_output pairing"
+    ],
+    "provider_namespace_tools_enabled": false,
+    "provider_requires_function_call_output_adjacency": true
+  },
+  "negative_controls": [
+    {
+      "classification": "namespaced_g4_tool_call_rejected_by_provider",
+      "platform": "macOS-26.2-arm64",
+      "candidate_sha256": "49b45f5571a3c8966aa7dd6192583c88ff3df05e840208734ee51df8e1b3104e",
+      "tool_name": "list_agents",
+      "tool_namespace": "g4_assignment",
+      "tool_arguments": "{}",
+      "matching_local_output": true,
+      "provider_error": "No tool output found for tool call",
+      "manifest_path": "/private/tmp/codex-p7-deepseek-g4-macos.eo1v0j1m/run-manifest.json",
+      "manifest_sha256": "48aeb0444594041edc4556a5d0198d80bd1a0e1116e251033ded3cb0d6105062"
+    },
+    {
+      "classification": "flat_tool_name_alone_does_not_restore_pairing",
+      "platform": "macOS-26.2-arm64",
+      "candidate_sha256": "85e45de7e3ada699f960d113b88750c61cff72e5a60abf78341e84eec6952e29",
+      "tool_name": "list_agents",
+      "tool_namespace": null,
+      "tool_arguments": "{}",
+      "matching_local_output": true,
+      "intervening_rollout_item": "hooks.additional_context developer message",
+      "provider_error": "No tool output found for tool call",
+      "manifest_path": "/private/tmp/codex-p7-deepseek-g4-macos.pesgnyzz/run-manifest.json",
+      "manifest_sha256": "24fd4dacf79cc22d2646b3d48dce6ea745530987d29d9b9e98005f9956e653db"
+    }
+  ],
+  "positive_run": {
+    "started_at": "2026-09-10T15:46:43.266359+00:00",
+    "completed_at": "2026-09-10T15:48:03.332568+00:00",
+    "platform": "macOS-26.2-arm64-arm-64bit-Mach-O",
+    "task_name": "p7_macos_deepseek",
+    "canonical_agent_path": "/root/p7_macos_deepseek",
+    "parent_thread_id": "01a08c00-0bb2-7042-a9a3-1a4ea9e4bfad",
+    "child_thread_id": "01a08c00-c36d-7f41-9e12-08737b2f7ca6",
+    "probe_root": "/private/tmp/codex-p7-deepseek-g4-macos.fyhqvu9y/worktree",
+    "branch": "main",
+    "full_head": "1a7eeaf125af16fedb2e1d61780f93ecb18f7261",
+    "prompt_sha256": "1a0eb94e574d4fcb0197edacc59655a8eefe44a78404518d3c5d32750b4d11a8",
+    "role_sha256": "023345ef28fef959402c23bf37093e707c00c2a57a30d103635939e8c777ba0f",
+    "hooks_json_sha256": "deb9cdbc521cdd5634b86e515fb28d052ed0bc668d197ab43acdcf07174c982c",
+    "tool_call": {
+      "name": "list_agents",
+      "namespace": null,
+      "arguments": "{}",
+      "call_id": "call_00_MPcr7CS2Du3Se88AUMhC0016",
+      "count": 1,
+      "matching_output_count": 1
+    },
+    "provider_missing_tool_output_error": false,
+    "child_task_complete_error": null,
+    "final_attestation_accepted": true,
+    "compatibility_state": {
+      "active_count": 0,
+      "reported_count": 1,
+      "unresolved_count": 0,
+      "reported_receipt_sha256": "832b25bcba05de2fa97ff521647b8f457e64891f35b5ff059dead487a8babf5d"
+    },
+    "close_receipt": {
+      "session_loop_terminated": true,
+      "tracked_process_termination_confirmed": true,
+      "closed_catalog_actor_quiescence_claimed": true,
+      "process_tree_quiescence_claimed": false,
+      "all_process_id_maps_empty": true,
+      "post_close_child_absent": true
+    },
+    "candidate_exit_code": 0,
+    "git_status_short": "",
+    "two_post_exit_barriers_equal": true,
+    "manifest_path": "/private/tmp/codex-p7-deepseek-g4-macos.fyhqvu9y/run-manifest.json",
+    "manifest_sha256": "c85ebb96d68bb5750d0f12246df972f8cbf935010bc52f53cb52a3e074bf4746",
+    "candidate_stdout_sha256": "d38a7abd1d46c2369307c6f9eff5632160d7f6a2e4798f1e4ca6feefbf01eb12",
+    "candidate_stderr_sha256": "f4383e254e9e529200797034de32f567b58b39fc9ee64ab3b5762128b709b316"
+  },
+  "credential_boundary": {
+    "chatgpt_auth_value_read": false,
+    "deepseek_credential_present": true,
+    "deepseek_credential_value_recorded": false,
+    "credential_value_committed": false
+  },
+  "sources": [
+    "https://api-docs.deepseek.com/api/create-response/",
+    "https://api-docs.deepseek.com/guides/responses_api/"
+  ],
+  "verdict": {
+    "macos_deepseek_g4_tool_loop_qualified": true,
+    "macos_sessionmeta_identity_bound": true,
+    "macos_subagentstop_adjudication_reproducible": true,
+    "macos_close_catalog_quiescence_observed": true,
+    "strong_process_tree_quiescence_observed": false,
+    "windows_same_patch_parity_pending": true,
+    "phase1_complete": false,
+    "direct_write_qualified": false,
+    "phase2_state": "closed",
+    "phase3_state": "closed"
+  }
+}

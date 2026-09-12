@@ -1,0 +1,40 @@
+{
+  "schema": 1,
+  "evidence_kind": "native_windows_successful_build",
+  "recorded_at": "2026-09-10T18:14:14.721711+00:00",
+  "qualification_base_commit": "785b945d46a9a8879f659a428ff0a03d940cf7a1",
+  "source_commit": "3d2ee51ca2d5db578f328aa75e20aa22c0197c9a",
+  "source_root": "E:\\Archives\\Project\\subagent\\.p7-windows\\source-55af3a3",
+  "patch_sha256": "94ec3d6140868055662ca43b0d0d464f5bda8d41cd40433a20facb4fb600f72d",
+  "patch_bytes": 228346,
+  "exit_code": 0,
+  "target": "x86_64-pc-windows-msvc",
+  "candidate": "E:\\Archives\\Project\\subagent\\.p7-windows\\source-55af3a3\\codex-rs\\target\\x86_64-pc-windows-msvc\\release\\codex.exe",
+  "candidate_sha256": "e97c11909c080ff4556c0746b80b7c47f9508f5792ccac8bb83d91db187a9101",
+  "version": "codex-cli 0.153.4",
+  "binaries": {
+    "codex.exe": {
+      "sha256": "e97c11909c080ff4556c0746b80b7c47f9508f5792ccac8bb83d91db187a9101",
+      "bytes": 298484224
+    },
+    "codex-code-mode-host.exe": {
+      "sha256": "7ab011ef9fa06111fb06835b4871d556761911722ed12f3030dff86389a79a02",
+      "bytes": 73608704
+    },
+    "codex-windows-sandbox-setup.exe": {
+      "sha256": "d1b77747f1feecf366f3fc0b366776c3374ff3cd237686ffaa240dc2c77a2723",
+      "bytes": 15512064
+    },
+    "codex-command-runner.exe": {
+      "sha256": "e2818e62b5f0b806b9fc13e9475f288cbc853f0654fce94c7d165090afa7e1a7",
+      "bytes": 8215552
+    }
+  },
+  "profile": "release",
+  "jobs": 1,
+  "log": "E:\\Archives\\Project\\subagent\\.p7-windows\\replay-strict-responses-build.log",
+  "log_sha256": "cf21268f9307cac94a4a2667c98e7b66de75c84521b0453f54c8464aa7d0351f",
+  "windows_live_qualified": false,
+  "phase1_complete": false,
+  "direct_write_qualified": false
+}

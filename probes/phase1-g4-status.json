@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "as_of": "2026-09-09",
+  "as_of": "2026-09-12",
   "goal_contract": {
     "state": "active_fail_closed",
     "terminal_acceptance_unchanged": true,
@@ -692,9 +692,32 @@
           "probes/g4-live-parent-child-closed-catalog-parent-adjudication-20260909.json",
           "tests/test_g4_live_parent_child_closed_catalog.py",
           "probes/g4-current-app-failed-patch-callback-regression-20260909.json",
-          "tests/test_g4_current_app_failed_patch_callback_regression.py"
+          "tests/test_g4_current_app_failed_patch_callback_regression.py",
+          "probes/p7-live-deepseek-regression-20260910.json",
+          "tests/test_p7_live_deepseek_regression.py",
+          "probes/p7-live-isolated-install-rollback-20260910.json",
+          "probes/adjudicate_p7_isolated_install_rollback.py",
+          "probes/run_p7_isolated_install_rollback.py",
+          "tests/test_p7_isolated_install_rollback.py",
+          "probes/current-signed-runtime-g4-cumulative-source-candidate.json",
+          "probes/current-signed-runtime-g4-cumulative-source-candidate.patch",
+          "tests/test_current_g4_cumulative_source_candidate.py",
+          "probes/p7-live-deepseek-g4-responses-compat-20260910.json",
+          "probes/run_p7_deepseek_g4_tool_loop.py",
+          "probes/capture_g4_hook_event.py",
+          "tests/test_p7_deepseek_g4_responses_compat.py",
+          "tests/test_p7_deepseek_g4_tool_loop.py",
+          "probes/current-signed-runtime-g4-explicit-plaintext-delivery-source-candidate.json",
+          "probes/current-signed-runtime-g4-explicit-plaintext-delivery-source-candidate.patch",
+          "tests/test_current_g4_explicit_plaintext_delivery_candidate.py",
+          "probes/current-signed-runtime-g4-explicit-plaintext-delivery-rust-validation-20260912.json",
+          "tests/test_current_g4_explicit_plaintext_delivery_rust_validation.py",
+          "probes/p7-macos-current-candidate-writer-live-20260912.json",
+          "tests/test_p7_macos_current_candidate_live_evidence.py",
+          "probes/adjudicate_phase1_completion.py",
+          "tests/test_adjudicate_phase1_completion.py"
         ],
-          "blocker": "The installed 0.153.4 App Server reproduces the missing PostToolUse path that the isolated headless candidate fixes, so source/candidate success is not yet deployed-runtime qualification. The new 0.153.4 POSIX headless run keeps the GUI App Server untouched, preserves v4 entries, and restores hooks.json to its exact pre-run hash after the qualification overlay. This is another exact overlay rollback, not functional live install/rollback qualification. A current POSIX same-path run completed with zero candidate exit and exact overlay rollback while preserving v4. A later six-file installed Hook source refresh repaired schema skew under a byte-identical hooks.json and preserved explicit rollback material, but no functional reload/rollback qualification is inferred from that repair. A narrow exact child-role/provider source seam and two live OpenAI-parent to ZHIPU-child read-only native-tool loops, including one fresh consumed record, prove that the current provider-inheritance boundary can be crossed without replacing the parent provider or App Server. Provider-free POSIX serial and concurrent pairs also completed without selecting the candidate as the GUI App Server; the concurrent run has a known zero candidate exit and actual overlap, while its parent projection omitted child thread ids. A provider-free POSIX depth-two run additionally completed with a known zero candidate exit, exact root/explorer/G4 identities, target Hook mediation, two-level callback, and fresh-owner consumption. A separate POSIX idle-child run completed with zero candidate exit and empty stderr while delivering send_message and followup_task as exact plaintext user-message wires. One exact-path POSIX child write then completed under the same headless-only selection, and the hash-pinned Hook overlay returned to its original bytes immediately afterward. The earlier one-shot sandbox overlay also has an exact hash-pinned rollback: live config and scripts returned to their prior bytes, an in-process cached Hook definition failed closed rather than reloading, and a full App restart restored the prior trusted Hook set with zero warnings or errors. These are narrow positive receipts, not broad upgrade compatibility. The legacy Utopia DeepSeek route, Windows parity, DeepSeek regression, and broader external-child lifecycle and rollback cohorts remain missing; the independent App Server Broker replacement still cannot satisfy this project's native AgentPath lifecycle contract"
+        "blocker": "Only native Windows parity for the exact final source/patch pair's rebuild and live replay remains open. POSIX native lifecycle, callback continuity, the DeepSeek G4 Responses tool loop, and isolated headless install/reload/rollback are qualified with product-independent live receipts. The cross-platform promotion adjudicator rejects historical Windows receipts and cannot self-promote the phase."
       }
     ],
     "exit_receipts": [
@@ -744,7 +767,9 @@
           "tests/test_g4_live_write_then_close.py",
           "tests/test_reconcile_g4_write_then_close.py",
           "probes/g4-live-handover-cleanup-close-20260909.json",
-          "tests/test_g4_live_handover_cleanup_close.py"
+          "tests/test_g4_live_handover_cleanup_close.py",
+          "probes/p7-macos-current-candidate-writer-live-20260912.json",
+          "tests/test_p7_macos_current_candidate_live_evidence.py"
         ]
       },
       {
@@ -778,7 +803,9 @@
           "probes/current-signed-runtime-g4-sibling-admission-source-candidate.json",
           "probes/g4-live-sibling-spawn-admission-20260909.json",
           "probes/g4-live-sibling-spawn-admission-parent-adjudication-20260909.json",
-          "tests/test_g4_live_sibling_spawn_admission.py"
+          "tests/test_g4_live_sibling_spawn_admission.py",
+          "probes/p7-macos-current-candidate-writer-live-20260912.json",
+          "tests/test_p7_macos_current_candidate_live_evidence.py"
         ]
       },
       {
@@ -800,7 +827,7 @@
       },
       {
         "id": "callback_continuity",
-        "state": "partial",
+        "state": "qualified",
         "evidence": [
           "probes/g4-live-postcompact-scope-drift-denial-20260908.json",
           "probes/g4-live-postcompact-scope-drift-parent-adjudication-20260908.json",
@@ -843,7 +870,17 @@
           "probes/p1-live-plaintext-same-message-pairs-20260909.json",
           "tests/test_p1_live_plaintext_same_message_pairs.py",
           "probes/g4-live-handover-cleanup-close-20260909.json",
-          "tests/test_g4_live_handover_cleanup_close.py"
+          "tests/test_g4_live_handover_cleanup_close.py",
+          "probes/p7-live-deepseek-regression-20260910.json",
+          "tests/test_p7_live_deepseek_regression.py",
+          "probes/p7-live-deepseek-g4-responses-compat-20260910.json",
+          "probes/run_p7_deepseek_g4_tool_loop.py",
+          "tests/test_p7_deepseek_g4_responses_compat.py",
+          "tests/test_p7_deepseek_g4_tool_loop.py",
+          "probes/current-signed-runtime-g4-explicit-plaintext-delivery-source-candidate.json",
+          "tests/test_current_g4_explicit_plaintext_delivery_candidate.py",
+          "probes/p7-macos-current-candidate-writer-live-20260912.json",
+          "tests/test_p7_macos_current_candidate_live_evidence.py"
         ]
       },
       {
@@ -903,12 +940,14 @@
           "probes/reconcile_g4_handover_then_close.py",
           "tests/test_g4_live_handover_cleanup_close.py",
           "probes/g4-p5b-closed-catalog-quiescence-adjudication-20260909.json",
-          "tests/test_g4_p5b_closed_catalog_quiescence_adjudication.py"
+          "tests/test_g4_p5b_closed_catalog_quiescence_adjudication.py",
+          "probes/p7-macos-current-candidate-writer-live-20260912.json",
+          "tests/test_p7_macos_current_candidate_live_evidence.py"
         ]
       },
       {
         "id": "posix_live",
-        "state": "partial",
+        "state": "qualified",
         "evidence": [
           "probes/g4-live-postcompact-scope-drift-denial-20260908.json",
           "probes/g4-live-postcompact-scope-drift-parent-adjudication-20260908.json",
@@ -951,26 +990,57 @@
           "tests/test_p1_live_plaintext_same_message_pairs.py",
           "probes/g4-live-nonempty-tracked-process-termination-20260909.json",
           "probes/reconcile_g4_nonempty_tracked_process_close.py",
-          "tests/test_g4_live_nonempty_tracked_process_termination.py"
+          "tests/test_g4_live_nonempty_tracked_process_termination.py",
+          "probes/p7-live-deepseek-regression-20260910.json",
+          "tests/test_p7_live_deepseek_regression.py",
+          "probes/p7-live-deepseek-g4-responses-compat-20260910.json",
+          "probes/run_p7_deepseek_g4_tool_loop.py",
+          "tests/test_p7_deepseek_g4_responses_compat.py",
+          "tests/test_p7_deepseek_g4_tool_loop.py",
+          "probes/current-signed-runtime-g4-explicit-plaintext-delivery-source-candidate.json",
+          "tests/test_current_g4_explicit_plaintext_delivery_candidate.py",
+          "probes/p7-macos-current-candidate-writer-live-20260912.json",
+          "tests/test_p7_macos_current_candidate_live_evidence.py"
         ]
       },
       {
         "id": "windows_live",
         "state": "pending",
-        "evidence": ["docs/phase1-g4-probe-plan.md#vi-platform-and-regression-exit-sequence"]
+        "evidence": [
+          "docs/phase1-g4-probe-plan.md#vi-platform-and-regression-exit-sequence",
+          "probes/p7-live-deepseek-g4-responses-compat-20260910.json",
+          "probes/current-signed-runtime-g4-cumulative-source-candidate.json",
+          "probes/current-signed-runtime-g4-cumulative-source-candidate.patch",
+          "probes/current-signed-runtime-g4-explicit-plaintext-delivery-source-candidate.json",
+          "probes/current-signed-runtime-g4-explicit-plaintext-delivery-source-candidate.patch",
+          "probes/adjudicate_phase1_completion.py",
+          "tests/test_adjudicate_phase1_completion.py"
+        ]
       },
       {
         "id": "deepseek_regression",
-        "state": "partial",
+        "state": "qualified",
         "evidence": [
           "docs/phase1-g4-probe-plan.md#vi-platform-and-regression-exit-sequence",
           "probes/provider-inheritance-boundary-20260907.json",
-          "probes/check_provider_inheritance_boundary.py"
+          "probes/check_provider_inheritance_boundary.py",
+          "probes/p7-live-deepseek-regression-20260910.json",
+          "probes/adjudicate_p7_deepseek_regression_live.py",
+          "probes/run_p7_deepseek_regression.py",
+          "probes/build_p7_deepseek_regression_prompt.py",
+          "probes/codex_deepseek_regression_candidate_wrapper.sh",
+          "tests/test_p7_live_deepseek_regression.py",
+          "tests/test_p7_deepseek_regression_prompt.py",
+          "tests/test_deepseek_regression_candidate_wrapper.py",
+          "probes/p7-live-deepseek-g4-responses-compat-20260910.json",
+          "probes/run_p7_deepseek_g4_tool_loop.py",
+          "tests/test_p7_deepseek_g4_responses_compat.py",
+          "tests/test_p7_deepseek_g4_tool_loop.py"
         ]
       },
       {
         "id": "install_rollback",
-        "state": "partial",
+        "state": "qualified",
         "evidence": [
           "probes/g4-live-postcompact-scope-drift-denial-20260908.json",
           "probes/g4-live-postcompact-scope-drift-parent-adjudication-20260908.json",
@@ -984,7 +1054,11 @@
           "probes/g4-child-read-only-sandbox-denial-20260908.json",
           "tests/test_g4_child_read_only_sandbox_denial.py",
           "probes/g4-live-failed-apply-patch-posttool-callback-20260908.json",
-          "tests/test_g4_live_failed_apply_patch_posttool_callback.py"
+          "tests/test_g4_live_failed_apply_patch_posttool_callback.py",
+          "probes/p7-live-isolated-install-rollback-20260910.json",
+          "probes/adjudicate_p7_isolated_install_rollback.py",
+          "probes/run_p7_isolated_install_rollback.py",
+          "tests/test_p7_isolated_install_rollback.py"
         ]
       }
     ]

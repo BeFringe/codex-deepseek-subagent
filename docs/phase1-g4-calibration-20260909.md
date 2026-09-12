@@ -31,8 +31,9 @@ P1–P7 的有限职责如下：
 
 当前有限矩阵是：P1、P2、P3、P4、P5、P5a、P5b、P6、P6a、P6b、P6c 已
 `qualified`；P7 仍为 `partial`。因此不是阻塞在 P1，也不需要“前面一通才全部通”。
-P7 的剩余问题是 Windows、既有 DeepSeek 路径以及安装态失败回调/回滚。任何业务仓库、
-workload 规模或业务侧完成结论都不参与 Phase 1 裁决。
+P7 的剩余问题只有 native Windows parity。既有 DeepSeek 路径、POSIX native lifecycle、
+callback continuity 与隔离的 headless install/reload/rollback 已由产品无关 live receipt
+闭合。任何业务仓库、workload 规模或业务侧完成结论都不参与 Phase 1 裁决。
 
 ## 三阶段主线
 
@@ -75,6 +76,16 @@ workload 规模或业务侧完成结论都不参与 Phase 1 裁决。
    四档 multiplicity、五个 equivalence class、U1→R→U2、exact mixed frontier 与十个
    mutation seam；另一个进程从磁盘重算后才晋级。mutation breadth 仍归 P4，platform/
    install regression 仍归 P7。
+7. 既有 DeepSeek 路径不再等待业务 workload。最终 live run 在独立临时 Git root 和 handoff
+   state 中保留 OpenAI parent，生成真实 DeepSeek child SessionMeta/canonical AgentPath，以一次
+   SubagentStart plaintext delivery 驱动一个只读 native tool call，并取得精确 wait/callback、
+   consumed state、clean disk 与 fresh-process adjudication。它只晋级 P7 的 DeepSeek、POSIX 和
+   callback receipts，不授予 direct write，也不打开 Phase 2/3。
+8. 安装/回滚不再要求选择 GUI App Server。最终运行在独立 `CODEX_HOME` 中安装 hash-pinned
+   candidate、code-mode host 和 Hook scripts，复用当前 ChatGPT 登录但不读取 auth 内容；安装态
+   失败 `apply_patch` 取得同一 tool-use-id 的 Pre/Post callback 并释放 lease。随后所有 managed
+   paths 移入可恢复归档，第二个新进程执行同一失败调用且不重建 Hook state，live App 与 v4
+   hashes 前后不变。该有限 receipt 已闭合 install/rollback。
 
 ## 修正后的执行顺序
 
@@ -91,14 +102,6 @@ workload 规模或业务侧完成结论都不参与 Phase 1 裁决。
    失败回调由 P7 处理。
 4. P6b/P6c 已由 disposable product-independent root 的同一次 invocation/phase/race/live
    bundle及 distinct fresh-process disk owner 消费闭合。
-5. 当前执行面只剩 P7 的 native Windows、DeepSeek regression、安装态失败 callback 和完整
-   live install/rollback。
+5. 当前执行面只剩 P7 的 native Windows parity。
 6. 仅当所有 gate 与 exit receipt 均 qualified，才允许一次独立提交把 Phase 1 和 direct
    write 置真并打开 Phase 2；Phase 3 仍需 Phase 2 完成。
-
-## Broker 参照的使用边界
-
-[Utopia Broker](https://github.com/Utopia-V/mixagents/blob/main/packages/broker/README.zh-CN.md)
-提供了产品无关的多 agent 术语：route、spawn、send、wait、interrupt，以及默认只读和显式
-workspace-write。这里可复用这些职责名称，但不复用它的独立 App Server worker 生命周期；
-本项目的裁决对象始终是 Codex native spawn、AgentPath、Multi-Agent V2、wait/callback/cancel。
