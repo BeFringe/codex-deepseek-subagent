@@ -1,0 +1,227 @@
+{
+  "schema": 1,
+  "evidence_kind": "g4_hash_bound_parent_child_same_path_conflict_live_adjudication_input",
+  "recorded_at": "2026-09-09T02:57:40.946428+00:00",
+  "repository_baseline": {
+    "root": "/Users/pearly/文档/CAT/codex-deepseek-subagent",
+    "branch": "main",
+    "head": "da01a14efeb159a937f638f4f53f311cef9673c8",
+    "tree": "437d2c15abdb54d5710d7ce8e756123b8d32a2de",
+    "probe_root": "/private/tmp/codex-g4-write-parent-conflict.XwVX2t"
+  },
+  "runtime": {
+    "codex_version": "0.153.4",
+    "candidate_path": "/private/tmp/codex-current-plaintext.aTU9C2/candidate-live-catalog-receipt/codex",
+    "candidate_sha256": "6e1f9675f876588786a98dfbe5db34b20572499f476c3cbd653465daa106e816",
+    "candidate_size_bytes": 589862136,
+    "candidate_exit_code": 0,
+    "parent_model_provider": "openai",
+    "child_model_provider": "openai",
+    "gui_app_server_selected": false,
+    "credential_value_observed": false,
+    "sandbox": "workspace-write",
+    "approval_policy": "never"
+  },
+  "qualification_overlay": {
+    "base_hooks_sha256": "82c8aa0bc4d739628646864578de6c078884c21413855ed3db448d4365a8668e",
+    "overlay_hooks_sha256": "ec3aa4e1ad77b409fe585306a3a5b28b0b720367a1aee232c1bb180d0d3918f5",
+    "restored_hooks_sha256": "82c8aa0bc4d739628646864578de6c078884c21413855ed3db448d4365a8668e",
+    "prompt_sha256": "cf6a3941ced7d65d113906e9d0f7c7e04336d6895164ea79824f4bb9416e9176",
+    "wrapper_sha256": "5a248bc6eccf4e08403b0e4e532360fae21a10c03bec774798fb55ce451ff25f",
+    "writer_hold_seconds": 10,
+    "v4_entries_preserved": true,
+    "installed_hook_files_overwritten_during_probe": false
+  },
+  "raw_artifacts": {
+    "run_root": "/private/tmp/codex-g4-parent-conflict-current.56JeXL",
+    "events_path": "/private/tmp/codex-g4-parent-conflict-current.56JeXL/events.jsonl",
+    "events_sha256": "1ecaa2177f3ce603dd5713e5e29b14646bc0d847ccb39e39799e900adfe8836d",
+    "stderr_path": "/private/tmp/codex-g4-parent-conflict-current.56JeXL/stderr.txt",
+    "stderr_sha256": "a4c2af8b0e1c2e66291eb93012b3efd80276981873ff14f353a2f219c93e631e",
+    "last_message_path": "/private/tmp/codex-g4-parent-conflict-current.56JeXL/last-message.txt",
+    "last_message_sha256": "9b2ffa51cf55897417e6b162ba9ed0b15773c85e37f27b48297f57c695c66bbb",
+    "parent_rollout_path": "/Users/pearly/.codex/sessions/2026/09/09/rollout-2026-09-09T10-38-35-01a08408-0f03-7e40-8d44-9096f67c221a.jsonl",
+    "parent_rollout_sha256": "b885e148a36e6fb632c66ae9dff84430303870bd90eea16d9f8d7567ad2c0122",
+    "child_rollout_path": "/Users/pearly/.codex/sessions/2026/09/09/rollout-2026-09-09T10-39-21-01a08408-c12e-7951-a482-94198977e5f5.jsonl",
+    "child_rollout_sha256": "be8465edcb40ab357c0b7f1d77eddbf70c78e9602ff026c9142449477e13e96e",
+    "raw_payload_committed": false
+  },
+  "identity": {
+    "assignment_id": "d60eb350-3808-474d-bad4-f5fdac95b817",
+    "handoff_id": "91caa639-c873-4bf9-b43b-d6eb1743669e",
+    "parent_thread_id": "01a08408-0f03-7e40-8d44-9096f67c221a",
+    "runtime_session_id": "01a08408-0f03-7e40-8d44-9096f67c221a",
+    "parent_turn_id": "01a08408-0f97-79c3-908a-11d67d7484a6",
+    "child_thread_id": "01a08408-c12e-7951-a482-94198977e5f5",
+    "child_turn_id": "01a08408-c19c-7452-9bae-d88bbaf4e6a5",
+    "requested_task_name": "g4_parent_conflict_final_1",
+    "canonical_agent_path": "/root/g4_parent_conflict_final_1",
+    "agent_type": "g4_qualification_probe_worker",
+    "spawn_tool_use_id": "call_WK7MMyqHfy6SlcDf8UHkp7K5",
+    "child_apply_patch_tool_use_id": "call_UgRvZWX6CqUfTfVfaLzi3EJu",
+    "parent_apply_patch_tool_use_id": "exec-10f4ef65-90c6-4932-8813-9e1804ed917b"
+  },
+  "runtime_tool_catalog": {
+    "receipt_count": 2,
+    "canonical_receipt_sha256": "4afc0668f8409630908724c4bafbdaf0b4cb22793555cc70d07aa3d6a29a64ef",
+    "receipts_byte_identical": true,
+    "source": "headless_candidate_runtime",
+    "tool_mode": "direct",
+    "registered_tools": [
+      "apply_patch",
+      "g4_assignment.list_agents",
+      "view_image"
+    ],
+    "code_mode_tool_names": {},
+    "can_manage_children": false,
+    "catalog_closed": true
+  },
+  "authority": {
+    "assignment_mutation_mode": "write",
+    "parent_recorded_user_write_intent": "allow",
+    "trusted_host_user_write_consent": {
+      "schema": 1,
+      "status": "verified",
+      "source": "qualification_hook_exact_path",
+      "receipt_sha256": "355861f8f6704a6718ca600208018fd42634a2e704febef253470fce99bdebaa"
+    },
+    "capsule_sha256": "06654a0939b981fc916f4dda016e457c996c27db2e2823affa7a515941dcfe81",
+    "compact_invariant_sha256": "f5f0253e042cf63f9cb0f7901dfc1beb3417b87dc5318cbb3231a138de8d0f0d",
+    "owned_paths": [
+      "qualified.txt"
+    ],
+    "excluded_paths": [],
+    "git_authority": {
+      "stage": false,
+      "commit": false,
+      "branch": false,
+      "push": false
+    }
+  },
+  "writer_receipt": {
+    "schema": 2,
+    "claim_id": "f135a892-0671-47ad-b27f-962b3d045b6f",
+    "claim_sha256": "2be13c8638aa001760abfa80ca87c8c18d5f9e810176f84ede9e5b016b669c36",
+    "receipt_sha256": "a41128efdc35897fdb8936594202cf81a86d40147cf7a457a4dc2bd0f47a6fa8",
+    "receipt_file_sha256": "3a790c4ab84a8ca9dbdd0ea070be2b324f12c90265192ed8925964e88cb8b51e",
+    "before_snapshot_sha256": "c9240569c9797ad6a339f02371addf4a1b4177fe1f976d2a6b491702a49fd57f",
+    "after_snapshot_sha256": "0109152a318cfe7a4551109455b48f572460ad6e5707f3317f8749d5a0be0dd2",
+    "released_at": "2026-09-09T02:39:43.016930+00:00",
+    "tool_name": "apply_patch",
+    "tool_use_id": "call_UgRvZWX6CqUfTfVfaLzi3EJu",
+    "actor_thread_id": "01a08408-c12e-7951-a482-94198977e5f5",
+    "actor_agent_path": "/root/g4_parent_conflict_final_1",
+    "paths": [
+      "qualified.txt"
+    ],
+    "final_derivation_receipt_sha256": "a41128efdc35897fdb8936594202cf81a86d40147cf7a457a4dc2bd0f47a6fa8"
+  },
+  "parent_conflict": {
+    "schema": 1,
+    "conflict_id": "c31efd72-f652-4fb4-aab9-de8cb73fd249",
+    "conflict_file_sha256": "adea8fab4eb18a3bea4f11c8286e9a22fe5855cf50a71964478570a472ead0ab",
+    "observed_at": "2026-09-09T02:39:39.088593+00:00",
+    "classification": "foreign_actor_writer_lease_conflict",
+    "failure_code": "TASK.WRITER_LEASE_BLOCKED",
+    "event_stage": "denied",
+    "pre_execution": true,
+    "conflicting_kinds": [
+      "writer_claim",
+      "active"
+    ],
+    "parent_retry_count": 0
+  },
+  "hook_chain": {
+    "captured_event_count": 2525,
+    "captured_chain_sha256": "2b680f247e4d8672554e2e328178d45ea4fbb9a0ef20ea8ee12dcbff00d77a51",
+    "captured_head_receipt_sha256": "8f2121c5436f35f1abd204b48b9994f79800112800baa191c144ad0494626881",
+    "sequences": {
+      "spawn_pretool": 2520,
+      "subagent_start": 2521,
+      "child_apply_patch_pretool": 2522,
+      "parent_apply_patch_denied": 2523,
+      "child_apply_patch_posttool": 2524,
+      "subagent_stop": 2525
+    },
+    "child_pretool_tool_use_id": "call_UgRvZWX6CqUfTfVfaLzi3EJu",
+    "child_posttool_tool_use_id": "call_UgRvZWX6CqUfTfVfaLzi3EJu",
+    "parent_denial_before_child_posttool": true,
+    "parent_denial_before_child_release": true,
+    "raw_payload_stored": false
+  },
+  "terminal_and_callback": {
+    "accepted_subagentstop_present": true,
+    "child_task_complete_present": true,
+    "parent_turn_completed": true,
+    "child_final_sha256": "cfd3df779e53c9c313cedcd8542d46d011216ca28fef8dbe996bed598e37432e",
+    "parent_callback_envelope_sha256": "cfd3df779e53c9c313cedcd8542d46d011216ca28fef8dbe996bed598e37432e",
+    "parent_child_final_exactly_equal": true,
+    "parent_final_message_sha256": "9b2ffa51cf55897417e6b162ba9ed0b15773c85e37f27b48297f57c695c66bbb",
+    "final_attestation_canonical_json_sha256": "47620372982ac4fc2132132b6a6d9e26fc40219702741ca1d3236b0a5619a43e",
+    "final_rejection_count": 0,
+    "context_lost": false,
+    "authority_violation": false,
+    "assigned_slice_complete": true
+  },
+  "durable_state_at_capture": {
+    "bucket": "reported",
+    "envelope_sha256": "f3153581845d9d23b3571f641e3110e83edd061a18eeb07d00abeabc2b3a591b",
+    "fresh_owner_adjudication_pending": true,
+    "pending_count_for_probe": 0,
+    "claimed_count_for_probe": 0,
+    "active_count_for_probe": 0,
+    "reported_count_for_probe": 1,
+    "unresolved_count_for_probe": 0,
+    "consumed_count_for_probe": 0,
+    "writer_claim_count_for_probe": 0,
+    "writer_receipt_count_for_probe": 1,
+    "writer_conflict_count_for_probe": 1
+  },
+  "probe_root_final_disk": {
+    "observed_at": "2026-09-09T02:43:14.326343+00:00",
+    "root": "/private/tmp/codex-g4-write-parent-conflict.XwVX2t",
+    "branch": "main",
+    "head": "da01a14efeb159a937f638f4f53f311cef9673c8",
+    "tree": "437d2c15abdb54d5710d7ce8e756123b8d32a2de",
+    "git_status_short": "?? qualified.txt",
+    "index_changed": false,
+    "target_bytes": 25,
+    "target_sha256": "4fd8e8f97e640e495fefed6d4fdb0467c4e5835d9bd006173da14af37698ac8c",
+    "parent_conflict_content_observed": false,
+    "candidate_process_exact_match_count": 0,
+    "candidate_open_file_count": 0,
+    "late_write_observed": false,
+    "strong_global_quiescence_claimed": false
+  },
+  "installed_hook_schema_reconciliation": {
+    "classification": "installed_hook_source_older_than_state_writer_source",
+    "trigger": "old validator quarantined the new reported envelope while evaluating a later parent apply_patch",
+    "backup_root": "/Users/pearly/.codex/backups/codex-deepseek-subagent-g4-schema-skew-20260909.XDtvKl",
+    "hooks_json_sha256_before": "82c8aa0bc4d739628646864578de6c078884c21413855ed3db448d4365a8668e",
+    "hooks_json_sha256_after": "82c8aa0bc4d739628646864578de6c078884c21413855ed3db448d4365a8668e",
+    "v4_configuration_changed": false,
+    "gui_app_server_changed": false,
+    "localcat_changed": false,
+    "updated_source_count": 6,
+    "state_capsules_validated_after_refresh": 43,
+    "state_capsule_validation_failures_after_refresh": 0,
+    "quarantined_envelope_sha256_before_restore": "f3153581845d9d23b3571f641e3110e83edd061a18eeb07d00abeabc2b3a591b",
+    "reported_envelope_sha256_after_restore": "f3153581845d9d23b3571f641e3110e83edd061a18eeb07d00abeabc2b3a591b",
+    "functional_reload_observed": false,
+    "install_rollback_qualified": false
+  },
+  "verdict": {
+    "hash_bound_parent_child_same_path_conflict_subgate_qualified": true,
+    "parent_same_path_apply_patch_preexecution_mediation_qualified": true,
+    "child_posttooluse_audit_visibility_qualified": true,
+    "callback_continuity_qualified_for_this_run": true,
+    "runtime_tool_catalog_closed_for_this_run": true,
+    "fresh_owner_adjudication_required": true,
+    "strong_global_quiescence_qualified": false,
+    "all_mutation_surfaces_qualified": false,
+    "phase1_complete": false,
+    "direct_write_qualified": false,
+    "phase2_state": "closed",
+    "phase3_state": "closed"
+  }
+}

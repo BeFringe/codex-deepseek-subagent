@@ -1,0 +1,37 @@
+{
+  "schema": 1,
+  "evidence_kind": "current_signed_runtime_exact_path_child_write_parent_adjudication",
+  "assignment_id": "908b17bb-1a4d-4b78-be37-a49d9934960b",
+  "input": {
+    "path": "probes/g4-live-exact-path-child-write-20260908.json",
+    "sha256": "39f7296e566b9fa0bce20bc2e37c7d8ee7c3a98b9a967361b1a83fa1cf2155e0"
+  },
+  "fresh_owner": {
+    "location_integrity": "pass",
+    "mutation_scope_integrity": "pass",
+    "verification_freshness": "pass",
+    "derivation_provenance_integrity": "pass",
+    "feasibility_contract_integrity": "pass"
+  },
+  "state_transition": {
+    "before": "reported",
+    "after": "consumed",
+    "consumed_envelope_sha256": "3df719dd5ea4adb65ee70fe21e2f70750416969ffa2319c906eef27f0a7f21dc"
+  },
+  "authority": {
+    "worker_narrative_is_integration_authority": false,
+    "writer_receipt_is_contribution_evidence": true,
+    "fresh_owner_disk_and_state_adjudication_required": true,
+    "global_direct_write_promoted": false
+  },
+  "verdict": {
+    "one_live_mutation_contribution_consumed": true,
+    "representative_dense_cost_qualified": false,
+    "mixed_frontier_qualified": false,
+    "strong_global_quiescence_qualified": false,
+    "phase1_complete": false,
+    "direct_write_qualified": false,
+    "phase2_state": "closed",
+    "phase3_state": "closed"
+  }
+}

@@ -1,0 +1,58 @@
+{
+  "schema": 1,
+  "evidence_kind": "g4_hash_bound_parent_child_same_path_conflict_fresh_owner_adjudication",
+  "recorded_at": "2026-09-09T03:01:32+00:00",
+  "assignment_id": "d60eb350-3808-474d-bad4-f5fdac95b817",
+  "input": {
+    "path": "probes/g4-live-hash-bound-parent-child-conflict-20260909.json",
+    "sha256": "3a76d811e8cbe404a4c7401dc0f1505c383bbe78e11a5e55d2d517ef07eded1a"
+  },
+  "fresh_owner": {
+    "location_integrity": "pass",
+    "mutation_scope_integrity": "pass",
+    "verification_freshness": "pass",
+    "derivation_provenance_integrity": "pass",
+    "feasibility_contract_integrity": "pass"
+  },
+  "state_transition": {
+    "before": "reported",
+    "after": "consumed",
+    "consumed_envelope_path": "/Users/pearly/.codex/state/codex-deepseek-subagent-g4/consumed/d60eb350-3808-474d-bad4-f5fdac95b817.json",
+    "consumed_envelope_sha256": "390fed8d24b03cc4d87e7d63e15e03459e2fd1d7adeeb0be1d07a8cfa15d6608",
+    "reported_envelope_sha256_before_adjudication": "f3153581845d9d23b3571f641e3110e83edd061a18eeb07d00abeabc2b3a591b",
+    "reported_exists_after_adjudication": false
+  },
+  "schema_skew_recovery": {
+    "cause": "the previously installed validator rejected the exact qualification receipt shape already produced by the current repository Hook source",
+    "backup_root": "/Users/pearly/.codex/backups/codex-deepseek-subagent-g4-schema-skew-20260909.XDtvKl",
+    "updated_installed_source_count": 6,
+    "post_refresh_validated_capsule_count": 43,
+    "post_refresh_invalid_capsule_count": 0,
+    "quarantine_to_reported_restore_preserved_sha256": true,
+    "hooks_json_changed": false,
+    "v4_configuration_changed": false,
+    "gui_app_server_changed": false,
+    "localcat_changed": false,
+    "functional_reload_or_rollback_qualified": false
+  },
+  "authority": {
+    "worker_narrative_is_integration_authority": false,
+    "writer_receipt_is_contribution_evidence": true,
+    "fresh_owner_disk_and_state_adjudication_required": true,
+    "parent_same_path_write_was_denied_before_execution": true,
+    "global_direct_write_promoted": false
+  },
+  "verdict": {
+    "one_hash_bound_same_path_conflict_contribution_consumed": true,
+    "parent_child_single_writer_subgate_qualified_for_apply_patch": true,
+    "posttooluse_stop_callback_continuity_qualified_for_this_run": true,
+    "representative_dense_cost_qualified": false,
+    "mixed_frontier_qualified": false,
+    "strong_global_quiescence_qualified": false,
+    "all_mutation_surfaces_qualified": false,
+    "phase1_complete": false,
+    "direct_write_qualified": false,
+    "phase2_state": "closed",
+    "phase3_state": "closed"
+  }
+}

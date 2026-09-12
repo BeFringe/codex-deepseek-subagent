@@ -1,0 +1,73 @@
+{
+  "description": "Qualification-only Phase 1/G4 Hook overlay; merge with existing user Hooks without replacing them.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"/absolute/path/to/compatibility_hook.py\" --state-directory \"/absolute/private/path/to/g4-state\" --plaintext-agent-type g4_qualification_probe_worker",
+            "timeout": 15,
+            "statusMessage": "Checking Phase 1 authority",
+            "additionalContextLimit": 0
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "apply_patch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"/absolute/path/to/compatibility_hook.py\" --state-directory \"/absolute/private/path/to/g4-state\" --plaintext-agent-type g4_qualification_probe_worker",
+            "timeout": 15,
+            "statusMessage": "Closing the writer lease",
+            "additionalContextLimit": 0
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "matcher": "^g4_qualification_probe_worker$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"/absolute/path/to/compatibility_hook.py\" --state-directory \"/absolute/private/path/to/g4-state\" --plaintext-agent-type g4_qualification_probe_worker",
+            "timeout": 15,
+            "statusMessage": "Binding the Phase 1 authority capsule",
+            "additionalContextLimit": 0
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"/absolute/path/to/compatibility_hook.py\" --state-directory \"/absolute/private/path/to/g4-state\" --plaintext-agent-type g4_qualification_probe_worker",
+            "timeout": 15,
+            "statusMessage": "Re-attesting before compaction"
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "matcher": "^g4_qualification_probe_worker$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"/absolute/path/to/compatibility_hook.py\" --state-directory \"/absolute/private/path/to/g4-state\" --plaintext-agent-type g4_qualification_probe_worker",
+            "timeout": 15,
+            "statusMessage": "Adjudicating the final authority attestation"
+          }
+        ]
+      }
+    ]
+  }
+}

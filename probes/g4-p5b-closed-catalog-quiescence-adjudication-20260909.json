@@ -1,0 +1,133 @@
+{
+  "schema": 1,
+  "classification": "p5b_finite_closed_catalog_actor_termination_quiescence_adjudication",
+  "adjudicated_at": "2026-09-09",
+  "contract": {
+    "target": "one exact mutation-capable g4_qualification_probe_worker authority epoch followed by exact-path handover",
+    "requires": [
+      "close admission freezes before draining and later process starts are rejected",
+      "target and captured descendant session loops terminate",
+      "every runtime-tracked process has a true exit witness and no start remains unresolved",
+      "the exact child catalog has no model-callable process or host-control bootstrap",
+      "no writer claim remains in flight",
+      "accepted SubagentStop and native callback are identity-bound",
+      "durable state freezes before ownership transfer",
+      "post-termination disk observations are stable",
+      "the next exact-path writer consumes the prior barrier exactly once"
+    ],
+    "does_not_require": [
+      "quiescence of arbitrary host processes outside the exact actor catalog and lifecycle",
+      "a live Cartesian product of every scheduler interleaving",
+      "installed App Server qualification"
+    ],
+    "separate_gate_ownership": {
+      "independent App Server, daemon, control client, same-UID host mutation, and OS confinement": "P4",
+      "installed candidate and rollback regression": "P7"
+    }
+  },
+  "source_evidence": {
+    "receipt": "probes/current-signed-runtime-g4-p5b-tracked-termination-source-candidate.json",
+    "receipt_sha256": "61435ab941792a58a4016f846ee2cadc7cbc88ecafeb100d269411539f261ec6",
+    "patch": "probes/current-signed-runtime-g4-p5b-tracked-termination-source-candidate.patch",
+    "patch_sha256": "b752625e7757333e0024e56aa6e0a3a8dbb38c6223eeff023513115a93a15e22",
+    "close_admission_freeze": true,
+    "later_process_start_rejected": true,
+    "local_pty_exit_witness": "exit_rx",
+    "exec_server_exit_witness": "ExecProcessEvent::Exited",
+    "synthetic_exit_after_kill_or_rpc_ack": false
+  },
+  "live_mutation_actor": {
+    "receipt": "probes/g4-live-write-then-close-20260909.json",
+    "receipt_sha256": "faf4cd98e662024552d4f509dbb041fae29d328902b051e46c60610eaa1b9396",
+    "test": "tests/test_g4_live_write_then_close.py",
+    "assignment_id": "e80799bf-584e-45b6-8bb2-d1ab39ebc51b",
+    "canonical_agent_path": "/root/g4_p5b_write_close_1",
+    "accepted_subagentstop": true,
+    "callback_byte_identical": true,
+    "writer_claim_released": true,
+    "previous_status_at_close": "running",
+    "session_loop_terminated": true,
+    "closed_catalog_actor_quiescence_claimed": true,
+    "process_bootstrap_tools_present": false,
+    "tracked_process_ids": [],
+    "unconfirmed_exit_process_ids": [],
+    "unresolved_start_process_ids": [],
+    "target_absent_from_post_close_tree": true,
+    "durable_state_after_close": "unresolved",
+    "post_termination_observation_count": 2,
+    "post_termination_disk_stable": true,
+    "late_write_observed": false
+  },
+  "true_exit_cross_check": {
+    "receipt": "probes/g4-live-nonempty-tracked-process-termination-20260909.json",
+    "purpose": "prove that the same close primitive records a real nonempty tracked process exit rather than synthesizing one",
+    "actor_is_exact_g4_closed_catalog_role": false,
+    "tracked_process_nonempty": true,
+    "same_process_id_joined_across_start_close_and_exit": true,
+    "exit_observed_inside_close_interval": true,
+    "does_not_expand_g4_child_catalog": true
+  },
+  "handover_evidence": {
+    "receipt": "probes/g4-live-handover-cleanup-close-20260909.json",
+    "receipt_sha256": "0514a053d762beec0c85305eb8b8c9460640125c89f5a13b5cca3b8d3035dfa3",
+    "test": "tests/test_g4_live_handover_cleanup_close.py",
+    "prior_barrier_consumed_exactly_once": true,
+    "replacement_identity_distinct": true,
+    "replacement_exact_path_write": true,
+    "replacement_callback_accepted": true,
+    "replacement_cleanup_close": true,
+    "replacement_post_close_disk_stable": true,
+    "late_write_observed": false
+  },
+  "atomic_ordering_evidence": {
+    "test": "tests/test_assignment_transport.py",
+    "test_sha256": "b7d4d628be56e2285aba07bb1dd7aa53f604f985d931de432fbeaedc7595d91a",
+    "covered_windows": [
+      "overlapping parent claim before replacement capture",
+      "foreign parent claim while replacement is pending",
+      "foreign parent claim while replacement child and lease are active",
+      "foreign parent claim after PostToolUse while replacement authority remains active"
+    ],
+    "all_foreign_overlapping_writers_denied": true,
+    "only_exact_active_replacement_writer_leased": true,
+    "live_repetition_of_every_controlled_interleaving_required": false
+  },
+  "adjudication": {
+    "exact_identity_and_callback": "pass",
+    "close_admission_and_true_exit_semantics": "pass",
+    "exact_closed_catalog_process_absence": "pass",
+    "writer_claim_drain": "pass",
+    "durable_freeze": "pass",
+    "post_termination_disk_barrier": "pass",
+    "single_use_exact_path_handover": "pass",
+    "before_mid_after_atomic_ordering": "pass"
+  },
+  "post_record_verification": {
+    "provider_free_suite": {
+      "result": "pass",
+      "test_count": 782,
+      "duration_seconds": 83.630,
+      "agent_template_checks": "pass"
+    },
+    "phase1_normal_exit": 0,
+    "phase1_required_exit": 2,
+    "mutation_normal_exit": 0,
+    "mutation_required_exit": 2,
+    "same_uid_normal_exit": 0,
+    "same_uid_required_exit": 2,
+    "semantic_runtime_index_exit": 0
+  },
+  "verdict": {
+    "p5b_qualified": true,
+    "strong_exact_actor_termination_quiescence_receipt_qualified": true,
+    "post_termination_disk_barrier_qualified": true,
+    "exact_path_handover_qualified": true,
+    "global_host_process_tree_quiescence_claimed": false,
+    "p4_qualified": false,
+    "p7_qualified": false,
+    "phase1_complete": false,
+    "direct_write_qualified": false,
+    "phase2_state": "closed",
+    "phase3_state": "closed"
+  }
+}

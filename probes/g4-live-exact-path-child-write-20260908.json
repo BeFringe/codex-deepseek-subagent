@@ -1,0 +1,140 @@
+{
+  "schema": 1,
+  "evidence_kind": "current_signed_runtime_exact_path_child_write_qualification",
+  "recorded_at": "2026-09-08T10:55:45.071767+00:00",
+  "repository_baseline": {
+    "component_head": "4aa544cd5050bbb81d8ebb838c8c187ab8b12482",
+    "origin_main": "076ee0df9aca11fbc0c19a6ccd7cd8befc0051f7",
+    "ahead": 94,
+    "behind": 13,
+    "remote_only_commits_patch_equivalent": true
+  },
+  "runtime": {
+    "codex_version": "0.153.4",
+    "source_commit": "3d2ee51ca2d5db578f328aa75e20aa22c0197c9a",
+    "candidate_path": "/private/tmp/codex-current-plaintext.aTU9C2/candidate-closed-catalog/codex",
+    "candidate_sha256": "90dbd98a2eb12328f6febf4eb52e1cf67ec10cda049841d16dcf7f25abb3420d",
+    "parent_model_provider": "openai",
+    "child_model_provider": "openai",
+    "gui_app_server_selected": false,
+    "credential_value_observed": false,
+    "sandbox": "workspace-write",
+    "approval_policy": "never"
+  },
+  "qualification_overlay": {
+    "authorization_ceiling": "qualification_only",
+    "task_name": "g4_exact_write_1",
+    "target_path": "/private/tmp/codex-g4-write-live-20260908-BpvgBl/qualified.txt",
+    "base_hooks_sha256": "82c8aa0bc4d739628646864578de6c078884c21413855ed3db448d4365a8668e",
+    "overlay_hooks_sha256": "196d2802bfefb7119151f5f239865479bde5cb4491bea80f07da804c85688678",
+    "restored_hooks_sha256": "82c8aa0bc4d739628646864578de6c078884c21413855ed3db448d4365a8668e",
+    "g4_changed_event_count": 5,
+    "v4_entries_preserved": true,
+    "installed_hook_files_overwritten": false,
+    "prompt_sha256": "87531ae1abf2432ddb62778d193567e3c7572067481a21fb4b51bc6925d70a20"
+  },
+  "preflight_negative": {
+    "parent_thread_id": "01a080a2-6925-7471-89c2-28e9a80edae4",
+    "parent_rollout_sha256": "be55b376e4c0d88f5f684d786517050685876a0fe01c98fbe166e139d39eb6cc",
+    "result": "spawn_denied_before_staging",
+    "reason": "bounded completion condition is not bound by stop_condition",
+    "child_spawned": false,
+    "target_mutated": false
+  },
+  "identity": {
+    "parent_thread_id": "01a080a4-2b3b-78c3-9245-889a5892e433",
+    "child_thread_id": "01a080a4-d7aa-7cf3-9873-16117d777be4",
+    "runtime_session_id": "01a080a4-2b3b-78c3-9245-889a5892e433",
+    "agent_type": "g4_qualification_probe_worker",
+    "requested_task_name": "g4_exact_write_1",
+    "canonical_agent_path": "/root/g4_exact_write_1",
+    "parent_rollout_sha256": "5d6019451cd2198a85c43301d9fa963e98aad072cc108cd8de694be858f487b9",
+    "child_rollout_sha256": "be9b327c5af67f28024339b577672d4699f359fd652bf69a128867119d8e0451",
+    "parent_child_final_exactly_equal": true,
+    "final_message_sha256": "3f22546d1969490515c14536fedf8e16f8c4db80a50657fd018a6a44eeb782fc"
+  },
+  "authority": {
+    "assignment_id": "908b17bb-1a4d-4b78-be37-a49d9934960b",
+    "handoff_id": "fa28ad03-80c1-4c09-b552-b8876f2b09fe",
+    "assignment_sha256": "78f0f6c94dcfedd5f337b4c7309b5250ff0f41dcbde48f1fc51dc103feb3299a",
+    "capsule_sha256": "a6088dbc1894a4fdc8bf9f9e24a60b2593f89e9c0718cb019646ab5b3c3b53d4",
+    "compact_invariant_sha256": "047a098ae3aaaf1de9f7c0e4c188fde491ca02fc9adf64d9381f24b361a54363",
+    "provenance_policy_sha256": "0a89c532397c786a1b397e459da3aaa414124adb0cfab2a996139263cfc2f937",
+    "capture_snapshot_sha256": "5e200641a60e797992c3bc478575bc6e27fc10a8625c1e31778d84cc13ebf741",
+    "assignment_mutation_mode": "write",
+    "parent_recorded_user_write_intent": "allow",
+    "trusted_host_user_write_consent": {
+      "schema": 1,
+      "status": "verified",
+      "source": "qualification_hook_exact_path",
+      "receipt_sha256": "41972477833399366af896226728df10c0f25cfcc04ac3990f62cfd12272713d"
+    },
+    "owned_paths": ["qualified.txt"],
+    "git_authority": {"stage": false, "commit": false, "branch": false, "push": false},
+    "recovery_count": 0,
+    "context_lost": false
+  },
+  "writer_lease": {
+    "claim_id": "ff4195f3-04b2-4b6a-8f11-b8d5dd7e5eed",
+    "claim_sha256": "c74b877f9a796c343768731cf809ffa35c9d661f86844e1f67bbca03656d2adb",
+    "tool_name": "apply_patch",
+    "tool_use_id": "call_q9nal7wlYenhGhZjEXxXJZxM",
+    "actor_thread_id": "01a080a4-d7aa-7cf3-9873-16117d777be4",
+    "actor_agent_path": "/root/g4_exact_write_1",
+    "paths": ["qualified.txt"],
+    "before_snapshot_sha256": "5e200641a60e797992c3bc478575bc6e27fc10a8625c1e31778d84cc13ebf741",
+    "after_snapshot_sha256": "bd94472b29ce571a85f18ecf7e543537bda5ec93a7b21309be8ca1bc5c27ff95",
+    "posttooluse_released": true,
+    "matching_claims_after_release": 0
+  },
+  "hook_chain": {
+    "event_count": 1785,
+    "chain_sha256": "2de36afa3cf766474cf90939d73d43c1ad1ff6f4278e2ff1b03fadd958beca77",
+    "head_receipt_sha256": "c198f8bbdf8aaa6f7bc02d960c74d4a1b42a0f2574badb69d64d5ecd63511f26",
+    "file_sha256": "98f562b3afdc6cceaad12508ce30e381977e2ce683157c4f684f80809310577f",
+    "sequences": {
+      "spawn_pretool": 1781,
+      "subagent_start": 1782,
+      "child_apply_patch_pretool": 1783,
+      "subagent_stop_first": 1784,
+      "subagent_stop_accepted": 1785
+    },
+    "posttooluse_proved_by_writer_receipt": true
+  },
+  "fresh_owner_disk_barrier": {
+    "observed_at": "2026-09-08T10:55:45.071767+00:00",
+    "root": "/private/tmp/codex-g4-write-live-20260908-BpvgBl",
+    "branch": "main",
+    "head": "e3b7685c7a287ccb582e6dde582d3f6bb4629750",
+    "index_changed": false,
+    "git_status_short": "?? qualified.txt",
+    "target_sha256": "4fd8e8f97e640e495fefed6d4fdb0467c4e5835d9bd006173da14af37698ac8c",
+    "target_bytes": 25,
+    "candidate_process_count": 0,
+    "matching_writer_claim_count": 0,
+    "delayed_observation_seconds": 2,
+    "late_write_observed": false,
+    "strong_global_quiescence_claimed": false
+  },
+  "state": {
+    "before_parent_adjudication": "reported",
+    "reported_envelope_sha256": "0492c5d281d1a7a1e41468e59afa121e796b2ae96c1320203085ad83ad077109",
+    "worker_contribution_is_integration_authority": false
+  },
+  "verdict": {
+    "real_sessionmeta_identity_bound": true,
+    "exact_path_write_ceiling_consumed": true,
+    "native_apply_patch_succeeded": true,
+    "writer_lease_acquired_and_released": true,
+    "subagentstop_attestation_accepted": true,
+    "parent_callback_exact": true,
+    "fresh_disk_barrier_exact": true,
+    "one_live_positive_child_write_qualified": true,
+    "all_mutation_surfaces_qualified": false,
+    "strong_termination_quiescence_qualified": false,
+    "phase1_complete": false,
+    "direct_write_qualified": false,
+    "phase2_state": "closed",
+    "phase3_state": "closed"
+  }
+}

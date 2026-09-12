@@ -1,0 +1,170 @@
+{
+  "schema": 1,
+  "observed_at": "2026-08-17T01:17:26+08:00",
+  "source_base_head": "2741c31d079f2dd07784d6ea7fc0630b1b727165",
+  "authorization": "explicit_user_install_authorization",
+  "provider_free_tests": {
+    "count": 234,
+    "status": "passed"
+  },
+  "live_overlay": {
+    "hooks_json_sha256": "ffaad5c3533a2016253af148c96721818807823f779845a35c5d7dad2c676c2b",
+    "event_counts": {
+      "PreToolUse": 1,
+      "PostToolUse": 1,
+      "PreCompact": 1,
+      "SubagentStart": 2,
+      "SubagentStop": 1
+    },
+    "v4_subagent_start_order": 0,
+    "g4_subagent_start_order": 1,
+    "invalid_lifecycle_additional_context_limits": [],
+    "installed_sha256": {
+      "compatibility_state.py": "e2e9030b41c49520f52c55d06bdde39ed229bf507ca2f347a21ca222493d87c0",
+      "compatibility_hook.py": "72e5e57866b638a1c295b9b2ce729b4dcdcd9dda06402a72427c50aef5bec36b",
+      "hook_event_receipts.py": "bf2fdb5994f9c3593a1ecb854c5bb17769ac5941a06ee97a1e8687735bda102e",
+      "recover_writer_claim.py": "0b82d4d8b8a96121fb62c49920b2335a133864c8a4130d6c04b4eb21c62fc1fe",
+      "check_hook_event_chain.py": "a9c0356b430c21f9536a6a32c2c4045ffdd6fa014c34e75dbcef93a08646fbe6"
+    },
+    "rollback_backups": [
+      "/Users/pearly/.codex/backups/codex-deepseek-subagent-g4-pre-receipts-20260817",
+      "/Users/pearly/.codex/backups/codex-deepseek-subagent-g4-pre-abort-recovery-20260817"
+    ],
+    "trust_hash_forged_or_copied": false,
+    "fresh_process_trust_reapproval_proven": false
+  },
+  "v4_preservation": {
+    "subagent_start_matcher": "^v4_flash_worker$",
+    "plaintext_hook_sha256": "16353e6eb4484412bd7560a10eeae4dcf1533709910a373a4e98d414dc725a49",
+    "agent_sha256": "051f0e767415a86fd09b4e125868d3a4e4cf41ba3d2fd81e9018edee62e9ed69",
+    "agent_difference_from_migration_bundle": "only the authorized Fedora-to-macOS writable_roots repair"
+  },
+  "live_writer_callback_prefix": {
+    "first_sequence": 1,
+    "last_sequence": 16,
+    "event_count": 16,
+    "authorized_pretooluse_count": 8,
+    "observed_posttooluse_count": 8,
+    "pending_callback_count": 0,
+    "head_receipt_sha256": "756c41842b95ae3c1183b9dfecfd3c1162d982b2f17d40de23041427e3867199",
+    "chain_sha256": "1841a3dc76616b2b25ce3ef2d86b5e0f4e591674c52636a3f581ba8bd95f8c63",
+    "actor": {
+      "runtime_session_id": "01a00147-39cb-7b50-b78d-7baed910eb45",
+      "thread_id": "01a00147-39cb-7b50-b78d-7baed910eb45",
+      "agent_type": "root",
+      "canonical_agent_path": "/root"
+    },
+    "raw_payload_stored": false,
+    "scope": "historical chain prefix captured before this evidence file was written"
+  },
+  "failed_apply_patch_negative": {
+    "classification": "missing_posttooluse_after_tool_failure",
+    "claim_id": "f3ac4aee-f571-451d-884d-4e7643eee014",
+    "claim_sha256": "4c0360bac3519d06d5c5a7c3bcfe2017a4699505baeaec6d3626322326ae952e",
+    "tool_use_id": "exec-d650c7fe-a19b-4edb-8298-dfd16ebf17a4",
+    "paths": [
+      "tests/test_assignment_transport.py"
+    ],
+    "disk_mutation_observed": false,
+    "posttooluse_callback_observed": false,
+    "later_overlapping_patch_denied": true
+  },
+  "explicit_unchanged_abort": {
+    "classification": "aborted_unchanged_after_missing_callback",
+    "abort_sha256": "f214e2b0bb842a3443cd71cd2d5d375540f3d518e65e8be5bafa1a2b597bcbf0",
+    "before_path_snapshot_sha256": "c943315fdbe2f54374f4d50f848289561df301a6cf28a18e2227b31a54763c00",
+    "after_path_snapshot_sha256": "c943315fdbe2f54374f4d50f848289561df301a6cf28a18e2227b31a54763c00",
+    "exact_sessionmeta_actor_required": true,
+    "claimed_path_or_git_frontier_drift_denied": true,
+    "recorded_as_posttooluse_callback": false,
+    "active_claims_after_abort": 0
+  },
+  "repeat_failed_patch_abort": {
+    "classification": "aborted_unchanged_after_missing_callback",
+    "claim_id": "9ac647c3-b172-4bc5-86f4-d380ace03a1a",
+    "claim_sha256": "45154f5b56d54215e51174e6fdc9facc11ef024c41f28245ec370373e0e63ab9",
+    "abort_sha256": "9e4358436dc3cbb44b2f93c643d42c2c667af3b0c98268241fd7c6e858b6b033",
+    "tool_use_id": "exec-9f830ae1-95c9-430e-8c55-062daa91b527",
+    "paths": [
+      "probes/phase1-g4-status.json"
+    ],
+    "before_path_snapshot_sha256": "79e43f6d88a5c7e10b495be143dff661c0ed65fdb31c87ab1d0700bf339676aa",
+    "after_path_snapshot_sha256": "79e43f6d88a5c7e10b495be143dff661c0ed65fdb31c87ab1d0700bf339676aa",
+    "verifier_status": "aborted_unchanged",
+    "verifier_posttooluse_sequence": null,
+    "recorded_as_posttooluse_callback": false
+  },
+  "post_abort_join_prefix": {
+    "last_sequence": 40,
+    "event_count": 40,
+    "chain_sha256": "5fee7aeba8e2831842730c4935cdc5027db8e7ddd9f3e40ccc47e8e7a18af4e3",
+    "matched_abort_claim_ids": [
+      "9ac647c3-b172-4bc5-86f4-d380ace03a1a"
+    ],
+    "unmatched_pre_overlay_abort_claim_ids": [
+      "f3ac4aee-f571-451d-884d-4e7643eee014"
+    ],
+    "pending_callback_count": 0,
+    "raw_payload_stored": false,
+    "scope": "historical chain prefix captured before this record update"
+  },
+  "final_attestation_seed_update_callback_regression": {
+    "source_base_head": "29756eeceb5bb4cd2d3a655764a0f442d1b22852",
+    "classification": "missing_posttooluse_after_tool_failure",
+    "failed_context_match_aborts": [
+      {
+        "claim_id": "84ef3884-da81-44f8-8f16-c9edfa8cb250",
+        "claim_sha256": "d36b8ef54a0682df5a28aea5ce69e66931ae8e2cfd3ecf58b963f2b6f6a32ec9",
+        "tool_use_id": "exec-e4e6faaf-8650-4c2a-9ba4-35d4ce3225b7",
+        "paths": [
+          "docs/compatibility-model.md",
+          "docs/compatibility-model.en.md",
+          "docs/phase1-g4-probe-plan.md",
+          "docs/phase1-evidence.md"
+        ],
+        "before_path_snapshot_sha256": "4ff833b4bd3fb0bb12eadcc1e5611153845c56bfccbbe2752117137583369938",
+        "after_path_snapshot_sha256": "4ff833b4bd3fb0bb12eadcc1e5611153845c56bfccbbe2752117137583369938",
+        "abort_sha256": "246ae696267345e0ad9252440c0bced973c4e9a63f05e6e27388b296f8e738cc"
+      },
+      {
+        "claim_id": "c472794e-f9d5-43fc-bae7-00aaaf3c8e1c",
+        "claim_sha256": "54ad2267e801b196151eccbae800ddaf7bc9fe8fc5f24add9ff1e8bd5334ccb4",
+        "tool_use_id": "exec-40d7985e-eb01-4058-a951-3f7ff9372efa",
+        "paths": [
+          "docs/phase1-g4-probe-plan.md"
+        ],
+        "before_path_snapshot_sha256": "86978981d7c319a88d0545e296f4cf600bda68c13787c2be9387cdce027bea4f",
+        "after_path_snapshot_sha256": "86978981d7c319a88d0545e296f4cf600bda68c13787c2be9387cdce027bea4f",
+        "abort_sha256": "ac1166079ebb67e41e7b46b5ff686328c7a5b66579ccce1a5f24341e78fb228f"
+      }
+    ],
+    "post_abort_chain_prefix": {
+      "last_sequence": 74,
+      "event_count": 74,
+      "chain_sha256": "f2834804dd75eddb54a6e265f9433e294ed43c44b79dc581bd1180cce27b58f2",
+      "matched_abort_claim_ids": [
+        "84ef3884-da81-44f8-8f16-c9edfa8cb250",
+        "9ac647c3-b172-4bc5-86f4-d380ace03a1a",
+        "c472794e-f9d5-43fc-bae7-00aaaf3c8e1c"
+      ],
+      "pending_callback_count": 0,
+      "raw_payload_stored": false,
+      "scope": "historical chain prefix captured before this record update"
+    },
+    "recorded_as_posttooluse_callback": false,
+    "claimed_path_or_git_frontier_drift_denied": true
+  },
+  "qualification": {
+    "live_root_writer_callback_visibility": "partial_pass",
+    "live_target_child_lifecycle_chain": "pending",
+    "same_uid_state_trust": "failed",
+    "sandbox_block": "pending",
+    "termination_quiescence": "pending",
+    "posix_windows_deepseek_regression": "pending",
+    "install_rollback_after_this_overlay": "pending",
+    "phase1_complete": false,
+    "direct_write_qualified": false,
+    "phase2": "closed",
+    "phase3": "closed"
+  }
+}
