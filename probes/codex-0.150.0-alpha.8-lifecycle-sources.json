@@ -1,0 +1,86 @@
+{
+  "schema": 1,
+  "codex_version": "0.150.0-alpha.8",
+  "source_commit": "fcbdb57851be70192fd0c21faa9e529146e93ff1",
+  "reviewed": "2026-09-07",
+  "anchors": [
+    {
+      "id": "app_server_hook_event_enum",
+      "path": "codex-rs/app-server-protocol/src/protocol/v2/hook.rs",
+      "contains": "PreToolUse, PermissionRequest, PostToolUse, PreCompact, PostCompact, SessionStart, SessionEnd, UserPromptSubmit, SubagentStart, SubagentStop, Stop"
+    },
+    {
+      "id": "additional_context_event_boundary",
+      "path": "codex-rs/hooks/src/engine/discovery.rs",
+      "contains": "codex_protocol::protocol::HookEventName::UserPromptSubmit\n                            | codex_protocol::protocol::HookEventName::SubagentStart\n                    ) {\n                        additional_context_limit\n                    } else {"
+    },
+    {
+      "id": "precompact_output_has_no_context_field",
+      "path": "codex-rs/hooks/src/schema.rs",
+      "contains": "pub(crate) struct PreCompactCommandOutputWire {\n    #[serde(flatten)]\n    pub universal: HookUniversalOutputWire,\n}"
+    },
+    {
+      "id": "subagentstart_identity_fields",
+      "path": "codex-rs/hooks/src/schema.rs",
+      "contains": "pub(crate) struct SubagentStartCommandInput {\n    pub session_id: String,\n    /// Codex extension: expose the active turn id to internal turn-scoped hooks.\n    pub turn_id: String,\n    pub transcript_path: NullableString,\n    pub cwd: String,"
+    },
+    {
+      "id": "subagentstop_identity_and_transcript_fields",
+      "path": "codex-rs/hooks/src/schema.rs",
+      "contains": "pub(crate) struct SubagentStopCommandInput {\n    pub session_id: String,\n    /// Codex extension: expose the active turn id to internal turn-scoped hooks.\n    pub turn_id: String,\n    pub transcript_path: NullableString,\n    pub agent_transcript_path: NullableString,"
+    },
+    {
+      "id": "subagentstop_output_has_no_context_field",
+      "path": "codex-rs/hooks/src/schema.rs",
+      "contains": "pub(crate) struct SubagentStopCommandOutputWire {\n    #[serde(flatten)]\n    pub universal: HookUniversalOutputWire,\n    #[serde(default)]\n    pub decision: Option<BlockDecisionWire>,"
+    },
+    {
+      "id": "requested_name_joins_parent_agentpath",
+      "path": "codex-rs/core/src/tools/handlers/multi_agents_common.rs",
+      "contains": ".get_agent_path()\n                .unwrap_or_else(AgentPath::root)\n                .join(task_name)"
+    },
+    {
+      "id": "spawn_returns_canonical_agentpath",
+      "path": "codex-rs/core/src/tools/handlers/multi_agents_v2/spawn.rs",
+      "contains": "let task_name = String::from(new_agent_path);"
+    },
+    {
+      "id": "nested_requested_name_contract_test",
+      "path": "codex-rs/core/src/tools/handlers/multi_agents_tests.rs",
+      "contains": "assert_eq!(result.task_name, \"/root/parent/child\");"
+    },
+    {
+      "id": "sessionmeta_precedes_pending_and_flush",
+      "path": "codex-rs/rollout/src/recorder.rs",
+      "contains": "self.write_session_meta_if_needed().await?;\n\n        self.write_pending_items_once().await?;\n\n        if let Some(writer) = self.writer.as_mut() {\n            writer.file.flush().await?;"
+    },
+    {
+      "id": "resume_preserves_agentpath_contract_test",
+      "path": "codex-rs/core/src/agent/control_tests.rs",
+      "contains": "assert_eq!(resumed_agent_path, Some(agent_path));"
+    },
+    {
+      "id": "internal_subagent_resume_restores_stored_metadata_test",
+      "path": "codex-rs/core/src/agent/control_tests.rs",
+      "contains": "async fn resume_thread_subagent_restores_stored_metadata()"
+    },
+    {
+      "id": "v2_root_resume_does_not_reopen_descendants_test",
+      "path": "codex-rs/core/src/agent/control_tests.rs",
+      "contains": "assert_thread_not_loaded(&resumed_manager, worker_thread_id).await;"
+    }
+  ],
+  "verdict": {
+    "hook_schema_source_verified": true,
+    "sessionmeta_flush_source_verified": true,
+    "canonical_agentpath_source_verified": true,
+    "resume_identity_source_verified": true,
+    "internal_subagent_resume_identity_supported": true,
+    "v2_root_resume_reopens_descendants": false,
+    "live_sessionmeta_identity_qualified": false,
+    "termination_quiescence_qualified": false,
+    "phase1_complete": false,
+    "direct_write_qualified": false,
+    "blocker": "Historical source establishes the schema, canonical path construction, ordered SessionMeta write/flush, and exact metadata restoration only for the internal subagent resume entry point. Multi-Agent V2 root resume deliberately does not reopen descendants. Historical source evidence cannot replace current live identity, callback, mutation, or strong post-termination quiescence receipts."
+  }
+}

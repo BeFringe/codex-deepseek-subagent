@@ -1,0 +1,71 @@
+{
+  "schema": 1,
+  "status": "isolated_candidate_live_partial",
+  "codex_version": "0.148.0-alpha.9",
+  "base_source_commit": "9392c3fa5bcda342b5b96a1a04d67b2f781617c2",
+  "source_patch": {
+    "path": "probes/codex-0.148.0-alpha.9-plaintext-assignment-seam-candidate-v2.patch",
+    "sha256": "0de474cbc2f917e5198c62c4b2e79a169805dd0a45959621af271d0423b26574",
+    "bytes": 42935,
+    "git_apply_check": "pass",
+    "changed_path_count": 20,
+    "cargo_lock_included": false
+  },
+  "debug_binary": {
+    "path_class": "isolated_private_tmp_build",
+    "sha256": "0d6a185f7e0b12097056fbd826c46e0f7457b933a5d7f295195e0a9381475967",
+    "bytes": 535257624,
+    "version_output": "codex-cli 0.148.0-alpha.9",
+    "preserved_path_class": "isolated_private_tmp_standalone_binary",
+    "cargo_target_deleted_after_live_root_receipt": true,
+    "deleted_cargo_target_size": "36G",
+    "remaining_candidate_source_tree_size": "74M",
+    "gui_selected": false,
+    "live_config_modified": false
+  },
+  "superseded_release_iteration": {
+    "sha256": "a9fbc7524d2a9d2d4e952cd867dbcad9069e72e8f06258a47e29a3ca0527fdba",
+    "bytes": 293702072,
+    "source_includes_configured_null_marker_fix": false,
+    "qualification_use": "negative_attempt_only"
+  },
+  "source_results": {
+    "format": "pass",
+    "diff_check": "pass",
+    "protocol_plaintext_user_wire": "1 passed",
+    "custom_role_hook_trust_preservation": "1 passed",
+    "router_configured_null_marker": "1 passed",
+    "router_exact_namespace": "1 passed",
+    "spawn_wire_matrix": "5 passed",
+    "spawn_wire_cases": [
+      "encrypted",
+      "explicit-empty-marker plaintext",
+      "configured plaintext custom namespace with null marker",
+      "luna encrypted leaf",
+      "legacy encrypted leaf"
+    ]
+  },
+  "transport_decision": {
+    "plaintext_mode_is_opt_in": true,
+    "configured_namespace_must_match": true,
+    "absent_server_encryption_marker_is_plaintext_only_when_configured": true,
+    "nonempty_server_encryption_marker_remains_encrypted": true,
+    "plaintext_child_model_input_type": "message",
+    "plaintext_child_model_input_role": "user",
+    "encrypted_default_preserved": true
+  },
+  "qualification_contract": {
+    "schema": 3,
+    "explicit_empty_marker_supported": true,
+    "configured_null_marker_requires_exact_namespace_operation_and_session_opt_in": true,
+    "unconfigured_null_marker_remains_encrypted": true,
+    "gui_app_server_selection_forbidden": true,
+    "all_three_operations_and_distinct_deny_pairs_complete": false
+  },
+  "live_evidence": "probes/g4-live-plaintext-lifecycle-20260817.json",
+  "phase1_complete": false,
+  "direct_write_qualified": false,
+  "phase2_state": "closed",
+  "phase3_state": "closed",
+  "credential_values_stored": false
+}

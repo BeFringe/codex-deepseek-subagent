@@ -1,0 +1,59 @@
+{
+  "schema": 1,
+  "evidence_kind": "current_signed_runtime_external_zhipu_readonly_parent_adjudication_result",
+  "observed_at": "2026-09-08T01:18:40Z",
+  "runtime_role": "current_signed_runtime",
+  "assignment_id": "859e970a-0fc0-48c8-9e9f-c6f150b84a5b",
+  "input_evidence": {
+    "path": "probes/g4-zhipu-native-child-parent-adjudication-input-20260908.json",
+    "sha256": "bf41dc8e145ec96a6202f4437247b58cbb6ff38d22d46c31ce5aefbc9d4ea342"
+  },
+  "transition": {
+    "source": "reported",
+    "destination": "consumed",
+    "active_absent_after": true,
+    "reported_absent_after": true,
+    "unresolved_absent_after": true,
+    "consumed_present_after": true,
+    "consumed_envelope_sha256": "81f893aa5ecdf1f1b9cfff252219ec41a1a96763cd3e4000db03754e1a8c8a19"
+  },
+  "parent_adjudication": {
+    "location_integrity": "pass",
+    "mutation_scope_integrity": "pass",
+    "verification_freshness": "pass",
+    "derivation_provenance_integrity": "pass",
+    "feasibility_contract_integrity": "pass",
+    "evidence_sha256": "bf41dc8e145ec96a6202f4437247b58cbb6ff38d22d46c31ce5aefbc9d4ea342"
+  },
+  "post_transition_barrier": {
+    "root": "/Users/pearly/文档/CAT/codex-deepseek-subagent",
+    "branch": "main",
+    "head": "67f1906f74ef1899867001e4b1e42ad43ec33814",
+    "head_tree": "32ea94f119b09cbe1435e8e071e7490935c27b6e",
+    "write_tree": "32ea94f119b09cbe1435e8e071e7490935c27b6e",
+    "index_sha256": "66dc1ab80da81aa9b5a7985e63771cee7785aabc4e2e77fa3f9798d9fddb528f",
+    "status_porcelain_v1": [
+      "?? probes/g4-zhipu-native-child-parent-adjudication-input-20260908.json"
+    ],
+    "only_parent_evidence_write_present": true,
+    "candidate_process_absent": true
+  },
+  "scope_verdict": {
+    "native_external_child_readonly_assignment_consumed": true,
+    "native_external_child_plaintext_spawn_observed": true,
+    "native_external_child_sessionmeta_identity_bound": true,
+    "native_external_child_tool_loop_observed": true,
+    "native_external_child_parent_callback_observed": true,
+    "wait_receiver_identity_exact": false,
+    "identity_cohort_complete": false,
+    "paired_delivery_contract_complete": false,
+    "mutation_negative_space_complete": false,
+    "strong_global_quiescence_complete": false,
+    "p1_complete": false,
+    "phase1_complete": false,
+    "direct_write_qualified": false,
+    "phase2_state": "closed",
+    "phase3_state": "closed"
+  },
+  "credential_values_stored": false
+}

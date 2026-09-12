@@ -1,0 +1,50 @@
+{
+  "schema": 1,
+  "observed_at": "2026-09-07T06:01:38Z",
+  "status": "headless_binary_built_live_unproven",
+  "runtime_role": "current_signed_runtime",
+  "source_candidate_receipt": "probes/current-signed-runtime-plaintext-assignment-seam-source-candidate.json",
+  "base_source_commit": "3d2ee51ca2d5db578f328aa75e20aa22c0197c9a",
+  "build": {
+    "command": "cargo build -p codex-cli --bin codex",
+    "cargo_target_dir": "/private/tmp/codex-current-plaintext-live-target",
+    "cargo_incremental": "0",
+    "cargo_profile_dev_debug": "0",
+    "exit_code": 0,
+    "elapsed": "4m 03s",
+    "reported_version": "0.153.4",
+    "binary_format": "Mach-O 64-bit executable arm64",
+    "binary_sha256": "aef151f72a66b06a57b0f75f172fcd4efae3bcb927ece8ad262165c560501f21",
+    "binary_bytes": 505850112,
+    "signature_kind": "adhoc-linker-signed",
+    "team_identifier_present": false
+  },
+  "storage": {
+    "cargo_target_size_before_cleanup": "4.2G",
+    "cargo_target_deleted_after_copy": true,
+    "disposable_candidate_copy_preserved": true,
+    "disposable_candidate_copy_size": "482M",
+    "source_worktree_preserved": true,
+    "source_worktree_size": "85M"
+  },
+  "selection_boundaries": {
+    "invoked_by_absolute_path_for_version_check_only": true,
+    "candidate_installed": false,
+    "candidate_selected_for_gui_app_server": false,
+    "gui_app_restarted": false,
+    "codex_cli_path_modified": false,
+    "live_config_modified": false,
+    "headless_agent_turn_started": false,
+    "credential_values_read_or_stored": false
+  },
+  "qualification": {
+    "source_candidate_qualified": true,
+    "headless_binary_build_qualified": true,
+    "plaintext_assignment_seam_qualified": false,
+    "live_sessionmeta_identity_qualified": false,
+    "phase1_complete": false,
+    "direct_write_qualified": false,
+    "phase2_state": "closed",
+    "phase3_state": "closed"
+  }
+}

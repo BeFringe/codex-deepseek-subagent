@@ -1,0 +1,156 @@
+{
+  "schema": 1,
+  "as_of": "2026-09-07",
+  "codex_version": "0.153.4",
+  "source_commit": "3d2ee51ca2d5db578f328aa75e20aa22c0197c9a",
+  "source_repository": "https://github.com/openai/codex",
+  "boundary": {
+    "requester_authority": "app_server_client_connection",
+    "native_child_tool_surface": false,
+    "thread_identity_required": false,
+    "pretooluse_child_mediation_qualified": false,
+    "same_uid_client_reachability": "unproven"
+  },
+  "termination_boundary": {
+    "spawn_runner_tracking": "detached_tokio_task",
+    "connection_close_action": "send_kill_without_exit_acknowledgement",
+    "server_exit_process_tree_barrier": "not-qualified",
+    "detached_descendant_late_write_probe": "required"
+  },
+  "families": {
+    "filesystem": {
+      "methods": [
+        "fs/writeFile",
+        "fs/createDirectory",
+        "fs/remove",
+        "fs/copy"
+      ],
+      "execution_confinement": "sandbox_none",
+      "serialization": "concurrent",
+      "worker_reachability": "unproven",
+      "decision": "host-control-only-unqualified"
+    },
+    "command": {
+      "methods": [
+        "command/exec",
+        "command/exec/write",
+        "command/exec/terminate"
+      ],
+      "execution_confinement": "server_sandbox",
+      "serialization": "connection_or_process_id",
+      "worker_reachability": "unproven",
+      "decision": "host-control-only-unqualified"
+    },
+    "process": {
+      "methods": [
+        "process/spawn",
+        "process/writeStdin",
+        "process/kill"
+      ],
+      "execution_confinement": "no_codex_sandbox",
+      "serialization": "connection_or_process_handle",
+      "worker_reachability": "unproven",
+      "decision": "host-control-only-unqualified"
+    }
+  },
+  "anchors": [
+    {
+      "id": "filesystem_requests_are_concurrent",
+      "path": "codex-rs/app-server-protocol/src/protocol/common.rs",
+      "contains": "File system requests are intentionally concurrent."
+    },
+    {
+      "id": "filesystem_write_rpc",
+      "path": "codex-rs/app-server-protocol/src/protocol/common.rs",
+      "contains": "FsWriteFile => \"fs/writeFile\""
+    },
+    {
+      "id": "filesystem_create_directory_rpc",
+      "path": "codex-rs/app-server-protocol/src/protocol/common.rs",
+      "contains": "FsCreateDirectory => \"fs/createDirectory\""
+    },
+    {
+      "id": "filesystem_remove_rpc",
+      "path": "codex-rs/app-server-protocol/src/protocol/common.rs",
+      "contains": "FsRemove => \"fs/remove\""
+    },
+    {
+      "id": "filesystem_copy_rpc",
+      "path": "codex-rs/app-server-protocol/src/protocol/common.rs",
+      "contains": "FsCopy => \"fs/copy\""
+    },
+    {
+      "id": "filesystem_write_has_no_sandbox",
+      "path": "codex-rs/app-server/src/request_processors/fs_processor.rs",
+      "contains": ".write_file(&path, bytes, Default::default(), /*sandbox*/ None)"
+    },
+    {
+      "id": "command_exec_uses_server_sandbox",
+      "path": "codex-rs/app-server-protocol/src/protocol/common.rs",
+      "contains": "Execute a standalone command (argv vector) under the server's sandbox."
+    },
+    {
+      "id": "command_exec_write_rpc",
+      "path": "codex-rs/app-server-protocol/src/protocol/common.rs",
+      "contains": "CommandExecWrite => \"command/exec/write\""
+    },
+    {
+      "id": "command_exec_terminate_rpc",
+      "path": "codex-rs/app-server-protocol/src/protocol/common.rs",
+      "contains": "CommandExecTerminate => \"command/exec/terminate\""
+    },
+    {
+      "id": "process_spawn_has_no_codex_sandbox",
+      "path": "codex-rs/app-server-protocol/src/protocol/common.rs",
+      "contains": "Spawn a standalone process (argv vector) without a Codex sandbox."
+    },
+    {
+      "id": "process_write_stdin_rpc",
+      "path": "codex-rs/app-server-protocol/src/protocol/common.rs",
+      "contains": "ProcessWriteStdin => \"process/writeStdin\""
+    },
+    {
+      "id": "process_kill_rpc",
+      "path": "codex-rs/app-server-protocol/src/protocol/common.rs",
+      "contains": "ProcessKill => \"process/kill\""
+    },
+    {
+      "id": "filesystem_params_have_no_thread_identity",
+      "path": "codex-rs/app-server-protocol/src/protocol/v2/fs.rs",
+      "contains": "pub struct FsWriteFileParams",
+      "not_contains": "thread_id"
+    },
+    {
+      "id": "process_params_have_no_thread_identity",
+      "path": "codex-rs/app-server-protocol/src/protocol/v2/process.rs",
+      "contains": "pub struct ProcessSpawnParams",
+      "not_contains": "thread_id"
+    },
+    {
+      "id": "command_params_have_no_thread_identity",
+      "path": "codex-rs/app-server-protocol/src/protocol/v2/command_exec.rs",
+      "contains": "pub struct CommandExecParams",
+      "not_contains": "thread_id"
+    },
+    {
+      "id": "process_runner_is_detached_tokio_task",
+      "path": "codex-rs/app-server/src/request_processors/process_exec_processor.rs",
+      "contains": "let sessions = Arc::clone(&self.sessions);\n        tokio::spawn(async move {\n            run_process(RunProcessParams {"
+    },
+    {
+      "id": "connection_close_kill_has_no_exit_acknowledgement",
+      "path": "codex-rs/app-server/src/request_processors/process_exec_processor.rs",
+      "contains": "control: ProcessControl::Kill,\n                    response_tx: None,"
+    }
+  ],
+  "verdict": {
+    "host_control_mutation_surface_visible": true,
+    "native_child_reachability_proven": false,
+    "pretooluse_child_mediation_proven": false,
+    "same_uid_client_trust_proven": false,
+    "may_count_as_child_mutation_qualification": false,
+    "isolated_client_trust_probe_required": true,
+    "phase1_complete": false,
+    "direct_write_qualified": false
+  }
+}

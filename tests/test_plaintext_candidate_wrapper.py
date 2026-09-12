@@ -1,0 +1,1095 @@
+from pathlib import Path
+import hashlib
+import os
+import subprocess
+import tempfile
+import sys
+import unittest
+
+
+ROOT = Path(__file__).resolve().parents[1]
+WRAPPER = ROOT / "probes" / "codex_plaintext_candidate_wrapper.sh"
+HANDOVER_WRAPPER = ROOT / "probes" / "codex_plaintext_handover_candidate_wrapper.sh"
+WINDOWS_LAUNCHER = ROOT / "probes" / "windows_candidate_launcher.py"
+WRAPPER_COMMAND = ([sys.executable, str(WINDOWS_LAUNCHER), 'plaintext']
+                   if os.name == 'nt' else [str(WRAPPER)])
+HANDOVER_COMMAND = ([sys.executable, str(WINDOWS_LAUNCHER), 'handover']
+                    if os.name == 'nt' else [str(HANDOVER_WRAPPER)])
+
+
+class PlaintextCandidateWrapperTests(unittest.TestCase):
+    def _fake_candidate(self, directory):
+        if os.name == 'nt':
+            from windows_launcher_fixture import candidate
+            return candidate(directory)
+        candidate = directory / "candidate"
+        candidate.write_text(
+            "#!/bin/sh\n"
+            "printf '%s\\n' \"$@\" > \"$ARG_LOG\"\n"
+            "if [ -n \"${ENV_LOG-}\" ]; then\n"
+            "  printf '%s\\n' \"${CODEX_G4_TOOL_CATALOG_RECEIPT-}\" > \"$ENV_LOG\"\n"
+            "fi\n",
+            encoding="utf-8",
+        )
+        candidate.chmod(0o700)
+        digest = hashlib.sha256(candidate.read_bytes()).hexdigest()
+        return candidate, digest
+
+    def _environment(self, candidate, digest, arg_log):
+        return {
+            **os.environ,
+            "ARG_LOG": str(arg_log),
+            "CODEX_G4_LIVE_SELECTION_AUTHORIZED": "schema2-paired-probe",
+            "CODEX_G4_CANDIDATE_BIN": str(candidate),
+            "CODEX_G4_CANDIDATE_SHA256": digest,
+        }
+
+    def test_wrapper_injects_isolated_plaintext_probe_posture(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            directory = Path(temp_dir)
+            candidate, digest = self._fake_candidate(directory)
+            arg_log = directory / "args.txt"
+            result = subprocess.run(
+                [
+                    *WRAPPER_COMMAND,
+                    "exec",
+                    "--ephemeral",
+                    "--ignore-user-config",
+                    "--ignore-rules",
+                    "--json",
+                    "Return READY.",
+                ],
+                env=self._environment(candidate, digest, arg_log),
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(
+                arg_log.read_text(encoding="utf-8").splitlines(),
+                [
+                    "-c",
+                    "features.multi_agent_v2.enabled=true",
+                    "-c",
+                    'features.multi_agent_v2.message_delivery="plaintext"',
+                    "-c",
+                    'features.multi_agent_v2.tool_namespace="g4_assignment"',
+                    "-c",
+                    "features.code_mode_host=false",
+                    "-a",
+                    "never",
+                    "-s",
+                    "read-only",
+                    "exec",
+                    "--ephemeral",
+                    "--ignore-user-config",
+                    "--ignore-rules",
+                    "--json",
+                    "Return READY.",
+                ],
+            )
+
+    def test_gui_and_server_entry_points_fail_before_candidate_execution(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            directory = Path(temp_dir)
+            candidate, digest = self._fake_candidate(directory)
+            for entry_point in ("app-server", "app", "remote-control", "mcp-server"):
+                with self.subTest(entry_point=entry_point):
+                    arg_log = directory / f"{entry_point}.txt"
+                    result = subprocess.run(
+                        [*WRAPPER_COMMAND, entry_point],
+                        env=self._environment(candidate, digest, arg_log),
+                        text=True,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                        check=False,
+                    )
+                    self.assertEqual(result.returncode, 78)
+                    self.assertIn("entry points are forbidden", result.stderr)
+                    self.assertFalse(arg_log.exists())
+
+    def test_exec_requires_all_isolation_flags(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            directory = Path(temp_dir)
+            candidate, digest = self._fake_candidate(directory)
+            complete = ["--ephemeral", "--ignore-user-config", "--ignore-rules"]
+            for missing in complete:
+                with self.subTest(missing=missing):
+                    arg_log = directory / f"missing-{missing[2:]}.txt"
+                    arguments = ["exec", *(flag for flag in complete if flag != missing)]
+                    result = subprocess.run(
+                        [*WRAPPER_COMMAND, *arguments],
+                        env=self._environment(candidate, digest, arg_log),
+                        text=True,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                        check=False,
+                    )
+                    self.assertEqual(result.returncode, 78)
+                    self.assertFalse(arg_log.exists())
+
+    def test_stateful_sessionmeta_probe_requires_separate_guard_and_exact_clean_root(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            directory = Path(temp_dir)
+            candidate, digest = self._fake_candidate(directory)
+            root = directory / "worktree"
+            root.mkdir()
+            root = root.resolve()
+            subprocess.run(["git", "init", "-b", "main", str(root)], check=True, stdout=subprocess.PIPE)
+            subprocess.run(
+                [
+                    "git",
+                    "-C",
+                    str(root),
+                    "-c",
+                    "user.name=Phase1 Probe",
+                    "-c",
+                    "user.email=phase1-probe@invalid",
+                    "commit",
+                    "--allow-empty",
+                    "-m",
+                    "initial",
+                ],
+                check=True,
+                stdout=subprocess.PIPE,
+            )
+            arg_log = directory / "stateful-args.txt"
+            environment = self._environment(candidate, digest, arg_log)
+            env_log = directory / "parent-conflict-env.txt"
+            environment.update(
+                {
+                    "ENV_LOG": str(env_log),
+                    "CODEX_G4_SESSIONMETA_PROBE_AUTHORIZED": "schema1-headless-stateful",
+                    "CODEX_G4_SESSIONMETA_PROBE_ROOT": str(root),
+                }
+            )
+
+            accepted = subprocess.run(
+                [
+                    *WRAPPER_COMMAND,
+                    "exec",
+                    "--ignore-user-config",
+                    "--ignore-rules",
+                    "--dangerously-bypass-hook-trust",
+                    "--json",
+                    "-C",
+                    str(root),
+                    "Return READY.",
+                ],
+                env=environment,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            self.assertEqual(accepted.returncode, 0, accepted.stderr)
+            self.assertTrue(arg_log.exists())
+
+            denied_log = directory / "unguarded-args.txt"
+            denied_environment = self._environment(candidate, digest, denied_log)
+            denied = subprocess.run(
+                [
+                    *WRAPPER_COMMAND,
+                    "exec",
+                    "--ignore-user-config",
+                    "--ignore-rules",
+                    "--dangerously-bypass-hook-trust",
+                    "--json",
+                    "-C",
+                    str(root),
+                ],
+                env=denied_environment,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            self.assertEqual(denied.returncode, 78)
+            self.assertFalse(denied_log.exists())
+
+    def test_exact_temporary_write_guard_selects_workspace_write_only_for_that_root(self):
+        with tempfile.TemporaryDirectory() as candidate_dir, tempfile.TemporaryDirectory(
+            prefix="codex-g4-write-wrapper-", dir=(tempfile.gettempdir() if sys.platform == "win32" else "/private/tmp")
+        ) as root_dir:
+            directory = Path(candidate_dir)
+            root = Path(root_dir).resolve()
+            candidate, digest = self._fake_candidate(directory)
+            subprocess.run(["git", "-C", str(root), "init", "-b", "main"], check=True, capture_output=True)
+            subprocess.run(
+                [
+                    "git", "-C", str(root), "-c", "user.name=Phase1 Probe",
+                    "-c", "user.email=phase1-probe@invalid", "commit", "--allow-empty", "-m", "initial",
+                ],
+                check=True,
+                capture_output=True,
+            )
+            arg_log = directory / "write-args.txt"
+            environment = self._environment(candidate, digest, arg_log)
+            environment.update(
+                {
+                    "CODEX_G4_SESSIONMETA_PROBE_AUTHORIZED": "schema1-headless-stateful",
+                    "CODEX_G4_SESSIONMETA_PROBE_ROOT": str(root),
+                    "CODEX_G4_EXACT_WRITE_PROBE_AUTHORIZED": "schema1-exact-temporary-git-root",
+                }
+            )
+            result = subprocess.run(
+                [
+                    *WRAPPER_COMMAND, "exec", "--ignore-user-config", "--ignore-rules",
+                    "--dangerously-bypass-hook-trust", "--json", "-C", str(root), "Return READY.",
+                ],
+                env=environment,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            arguments = arg_log.read_text(encoding="utf-8").splitlines()
+            self.assertEqual(arguments[arguments.index("-s") + 1], "workspace-write")
+
+    def test_required_pretool_missing_handler_guard_disables_hooks_only_headlessly(self):
+        with tempfile.TemporaryDirectory() as candidate_dir, tempfile.TemporaryDirectory(
+            prefix="codex-g4-required-pretool.", dir=(tempfile.gettempdir() if sys.platform == "win32" else "/private/tmp")
+        ) as root_dir:
+            directory = Path(candidate_dir)
+            root = Path(root_dir).resolve()
+            candidate, digest = self._fake_candidate(directory)
+            subprocess.run(
+                ["git", "-C", str(root), "init", "-b", "main"],
+                check=True,
+                capture_output=True,
+            )
+            subprocess.run(
+                [
+                    "git", "-C", str(root), "-c", "user.name=Phase1 Probe",
+                    "-c", "user.email=phase1-probe@invalid", "commit", "--allow-empty",
+                    "-m", "initial",
+                ],
+                check=True,
+                capture_output=True,
+            )
+            arg_log = directory / "required-pretool-args.txt"
+            env_log = directory / "required-pretool-env.txt"
+            environment = self._environment(candidate, digest, arg_log)
+            environment.update(
+                {
+                    "ENV_LOG": str(env_log),
+                    "CODEX_G4_SESSIONMETA_PROBE_AUTHORIZED": "schema1-headless-stateful",
+                    "CODEX_G4_SESSIONMETA_PROBE_ROOT": str(root),
+                    "CODEX_G4_REQUIRED_PRETOOL_PROBE_AUTHORIZED": (
+                        "schema1-exact-missing-handler-parent"
+                    ),
+                }
+            )
+            result = subprocess.run(
+                [
+                    *WRAPPER_COMMAND, "exec", "--ignore-user-config", "--ignore-rules",
+                    "--dangerously-bypass-hook-trust", "--json", "-C", str(root),
+                    "Return READY.",
+                ],
+                env=environment,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            arguments = arg_log.read_text(encoding="utf-8").splitlines()
+            self.assertIn("features.hooks=false", arguments)
+            self.assertIn("features.code_mode_host=false", arguments)
+            self.assertEqual(arguments[arguments.index("-s") + 1], "read-only")
+            self.assertEqual(
+                env_log.read_text(encoding="utf-8").strip(),
+                "stderr-v2-parent-child-closed",
+            )
+
+            denied_log = directory / "combined-write-args.txt"
+            denied_environment = self._environment(candidate, digest, denied_log)
+            denied_environment.update(environment)
+            denied_environment["ARG_LOG"] = str(denied_log)
+            denied_environment["CODEX_G4_EXACT_WRITE_PROBE_AUTHORIZED"] = (
+                "schema1-exact-temporary-git-root"
+            )
+            denied = subprocess.run(
+                [
+                    *WRAPPER_COMMAND, "exec", "--ignore-user-config", "--ignore-rules",
+                    "--dangerously-bypass-hook-trust", "--json", "-C", str(root),
+                    "Return READY.",
+                ],
+                env=denied_environment,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(denied.returncode, 78)
+            self.assertFalse(denied_log.exists())
+
+    def test_required_pretool_failed_handler_guard_injects_exact_inline_hook(self):
+        with tempfile.TemporaryDirectory() as candidate_dir, tempfile.TemporaryDirectory(
+            prefix="codex-g4-required-pretool.", dir=(tempfile.gettempdir() if sys.platform == "win32" else "/private/tmp")
+        ) as root_dir:
+            directory = Path(candidate_dir)
+            root = Path(root_dir).resolve()
+            candidate, digest = self._fake_candidate(directory)
+            subprocess.run(
+                ["git", "-C", str(root), "init", "-b", "main"],
+                check=True,
+                capture_output=True,
+            )
+            subprocess.run(
+                [
+                    "git", "-C", str(root), "-c", "user.name=Phase1 Probe",
+                    "-c", "user.email=phase1-probe@invalid", "commit", "--allow-empty",
+                    "-m", "initial",
+                ],
+                check=True,
+                capture_output=True,
+            )
+            arg_log = directory / "failed-handler-args.txt"
+            env_log = directory / "failed-handler-env.txt"
+            environment = self._environment(candidate, digest, arg_log)
+            environment.update(
+                {
+                    "ENV_LOG": str(env_log),
+                    "CODEX_G4_SESSIONMETA_PROBE_AUTHORIZED": "schema1-headless-stateful",
+                    "CODEX_G4_SESSIONMETA_PROBE_ROOT": str(root),
+                    "CODEX_G4_REQUIRED_PRETOOL_PROBE_AUTHORIZED": (
+                        "schema1-exact-failed-handler-child"
+                    ),
+                }
+            )
+            result = subprocess.run(
+                [
+                    *WRAPPER_COMMAND, "exec", "--ignore-user-config", "--ignore-rules",
+                    "--dangerously-bypass-hook-trust", "--json", "-C", str(root),
+                    "Return READY.",
+                ],
+                env=environment,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            arguments = arg_log.read_text(encoding="utf-8").splitlines()
+            self.assertNotIn("features.hooks=false", arguments)
+            self.assertIn(
+                'hooks.PreToolUse=[{matcher="^apply_patch$",hooks=[' +
+                ('{type="command",command="cmd.exe /d /c exit 1",timeout=5}]}]'
+                 if os.name == 'nt' else '{type="command",command="/usr/bin/false",timeout=5}]}]'),
+                arguments,
+            )
+            self.assertEqual(arguments[arguments.index("-s") + 1], "read-only")
+            self.assertEqual(
+                env_log.read_text(encoding="utf-8").strip(),
+                "stderr-v2-parent-child-closed",
+            )
+
+            denied_log = directory / "combined-write-args.txt"
+            denied_environment = dict(environment)
+            denied_environment["ARG_LOG"] = str(denied_log)
+            denied_environment["CODEX_G4_EXACT_WRITE_PROBE_AUTHORIZED"] = (
+                "schema1-exact-temporary-git-root"
+            )
+            denied = subprocess.run(
+                [
+                    *WRAPPER_COMMAND, "exec", "--ignore-user-config", "--ignore-rules",
+                    "--dangerously-bypass-hook-trust", "--json", "-C", str(root),
+                    "Return READY.",
+                ],
+                env=denied_environment,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(denied.returncode, 78)
+            self.assertFalse(denied_log.exists())
+
+    def test_failed_patch_callback_guard_narrowly_enables_code_mode_host(self):
+        with tempfile.TemporaryDirectory() as candidate_dir, tempfile.TemporaryDirectory(
+            prefix="codex-g4-write-posttool-", dir=(tempfile.gettempdir() if sys.platform == "win32" else "/private/tmp")
+        ) as root_dir:
+            directory = Path(candidate_dir)
+            root = Path(root_dir).resolve()
+            candidate, digest = self._fake_candidate(directory)
+            subprocess.run(
+                ["git", "-C", str(root), "init", "-b", "main"],
+                check=True,
+                capture_output=True,
+            )
+            subprocess.run(
+                [
+                    "git", "-C", str(root), "-c", "user.name=Phase1 Probe",
+                    "-c", "user.email=phase1-probe@invalid", "commit", "--allow-empty",
+                    "-m", "initial",
+                ],
+                check=True,
+                capture_output=True,
+            )
+            arg_log = directory / "failed-patch-args.txt"
+            environment = self._environment(candidate, digest, arg_log)
+            environment.update(
+                {
+                    "CODEX_G4_SESSIONMETA_PROBE_AUTHORIZED": "schema1-headless-stateful",
+                    "CODEX_G4_SESSIONMETA_PROBE_ROOT": str(root),
+                    "CODEX_G4_EXACT_WRITE_PROBE_AUTHORIZED": "schema1-exact-temporary-git-root",
+                    "CODEX_G4_FAILED_PATCH_CALLBACK_PROBE_AUTHORIZED": (
+                        "schema1-root-failed-apply-patch"
+                    ),
+                }
+            )
+            result = subprocess.run(
+                [
+                    *WRAPPER_COMMAND, "exec", "--ignore-user-config", "--ignore-rules",
+                    "--dangerously-bypass-hook-trust", "--json", "-C", str(root),
+                    "Return READY.",
+                ],
+                env=environment,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            arguments = arg_log.read_text(encoding="utf-8").splitlines()
+            self.assertIn("features.code_mode_host=true", arguments)
+            self.assertEqual(arguments[arguments.index("-s") + 1], "workspace-write")
+    def test_parent_child_conflict_guard_is_exact_and_enables_parent_patch_host(self):
+        with tempfile.TemporaryDirectory() as candidate_dir, tempfile.TemporaryDirectory(
+            prefix="codex-g4-write-parent-conflict.", dir=(tempfile.gettempdir() if sys.platform == "win32" else "/private/tmp")
+        ) as root_dir:
+            directory = Path(candidate_dir)
+            root = Path(root_dir).resolve()
+            candidate, digest = self._fake_candidate(directory)
+            subprocess.run(
+                ["git", "-C", str(root), "init", "-b", "main"],
+                check=True,
+                capture_output=True,
+            )
+            subprocess.run(
+                [
+                    "git", "-C", str(root), "-c", "user.name=Phase1 Probe",
+                    "-c", "user.email=phase1-probe@invalid", "commit", "--allow-empty",
+                    "-m", "initial",
+                ],
+                check=True,
+                capture_output=True,
+            )
+            arg_log = directory / "parent-conflict-args.txt"
+            env_log = directory / "parent-conflict-env.txt"
+            environment = self._environment(candidate, digest, arg_log)
+            environment.update(
+                {
+                    "ENV_LOG": str(env_log),
+                    "CODEX_G4_SESSIONMETA_PROBE_AUTHORIZED": "schema1-headless-stateful",
+                    "CODEX_G4_SESSIONMETA_PROBE_ROOT": str(root),
+                    "CODEX_G4_EXACT_WRITE_PROBE_AUTHORIZED": (
+                        "schema1-exact-temporary-git-root"
+                    ),
+                    "CODEX_G4_PARENT_CHILD_WRITER_CONFLICT_PROBE_AUTHORIZED": (
+                        "schema1-exact-active-child-claim"
+                    ),
+                }
+            )
+            result = subprocess.run(
+                [
+                    *WRAPPER_COMMAND, "exec", "--ignore-user-config", "--ignore-rules",
+                    "--dangerously-bypass-hook-trust", "--json", "-C", str(root),
+                    "Return READY.",
+                ],
+                env=environment,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            arguments = arg_log.read_text(encoding="utf-8").splitlines()
+            self.assertIn("features.code_mode_host=true", arguments)
+            self.assertEqual(arguments[arguments.index("-s") + 1], "workspace-write")
+            self.assertEqual(
+                env_log.read_text(encoding="utf-8").strip(),
+                "stderr-v2-parent-child-closed",
+            )
+
+            denied_log = directory / "missing-exact-write-args.txt"
+            denied_environment = self._environment(candidate, digest, denied_log)
+            denied_environment.update(
+                {
+                    "CODEX_G4_SESSIONMETA_PROBE_AUTHORIZED": "schema1-headless-stateful",
+                    "CODEX_G4_SESSIONMETA_PROBE_ROOT": str(root),
+                    "CODEX_G4_PARENT_CHILD_WRITER_CONFLICT_PROBE_AUTHORIZED": (
+                        "schema1-exact-active-child-claim"
+                    ),
+                }
+            )
+            denied = subprocess.run(
+                [
+                    *WRAPPER_COMMAND, "exec", "--ignore-user-config", "--ignore-rules",
+                    "--dangerously-bypass-hook-trust", "--json", "-C", str(root),
+                    "Return READY.",
+                ],
+                env=denied_environment,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(denied.returncode, 78)
+            self.assertIn("requires the exact write guard", denied.stderr)
+            self.assertFalse(denied_log.exists())
+
+    def test_sibling_admission_guard_closes_catalog_without_widening_sandbox(self):
+        with tempfile.TemporaryDirectory() as candidate_dir, tempfile.TemporaryDirectory(
+            prefix="codex-g4-sibling-admission.", dir=(tempfile.gettempdir() if sys.platform == "win32" else "/private/tmp")
+        ) as root_dir:
+            directory = Path(candidate_dir)
+            root = Path(root_dir).resolve()
+            candidate, digest = self._fake_candidate(directory)
+            subprocess.run(
+                ["git", "-C", str(root), "init", "-b", "main"],
+                check=True,
+                capture_output=True,
+            )
+            subprocess.run(
+                [
+                    "git", "-C", str(root), "-c", "user.name=Phase1 Probe",
+                    "-c", "user.email=phase1-probe@invalid", "commit", "--allow-empty",
+                    "-m", "initial",
+                ],
+                check=True,
+                capture_output=True,
+            )
+            arg_log = directory / "sibling-admission-args.txt"
+            env_log = directory / "sibling-admission-env.txt"
+            environment = self._environment(candidate, digest, arg_log)
+            environment.update(
+                {
+                    "ENV_LOG": str(env_log),
+                    "CODEX_G4_SESSIONMETA_PROBE_AUTHORIZED": "schema1-headless-stateful",
+                    "CODEX_G4_SESSIONMETA_PROBE_ROOT": str(root),
+                    "CODEX_G4_SIBLING_SPAWN_ADMISSION_PROBE_AUTHORIZED": (
+                        "schema1-exact-g4-only"
+                    ),
+                }
+            )
+            result = subprocess.run(
+                [
+                    *WRAPPER_COMMAND, "exec", "--ignore-user-config", "--ignore-rules",
+                    "--dangerously-bypass-hook-trust", "--json", "-C", str(root),
+                    "Return READY.",
+                ],
+                env=environment,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            arguments = arg_log.read_text(encoding="utf-8").splitlines()
+            self.assertIn("features.code_mode_host=false", arguments)
+            self.assertEqual(arguments[arguments.index("-s") + 1], "read-only")
+            self.assertEqual(
+                env_log.read_text(encoding="utf-8").strip(),
+                "stderr-v2-parent-child-closed",
+            )
+
+    def test_unrelated_probe_cannot_inherit_parent_catalog_closure_opt_in(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            directory = Path(temp_dir)
+            candidate, digest = self._fake_candidate(directory)
+            arg_log = directory / "args.txt"
+            env_log = directory / "env.txt"
+            environment = self._environment(candidate, digest, arg_log)
+            environment.update(
+                {
+                    "ENV_LOG": str(env_log),
+                    "CODEX_G4_TOOL_CATALOG_RECEIPT": (
+                        "stderr-v2-parent-child-closed"
+                    ),
+                }
+            )
+            result = subprocess.run(
+                [
+                    *WRAPPER_COMMAND, "exec", "--ephemeral", "--ignore-user-config",
+                    "--ignore-rules", "--json", "Return READY.",
+                ],
+                env=environment,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(env_log.read_text(encoding="utf-8"), "\n")
+
+    def test_p5b_termination_guard_closes_catalog_without_widening_sandbox(self):
+        with tempfile.TemporaryDirectory() as candidate_dir, tempfile.TemporaryDirectory(
+            prefix="codex-g4-p5b-termination.", dir=(tempfile.gettempdir() if sys.platform == "win32" else "/private/tmp")
+        ) as root_dir:
+            directory = Path(candidate_dir)
+            root = Path(root_dir).resolve()
+            candidate, digest = self._fake_candidate(directory)
+            subprocess.run(
+                ["git", "-C", str(root), "init", "-b", "main"],
+                check=True,
+                capture_output=True,
+            )
+            subprocess.run(
+                [
+                    "git", "-C", str(root), "-c", "user.name=Phase1 Probe",
+                    "-c", "user.email=phase1-probe@invalid", "commit", "--allow-empty",
+                    "-m", "initial",
+                ],
+                check=True,
+                capture_output=True,
+            )
+            arg_log = directory / "p5b-args.txt"
+            env_log = directory / "p5b-env.txt"
+            environment = self._environment(candidate, digest, arg_log)
+            environment.update(
+                {
+                    "ENV_LOG": str(env_log),
+                    "CODEX_G4_SESSIONMETA_PROBE_AUTHORIZED": "schema1-headless-stateful",
+                    "CODEX_G4_SESSIONMETA_PROBE_ROOT": str(root),
+                    "CODEX_G4_P5B_TRACKED_TERMINATION_PROBE_AUTHORIZED": (
+                        "schema1-exact-idle-child"
+                    ),
+                }
+            )
+            result = subprocess.run(
+                [
+                    *WRAPPER_COMMAND, "exec", "--ignore-user-config", "--ignore-rules",
+                    "--dangerously-bypass-hook-trust", "--json", "-C", str(root),
+                    "Return READY.",
+                ],
+                env=environment,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            arguments = arg_log.read_text(encoding="utf-8").splitlines()
+            self.assertIn("features.code_mode_host=false", arguments)
+            self.assertEqual(arguments[arguments.index("-s") + 1], "read-only")
+            self.assertEqual(
+                env_log.read_text(encoding="utf-8").strip(),
+                "stderr-v2-parent-child-closed",
+            )
+
+    def test_p5b_tracked_process_guard_is_read_only_and_exact(self):
+        with tempfile.TemporaryDirectory() as candidate_dir, tempfile.TemporaryDirectory(
+            prefix="codex-g4-p5b-tracked-process.", dir=(tempfile.gettempdir() if sys.platform == "win32" else "/private/tmp")
+        ) as root_dir:
+            directory = Path(candidate_dir)
+            root = Path(root_dir).resolve()
+            candidate, digest = self._fake_candidate(directory)
+            code_mode_host = directory / ("codex-code-mode-host.exe" if os.name == 'nt' else "codex-code-mode-host")
+            code_mode_host.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+            code_mode_host.chmod(0o700)
+            code_mode_host_digest = hashlib.sha256(
+                code_mode_host.read_bytes()
+            ).hexdigest()
+            subprocess.run(
+                ["git", "-C", str(root), "init", "-b", "main"],
+                check=True,
+                capture_output=True,
+            )
+            subprocess.run(
+                [
+                    "git", "-C", str(root), "-c", "user.name=Phase1 Probe",
+                    "-c", "user.email=phase1-probe@invalid", "commit", "--allow-empty",
+                    "-m", "initial",
+                ],
+                check=True,
+                capture_output=True,
+            )
+            arg_log = directory / "p5b-tracked-process-args.txt"
+            env_log = directory / "p5b-tracked-process-env.txt"
+            environment = self._environment(candidate, digest, arg_log)
+            environment.update(
+                {
+                    "ENV_LOG": str(env_log),
+                    "CODEX_G4_SESSIONMETA_PROBE_AUTHORIZED": "schema1-headless-stateful",
+                    "CODEX_G4_SESSIONMETA_PROBE_ROOT": str(root),
+                    "CODEX_G4_P5B_TRACKED_TERMINATION_PROBE_AUTHORIZED": (
+                        "schema1-exact-tracked-process"
+                    ),
+                    "CODEX_G4_CODE_MODE_HOST_SHA256": code_mode_host_digest,
+                }
+            )
+            result = subprocess.run(
+                [
+                    *WRAPPER_COMMAND, "exec", "--ignore-user-config", "--ignore-rules",
+                    "--dangerously-bypass-hook-trust", "--json", "-C", str(root),
+                    "Return READY.",
+                ],
+                env=environment,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            arguments = arg_log.read_text(encoding="utf-8").splitlines()
+            self.assertIn("features.code_mode_host=true", arguments)
+            self.assertEqual(arguments[arguments.index("-s") + 1], "read-only")
+            self.assertEqual(
+                env_log.read_text(encoding="utf-8").strip(),
+                "stderr-v2-parent-child-closed",
+            )
+
+            digest_denied_log = directory / "p5b-tracked-process-bad-host.txt"
+            digest_denied_environment = dict(
+                environment,
+                ARG_LOG=str(digest_denied_log),
+                CODEX_G4_CODE_MODE_HOST_SHA256="0" * 64,
+            )
+            digest_denied = subprocess.run(
+                [
+                    *WRAPPER_COMMAND, "exec", "--ignore-user-config", "--ignore-rules",
+                    "--dangerously-bypass-hook-trust", "--json", "-C", str(root),
+                    "Return READY.",
+                ],
+                env=digest_denied_environment,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(digest_denied.returncode, 78)
+            self.assertIn("code-mode host digest mismatch", digest_denied.stderr)
+            self.assertFalse(digest_denied_log.exists())
+
+            denied_log = directory / "p5b-tracked-process-denied.txt"
+            denied_environment = dict(environment, ARG_LOG=str(denied_log))
+            denied_environment[
+                "CODEX_G4_P5B_TRACKED_TERMINATION_PROBE_AUTHORIZED"
+            ] = "schema1-unbounded-process"
+            denied = subprocess.run(
+                [
+                    *WRAPPER_COMMAND, "exec", "--ignore-user-config", "--ignore-rules",
+                    "--dangerously-bypass-hook-trust", "--json", "-C", str(root),
+                    "Return READY.",
+                ],
+                env=denied_environment,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(denied.returncode, 78)
+            self.assertIn("authorization guard is invalid", denied.stderr)
+            self.assertFalse(denied_log.exists())
+
+    def test_p5b_write_then_close_guard_has_exact_temporary_write_ceiling(self):
+        with tempfile.TemporaryDirectory() as candidate_dir, tempfile.TemporaryDirectory(
+            prefix="codex-g4-p5b-write-termination.", dir=(tempfile.gettempdir() if sys.platform == "win32" else "/private/tmp")
+        ) as root_dir:
+            directory = Path(candidate_dir)
+            root = Path(root_dir).resolve()
+            candidate, digest = self._fake_candidate(directory)
+            subprocess.run(
+                ["git", "-C", str(root), "init", "-b", "main"],
+                check=True,
+                capture_output=True,
+            )
+            subprocess.run(
+                [
+                    "git", "-C", str(root), "-c", "user.name=Phase1 Probe",
+                    "-c", "user.email=phase1-probe@invalid", "commit", "--allow-empty",
+                    "-m", "initial",
+                ],
+                check=True,
+                capture_output=True,
+            )
+            arg_log = directory / "p5b-write-args.txt"
+            env_log = directory / "p5b-write-env.txt"
+            environment = self._environment(candidate, digest, arg_log)
+            environment.update(
+                {
+                    "ENV_LOG": str(env_log),
+                    "CODEX_G4_SESSIONMETA_PROBE_AUTHORIZED": "schema1-headless-stateful",
+                    "CODEX_G4_SESSIONMETA_PROBE_ROOT": str(root),
+                    "CODEX_G4_P5B_TRACKED_TERMINATION_PROBE_AUTHORIZED": (
+                        "schema1-exact-write-then-close"
+                    ),
+                }
+            )
+            result = subprocess.run(
+                [
+                    *WRAPPER_COMMAND, "exec", "--ignore-user-config", "--ignore-rules",
+                    "--dangerously-bypass-hook-trust", "--json", "-C", str(root),
+                    "Return READY.",
+                ],
+                env=environment,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            arguments = arg_log.read_text(encoding="utf-8").splitlines()
+            self.assertIn("features.code_mode_host=false", arguments)
+            self.assertEqual(arguments[arguments.index("-s") + 1], "workspace-write")
+            self.assertEqual(
+                env_log.read_text(encoding="utf-8").strip(),
+                "stderr-v2-parent-child-closed",
+            )
+
+    def test_p5b_handover_guard_accepts_only_the_exact_frozen_frontier(self):
+        with tempfile.TemporaryDirectory() as candidate_dir, tempfile.TemporaryDirectory(
+            prefix="codex-g4-p5b-write-termination.", dir=(tempfile.gettempdir() if sys.platform == "win32" else "/private/tmp")
+        ) as root_dir:
+            directory = Path(candidate_dir)
+            root = Path(root_dir).resolve()
+            candidate, digest = self._fake_candidate(directory)
+            subprocess.run(
+                ["git", "-C", str(root), "init", "-b", "main"],
+                check=True,
+                capture_output=True,
+            )
+            subprocess.run(
+                [
+                    "git", "-C", str(root), "-c", "user.name=Phase1 Probe",
+                    "-c", "user.email=phase1-probe@invalid", "commit", "--allow-empty",
+                    "-m", "initial",
+                ],
+                check=True,
+                capture_output=True,
+            )
+            (root / "qualified.txt").write_bytes(b"G4_CHILD_WRITE_QUALIFIED\n")
+            arg_log = directory / "p5b-handover-args.txt"
+            env_log = directory / "p5b-handover-env.txt"
+            environment = self._environment(candidate, digest, arg_log)
+            environment.update(
+                {
+                    "ENV_LOG": str(env_log),
+                    "CODEX_G4_SESSIONMETA_PROBE_AUTHORIZED": "schema1-headless-stateful",
+                    "CODEX_G4_SESSIONMETA_PROBE_ROOT": str(root),
+                    "CODEX_G4_P5B_TRACKED_TERMINATION_PROBE_AUTHORIZED": (
+                        "schema1-exact-write-then-close"
+                    ),
+                    "CODEX_G4_P5B_HANDOVER_PROBE_AUTHORIZED": (
+                        "schema1-exact-barrier-replacement"
+                    ),
+                }
+            )
+            result = subprocess.run(
+                [
+                    *HANDOVER_COMMAND, "exec", "--ignore-user-config", "--ignore-rules",
+                    "--dangerously-bypass-hook-trust", "--json", "-C", str(root),
+                    "Return READY.",
+                ],
+                env=environment,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            arguments = arg_log.read_text(encoding="utf-8").splitlines()
+            self.assertIn("features.code_mode_host=false", arguments)
+            self.assertEqual(arguments[arguments.index("-s") + 1], "workspace-write")
+            self.assertEqual(
+                env_log.read_text(encoding="utf-8").strip(),
+                "stderr-v2-parent-child-closed",
+            )
+
+            (root / "qualified.txt").write_text("drifted\n", encoding="utf-8")
+            drift_log = directory / "p5b-handover-drift.txt"
+            drift_environment = dict(environment, ARG_LOG=str(drift_log))
+            drift = subprocess.run(
+                [
+                    *HANDOVER_COMMAND, "exec", "--ignore-user-config", "--ignore-rules",
+                    "--dangerously-bypass-hook-trust", "--json", "-C", str(root),
+                    "Return READY.",
+                ],
+                env=drift_environment,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(drift.returncode, 78)
+            self.assertIn("frozen prior bytes", drift.stderr)
+            self.assertFalse(drift_log.exists())
+
+            gui_log = directory / "p5b-handover-gui.txt"
+            gui = subprocess.run(
+                [*HANDOVER_COMMAND, "app-server"],
+                env=dict(environment, ARG_LOG=str(gui_log)),
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(gui.returncode, 78)
+            self.assertIn("only headless exec", gui.stderr)
+            self.assertFalse(gui_log.exists())
+
+            missing_log = directory / "p5b-handover-missing.txt"
+            missing_environment = dict(environment, ARG_LOG=str(missing_log))
+            missing_environment.pop("CODEX_G4_P5B_HANDOVER_PROBE_AUTHORIZED")
+            missing = subprocess.run(
+                [
+                    *HANDOVER_COMMAND, "exec", "--ignore-user-config",
+                    "--ignore-rules", "--dangerously-bypass-hook-trust", "--json",
+                    "-C", str(root), "Return READY.",
+                ],
+                env=missing_environment,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(missing.returncode, 78)
+            self.assertIn("handover probe guard is absent", missing.stderr)
+            self.assertFalse(missing_log.exists())
+
+    def test_auto_compact_guard_injects_fixed_limit_into_stateful_read_only_probe(self):
+        with tempfile.TemporaryDirectory() as candidate_dir, tempfile.TemporaryDirectory(
+            prefix="codex-g4-compact-wrapper-", dir=(tempfile.gettempdir() if sys.platform == "win32" else "/private/tmp")
+        ) as root_dir:
+            directory = Path(candidate_dir)
+            root = Path(root_dir).resolve()
+            candidate, digest = self._fake_candidate(directory)
+            subprocess.run(
+                ["git", "-C", str(root), "init", "-b", "main"],
+                check=True,
+                capture_output=True,
+            )
+            subprocess.run(
+                [
+                    "git", "-C", str(root), "-c", "user.name=Phase1 Probe",
+                    "-c", "user.email=phase1-probe@invalid", "commit", "--allow-empty",
+                    "-m", "initial",
+                ],
+                check=True,
+                capture_output=True,
+            )
+            arg_log = directory / "compact-args.txt"
+            environment = self._environment(candidate, digest, arg_log)
+            environment.update(
+                {
+                    "CODEX_G4_SESSIONMETA_PROBE_AUTHORIZED": "schema1-headless-stateful",
+                    "CODEX_G4_SESSIONMETA_PROBE_ROOT": str(root),
+                    "CODEX_G4_AUTO_COMPACT_PROBE_AUTHORIZED": "schema1-post-action-20000",
+                }
+            )
+            result = subprocess.run(
+                [
+                    *WRAPPER_COMMAND, "exec", "--ignore-user-config", "--ignore-rules",
+                    "--dangerously-bypass-hook-trust", "--json", "-C", str(root),
+                    "Return READY.",
+                ],
+                env=environment,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            arguments = arg_log.read_text(encoding="utf-8").splitlines()
+            self.assertIn("model_auto_compact_token_limit=20000", arguments)
+            self.assertEqual(arguments[arguments.index("-s") + 1], "read-only")
+
+    def test_caller_configuration_override_is_denied_before_candidate_execution(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            directory = Path(temp_dir)
+            candidate, digest = self._fake_candidate(directory)
+            arg_log = directory / "args.txt"
+            result = subprocess.run(
+                [
+                    *WRAPPER_COMMAND, "exec", "--ephemeral", "--ignore-user-config",
+                    "--ignore-rules", "-c", "features.code_mode_host=true", "Return READY.",
+                ],
+                env=self._environment(candidate, digest, arg_log),
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+
+            self.assertEqual(result.returncode, 78)
+            self.assertIn("may not override candidate configuration", result.stderr)
+            self.assertFalse(arg_log.exists())
+
+    def test_login_allows_status_only(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            directory = Path(temp_dir)
+            candidate, digest = self._fake_candidate(directory)
+            status_log = directory / "status.txt"
+            status = subprocess.run(
+                [*WRAPPER_COMMAND, "login", "status"],
+                env=self._environment(candidate, digest, status_log),
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            self.assertEqual(status.returncode, 0, status.stderr)
+            self.assertTrue(status_log.exists())
+
+            logout_log = directory / "logout.txt"
+            logout = subprocess.run(
+                [*WRAPPER_COMMAND, "login", "logout"],
+                env=self._environment(candidate, digest, logout_log),
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            self.assertEqual(logout.returncode, 78)
+            self.assertFalse(logout_log.exists())
+
+    def test_missing_guard_fails_before_candidate_execution(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            directory = Path(temp_dir)
+            candidate, digest = self._fake_candidate(directory)
+            arg_log = directory / "args.txt"
+            environment = self._environment(candidate, digest, arg_log)
+            environment.pop("CODEX_G4_LIVE_SELECTION_AUTHORIZED")
+
+            result = subprocess.run(
+                [*WRAPPER_COMMAND, "login", "status"],
+                env=environment,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            self.assertEqual(result.returncode, 78)
+            self.assertFalse(arg_log.exists())
+
+    def test_digest_mismatch_fails_before_candidate_execution(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            directory = Path(temp_dir)
+            candidate, digest = self._fake_candidate(directory)
+            arg_log = directory / "args.txt"
+            environment = self._environment(candidate, "0" * 64, arg_log)
+
+            result = subprocess.run(
+                [*WRAPPER_COMMAND, "login", "status"],
+                env=environment,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            self.assertNotEqual(digest, "0" * 64)
+            self.assertEqual(result.returncode, 78)
+            self.assertFalse(arg_log.exists())
+
+    def test_wrapper_has_no_provider_or_credential_configuration(self):
+        for wrapper in (WRAPPER, HANDOVER_WRAPPER):
+            with self.subTest(wrapper=wrapper.name):
+                source = wrapper.read_text(encoding="utf-8")
+                for forbidden in (
+                    "API_KEY",
+                    "base_url",
+                    "model_provider",
+                    "OPENAI_API_KEY",
+                ):
+                    self.assertNotIn(forbidden, source)
+
+
+if __name__ == "__main__":
+    unittest.main()

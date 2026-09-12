@@ -1,0 +1,144 @@
+{
+  "schema": 1,
+  "as_of": "2026-08-17",
+  "scope": "isolated source candidate only; not installed into the live Codex app",
+  "codex": {
+    "version": "0.148.0-alpha.9",
+    "source_commit": "9392c3fa5bcda342b5b96a1a04d67b2f781617c2",
+    "rust_toolchain": "1.95.0 (59807616e 2026-04-14)",
+    "host": "aarch64-apple-darwin"
+  },
+  "artifact": {
+    "path": "probes/codex-0.148.0-alpha.9-plaintext-assignment-seam-candidate.patch",
+    "sha256": "2a233b9583dc1708307fe2fa0e5bf0ca69b550e07b3a160507c42fe434ae0037",
+    "bytes": 22213,
+    "lines": 566,
+    "base_commit": "9392c3fa5bcda342b5b96a1a04d67b2f781617c2",
+    "changed_source_files": 12,
+    "cargo_lock_changed": false
+  },
+  "binary_build": {
+    "command": "cargo build --release -p codex-cli --bin codex",
+    "exit_code": 0,
+    "duration": "30m19s",
+    "profile": "release (thin LTO, codegen-units 4, line-table debug, unstripped)",
+    "path": "/private/tmp/codex-plaintext-seam-candidate-20260817/codex-rs/target/release/codex",
+    "sha256": "e2874bda15552fac7b677b2553978a452c8c7beb5cae536ec95aead4d8b174d6",
+    "bytes": 293620392,
+    "format": "Mach-O 64-bit arm64",
+    "signature": "ad-hoc linker signature; no TeamIdentifier",
+    "version_output": "codex-cli 0.148.0-alpha.9",
+    "source_tree_after_generated_lock_normalization": "only the 12 candidate source files are modified",
+    "installed_or_selected_live": false
+  },
+  "interface": {
+    "config_key": "features.multi_agent_v2.message_delivery",
+    "default": "encrypted",
+    "explicit_opt_in": "plaintext",
+    "operations": [
+      "spawn_agent",
+      "send_message",
+      "followup_task"
+    ],
+    "transport_only": true,
+    "grants_mutation_authority": false,
+    "changes_parent_provider_or_auth": false,
+    "uses_multi_agent_v1_fallback": false
+  },
+  "source_result": {
+    "candidate_compiles": true,
+    "default_encrypted_schema_preserved": true,
+    "explicit_plaintext_schema_available": true,
+    "existing_direct_plaintext_message_branch_reused": true,
+    "native_multi_agent_v2_handlers_preserved": true,
+    "live_encrypted_function_args_empty_array_observed": false,
+    "live_pretool_plaintext_observed": false,
+    "live_delivered_plaintext_equality_observed": false
+  },
+  "verification": [
+    {
+      "id": "format",
+      "command": "cargo fmt --all -- --check",
+      "exit_code": 0
+    },
+    {
+      "id": "feature_config",
+      "command": "cargo test -p codex-features multi_agent_v2_feature_config -- --nocapture",
+      "exit_code": 0,
+      "passed": 2,
+      "failed": 0
+    },
+    {
+      "id": "core_message_schemas",
+      "command": "cargo test -p codex-core multi_agent_v2_message_schemas -- --nocapture",
+      "exit_code": 0,
+      "passed": 2,
+      "failed": 0
+    },
+    {
+      "id": "core_multi_agent_v2_regression",
+      "command": "RUST_MIN_STACK=16777216 cargo test -p codex-core multi_agent_v2_ -- --nocapture",
+      "exit_code": 0,
+      "unit_passed": 68,
+      "integration_passed": 19,
+      "failed": 0
+    },
+    {
+      "id": "direct_message_spec_regression",
+      "command": "RUST_MIN_STACK=16777216 cargo test -p codex-core tool_requires_message_and_has_no_output_schema -- --nocapture",
+      "exit_code": 0,
+      "passed": 2,
+      "failed": 0
+    },
+    {
+      "id": "direct_spawn_spec_regression",
+      "command": "RUST_MIN_STACK=16777216 cargo test -p codex-core spawn_agent_tool_v2_requires_task_name_and_lists_visible_models -- --nocapture",
+      "exit_code": 0,
+      "passed": 1,
+      "failed": 0
+    },
+    {
+      "id": "provider_free_regression",
+      "command": "PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests -p 'test_*.py' -v",
+      "exit_code": 0,
+      "passed": 263,
+      "failed": 0,
+      "duration_seconds": 37.723,
+      "agent_template_checks": "pass"
+    },
+    {
+      "id": "schema2_and_live_selection_preflight_regression",
+      "command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPYCACHEPREFIX=/private/tmp/codex-pycache-20260817 python3 -m unittest discover -s tests -p 'test_*.py' -v",
+      "exit_code": 0,
+      "passed": 276,
+      "failed": 0,
+      "duration_seconds": 50.375,
+      "agent_template_checks": "pass"
+    }
+  ],
+  "environment_observations": {
+    "system_cargo_initially_present": false,
+    "rustup_bootstrap_installed": "stable 1.97.1",
+    "repository_override_used": "1.95.0",
+    "first_dependency_fetch_exit_code": 101,
+    "first_dependency_fetch_error": "crates.io hashbrown download crossed Cargo's default low-speed threshold",
+    "retry_transport_settings": {
+      "CARGO_NET_RETRY": 5,
+      "CARGO_HTTP_LOW_SPEED_LIMIT": 1,
+      "CARGO_HTTP_TIMEOUT": 600
+    },
+    "default_test_thread_stack_exit": "signal 6 stack overflow in one existing async test",
+    "same_test_with_16mib_stack": "pass",
+    "full_filtered_regression_with_16mib_stack": "pass"
+  },
+  "verdict": {
+    "source_candidate_reusable": true,
+    "live_candidate_installed": false,
+    "plaintext_assignment_seam_qualified": false,
+    "phase1_complete": false,
+    "direct_write_qualified": false,
+    "phase2_open": false,
+    "phase3_open": false,
+    "blocker": "source tests and a reversible selection preflight prove a minimal opt-in schema route is viable, but no live native schema-2 receipt yet proves encrypted_function_args: [], exact PreToolUse plaintext, a distinct same-message deny-before-dispatch call, or byte-identical permitted recipient delivery"
+  }
+}

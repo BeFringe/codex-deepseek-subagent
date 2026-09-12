@@ -1,0 +1,1105 @@
+diff --git a/codex-rs/core/src/config/config_tests.rs b/codex-rs/core/src/config/config_tests.rs
+index 8796f539b614ed53708a0c8ac1c7bc032789a4a6..7fbf59cdd710ad4cdb28ddc8caed7d5a759808c8 100644
+--- a/codex-rs/core/src/config/config_tests.rs
++++ b/codex-rs/core/src/config/config_tests.rs
+@@ -11523,6 +11523,7 @@ hide_spawn_agent_metadata = true
+ expose_spawn_agent_model_overrides = false
+ wait_agent_enabled = false
+ non_code_mode_only = true
++message_delivery = "plaintext"
+ 
+ [agents]
+ max_concurrent_threads_per_session = 9
+@@ -11578,6 +11579,10 @@ max_concurrent_threads_per_session = 9
+     assert!(!config.multi_agent_v2.expose_spawn_agent_model_overrides);
+     assert!(!config.multi_agent_v2.wait_agent_enabled);
+     assert!(config.multi_agent_v2.non_code_mode_only);
++    assert_eq!(
++        config.multi_agent_v2.message_delivery,
++        codex_features::MultiAgentV2MessageDelivery::Plaintext
++    );
+ 
+     Ok(())
+ }
+@@ -11602,6 +11607,10 @@ enabled = true
+         config.multi_agent_v2,
+         resolve_multi_agent_v2_config(&ConfigToml::default())
+     );
++    assert_eq!(
++        config.multi_agent_v2.message_delivery,
++        codex_features::MultiAgentV2MessageDelivery::Encrypted
++    );
+     assert_eq!(
+         (
+             config.agent_max_threads,
+diff --git a/codex-rs/core/src/config/mod.rs b/codex-rs/core/src/config/mod.rs
+index dca329ab98ea218f7b96f1bd2d4cf25612a5fc1f..6818a29db9e6a84d8a12ecc33007cfeab15e8541 100644
+--- a/codex-rs/core/src/config/mod.rs
++++ b/codex-rs/core/src/config/mod.rs
+@@ -72,6 +72,7 @@ use codex_features::FeatureToml;
+ use codex_features::Features;
+ use codex_features::FeaturesToml;
+ use codex_features::MultiAgentV2ConfigToml;
++use codex_features::MultiAgentV2MessageDelivery;
+ use codex_features::NetworkProxyConfigToml;
+ use codex_features::SleepToolMode;
+ use codex_features::TokenBudgetConfigToml;
+@@ -1278,6 +1279,7 @@ pub struct MultiAgentV2Config {
+     pub expose_spawn_agent_model_overrides: bool,
+     pub wait_agent_enabled: bool,
+     pub non_code_mode_only: bool,
++    pub message_delivery: MultiAgentV2MessageDelivery,
+ }
+ 
+ impl MultiAgentV2Config {
+@@ -1297,6 +1299,7 @@ impl MultiAgentV2Config {
+             expose_spawn_agent_model_overrides: true,
+             wait_agent_enabled: true,
+             non_code_mode_only: true,
++            message_delivery: MultiAgentV2MessageDelivery::Encrypted,
+         }
+     }
+ }
+@@ -2744,6 +2747,9 @@ fn resolve_multi_agent_v2_config(config_toml: &ConfigToml) -> MultiAgentV2Config
+     let non_code_mode_only = base
+         .and_then(|config| config.non_code_mode_only)
+         .unwrap_or(default.non_code_mode_only);
++    let message_delivery = base
++        .and_then(|config| config.message_delivery)
++        .unwrap_or(default.message_delivery);
+ 
+     MultiAgentV2Config {
+         max_concurrent_threads_per_session,
+@@ -2760,6 +2766,7 @@ fn resolve_multi_agent_v2_config(config_toml: &ConfigToml) -> MultiAgentV2Config
+         expose_spawn_agent_model_overrides,
+         wait_agent_enabled,
+         non_code_mode_only,
++        message_delivery,
+     }
+ }
+ 
+diff --git a/codex-rs/core/src/stream_events_utils.rs b/codex-rs/core/src/stream_events_utils.rs
+index a75dbe2af8946552f86441976186a9b216f35a36..b1d61d623dbf19ba05db89bce26584b12590f138 100644
+--- a/codex-rs/core/src/stream_events_utils.rs
++++ b/codex-rs/core/src/stream_events_utils.rs
+@@ -306,7 +306,18 @@ pub(crate) async fn handle_output_item_done(
+                 )
+                 .await;
+ 
+-            let payload_preview = tool_log_payload(&call.payload, &call.direct_source());
++            let source = call.direct_source_for_multi_agent_namespace(
++                ctx.turn_context
++                    .config
++                    .multi_agent_v2
++                    .tool_namespace
++                    .as_deref(),
++                matches!(
++                    ctx.turn_context.config.multi_agent_v2.message_delivery,
++                    codex_features::MultiAgentV2MessageDelivery::Plaintext
++                ),
++            );
++            let payload_preview = tool_log_payload(&call.payload, &source);
+             tracing::info!(
+                 thread_id = %ctx.sess.thread_id,
+                 "ToolCall: {} {}",
+diff --git a/codex-rs/core/src/tools/handlers/multi_agents_spec.rs b/codex-rs/core/src/tools/handlers/multi_agents_spec.rs
+index 8d9d48ef3d548c2e406db09130e497928876d977..2dcd7a98619110047200f3714521bc385276377d 100644
+--- a/codex-rs/core/src/tools/handlers/multi_agents_spec.rs
++++ b/codex-rs/core/src/tools/handlers/multi_agents_spec.rs
+@@ -29,6 +29,7 @@ pub struct SpawnAgentToolOptions {
+     pub expose_spawn_agent_model_overrides: bool,
+     pub multi_agent_version: MultiAgentVersion,
+     pub usage_hint_text: Option<String>,
++    pub encrypt_message: bool,
+ }
+ 
+ impl Default for SpawnAgentToolOptions {
+@@ -41,6 +42,7 @@ impl Default for SpawnAgentToolOptions {
+             expose_spawn_agent_model_overrides: false,
+             multi_agent_version: MultiAgentVersion::Disabled,
+             usage_hint_text: None,
++            encrypt_message: true,
+         }
+     }
+ }
+@@ -104,7 +106,8 @@ pub fn create_spawn_agent_tool_v2(options: SpawnAgentToolOptions) -> ToolSpec {
+     let inherited_model_guidance = (options.expose_spawn_agent_model_overrides
+         && !options.hide_agent_type_model_reasoning)
+         .then_some(SPAWN_AGENT_INHERITED_MODEL_GUIDANCE);
+-    let mut properties = spawn_agent_common_properties_v2(&options.agent_type_description);
++    let mut properties =
++        spawn_agent_common_properties_v2(&options.agent_type_description, options.encrypt_message);
+     if !options.expose_agent_type {
+         properties.remove("agent_type");
+     }
+@@ -178,7 +181,7 @@ pub fn create_send_input_tool_v1() -> ToolSpec {
+     })
+ }
+ 
+-pub fn create_send_message_tool() -> ToolSpec {
++pub fn create_send_message_tool(encrypt_message: bool) -> ToolSpec {
+     let properties = BTreeMap::from([
+         (
+             "target".to_string(),
+@@ -188,10 +191,10 @@ pub fn create_send_message_tool() -> ToolSpec {
+         ),
+         (
+             "message".to_string(),
+-            JsonSchema::string(Some(
+-                "Message text to queue on the target agent.".to_string(),
+-            ))
+-            .with_encrypted(),
++            collaboration_message_schema(
++                "Message text to queue on the target agent.",
++                encrypt_message,
++            ),
+         ),
+     ]);
+ 
+@@ -210,7 +213,7 @@ pub fn create_send_message_tool() -> ToolSpec {
+     })
+ }
+ 
+-pub fn create_followup_task_tool() -> ToolSpec {
++pub fn create_followup_task_tool(encrypt_message: bool) -> ToolSpec {
+     let properties = BTreeMap::from([
+         (
+             "target".to_string(),
+@@ -221,10 +224,10 @@ pub fn create_followup_task_tool() -> ToolSpec {
+         ),
+         (
+             "message".to_string(),
+-            JsonSchema::string(Some(
+-                "Message text to send to the target agent.".to_string(),
+-            ))
+-            .with_encrypted(),
++            collaboration_message_schema(
++                "Message text to send to the target agent.",
++                encrypt_message,
++            ),
+         ),
+     ]);
+ 
+@@ -617,14 +620,17 @@ fn spawn_agent_common_properties_v1(agent_type_description: &str) -> BTreeMap<St
+     ])
+ }
+ 
+-fn spawn_agent_common_properties_v2(agent_type_description: &str) -> BTreeMap<String, JsonSchema> {
++fn spawn_agent_common_properties_v2(
++    agent_type_description: &str,
++    encrypt_message: bool,
++) -> BTreeMap<String, JsonSchema> {
+     BTreeMap::from([
+         (
+             "message".to_string(),
+-            JsonSchema::string(Some(
+-                "Initial plain-text task for the new agent.".to_string(),
+-            ))
+-            .with_encrypted(),
++            collaboration_message_schema(
++                "Initial plain-text task for the new agent.",
++                encrypt_message,
++            ),
+         ),
+         (
+             "agent_type".to_string(),
+@@ -655,6 +661,15 @@ fn spawn_agent_common_properties_v2(agent_type_description: &str) -> BTreeMap<St
+     ])
+ }
+ 
++fn collaboration_message_schema(description: &str, encrypt_message: bool) -> JsonSchema {
++    let schema = JsonSchema::string(Some(description.to_string()));
++    if encrypt_message {
++        schema.with_encrypted()
++    } else {
++        schema
++    }
++}
++
+ fn hide_spawn_agent_metadata_options(properties: &mut BTreeMap<String, JsonSchema>) {
+     properties.remove("agent_type");
+     properties.remove("model");
+diff --git a/codex-rs/core/src/tools/handlers/multi_agents_spec_tests.rs b/codex-rs/core/src/tools/handlers/multi_agents_spec_tests.rs
+index 9e100aa3b7df9599c74ccb4d4957e189b420efe8..9f3dadd9dbc155530566149e8cda60e5c9fb8b50 100644
+--- a/codex-rs/core/src/tools/handlers/multi_agents_spec_tests.rs
++++ b/codex-rs/core/src/tools/handlers/multi_agents_spec_tests.rs
+@@ -57,6 +57,7 @@ fn spawn_agent_tool_v2_requires_task_name_and_lists_visible_models() {
+         expose_spawn_agent_model_overrides: true,
+         multi_agent_version: MultiAgentVersion::V2,
+         usage_hint_text: None,
++        encrypt_message: true,
+     });
+ 
+     let ToolSpec::Function(ResponsesApiTool {
+@@ -136,6 +137,7 @@ fn spawn_agent_tool_v1_keeps_legacy_fork_context_field() {
+         expose_spawn_agent_model_overrides: true,
+         multi_agent_version: MultiAgentVersion::V1,
+         usage_hint_text: None,
++        encrypt_message: true,
+     });
+ 
+     let ToolSpec::Namespace(namespace) = tool else {
+@@ -196,6 +198,7 @@ fn spawn_agent_tool_caps_visible_model_summaries() {
+         expose_spawn_agent_model_overrides: true,
+         multi_agent_version: MultiAgentVersion::V2,
+         usage_hint_text: None,
++        encrypt_message: true,
+     });
+ 
+     let ToolSpec::Function(ResponsesApiTool { description, .. }) = tool else {
+@@ -242,6 +245,7 @@ fn spawn_agent_tool_keeps_model_controls_when_spawn_metadata_is_hidden() {
+         expose_spawn_agent_model_overrides: true,
+         multi_agent_version: MultiAgentVersion::V2,
+         usage_hint_text: None,
++        encrypt_message: true,
+     });
+ 
+     let ToolSpec::Function(ResponsesApiTool {
+@@ -275,6 +279,7 @@ fn spawn_agent_tool_hides_model_controls_without_override_exposure() {
+         expose_spawn_agent_model_overrides: false,
+         multi_agent_version: MultiAgentVersion::V2,
+         usage_hint_text: None,
++        encrypt_message: true,
+     });
+ 
+     let ToolSpec::Function(ResponsesApiTool {
+@@ -303,7 +308,7 @@ fn send_message_tool_requires_message_and_has_no_output_schema() {
+         parameters,
+         output_schema,
+         ..
+-    }) = create_send_message_tool()
++    }) = create_send_message_tool(/*encrypt_message*/ true)
+     else {
+         panic!("send_message should be a function tool");
+     };
+@@ -346,7 +351,7 @@ fn followup_task_tool_requires_message_and_has_no_output_schema() {
+         parameters,
+         output_schema,
+         ..
+-    }) = create_followup_task_tool()
++    }) = create_followup_task_tool(/*encrypt_message*/ true)
+     else {
+         panic!("followup_task should be a function tool");
+     };
+diff --git a/codex-rs/core/src/tools/handlers/multi_agents_tests.rs b/codex-rs/core/src/tools/handlers/multi_agents_tests.rs
+index 0979e8b1e7f7f6195e1c54307ca29437866a9714..aae4693b39c16f3aeb38b6cd3e7d21b8d68ea75d 100644
+--- a/codex-rs/core/src/tools/handlers/multi_agents_tests.rs
++++ b/codex-rs/core/src/tools/handlers/multi_agents_tests.rs
+@@ -1016,7 +1016,7 @@ async fn multi_agent_v2_spawn_returns_path_and_send_message_accepts_relative_pat
+             )
+     }));
+ 
+-    SendMessageHandlerV2
++    SendMessageHandlerV2::new(/*encrypt_message*/ true)
+         .handle(invocation(
+             session.clone(),
+             turn.clone(),
+@@ -1212,7 +1212,7 @@ async fn multi_agent_v2_send_message_accepts_root_target_from_child() {
+         agent_role: None,
+     });
+ 
+-    SendMessageHandlerV2
++    SendMessageHandlerV2::new(/*encrypt_message*/ true)
+         .handle(invocation(
+             Arc::new(session),
+             Arc::new(turn),
+@@ -1288,7 +1288,7 @@ async fn multi_agent_v2_followup_task_rejects_root_target_from_child() {
+         agent_role: None,
+     });
+ 
+-    let Err(err) = FollowupTaskHandlerV2
++    let Err(err) = FollowupTaskHandlerV2::new(/*encrypt_message*/ true)
+         .handle(invocation(
+             Arc::new(session),
+             Arc::new(turn),
+@@ -1670,7 +1670,10 @@ async fn multi_agent_v2_send_message_rejects_legacy_items_field() {
+         })),
+     );
+ 
+-    let Err(err) = SendMessageHandlerV2.handle(invocation).await else {
++    let Err(err) = SendMessageHandlerV2::new(/*encrypt_message*/ true)
++        .handle(invocation)
++        .await
++    else {
+         panic!("legacy items field should be rejected in v2");
+     };
+     let FunctionCallError::RespondToModel(message) = err else {
+@@ -1725,7 +1728,10 @@ async fn multi_agent_v2_send_message_rejects_interrupt_parameter() {
+         })),
+     );
+ 
+-    let Err(err) = SendMessageHandlerV2.handle(invocation).await else {
++    let Err(err) = SendMessageHandlerV2::new(/*encrypt_message*/ true)
++        .handle(invocation)
++        .await
++    else {
+         panic!("send_message interrupt parameter should be rejected");
+     };
+     let FunctionCallError::RespondToModel(message) = err else {
+@@ -1813,7 +1819,7 @@ async fn multi_agent_v2_followup_task_completion_notifies_parent_on_every_turn()
+         )
+         .await;
+ 
+-    FollowupTaskHandlerV2
++    FollowupTaskHandlerV2::new(/*encrypt_message*/ true)
+         .handle(invocation(
+             session,
+             turn,
+@@ -1953,7 +1959,10 @@ async fn multi_agent_v2_followup_task_rejects_legacy_items_field() {
+         })),
+     );
+ 
+-    let Err(err) = FollowupTaskHandlerV2.handle(invocation).await else {
++    let Err(err) = FollowupTaskHandlerV2::new(/*encrypt_message*/ true)
++        .handle(invocation)
++        .await
++    else {
+         panic!("legacy items field should be rejected in v2");
+     };
+     let FunctionCallError::RespondToModel(message) = err else {
+diff --git a/codex-rs/core/src/tools/handlers/multi_agents_v2.rs b/codex-rs/core/src/tools/handlers/multi_agents_v2.rs
+index b82bdd6a0b8498b627972f047d715949cb9b9286..ae953234caf6738346c0a3e9b14c83cec0a98bf7 100644
+--- a/codex-rs/core/src/tools/handlers/multi_agents_v2.rs
++++ b/codex-rs/core/src/tools/handlers/multi_agents_v2.rs
+@@ -83,3 +83,62 @@ fn communication_from_tool_message(
+         InterAgentMessage::new(message_type, recipient.clone(), author.clone(), message).render();
+     InterAgentCommunication::new(author, recipient, Vec::new(), content, trigger_turn)
+ }
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++    use crate::tools::context::ToolCallSource;
++    use codex_protocol::models::ContentItem;
++    use codex_protocol::models::ResponseItem;
++
++    #[test]
++    fn plaintext_source_uses_user_message_wire_for_queue_and_trigger_modes() {
++        let author = AgentPath::root();
++        let recipient = author.join("worker").expect("recipient path");
++
++        for (trigger_turn, message_type) in [(false, "MESSAGE"), (true, "NEW_TASK")] {
++            let communication = communication_from_tool_message(
++                author.clone(),
++                recipient.clone(),
++                "bounded task".to_string(),
++                &ToolCallSource::DirectPlaintextMessage,
++                trigger_turn,
++            );
++            let expected = format!(
++                "Message Type: {message_type}\nTask name: /root/worker\nSender: /root\nPayload:\nbounded task"
++            );
++
++            assert_eq!(communication.content, expected);
++            assert_eq!(communication.encrypted_content, None);
++            assert!(matches!(
++                communication.to_model_input_item(),
++                ResponseItem::Message {
++                    role,
++                    content,
++                    ..
++                } if role == "user"
++                    && content == vec![ContentItem::InputText { text: expected }]
++            ));
++        }
++    }
++
++    #[test]
++    fn encrypted_source_keeps_agent_message_wire() {
++        let communication = communication_from_tool_message(
++            AgentPath::root(),
++            AgentPath::root().join("worker").expect("recipient path"),
++            "opaque payload".to_string(),
++            &ToolCallSource::Direct,
++            /*trigger_turn*/ false,
++        );
++
++        assert_eq!(
++            communication.encrypted_content.as_deref(),
++            Some("opaque payload")
++        );
++        assert!(matches!(
++            communication.to_model_input_item(),
++            ResponseItem::AgentMessage { .. }
++        ));
++    }
++}
+diff --git a/codex-rs/core/src/tools/handlers/multi_agents_v2/followup_task.rs b/codex-rs/core/src/tools/handlers/multi_agents_v2/followup_task.rs
+index 19de4d842f2829c9f95240b89d193339435f01e2..0fb8153e36313276e9bcf2ae09a9fe23890ca9fa 100644
+--- a/codex-rs/core/src/tools/handlers/multi_agents_v2/followup_task.rs
++++ b/codex-rs/core/src/tools/handlers/multi_agents_v2/followup_task.rs
+@@ -6,7 +6,15 @@ use super::*;
+ use crate::tools::handlers::multi_agents_spec::create_followup_task_tool;
+ use codex_tools::ToolSpec;
+ 
+-pub(crate) struct Handler;
++pub(crate) struct Handler {
++    encrypt_message: bool,
++}
++
++impl Handler {
++    pub(crate) fn new(encrypt_message: bool) -> Self {
++        Self { encrypt_message }
++    }
++}
+ 
+ impl ToolExecutor<ToolInvocation> for Handler {
+     fn tool_name(&self) -> ToolName {
+@@ -14,7 +22,7 @@ impl ToolExecutor<ToolInvocation> for Handler {
+     }
+ 
+     fn spec(&self) -> ToolSpec {
+-        create_followup_task_tool()
++        create_followup_task_tool(self.encrypt_message)
+     }
+ 
+     fn handle<'a>(&'a self, invocation: ToolInvocation) -> codex_tools::ToolExecutorFuture<'a>
+diff --git a/codex-rs/core/src/tools/handlers/multi_agents_v2/send_message.rs b/codex-rs/core/src/tools/handlers/multi_agents_v2/send_message.rs
+index 70fc7d4350eaac3afe10b9256d0840774881c340..3b40a0d9da678a3703a4b76287593ed378a2a49f 100644
+--- a/codex-rs/core/src/tools/handlers/multi_agents_v2/send_message.rs
++++ b/codex-rs/core/src/tools/handlers/multi_agents_v2/send_message.rs
+@@ -6,7 +6,15 @@ use super::*;
+ use crate::tools::handlers::multi_agents_spec::create_send_message_tool;
+ use codex_tools::ToolSpec;
+ 
+-pub(crate) struct Handler;
++pub(crate) struct Handler {
++    encrypt_message: bool,
++}
++
++impl Handler {
++    pub(crate) fn new(encrypt_message: bool) -> Self {
++        Self { encrypt_message }
++    }
++}
+ 
+ impl ToolExecutor<ToolInvocation> for Handler {
+     fn tool_name(&self) -> ToolName {
+@@ -14,7 +22,7 @@ impl ToolExecutor<ToolInvocation> for Handler {
+     }
+ 
+     fn spec(&self) -> ToolSpec {
+-        create_send_message_tool()
++        create_send_message_tool(self.encrypt_message)
+     }
+ 
+     fn handle<'a>(&'a self, invocation: ToolInvocation) -> codex_tools::ToolExecutorFuture<'a>
+diff --git a/codex-rs/core/src/tools/parallel.rs b/codex-rs/core/src/tools/parallel.rs
+index 7de566390bf06f6de72b93dbc5f893999c52d41e..f8a056395861a8330125a8d83ec65776df6600ca 100644
+--- a/codex-rs/core/src/tools/parallel.rs
++++ b/codex-rs/core/src/tools/parallel.rs
+@@ -77,7 +77,22 @@ impl ToolCallRuntime {
+         cancellation_token: CancellationToken,
+     ) -> impl std::future::Future<Output = Result<ResponseItemEnvelope, CodexErr>> {
+         let error_call = call.clone();
+-        let source = call.direct_source();
++        let source = call.direct_source_for_multi_agent_namespace(
++            self.step_context
++                .turn
++                .config
++                .multi_agent_v2
++                .tool_namespace
++                .as_deref(),
++            matches!(
++                self.step_context
++                    .turn
++                    .config
++                    .multi_agent_v2
++                    .message_delivery,
++                codex_features::MultiAgentV2MessageDelivery::Plaintext
++            ),
++        );
+         let future = self.handle_tool_call_with_source(call, source, cancellation_token);
+         async move {
+             match future.await {
+diff --git a/codex-rs/core/src/tools/router.rs b/codex-rs/core/src/tools/router.rs
+index 8d5bde30851210c520e3c91b5c7e43b627459637..0d4c90ae3dbe9e045bc7833daebbecd39ae67a0e 100644
+--- a/codex-rs/core/src/tools/router.rs
++++ b/codex-rs/core/src/tools/router.rs
+@@ -42,16 +42,21 @@ pub struct ToolCall {
+ }
+ 
+ impl ToolCall {
+-    pub(crate) fn direct_source(&self) -> ToolCallSource {
+-        if self.tool_name.namespace.as_deref() == Some("collaboration")
++    pub(crate) fn direct_source_for_multi_agent_namespace(
++        &self,
++        multi_agent_namespace: Option<&str>,
++        plaintext_delivery_configured: bool,
++    ) -> ToolCallSource {
++        if self.tool_name.namespace.as_deref() == multi_agent_namespace
+             && matches!(
+                 self.tool_name.name.as_str(),
+                 "spawn_agent" | "send_message" | "followup_task"
+             )
+-            && self
++            && (self
+                 .encrypted_function_args
+                 .as_ref()
+                 .is_some_and(Vec::is_empty)
++                || (plaintext_delivery_configured && self.encrypted_function_args.is_none()))
+         {
+             ToolCallSource::DirectPlaintextMessage
+         } else {
+diff --git a/codex-rs/core/src/tools/router_tests.rs b/codex-rs/core/src/tools/router_tests.rs
+index 1d6b1d322fc651e81366978b58c64314debd3894..894321ee8b04e2cba927591cc709350248e3f808 100644
+--- a/codex-rs/core/src/tools/router_tests.rs
++++ b/codex-rs/core/src/tools/router_tests.rs
+@@ -228,7 +228,10 @@ async fn build_tool_call_uses_namespace_for_registry_name() -> anyhow::Result<()
+     );
+     assert_eq!(call.call_id, "call-namespace");
+     assert_eq!(call.encrypted_function_args, Some(Vec::new()));
+-    assert_eq!(call.direct_source(), ToolCallSource::Direct);
++    assert_eq!(
++        call.direct_source_for_multi_agent_namespace(Some("collaboration"), false),
++        ToolCallSource::Direct
++    );
+     match call.payload {
+         ToolPayload::Function { arguments } => {
+             assert_eq!(arguments, "{}");
+@@ -239,6 +242,62 @@ async fn build_tool_call_uses_namespace_for_registry_name() -> anyhow::Result<()
+     Ok(())
+ }
+ 
++#[test]
++fn direct_source_only_treats_configured_multi_agent_namespace_as_plaintext() {
++    let call = ToolCall {
++        tool_name: ToolName::namespaced("g4_assignment", "spawn_agent"),
++        call_id: "call-custom-multi-agent".to_string(),
++        payload: ToolPayload::Function {
++            arguments: r#"{"message":"bounded task"}"#.to_string(),
++        },
++        encrypted_function_args: Some(Vec::new()),
++    };
++
++    assert_eq!(
++        call.direct_source_for_multi_agent_namespace(Some("g4_assignment"), false),
++        ToolCallSource::DirectPlaintextMessage
++    );
++    assert_eq!(
++        call.direct_source_for_multi_agent_namespace(Some("collaboration"), false),
++        ToolCallSource::Direct
++    );
++    assert_eq!(
++        call.direct_source_for_multi_agent_namespace(None, false),
++        ToolCallSource::Direct
++    );
++}
++
++#[test]
++fn configured_plaintext_delivery_handles_absent_server_encryption_marker() {
++    let mut call = ToolCall {
++        tool_name: ToolName::namespaced("g4_assignment", "spawn_agent"),
++        call_id: "call-live-custom-multi-agent".to_string(),
++        payload: ToolPayload::Function {
++            arguments: r#"{"message":"bounded task"}"#.to_string(),
++        },
++        encrypted_function_args: None,
++    };
++
++    assert_eq!(
++        call.direct_source_for_multi_agent_namespace(Some("g4_assignment"), true),
++        ToolCallSource::DirectPlaintextMessage
++    );
++    assert_eq!(
++        call.direct_source_for_multi_agent_namespace(Some("g4_assignment"), false),
++        ToolCallSource::Direct
++    );
++    assert_eq!(
++        call.direct_source_for_multi_agent_namespace(Some("collaboration"), true),
++        ToolCallSource::Direct
++    );
++
++    call.encrypted_function_args = Some(vec!["message".to_string()]);
++    assert_eq!(
++        call.direct_source_for_multi_agent_namespace(Some("g4_assignment"), true),
++        ToolCallSource::Direct
++    );
++}
++
+ #[tokio::test]
+ async fn build_custom_tool_call_uses_namespace_for_registry_name() -> anyhow::Result<()> {
+     let tool_name = "exec".to_string();
+diff --git a/codex-rs/core/src/tools/spec_plan.rs b/codex-rs/core/src/tools/spec_plan.rs
+index 908bb143afcbe3b8f0523ce5c3406c7b8c443603..d84a95b824cdbe29cb651d9a243d426a8a06bd6a 100644
+--- a/codex-rs/core/src/tools/spec_plan.rs
++++ b/codex-rs/core/src/tools/spec_plan.rs
+@@ -62,6 +62,7 @@ use crate::tools::router::ToolRouter;
+ use crate::tools::tool_namespaces_info::collect_tool_namespaces_info;
+ use codex_extension_api::ExtensionData;
+ use codex_features::Feature;
++use codex_features::MultiAgentV2MessageDelivery;
+ use codex_features::SleepToolMode;
+ use codex_login::AuthManager;
+ use codex_protocol::DEFAULT_FUNCTION_NAMESPACE;
+@@ -1282,6 +1283,10 @@ fn add_collaboration_tools(context: &CoreToolPlanContext<'_>, registry: &mut Too
+                 agent_type_description(turn_context, context.default_agent_type_description);
+             let hide_spawn_agent_metadata =
+                 turn_context.config.multi_agent_v2.hide_spawn_agent_metadata;
++            let encrypt_messages = matches!(
++                turn_context.config.multi_agent_v2.message_delivery,
++                MultiAgentV2MessageDelivery::Encrypted
++            );
+             registry.register_trusted_with_exposure(
+                 multi_agent_v2_handler(
+                     SpawnAgentHandlerV2::new(SpawnAgentToolOptions {
+@@ -1295,17 +1300,21 @@ fn add_collaboration_tools(context: &CoreToolPlanContext<'_>, registry: &mut Too
+                             .expose_spawn_agent_model_overrides,
+                         multi_agent_version: turn_context.multi_agent_version,
+                         usage_hint_text: turn_context.config.multi_agent_v2.usage_hint_text.clone(),
++                        encrypt_message: encrypt_messages,
+                     }),
+                     tool_namespace,
+                 ),
+                 exposure,
+             );
+             registry.register_trusted_with_exposure(
+-                multi_agent_v2_handler(SendMessageHandlerV2, tool_namespace),
++                multi_agent_v2_handler(SendMessageHandlerV2::new(encrypt_messages), tool_namespace),
+                 exposure,
+             );
+             registry.register_trusted_with_exposure(
+-                multi_agent_v2_handler(FollowupTaskHandlerV2, tool_namespace),
++                multi_agent_v2_handler(
++                    FollowupTaskHandlerV2::new(encrypt_messages),
++                    tool_namespace,
++                ),
+                 exposure,
+             );
+             if turn_context.config.multi_agent_v2.wait_agent_enabled {
+@@ -1342,6 +1351,7 @@ fn add_collaboration_tools(context: &CoreToolPlanContext<'_>, registry: &mut Too
+                     expose_spawn_agent_model_overrides: true,
+                     multi_agent_version: turn_context.multi_agent_version,
+                     usage_hint_text: turn_context.config.multi_agent_v2.usage_hint_text.clone(),
++                    encrypt_message: true,
+                 }),
+                 exposure,
+             );
+diff --git a/codex-rs/core/src/tools/spec_plan_tests.rs b/codex-rs/core/src/tools/spec_plan_tests.rs
+index c77936fc9055d75a34819a97ffc224dbe15c6690..2f31103134529699652b07037372f61d3dd2a159 100644
+--- a/codex-rs/core/src/tools/spec_plan_tests.rs
++++ b/codex-rs/core/src/tools/spec_plan_tests.rs
+@@ -3,6 +3,7 @@ use std::collections::BTreeMap;
+ use std::sync::Arc;
+ 
+ use codex_features::Feature;
++use codex_features::MultiAgentV2MessageDelivery;
+ use codex_login::AuthManager;
+ use codex_login::CodexAuth;
+ use codex_mcp::ToolInfo;
+@@ -2840,6 +2841,41 @@ async fn multi_agent_v2_message_schemas_are_encrypted() {
+     }
+ }
+ 
++#[tokio::test]
++async fn multi_agent_v2_message_schemas_can_be_explicit_plaintext() {
++    let plan = probe(|turn| {
++        set_feature(turn, Feature::MultiAgentV2, /*enabled*/ true);
++        update_config(turn, |config| {
++            config.multi_agent_v2.message_delivery = MultiAgentV2MessageDelivery::Plaintext;
++        });
++    })
++    .await;
++    let ToolSpec::Namespace(namespace) = plan.visible_spec(MULTI_AGENT_V2_NAMESPACE) else {
++        panic!("expected {MULTI_AGENT_V2_NAMESPACE} namespace");
++    };
++    for tool_name in ["spawn_agent", "send_message", "followup_task"] {
++        let Some(ResponsesApiNamespaceTool::Function(tool)) = namespace.tools.iter().find(|tool| {
++            matches!(
++                tool,
++                ResponsesApiNamespaceTool::Function(tool) if tool.name == tool_name
++            )
++        }) else {
++            panic!("expected {tool_name} in {MULTI_AGENT_V2_NAMESPACE} namespace");
++        };
++        let properties = tool
++            .parameters
++            .properties
++            .as_ref()
++            .expect("tool should use object params");
++        assert_eq!(
++            properties
++                .get("message")
++                .and_then(|schema| schema.encrypted),
++            None
++        );
++    }
++}
++
+ #[tokio::test]
+ async fn multi_agent_v2_can_disable_wait_agent() {
+     let plan = probe(|turn| {
+diff --git a/codex-rs/core/tests/suite/subagent_notifications.rs b/codex-rs/core/tests/suite/subagent_notifications.rs
+index 4adf018bc6876cc83d1d95480a3290a189e2b509..162d61cac70584dc8476dc6b12f389ec9bc4141d 100644
+--- a/codex-rs/core/tests/suite/subagent_notifications.rs
++++ b/codex-rs/core/tests/suite/subagent_notifications.rs
+@@ -5,6 +5,7 @@ use codex_core::TurnInputRequest;
+ use codex_core::config::AgentRoleConfig;
+ use codex_core::config::CurrentTimeReminderConfig;
+ use codex_features::Feature;
++use codex_features::MultiAgentV2MessageDelivery;
+ use codex_history::RolloutItem;
+ use codex_models_manager::bundled_models_response;
+ use codex_protocol::ThreadId;
+@@ -2084,14 +2085,16 @@ async fn spawned_multi_agent_v2_child_inherits_parent_developer_context() -> Res
+     Ok(())
+ }
+ 
+-#[test_case(None, false; "encrypted")]
+-#[test_case(None, true; "plaintext")]
+-#[test_case(Some("gpt-5.6-luna"), false; "luna encrypted leaf")]
+-#[test_case(Some("gpt-5.5"), false; "legacy encrypted leaf")]
++#[test_case(None, false, None; "encrypted")]
++#[test_case(None, true, None; "plaintext")]
++#[test_case(None, true, Some("g4_assignment"); "plaintext custom namespace")]
++#[test_case(Some("gpt-5.6-luna"), false, None; "luna encrypted leaf")]
++#[test_case(Some("gpt-5.5"), false, None; "legacy encrypted leaf")]
+ #[tokio::test]
+ async fn multi_agent_v2_spawn_sends_agent_message_to_child(
+     model: Option<&str>,
+     plaintext: bool,
++    tool_namespace: Option<&str>,
+ ) -> Result<()> {
+     let output: &'static Mutex<Vec<u8>> = Box::leak(Box::new(Mutex::new(Vec::new())));
+     let subscriber = tracing_subscriber::fmt()
+@@ -2118,13 +2121,16 @@ async fn multi_agent_v2_spawn_sends_agent_message_to_child(
+         }
+     }
+     let spawn_args = serde_json::to_string(&spawn_args)?;
+-    let mut spawn_event = ev_function_call_with_namespace(
+-        SPAWN_CALL_ID,
+-        MULTI_AGENT_V2_NAMESPACE,
+-        "spawn_agent",
+-        &spawn_args,
++    let plaintext_envelope = format!(
++        "Message Type: NEW_TASK\nTask name: /root/worker\nSender: /root\nPayload:\n{message}"
+     );
+-    if plaintext {
++    let tool_namespace = tool_namespace
++        .unwrap_or(MULTI_AGENT_V2_NAMESPACE)
++        .to_string();
++    let configured_plaintext = plaintext && tool_namespace != MULTI_AGENT_V2_NAMESPACE;
++    let mut spawn_event =
++        ev_function_call_with_namespace(SPAWN_CALL_ID, &tool_namespace, "spawn_agent", &spawn_args);
++    if plaintext && !configured_plaintext {
+         spawn_event["item"]["encrypted_function_args"] = json!([]);
+     }
+     mount_sse_once_match(
+@@ -2139,7 +2145,16 @@ async fn multi_agent_v2_spawn_sends_agent_message_to_child(
+     .await;
+     let child_request_log = mount_sse_once_match(
+         &server,
+-        |req: &wiremock::Request| request_has_input_type(req, "agent_message"),
++        {
++            let plaintext_envelope = plaintext_envelope.clone();
++            move |req: &wiremock::Request| {
++                if plaintext {
++                    body_contains(req, &plaintext_envelope)
++                } else {
++                    request_has_input_type(req, "agent_message")
++                }
++            }
++        },
+         sse(vec![
+             ev_response_created("resp-child-1"),
+             ev_completed("resp-child-1"),
+@@ -2164,16 +2179,23 @@ async fn multi_agent_v2_spawn_sends_agent_message_to_child(
+     } else {
+         "koffing"
+     };
+-    let mut builder = test_codex().with_model(parent_model).with_config(|config| {
+-        config
+-            .features
+-            .enable(Feature::Collab)
+-            .expect("test config should allow feature update");
+-        config
+-            .features
+-            .enable(Feature::MultiAgentV2)
+-            .expect("test config should allow feature update");
+-    });
++    let configured_namespace = tool_namespace.clone();
++    let mut builder = test_codex()
++        .with_model(parent_model)
++        .with_config(move |config| {
++            config
++                .features
++                .enable(Feature::Collab)
++                .expect("test config should allow feature update");
++            config
++                .features
++                .enable(Feature::MultiAgentV2)
++                .expect("test config should allow feature update");
++            config.multi_agent_v2.tool_namespace = Some(configured_namespace);
++            if configured_plaintext {
++                config.multi_agent_v2.message_delivery = MultiAgentV2MessageDelivery::Plaintext;
++            }
++        });
+     let test = builder.build(&server).await?;
+     let root_thread_id = test.session_configured.thread_id;
+ 
+@@ -2183,11 +2205,13 @@ async fn multi_agent_v2_spawn_sends_agent_message_to_child(
+     // the child request instead of assuming the latest recorded request is already it.
+     let deadline = Instant::now() + Duration::from_secs(2);
+     let child_request = loop {
+-        if let Some(request) = child_request_log
+-            .requests()
+-            .into_iter()
+-            .find(|request| !request.inputs_of_type("agent_message").is_empty())
+-        {
++        if let Some(request) = child_request_log.requests().into_iter().find(|request| {
++            if plaintext {
++                request.body_contains_text(&plaintext_envelope)
++            } else {
++                !request.inputs_of_type("agent_message").is_empty()
++            }
++        }) {
+             break request;
+         }
+         if Instant::now() >= deadline {
+@@ -2195,15 +2219,20 @@ async fn multi_agent_v2_spawn_sends_agent_message_to_child(
+         }
+         sleep(Duration::from_millis(10)).await;
+     };
+-    let content = if plaintext {
+-        vec![json!({
+-            "type": "input_text",
+-            "text": format!(
+-                "Message Type: NEW_TASK\nTask name: /root/worker\nSender: /root\nPayload:\n{message}"
+-            ),
+-        })]
++    if plaintext {
++        assert!(child_request.input().iter().any(|item| {
++            item["type"] == "message"
++                && item["role"] == "user"
++                && item["content"].as_array().is_some_and(|content| {
++                    content.iter().any(|part| {
++                        part["type"] == "input_text"
++                            && part["text"].as_str() == Some(plaintext_envelope.as_str())
++                    })
++                })
++        }));
++        assert!(child_request.inputs_of_type("agent_message").is_empty());
+     } else {
+-        vec![
++        let content = vec![
+             json!({
+                 "type": "input_text",
+                 "text": "Message Type: NEW_TASK\nTask name: /root/worker\nSender: /root\nPayload:\n",
+@@ -2212,19 +2241,19 @@ async fn multi_agent_v2_spawn_sends_agent_message_to_child(
+                 "type": "encrypted_content",
+                 "encrypted_content": message,
+             }),
+-        ]
+-    };
+-    assert_eq!(
+-        strip_response_item_ids_from_json(strip_metadata_from_json(Value::Array(
+-            child_request.inputs_of_type("agent_message"),
+-        ))),
+-        Value::Array(vec![json!({
+-            "type": "agent_message",
+-            "author": "/root",
+-            "recipient": "/root/worker",
+-            "content": content,
+-        })])
+-    );
++        ];
++        assert_eq!(
++            strip_response_item_ids_from_json(strip_metadata_from_json(Value::Array(
++                child_request.inputs_of_type("agent_message"),
++            ))),
++            Value::Array(vec![json!({
++                "type": "agent_message",
++                "author": "/root",
++                "recipient": "/root/worker",
++                "content": content,
++            })])
++        );
++    }
+     if let Some(model) = model {
+         assert_eq!(child_request.body_json()["model"], json!(model));
+         assert!(
+@@ -2236,14 +2265,19 @@ async fn multi_agent_v2_spawn_sends_agent_message_to_child(
+         );
+     }
+     if plaintext {
++        let expected_encryption_marker = if configured_plaintext {
++            Value::Null
++        } else {
++            json!([])
++        };
+         assert!(
+             parent_request_log.requests().into_iter().any(|request| {
+                 request.input().iter().any(|item| {
+                     item["call_id"].as_str() == Some(SPAWN_CALL_ID)
+-                        && item["encrypted_function_args"] == json!([])
++                        && item["encrypted_function_args"] == expected_encryption_marker
+                 })
+             }),
+-            "plaintext function-call metadata should survive replay"
++            "the live-shaped encryption marker should survive replay"
+         );
+     }
+ 
+diff --git a/codex-rs/features/src/feature_configs.rs b/codex-rs/features/src/feature_configs.rs
+index 32d3cbaf0efea22accbf12714feae87650f97f6e..b36267665093035ddcbe7e720336759a9ed492b7 100644
+--- a/codex-rs/features/src/feature_configs.rs
++++ b/codex-rs/features/src/feature_configs.rs
+@@ -73,6 +73,14 @@ impl FeatureConfig for NonPrefixedMcpToolNamesConfigToml {
+     }
+ }
+ 
++#[derive(Serialize, Deserialize, Debug, Clone, Copy, Default, PartialEq, Eq, JsonSchema)]
++#[serde(rename_all = "snake_case")]
++pub enum MultiAgentV2MessageDelivery {
++    #[default]
++    Encrypted,
++    Plaintext,
++}
++
+ /// Optional conversation sources available to the Guardian v2 classifier.
+ #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, JsonSchema)]
+ #[serde(rename_all = "snake_case")]
+@@ -285,6 +293,10 @@ pub struct MultiAgentV2ConfigToml {
+     pub wait_agent_enabled: Option<bool>,
+     #[serde(skip_serializing_if = "Option::is_none")]
+     pub non_code_mode_only: Option<bool>,
++    /// Controls whether collaboration message arguments use encrypted or explicit plaintext
++    /// Responses function arguments. Defaults to encrypted.
++    #[serde(skip_serializing_if = "Option::is_none")]
++    pub message_delivery: Option<MultiAgentV2MessageDelivery>,
+ }
+ 
+ impl FeatureConfig for MultiAgentV2ConfigToml {
+diff --git a/codex-rs/features/src/lib.rs b/codex-rs/features/src/lib.rs
+index fdeae5c6f52a3223df6759af9a2d3b4e4e2364dc..05d0858c336d922dc4c6450a76d0bb36f15caefb 100644
+--- a/codex-rs/features/src/lib.rs
++++ b/codex-rs/features/src/lib.rs
+@@ -27,6 +27,7 @@ pub use feature_configs::GuardianV2ReviewScopeConfigToml;
+ pub use feature_configs::GuardianV2TranscriptConfigToml;
+ pub use feature_configs::GuardianV2TranscriptSource;
+ pub use feature_configs::MultiAgentV2ConfigToml;
++pub use feature_configs::MultiAgentV2MessageDelivery;
+ pub use feature_configs::NetworkProxyConfigToml;
+ pub use feature_configs::NetworkProxyDomainPermissionToml;
+ pub use feature_configs::NetworkProxyModeToml;
+diff --git a/codex-rs/features/src/tests.rs b/codex-rs/features/src/tests.rs
+index 5ad5132a2ec0af3d452c5e716d310136945cfceb..d88511288d8580f2ab4d873dc09949ad6880cfc0 100644
+--- a/codex-rs/features/src/tests.rs
++++ b/codex-rs/features/src/tests.rs
+@@ -655,6 +655,7 @@ hide_spawn_agent_metadata = true
+ expose_spawn_agent_model_overrides = true
+ wait_agent_enabled = false
+ non_code_mode_only = true
++message_delivery = "plaintext"
+ "#,
+     )
+     .expect("features table should deserialize");
+@@ -682,6 +683,7 @@ non_code_mode_only = true
+             expose_spawn_agent_model_overrides: Some(true),
+             wait_agent_enabled: Some(false),
+             non_code_mode_only: Some(true),
++            message_delivery: Some(crate::MultiAgentV2MessageDelivery::Plaintext),
+         }))
+     );
+ }
+diff --git a/codex-rs/protocol/src/protocol.rs b/codex-rs/protocol/src/protocol.rs
+index ae2107b801b7115654b7a076b060a8686a3b3e68..fc88340c560b6607ff949cf8f361e2c341796ea5 100644
+--- a/codex-rs/protocol/src/protocol.rs
++++ b/codex-rs/protocol/src/protocol.rs
+@@ -879,29 +879,39 @@ impl InterAgentCommunication {
+     }
+ 
+     pub fn to_model_input_item(&self) -> ResponseItem {
+-        let content = match &self.encrypted_content {
+-            Some(encrypted_content) => {
+-                let message_type = if self.trigger_turn {
+-                    "NEW_TASK"
+-                } else {
+-                    "MESSAGE"
+-                };
+-                vec![
+-                    AgentMessageInputContent::InputText {
+-                        text: format!(
+-                            "Message Type: {message_type}\nTask name: {}\nSender: {}\nPayload:\n",
+-                            self.recipient, self.author
+-                        ),
+-                    },
+-                    AgentMessageInputContent::EncryptedContent {
+-                        encrypted_content: encrypted_content.clone(),
+-                    },
+-                ]
+-            }
+-            None => vec![AgentMessageInputContent::InputText {
+-                text: self.content.clone(),
+-            }],
++        let Some(encrypted_content) = &self.encrypted_content else {
++            // The ChatGPT agent-message wire is an encrypted transport. Plaintext
++            // compatibility messages retain their durable inter-agent envelope in
++            // the rollout, but enter model context through the supported user-message
++            // wire instead of masquerading as encrypted agent content.
++            return ResponseItem::Message {
++                id: self.id.clone(),
++                role: "user".to_string(),
++                content: vec![ContentItem::InputText {
++                    text: self.content.clone(),
++                }],
++                phase: None,
++                internal_chat_message_metadata_passthrough: self
++                    .internal_chat_message_metadata_passthrough
++                    .clone(),
++            };
++        };
++        let message_type = if self.trigger_turn {
++            "NEW_TASK"
++        } else {
++            "MESSAGE"
+         };
++        let content = vec![
++            AgentMessageInputContent::InputText {
++                text: format!(
++                    "Message Type: {message_type}\nTask name: {}\nSender: {}\nPayload:\n",
++                    self.recipient, self.author
++                ),
++            },
++            AgentMessageInputContent::EncryptedContent {
++                encrypted_content: encrypted_content.clone(),
++            },
++        ];
+         ResponseItem::AgentMessage {
+             id: self.id.clone(),
+             author: self.author.to_string(),
+@@ -4654,6 +4664,34 @@ mod tests {
+         );
+     }
+ 
++    #[test]
++    fn plaintext_inter_agent_communication_uses_supported_user_message_wire() {
++        let mut communication = InterAgentCommunication::new(
++            AgentPath::root(),
++            AgentPath::root().join("worker").expect("recipient path"),
++            Vec::new(),
++            "Message Type: NEW_TASK\nTask name: /root/worker\nSender: /root\nPayload:\nread only"
++                .to_string(),
++            /*trigger_turn*/ true,
++        );
++        communication.set_turn_id_if_missing("turn-1");
++
++        assert_eq!(
++            communication.to_model_input_item(),
++            ResponseItem::Message {
++                id: None,
++                role: "user".to_string(),
++                content: vec![ContentItem::InputText {
++                    text: communication.content.clone(),
++                }],
++                phase: None,
++                internal_chat_message_metadata_passthrough: communication
++                    .internal_chat_message_metadata_passthrough
++                    .clone(),
++            }
++        );
++    }
++
+     #[test]
+     fn session_source_from_startup_arg_normalizes_custom_values() {
+         assert_eq!(

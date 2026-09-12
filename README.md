@@ -2,16 +2,22 @@
 
 # Codex DeepSeek Subagent
 
+> **当前兼容警告：** 这条 standalone native-child 路径只保留 Codex `0.148.x`
+> 及更早版本的历史证据。Codex `0.149.0+` 不再允许 agent role 改变继承的
+> parent provider，因此当前 OpenAI parent → DeepSeek child 配置必须 fail closed。
+> **不要在当前 Codex 上执行下面的安装步骤。** 参见
+> [当前 provider 继承边界](docs/advanced.md#组合边界)。
+
 让 Codex 主任务继续使用 GPT / OpenAI，同时把便宜、快速的
 `deepseek-v4-flash` 当作原生 subagent 做搜索、枚举、日志和大量文本整理。
 
-DeepSeek 是本仓库提供的开箱即用实现，不是这种组合的能力上限。凡是能被 Codex
+DeepSeek 是本仓库保留的 legacy 实现，不是这种组合的能力上限。凡是能被 Codex
 通过受支持 API 调用、并满足目标任务能力与数据边界的 provider/model，都可以按
-同一模式适配成独立 subagent；当前安装器仍只安装经过验证的 DeepSeek 配置。具体
+同一分层模型评估为独立 subagent；但当前版本没有经资格认证的跨 provider
+native-child 安装路径。具体
 条件见 [适配其他 provider/model](docs/advanced.md#适配其他-providermodel)。
 
-这套安装不需要 CC Switch、MCP、插件或另一个 Codex CLI，也不会把主 Agent
-切到 DeepSeek。只做下面三步。
+下面的三步安装仅作 legacy 文档保留。
 
 ## 三步安装
 

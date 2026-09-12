@@ -1,0 +1,79 @@
+{
+  "schema": 1,
+  "evidence_kind": "temporary_candidate_archive_manifest",
+  "observed_at": "2026-08-17T16:12:00+08:00",
+  "source": {
+    "temporary_root": "/private/tmp/codex-plaintext-seam-candidate-20260817",
+    "base_commit": "9392c3fa5bcda342b5b96a1a04d67b2f781617c2",
+    "detached_head": true,
+    "git_diff_check_passed": true,
+    "cargo_lock_changed": false,
+    "porcelain_sha256": "18add53cd3bc4dce866338110f47d1acd5b9b5cfe0c0453b72fbd11653ba4822",
+    "modified_paths": [
+      "codex-rs/core/src/config/config_tests.rs",
+      "codex-rs/core/src/config/mod.rs",
+      "codex-rs/core/src/tools/handlers/multi_agents_spec.rs",
+      "codex-rs/core/src/tools/handlers/multi_agents_spec_tests.rs",
+      "codex-rs/core/src/tools/handlers/multi_agents_tests.rs",
+      "codex-rs/core/src/tools/handlers/multi_agents_v2/followup_task.rs",
+      "codex-rs/core/src/tools/handlers/multi_agents_v2/send_message.rs",
+      "codex-rs/core/src/tools/spec_plan.rs",
+      "codex-rs/core/src/tools/spec_plan_tests.rs",
+      "codex-rs/features/src/feature_configs.rs",
+      "codex-rs/features/src/lib.rs",
+      "codex-rs/features/src/tests.rs"
+    ],
+    "diff_insertions": 153,
+    "diff_deletions": 31
+  },
+  "patch": {
+    "path": "probes/codex-0.148.0-alpha.9-plaintext-assignment-seam-candidate.patch",
+    "sha256": "2a233b9583dc1708307fe2fa0e5bf0ca69b550e07b3a160507c42fe434ae0037",
+    "byte_identical_to_temporary_tree_diff": true
+  },
+  "build": {
+    "temporary_tree_kib": 28023504,
+    "release_binary_path": "/private/tmp/codex-plaintext-seam-candidate-20260817/codex-rs/target/release/codex",
+    "release_binary_sha256": "e2874bda15552fac7b677b2553978a452c8c7beb5cae536ec95aead4d8b174d6",
+    "release_binary_bytes": 293620392,
+    "version": "codex-cli 0.148.0-alpha.9",
+    "temporary_target_may_be_deleted_after_isolated_p1": true,
+    "archive_requires_temporary_tree_to_survive": false
+  },
+  "writer_receipt_manifest": {
+    "source_directory": "/Users/pearly/.codex/state/codex-deepseek-subagent-g4/writer_receipt",
+    "count": 13,
+    "common_actor": {
+      "runtime_session_id": "01a00147-39cb-7b50-b78d-7baed910eb45",
+      "thread_id": "01a00147-39cb-7b50-b78d-7baed910eb45",
+      "agent_type": "root",
+      "canonical_agent_path": "/root"
+    },
+    "common_root": "/private/tmp/codex-plaintext-seam-candidate-20260817",
+    "receipts": [
+      {"source_file":"0235c024-3285-420e-b2fb-6e05999e6b39.json","source_sha256":"d682991d18bce8518e96ce705c17caa2f6372027274b862411994c34a533995a","claim_id":"0235c024-3285-420e-b2fb-6e05999e6b39","claim_sha256":"a6972f46691ce1dc3c824863902d87525a2352a9d8ac0ea06dd538dfee755ca5","tool_use_id":"exec-f716b896-5077-40fd-964a-cc5261a21198","paths":["codex-rs/core/src/config/mod.rs"],"before_snapshot_sha256":"c83cb24bf39fdac4f4b7c03fe43690e8d15c7a4ebf309f80dec5295425832504","after_snapshot_sha256":"c61888539cd5b8bb8e6b22584af9447e346585f6865c44d71f47da234ed1753f","released_at":"2026-08-17T04:23:02.042482+00:00"},
+      {"source_file":"246e0bce-9f1c-43b7-93e4-0e2a64e0cde6.json","source_sha256":"23c8a5c5ad825334b92d1db07bd490e6a5c5fcc49a0f9035b615e3ae3dde3fa6","claim_id":"246e0bce-9f1c-43b7-93e4-0e2a64e0cde6","claim_sha256":"ddf2004d07b201d7f6bc5ef842e762baa20641c3611da01055286ad8e35b5862","tool_use_id":"exec-8b9b6f21-afae-458a-aef0-304006ef348e","paths":["codex-rs/core/src/tools/handlers/multi_agents_tests.rs"],"before_snapshot_sha256":"8f1831006029b43080029b8f894f64d96f678374d98460259d5e56868cc5046b","after_snapshot_sha256":"8b7e0c46b06054664c355c9e07e08684a7fda4a5d57e9b3b19e6d0fe869719d5","released_at":"2026-08-17T04:25:37.827372+00:00"},
+      {"source_file":"3777182f-4a1e-4996-9422-ad1e3b74b265.json","source_sha256":"41cd6cd5d29454b7989696bd8e5ec71c77b0d296724cc0a403da00dd940fcb9c","claim_id":"3777182f-4a1e-4996-9422-ad1e3b74b265","claim_sha256":"704089a7b615a99f11d0e217e73548d6e1956ad3f9518f3971ee925990791b2f","tool_use_id":"exec-049f1e83-a8ce-4325-b7fe-e0d2f5a59cdd","paths":["codex-rs/core/src/tools/handlers/multi_agents_spec_tests.rs"],"before_snapshot_sha256":"2cfaf01228364436694f329de6615f5050a9a3668acd20a6a24d68ca3c2a5017","after_snapshot_sha256":"8f1831006029b43080029b8f894f64d96f678374d98460259d5e56868cc5046b","released_at":"2026-08-17T04:25:13.294659+00:00"},
+      {"source_file":"41484ef2-48dc-44ca-86af-ed6159e00aa6.json","source_sha256":"4e98f7b6d6edf75c2ec31675c3bca3955d2e5ef8eb8d47eefa955a8f00b6e7e4","claim_id":"41484ef2-48dc-44ca-86af-ed6159e00aa6","claim_sha256":"1fdbef60b3dc1198342383c69f5bb6760e8a82122d25cc332dd78448d0fee6f6","tool_use_id":"exec-67e0a053-cff5-439e-abf2-204efc893ec4","paths":["codex-rs/features/src/lib.rs"],"before_snapshot_sha256":"044651734bd7edba834237940df4ae3c5a9baa1aaef3724dafe79ce59a220d00","after_snapshot_sha256":"c83cb24bf39fdac4f4b7c03fe43690e8d15c7a4ebf309f80dec5295425832504","released_at":"2026-08-17T04:22:50.081272+00:00"},
+      {"source_file":"42750485-9692-418c-b1c1-bb4eef2fcf3f.json","source_sha256":"3ab1c5fb8924b5f7100955d463c1b439bde0c076348f12a17441b70912ac9d40","claim_id":"42750485-9692-418c-b1c1-bb4eef2fcf3f","claim_sha256":"367754f319e86944c3e7a0a5e293c7d8ee352d81b3e866c0d6f925a8be1b2a4d","tool_use_id":"exec-d6f2c589-063a-44f2-ad87-0deadbd9ec10","paths":["codex-rs/core/src/tools/handlers/multi_agents_spec.rs"],"before_snapshot_sha256":"c61888539cd5b8bb8e6b22584af9447e346585f6865c44d71f47da234ed1753f","after_snapshot_sha256":"5c45dc6a9a7b394b81ddb044b258f97e74de08514100f52c535f9d00ae76b9f4","released_at":"2026-08-17T04:23:30.120068+00:00"},
+      {"source_file":"4df8b17c-8161-4079-9c5d-6a94b8bca9c9.json","source_sha256":"9fccd5715500dea3cd6ea639542bf4f1bd03a1edb8a1fa67b6018ef08565028a","claim_id":"4df8b17c-8161-4079-9c5d-6a94b8bca9c9","claim_sha256":"1451ab27cf2b61541afd1a38aad0e290248b99dd463d24a90a99e10d61a0caa8","tool_use_id":"exec-cf29bdde-a733-4f08-b441-0040bbc66b12","paths":["codex-rs/core/src/tools/handlers/multi_agents_spec.rs"],"before_snapshot_sha256":"a4445d6800bdaf979e73c07937201734e88ed1644c6c8d9393f8af1c08172a57","after_snapshot_sha256":"eafecc631939889990c8c82b8b0a3cbe2e51b20993196a9cb166c62e81009804","released_at":"2026-08-17T04:51:15.956479+00:00"},
+      {"source_file":"6dfe03e4-7712-495f-8b8e-bfe301bdbf5a.json","source_sha256":"b03fbe991cde1046706e60a7ba1ff2d260cbc8e90fd46a75e2b1c765ec71f49a","claim_id":"6dfe03e4-7712-495f-8b8e-bfe301bdbf5a","claim_sha256":"4aeb5801aa1a4a44c1637d89208f17ded82ce12dc38fb6b7066871bf04ee3b37","tool_use_id":"exec-b979c59d-f6b0-494b-8ad5-74b46cb75c0b","paths":["codex-rs/core/src/tools/spec_plan.rs"],"before_snapshot_sha256":"282d1906292f0f43cbcae5d8bc1bfbf9cece6b49c036f04c549612997c22a0d1","after_snapshot_sha256":"a1ff25f25646b95c224e370f41cd96d3cac6c2da494791bf1261d0ad598dd4a8","released_at":"2026-08-17T04:24:39.152819+00:00"},
+      {"source_file":"a6b99f6c-1ca4-40fe-ae76-29427c30acc7.json","source_sha256":"95c9275865a0268f894bb3be9830a0e43d2e4f88eaec213b1534e348e52cedd7","claim_id":"a6b99f6c-1ca4-40fe-ae76-29427c30acc7","claim_sha256":"30368fc8014c5d5bda5d3b504cf33573520ddcc5752dcfe987e7253ef06ad217","tool_use_id":"exec-cf23440c-1520-438f-8e6b-4dfa5afb7408","paths":["codex-rs/core/src/tools/handlers/multi_agents_v2/followup_task.rs"],"before_snapshot_sha256":"b53c6b23066adfadb36244dfd71fa27fc4666bab7d95e8bab5c1f83d63916f41","after_snapshot_sha256":"282d1906292f0f43cbcae5d8bc1bfbf9cece6b49c036f04c549612997c22a0d1","released_at":"2026-08-17T04:24:02.521014+00:00"},
+      {"source_file":"a8439542-f1a2-43f5-8bf8-fcbb2359cea1.json","source_sha256":"3fa3e6813790a0cd812a13158cc91c8001eab94ac1b290f0e42d3fe53b9fe53b","claim_id":"a8439542-f1a2-43f5-8bf8-fcbb2359cea1","claim_sha256":"4afdc1713d5fc74da47455d8663815dfcfdef9ca626b21fb28c49a87b4f079b0","tool_use_id":"exec-e49cf19d-9833-410a-b168-9a415f70bf6e","paths":["codex-rs/features/src/feature_configs.rs"],"before_snapshot_sha256":"97d564c661f1b284913e47d3e95913338eab63ca1e50a690ccc15d1439540d05","after_snapshot_sha256":"044651734bd7edba834237940df4ae3c5a9baa1aaef3724dafe79ce59a220d00","released_at":"2026-08-17T04:22:22.891890+00:00"},
+      {"source_file":"b2b05681-5c86-47ee-adc4-d747dafafcbf.json","source_sha256":"a88eab532e4db20b5e56d4a21c68daee54c5d1d8c85ed0a7aa04aa4031d6caba","claim_id":"b2b05681-5c86-47ee-adc4-d747dafafcbf","claim_sha256":"de058ed543c791710223783c8f8abb341390efda9ba637e47397b8837f868cf6","tool_use_id":"exec-062fdd18-159d-455c-ab68-8c343e1aa40a","paths":["codex-rs/core/src/config/config_tests.rs"],"before_snapshot_sha256":"47934c8c6b2e79022438d5215014dc2c843fa3cffbba546d18caa1f16810d3a3","after_snapshot_sha256":"a4445d6800bdaf979e73c07937201734e88ed1644c6c8d9393f8af1c08172a57","released_at":"2026-08-17T04:27:11.757576+00:00"},
+      {"source_file":"b489c477-c7ff-4b7b-8b01-9b893d892b7a.json","source_sha256":"00226ad515c9ba94ad4f3085c213ee5a0ac27f12c21795b6a87cc83d34a9d21e","claim_id":"b489c477-c7ff-4b7b-8b01-9b893d892b7a","claim_sha256":"c8f2aa92c4357bce0f2c05f4fa846a7c951e34b75078aba9515ae488d2e7bcf6","tool_use_id":"exec-b4bc97c1-33bb-4b02-9408-58bc6c947a9c","paths":["codex-rs/core/src/tools/handlers/multi_agents_v2/send_message.rs"],"before_snapshot_sha256":"5c45dc6a9a7b394b81ddb044b258f97e74de08514100f52c535f9d00ae76b9f4","after_snapshot_sha256":"b53c6b23066adfadb36244dfd71fa27fc4666bab7d95e8bab5c1f83d63916f41","released_at":"2026-08-17T04:23:54.194306+00:00"},
+      {"source_file":"d994c800-d7a2-4b6c-9c96-9f85721ffae3.json","source_sha256":"ae2325328ab93b8b73df7c9c3bf1b9ac9c850adf9867585a67f80b28c360abef","claim_id":"d994c800-d7a2-4b6c-9c96-9f85721ffae3","claim_sha256":"1dc04233c28fa35e1ca8c5882da6b6708c51e3bc11a04c6b633a6d1ca84c7150","tool_use_id":"exec-a087a8a8-8015-4382-b0c0-83ac7e8661ce","paths":["codex-rs/features/src/tests.rs"],"before_snapshot_sha256":"a1ff25f25646b95c224e370f41cd96d3cac6c2da494791bf1261d0ad598dd4a8","after_snapshot_sha256":"2cfaf01228364436694f329de6615f5050a9a3668acd20a6a24d68ca3c2a5017","released_at":"2026-08-17T04:24:51.768871+00:00"},
+      {"source_file":"e3a45c29-4675-4776-ae58-be60a20339ef.json","source_sha256":"b2ee78433fafba6af7325472b0c00f2d4175b41d99818a53f41c3ca49829e976","claim_id":"e3a45c29-4675-4776-ae58-be60a20339ef","claim_sha256":"af9a107d31cfb429522b6e7b44c38d578359ba3faaeec2ef3b346fd3aef0dda9","tool_use_id":"exec-b6884e21-4f1a-4a36-b215-0386b80d5088","paths":["codex-rs/core/src/tools/spec_plan_tests.rs"],"before_snapshot_sha256":"8b7e0c46b06054664c355c9e07e08684a7fda4a5d57e9b3b19e6d0fe869719d5","after_snapshot_sha256":"47934c8c6b2e79022438d5215014dc2c843fa3cffbba546d18caa1f16810d3a3","released_at":"2026-08-17T04:26:09.831913+00:00"}
+    ]
+  },
+  "privacy": {
+    "credential_value_read_or_copied": false,
+    "raw_assignment_stored": false,
+    "receipt_payload_content_stored": false
+  },
+  "verdict": {
+    "archive_complete_enough_to_delete_target_after_isolated_p1": true,
+    "phase1_complete": false,
+    "direct_write_qualified": false
+  }
+}

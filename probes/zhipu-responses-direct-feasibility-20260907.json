@@ -1,0 +1,125 @@
+{
+  "schema": 1,
+  "evidence_kind": "zhipu_responses_direct_isolated_feasibility",
+  "observed_at": "2026-09-07T06:54:04Z",
+  "authorization": "explicit_user_request_to_verify_zhipu_responses_without_changing_the_openai_parent",
+  "official_contract": {
+    "url": "https://docs.bigmodel.cn/cn/coding-plan/tool/codex.md",
+    "document_sha256": "98a4eaf7d40813cb1bd984d7b588c5e486680804c842665372a2b1a817c9da80",
+    "base_url": "https://open.bigmodel.cn/api/v1",
+    "wire_api": "responses",
+    "example_model": "glm-5.3",
+    "document_directly_reachable": true,
+    "document_listed_in_llms_index": false
+  },
+  "credential_handling": {
+    "environment_variable_present": true,
+    "value_read_by_probe_reporter": false,
+    "value_in_process_arguments": false,
+    "value_printed": false,
+    "value_hashed": false,
+    "value_stored": false,
+    "curl_configuration_delivered_over_stdin": true
+  },
+  "sample_definition": {
+    "kind": "sequential_exploratory_wire_feasibility",
+    "invocation_count": 3,
+    "representative_latency_cohort": false,
+    "p95_defined": false,
+    "raw_response_retained": false
+  },
+  "invocations": [
+    {
+      "ordinal": 1,
+      "request_sha256": "dedc485dc299777e7bcdcac55a7840d23ced69509e7b2578c0f28f81d02c4d30",
+      "max_output_tokens": 32,
+      "http_status": 200,
+      "latency_seconds": 1.646810,
+      "content_type": "application/json; charset=utf-8",
+      "response_bytes": 788,
+      "response_sha256": "cb960c6fabee1560114e7eb2f4fc25ebf7b908d041ab8a8674b467fbf99872fc",
+      "json_valid": true,
+      "response_object": "response",
+      "response_status": "incomplete",
+      "response_model": "glm-5.3",
+      "output_count": 1,
+      "usage_object_present": true,
+      "exact_marker_observed": false,
+      "interpretation": "bounded_max_output_negative"
+    },
+    {
+      "ordinal": 2,
+      "request_sha256": "8dce0e641ae594784382b908a43b29065dec6297650370d354078677ee18d9e9",
+      "max_output_tokens": 512,
+      "http_status": 200,
+      "latency_seconds": 4.735899,
+      "content_type": "application/json; charset=utf-8",
+      "response_bytes": 1780,
+      "response_sha256": "a3ea0f9cd84275bf8c09967a4970f819e84ac3bb6de75f0a7631d06a5135e41e",
+      "json_valid": true,
+      "response_object": "response",
+      "response_status": "completed",
+      "response_model": "glm-5.3",
+      "output_types": [
+        "reasoning",
+        "message"
+      ],
+      "content_types": [
+        "reasoning_text",
+        "output_text"
+      ],
+      "input_tokens": 26,
+      "output_tokens": 218,
+      "total_tokens": 244,
+      "exact_marker_observed": null,
+      "interpretation": "response_completed_but_summary_parser_combined_reasoning_and_output_text"
+    },
+    {
+      "ordinal": 3,
+      "request_sha256": "8697a7c6452cb4d7cb7fec33a78c68995048dbe5fbb91d24cc574ed219e213a2",
+      "max_output_tokens": 384,
+      "http_status": 200,
+      "latency_seconds": 4.164160,
+      "content_type": "application/json; charset=utf-8",
+      "response_bytes": 1703,
+      "response_sha256": "f243ebb7114672b9506e677193e1e55108c603f9a109c42a229f1e244dcc82a2",
+      "json_valid": true,
+      "response_object": "response",
+      "response_status": "completed",
+      "response_model": "glm-5.3",
+      "output_types": [
+        "reasoning",
+        "message"
+      ],
+      "output_text_length": 21,
+      "output_text_sha256": "0c4ce005a40f8e341e4e38181619b343a4d3f4350948e4176743da8af4e47c9d",
+      "reasoning_text_length": 894,
+      "reasoning_text_sha256": "88a2f74f9d72e9b4108ca32b77bd4b105a060ca5bdbfabff4202e62fe85a1473",
+      "input_tokens": 26,
+      "output_tokens": 195,
+      "total_tokens": 221,
+      "exact_marker_observed": true,
+      "interpretation": "completed_exact_output_text_control"
+    }
+  ],
+  "qualification": {
+    "responses_endpoint_reachable": true,
+    "responses_json_shape_observed": true,
+    "completed_exact_text_response_observed": true,
+    "incomplete_max_output_behavior_observed": true,
+    "codex_client_end_to_end_qualified": false,
+    "native_zhipu_child_spawned": false,
+    "native_agentpath_or_sessionmeta_bound": false,
+    "streaming_qualified": false,
+    "tool_call_and_result_qualified": false,
+    "continuation_qualified": false,
+    "callback_wait_cancel_qualified": false,
+    "normalization_profile_qualified": false,
+    "representative_latency_qualified": false,
+    "phase1_complete": false,
+    "direct_write_qualified": false,
+    "phase2_state": "closed",
+    "phase3_state": "closed",
+    "phase3_implementation_opened": false
+  }
+}

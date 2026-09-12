@@ -1,0 +1,219 @@
+{
+  "schema": 3,
+  "codex_version": "0.148.0-alpha.15",
+  "source_commit": "ffe1de5cec9c0cd02629eb246534e4622da0ff41",
+  "qualification_policy": "Every mutation-capable or authority-expanding surface must be exactly intercepted and semantically constrainable; every enumerated non-mutating surface remains closed against capability drift; unknown surfaces fail closed.",
+  "surfaces": [
+    {
+      "id": "shell",
+      "class": "shell/file/Git via shell_command or exec_command",
+      "mutation_capable": true,
+      "pre_tool_use": "yes",
+      "canonical_hook_name": "Bash",
+      "semantically_constrainable": false,
+      "decision": "read-only-allowlist-or-block",
+      "negative_space": "An opaque command can write arbitrary paths or invoke Git indirectly; hook input alone does not prove filesystem confinement.",
+      "anchors": [
+        {"path": "codex-rs/core/src/tools/handlers/unified_exec/exec_command.rs", "contains": "tool_name: HookToolName::bash()"},
+        {"path": "codex-rs/core/src/tools/handlers/shell/shell_command.rs", "contains": "tool_name: HookToolName::bash()"}
+      ]
+    },
+    {
+      "id": "write_stdin",
+      "class": "PTY continuation through write_stdin",
+      "mutation_capable": true,
+      "pre_tool_use": "no",
+      "canonical_hook_name": null,
+      "semantically_constrainable": false,
+      "decision": "block-session-or-unqualified",
+      "negative_space": "A post-recovery child can send bytes to an already-running mutable process without a new PreToolUse event.",
+      "anchors": [
+        {"path": "codex-rs/core/src/tools/handlers/unified_exec/write_stdin.rs", "contains": "do not emit a second pre hook here"}
+      ]
+    },
+    {
+      "id": "apply_patch",
+      "class": "structured local file patch",
+      "mutation_capable": true,
+      "pre_tool_use": "yes",
+      "canonical_hook_name": "apply_patch",
+      "semantically_constrainable": true,
+      "decision": "candidate-covered",
+      "negative_space": "Provider-free path claims now cover normalized structured paths and exact successful PostToolUse release. Live path/filesystem TOCTOU, failed or missing PostToolUse recovery, sandbox confinement, and platform parity remain open.",
+      "anchors": [
+        {"path": "codex-rs/core/src/tools/handlers/apply_patch.rs", "contains": "tool_name: HookToolName::apply_patch()"},
+        {"path": "codex-rs/core/src/tools/registry.rs", "contains": "let post_tool_use_payload = if success {"},
+        {"path": "codex-rs/core/src/hook_runtime.rs", "contains": "Runs matching `PostToolUse` hooks after a tool has produced a successful output."}
+      ]
+    },
+    {
+      "id": "mcp",
+      "class": "MCP and app connector function tools",
+      "mutation_capable": true,
+      "pre_tool_use": "yes",
+      "canonical_hook_name": "mcp__<server>__<tool>",
+      "semantically_constrainable": false,
+      "decision": "deny-by-default-profile-allowlist",
+      "negative_space": "Arbitrary MCP schemas do not declare side effects or normalize path/Git authority; unknown tools cannot be inferred safe by name.",
+      "anchors": [
+        {"path": "codex-rs/core/src/tools/handlers/mcp.rs", "contains": "tool_name: self.hook_tool_name()"}
+      ]
+    },
+    {
+      "id": "code_mode",
+      "class": "code-mode outer executor and nested tool calls",
+      "mutation_capable": true,
+      "pre_tool_use": "nested-only",
+      "canonical_hook_name": null,
+      "semantically_constrainable": false,
+      "decision": "unqualified-until-isolation-probe",
+      "negative_space": "The custom-payload outer executor has no PreToolUse payload. Nested calls re-enter normal dispatch, but raw runtime isolation and every nested surface require proof.",
+      "anchors": [
+        {"path": "codex-rs/core/src/tools/code_mode/execute_handler.rs", "contains": "matches!(payload, ToolPayload::Custom { .. })"},
+        {"path": "codex-rs/core/src/tools/code_mode/mod.rs", "contains": ".handle_tool_call_with_source("}
+      ]
+    },
+    {
+      "id": "extension_freeform",
+      "class": "extension freeform or namespace-custom tool",
+      "mutation_capable": true,
+      "pre_tool_use": "no-for-custom-payload",
+      "canonical_hook_name": null,
+      "semantically_constrainable": false,
+      "decision": "block-or-unqualified",
+      "negative_space": "The adapter accepts custom payloads but inherits the default hook payload implementation, which only emits for function payloads.",
+      "anchors": [
+        {"path": "codex-rs/core/src/tools/handlers/extension_tools.rs", "contains": "ToolPayload::Custom { .. }"},
+        {"path": "codex-rs/core/src/tools/registry.rs", "contains": "let ToolPayload::Function { arguments } = &invocation.payload else"}
+      ]
+    },
+    {
+      "id": "extension_function",
+      "class": "extension, plugin, browser, computer-use, and other local function tools",
+      "mutation_capable": true,
+      "pre_tool_use": "yes-by-default-function-payload",
+      "canonical_hook_name": "registered extension tool name",
+      "semantically_constrainable": false,
+      "decision": "deny-by-default-profile-allowlist",
+      "negative_space": "A function-shaped extension may mutate signed-in applications, UI state, files, or external systems. Function shape proves hook visibility, not side-effect semantics or sandbox confinement.",
+      "anchors": [
+        {"path": "codex-rs/core/src/tools/handlers/extension_tools.rs", "contains": "ToolPayload::Function { .. } => true"},
+        {"path": "codex-rs/core/src/tools/registry.rs", "contains": "fn pre_tool_use_payload(&self, invocation: &ToolInvocation)"}
+      ]
+    },
+    {
+      "id": "dynamic_function",
+      "class": "dynamic function tool",
+      "mutation_capable": true,
+      "pre_tool_use": "yes-by-default-function-payload",
+      "canonical_hook_name": "dynamic tool name",
+      "semantically_constrainable": false,
+      "decision": "deny-by-default-profile-allowlist",
+      "negative_space": "Dynamic schemas carry no provider-independent side-effect or authority declaration.",
+      "anchors": [
+        {"path": "codex-rs/core/src/tools/handlers/dynamic.rs", "contains": "impl CoreToolRuntime for DynamicToolHandler {}"}
+      ]
+    },
+    {
+      "id": "codex_config_mutation",
+      "class": "plugin install request and Codex configuration persistence",
+      "mutation_capable": true,
+      "pre_tool_use": "yes-by-default-function-payload",
+      "canonical_hook_name": "request_plugin_install or equivalent config tool",
+      "semantically_constrainable": false,
+      "decision": "block-from-external-worker",
+      "negative_space": "The tool can persist user-level Codex configuration outside the assignment root; user confirmation and function-hook visibility do not grant a worker config authority.",
+      "anchors": [
+        {"path": "codex-rs/core/src/tools/handlers/request_plugin_install.rs", "contains": "persist_disabled_install_request(&turn.config.codex_home, tool).await"},
+        {"path": "codex-rs/core/src/tools/handlers/request_plugin_install.rs", "contains": "impl CoreToolRuntime for RequestPluginInstallHandler {}"}
+      ]
+    },
+    {
+      "id": "authority_escalation",
+      "class": "runtime permission expansion",
+      "mutation_capable": true,
+      "pre_tool_use": "yes-by-default-function-payload",
+      "canonical_hook_name": "request_permissions",
+      "semantically_constrainable": false,
+      "decision": "block-from-external-worker",
+      "negative_space": "Permission expansion changes the effective mutation boundary even before a write. A worker may not turn an assignment into broader environment authority.",
+      "anchors": [
+        {"path": "codex-rs/core/src/tools/handlers/request_permissions.rs", "contains": "impl CoreToolRuntime for RequestPermissionsHandler {}"},
+        {"path": "codex-rs/core/src/tools/handlers/request_permissions.rs", "contains": ".request_permissions_for_environment("}
+      ]
+    },
+    {
+      "id": "agent_control",
+      "class": "spawn/follow-up/message/interrupt child control",
+      "mutation_capable": true,
+      "pre_tool_use": "yes-by-default-function-payload",
+      "canonical_hook_name": "native multi-agent tool name",
+      "semantically_constrainable": false,
+      "decision": "block-from-external-worker-unless-explicit",
+      "negative_space": "A child can expand work or authority through additional agents even without a local filesystem write.",
+      "anchors": [
+        {"path": "codex-rs/core/src/tools/handlers/multi_agents_v2/spawn.rs", "contains": "impl CoreToolRuntime for Handler"}
+      ]
+    },
+    {
+      "id": "tool_search",
+      "class": "deferred tool discovery and catalog expansion",
+      "mutation_capable": false,
+      "pre_tool_use": "no-for-tool-search-payload",
+      "canonical_hook_name": null,
+      "semantically_constrainable": false,
+      "decision": "catalog-only-non-authorizing",
+      "negative_space": "Tool search does not itself grant mutation authority. Every discovered tool must be reclassified and mediated on its later invocation; unknown loaded tools fail closed.",
+      "anchors": [
+        {"path": "codex-rs/core/src/tools/registry.rs", "contains": "ToolPayload::Function { .. } | ToolPayload::ToolSearch { .. }"},
+        {"path": "codex-rs/core/src/tools/registry.rs", "contains": "let ToolPayload::Function { arguments } = &invocation.payload else"}
+      ]
+    },
+    {
+      "id": "hosted_model_tool",
+      "class": "provider-hosted response tool such as hosted web search",
+      "mutation_capable": false,
+      "pre_tool_use": "no",
+      "canonical_hook_name": null,
+      "semantically_constrainable": false,
+      "decision": "current-read-only-capability-closed",
+      "negative_space": "The current enumerated hosted tool is web search and is not a local direct-write path. Any future hosted side effect or artifact persistence is an unknown mutation surface and invalidates qualification until pinned again.",
+      "anchors": [
+        {"path": "codex-rs/core/src/tools/spec_plan.rs", "contains": "fn hosted_model_tool_specs("},
+        {"path": "codex-rs/core/src/tools/registry.rs", "contains": "| ToolSpec::WebSearch { .. } => \"\""}
+      ]
+    },
+    {
+      "id": "plugin_metrics_sidecar",
+      "class": "implicit plugin metrics file and analytics sidecar attached to shell execution",
+      "mutation_capable": true,
+      "pre_tool_use": "no-independent-payload-selected-after-shell-pretool",
+      "canonical_hook_name": null,
+      "semantically_constrainable": false,
+      "decision": "block-shell-or-disable-unqualified-sidecar",
+      "negative_space": "After PreToolUse sees only the shell command, a matching plugin operation can inject CODEX_PLUGIN_METRICS_OUTPUT, merge a private temporary write root into sandbox permissions, and publish parsed measurements to analytics. The compatibility Hook cannot infer or mediate that hidden write and external side effect from its shell payload.",
+      "anchors": [
+        {"path": "codex-rs/core/src/tools/runtimes/shell.rs", "contains": "sidecar.install_output_env(&mut env);"},
+        {"path": "codex-rs/core/src/tools/runtimes/unified_exec.rs", "contains": "let additional_permissions = merge_permission_profiles("},
+        {"path": "codex-rs/core-plugins/src/plugin_metrics_sidecar.rs", "contains": "pub const PLUGIN_METRICS_OUTPUT_ENV_VAR"},
+        {"path": "codex-rs/core/src/plugins/metrics.rs", "contains": ".track_plugin_measurements(PluginMeasurementsInput"}
+      ]
+    },
+    {
+      "id": "accepted_result_evidence",
+      "class": "post-PostToolUse accepted MCP result retention in thread and Guardian review state",
+      "mutation_capable": true,
+      "pre_tool_use": "no-separate-event-after-posttool-acceptance",
+      "canonical_hook_name": null,
+      "semantically_constrainable": false,
+      "decision": "block-code-mode-node-repl-or-unqualified",
+      "negative_space": "After every PostToolUse Hook accepts a result, the MCP runtime can retain node_repl text, structured content, or images in thread extension state for later Guardian review without another Hook event. That changes durable review/provenance context outside the original tool-result mediation boundary.",
+      "anchors": [
+        {"path": "codex-rs/core/src/tools/registry.rs", "contains": "fn on_tool_result_accepted(&self"},
+        {"path": "codex-rs/core/src/tools/registry.rs", "contains": "tool.on_tool_result_accepted(&invocation, result.result.as_ref());"},
+        {"path": "codex-rs/core/src/tools/handlers/mcp.rs", "contains": "fn on_tool_result_accepted(&self, invocation: &ToolInvocation"},
+        {"path": "codex-rs/core/src/tools/handlers/mcp.rs", "contains": ".get_or_init(NodeReplReviewEvidence::default)"}
+      ]
+    }
+  ]
+}

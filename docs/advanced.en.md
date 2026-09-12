@@ -8,43 +8,57 @@ worker, follow the [three-step README](../README.en.md).
 
 ## Composition boundary
 
-The main task keeps its current OpenAI model, provider, and ChatGPT login.
-DeepSeek exists only inside the standalone `v4_flash_worker` child session
-configuration. Codex still owns child creation, identity, permissions,
-lifecycle, cancellation, waiting, and callbacks. The repository uses one
-trusted `SubagentStart` Hook only to replace the currently unreliable cross-
-provider task carrier.
+The original route targeted an unchanged OpenAI parent model, provider, and
+ChatGPT login, with DeepSeek only in the standalone `v4_flash_worker` child.
+Codex would retain native ownership of child creation, identity, permissions,
+lifecycle, cancellation, waiting, and callbacks; this repository would repair
+assignment transport only.
 
-This is not a plugin, MCP server, wrapper, daemon, separate agent application,
-another Codex CLI, or a global provider switch such as CC Switch.
+That standalone custom-agent route now has historical evidence only for Codex
+`0.148.x` and earlier. Starting in `0.149.0`, OpenAI Codex bounds agent-role
+overrides: the child retains the parent's model provider, so
+`model_provider = "deepseek"` in the role can no longer form an OpenAI parent
+→ DeepSeek child. A `SubagentStart` plaintext Hook can repair assignment
+representation, but cannot cross that provider-inheritance boundary. The
+combination therefore remains fail closed on current versions and must not be
+installed or described as live-compatible.
+
+Utopia now uses MixAgents Broker to start an independent Codex App Server
+worker. That is a different architecture. It does not satisfy this Phase 1
+contract's fixed native AgentPath/wait/callback/cancel/Multi-Agent V2 lifecycle
+and cannot serve as P7 evidence.
 
 ## Adapting another provider/model
 
-Using different provider/model pairs for the main task and child is a general
-Codex composition capability, not a DeepSeek exception. Codex loads each
-standalone custom-agent TOML as configuration for the spawned session, so it
-can override model and provider settings supported by a normal session. Codex
-also officially permits any model/provider pair that supports the Responses or
-Chat Completions API. Because Chat Completions support is deprecated and will
-be removed, new adaptations should prefer Responses.
+Using different provider/model pairs for the main task and child remains a
+desired general composition capability, but it is not a capability provided by
+Codex `0.149.0+` custom-agent roles. The current
+[Codex config reference](https://learn.chatgpt.com/docs/config-file/config-reference#model_providersidwire_api)
+defines `responses` as the only supported `wire_api` value for a custom model
+provider. Re-check the project's pinned Codex baseline for every qualification;
+do not keep describing Chat Completions as a parallel direct Codex wire. An
+external provider that only supports Chat Completions needs a separately
+qualified, local `responses-bridge`, never a proxy for the OpenAI parent.
 
-A new provider/model pair must satisfy at least these conditions:
+A new worker must pass three orthogonal layers, not one “provider can chat” test:
 
-1. The provider exposes a wire API supported by the current Codex release and
-   authentication can be obtained safely from the standalone agent setup.
-2. The model has the capabilities required by the delegated job. Work that
-   searches or reads local material also requires reliable corresponding tool
-   calls.
-3. The standalone agent can define its own identity, model, `model_provider`,
-   provider configuration, instructions, and permissions without switching the
-   main task provider.
-4. The user accepts that the provider receives the child assignment, context,
-   and tool results.
-5. Native spawn, task delivery, required tools, result callback, and
-   cancellation semantics pass a real qualification. If the provider can
-   consume native V2 collaboration messages reliably, this Hook is unnecessary.
-   If it still encounters the cross-provider ciphertext boundary, the same
-   one-shot Hook protocol can be adapted.
+1. **Agent/runtime compatibility:** real discovery, spawn, requested-name to
+   canonical-AgentPath binding, parent relation, tool calls, wait, cancellation,
+   callback, resume, and termination.
+2. **Assignment transport compatibility:** explicitly select `native` or
+   `plaintext-v2`. Do not use the Hook when native V2 collaboration is reliable;
+   otherwise reuse the single plaintext protocol that passed G4.
+3. **Wire/provider compatibility:** explicitly select `native`,
+   `responses-direct`, or `responses-bridge`, then declare only proven request
+   normalization.
+
+The standalone Agent must also acquire its own authentication safely without
+switching the parent provider; the model must reliably support the tools needed
+by the job; and the user must accept that the external provider receives child
+assignment, context, and tool results. See the complete future qualification
+contracts in [Phase 2 Worker / Provider Profile](phase2-worker-provider-profiles.en.md)
+and [Phase 3 ZHIPU Responses bridge](phase3-zhipu-responses-bridge.en.md). Both
+stages remain closed.
 
 The ready-made artifacts in this repository remain deliberately bound to
 `v4_flash_worker` and DeepSeek. The agent template, authentication, Hook
@@ -62,6 +76,12 @@ not establish that a new combination works.
 | DeepSeek model alias | `deepseek-v4-flash` |
 | DeepSeek documented version | `DeepSeek-V4-Flash-0731` |
 | Date | Windows live baseline `2026-08-05`; Windows/POSIX hardening `2026-08-08`; Windows `env_key` control `2026-08-12` |
+
+This table is a historical baseline for the pre-`0.149.0` route, not a current
+Codex installation-compatibility promise. Exact-source oracles for
+`0.150.0-alpha.8` and `0.153.4` both prove that child roles retain the parent
+provider. Utopia likewise marks this package as a legacy route for `0.148.x`
+and earlier.
 
 The Windows Desktop route has an OpenAI parent → DeepSeek child → native
 callback baseline; the hardened PowerShell implementation passes the local
@@ -106,7 +126,10 @@ provider stays unchanged. When the user trusts the Hook, Codex may write a
 task. `model_context_window = 1000000` describes provider capacity; it neither
 forces 1M-token requests nor guarantees unchanged performance near a full
 window. `sandbox_mode = "read-only"` is a mutation default, not a disclosure
-boundary.
+boundary. Under the current bounded agent-role projection, that role-file field
+also does not override the child's permission profile: the child preserves the
+parent permissions. It therefore cannot serve as current per-child sandbox
+evidence without a separate effective parent/host boundary and receipt.
 
 ## Optional macOS Keychain authentication
 
@@ -278,13 +301,17 @@ fallback.
 
 ## Upstream migration condition
 
-Once Codex can represent an OpenAI parent's spawn assignment and essential
-follow-ups as provider-neutral plaintext before invoking an external child
-provider while preserving truthful identity, permissions, cancellation, and
-callback semantics, this repository will restore native collaboration messages
-as the preferred route. The Hook will remain only for a defined legacy-build
-window and will be removed when the minimum supported version contains that
-semantic.
+Restoring the native cross-provider route requires two independent conditions:
+
+1. Codex provides bounded per-child provider/profile selection while keeping
+   the OpenAI parent provider unchanged.
+2. Spawn assignments and essential follow-ups are reliably represented as
+   provider-neutral plaintext before invoking the external child provider,
+   while identity, permissions, cancellation, and callback semantics remain
+   truthful.
+
+Either missing condition is fail closed. A Hook can address only the second
+layer; it cannot create the provider authority missing from the first.
 
 ## External references
 
@@ -297,5 +324,7 @@ consult live documentation for prices and compatibility.
 - [Codex: Other models and providers](https://learn.chatgpt.com/docs/models#other-models)
 - [Codex: Configuration reference](https://learn.chatgpt.com/docs/config-file/config-reference#configtoml)
 - [Codex 0.145.0 release](https://github.com/openai/codex/releases/tag/rust-v0.145.0)
+- [Codex PR #39299: restrict agent-role configuration overrides](https://github.com/openai/codex/pull/39299)
+- [Current Utopia package boundary](https://github.com/Utopia-V/mixagents/tree/main/packages/codex-deepseek-subagent)
 - [DeepSeek: Responses API](https://api-docs.deepseek.com/zh-cn/guides/responses_api)
 - [DeepSeek: Models and pricing](https://api-docs.deepseek.com/zh-cn/quick_start/pricing)

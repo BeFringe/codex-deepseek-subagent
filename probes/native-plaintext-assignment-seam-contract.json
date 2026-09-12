@@ -1,0 +1,85 @@
+{
+  "schema": 3,
+  "name": "native-multi-agent-v2-plaintext-assignment-seam",
+  "scope": "Phase 1 P1 assignment transport only",
+  "default_mode": "encrypted",
+  "qualification_mode": "plaintext",
+  "required_operations": [
+    "spawn_agent",
+    "send_message",
+    "followup_task"
+  ],
+  "required_hook_tool_names": {
+    "spawn_agent": "g4_assignmentspawn_agent",
+    "send_message": "g4_assignmentsend_message",
+    "followup_task": "g4_assignmentfollowup_task"
+  },
+  "required_tool_namespace": "g4_assignment",
+  "allowed_live_plaintext_route_modes": [
+    "explicit_empty_marker",
+    "exact_configured_null_marker"
+  ],
+  "required_cases_per_operation": [
+    "delivery_case",
+    "deny_case"
+  ],
+  "case_semantics": {
+    "delivery_case": "a permitted call reaches the native handler and recipient",
+    "deny_case": "a distinct paired call is blocked by PreToolUse before handler dispatch",
+    "same_message_bytes_across_cases": true,
+    "one_call_may_satisfy_both_cases": false,
+    "null_marker_requires_exact_namespace_operation_and_session_opt_in": true
+  },
+  "required_invariants": [
+    "explicit_opt_in_default_encrypted",
+    "plaintext_schema_signal",
+    "exact_configured_null_marker_route",
+    "unconfigured_null_marker_regression",
+    "headless_candidate_selection",
+    "exact_pretool_plaintext",
+    "separate_delivery_and_deny_calls",
+    "deny_before_dispatch",
+    "exact_delivered_bytes",
+    "native_multi_agent_v2_preserved",
+    "private_branch_fails_closed",
+    "encrypted_mode_regression",
+    "openai_parent_unchanged",
+    "evidence_redacted"
+  ],
+  "fingerprint_fields": [
+    "length",
+    "sha256"
+  ],
+  "required_runtime_fields": [
+    "candidate_binary_sha256",
+    "candidate_patch_sha256",
+    "selected_executable",
+    "selection_mechanism",
+    "signed_app_resource_replaced",
+    "headless_only",
+    "gui_app_server_selected"
+  ],
+  "required_call_identity_fields": [
+    "parent_session_id",
+    "parent_agent_path",
+    "parent_turn_id",
+    "tool_use_id"
+  ],
+  "boundaries": {
+    "opt_in_is_assignment_transport_only": true,
+    "opt_in_grants_mutation_authority": false,
+    "v1_fallback_allowed": false,
+    "parent_provider_change_allowed": false,
+    "credential_in_assignment_allowed": false,
+    "raw_plaintext_in_receipt_allowed": false,
+    "worker_narrative_is_integration_authority": false,
+    "null_marker_plaintext_without_exact_route_allowed": false,
+    "gui_app_server_selection_allowed": false
+  },
+  "qualification": {
+    "requires_live_native_receipt": true,
+    "qualifies_only_plaintext_assignment_seam": true,
+    "completes_phase1": false,
+    "qualifies_direct_write": false
+  }
+}

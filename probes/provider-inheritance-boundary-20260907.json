@@ -1,0 +1,91 @@
+{
+  "schema": 1,
+  "as_of": "2026-09-07",
+  "upstream_change": {
+    "pull_request": "https://github.com/openai/codex/pull/39299",
+    "commit": "1a6e07a4febcc0ecfa04464f5e95cb47144cd746",
+    "policy": "A spawned agent role may customize bounded model behavior and reduce capabilities, but it may not change the model provider, endpoint, permissions, MCP servers, or other parent-owned authority."
+  },
+  "openai_sources": [
+    {
+      "runtime_role": "prior_signed_runtime",
+      "codex_version": "0.150.0-alpha.8",
+      "source_commit": "fcbdb57851be70192fd0c21faa9e529146e93ff1",
+      "anchors": [
+        {
+          "path": "codex-rs/core/src/agent/role.rs",
+          "contains": "struct AgentRoleOverrides",
+          "not_contains": "model_provider"
+        },
+        {
+          "path": "codex-rs/core/src/agent/role_tests.rs",
+          "contains": "assert_eq!(config.model_provider_id, parent.model_provider_id);"
+        },
+        {
+          "path": "codex-rs/core/src/agent/role_tests.rs",
+          "contains": "assert_eq!(config.model_providers, parent.model_providers);"
+        },
+        {
+          "path": "codex-rs/core/src/agent/control/spawn.rs",
+          "contains": "apply_role_to_config(&mut config, Some(&role_name))"
+        }
+      ]
+    },
+    {
+      "runtime_role": "current_signed_runtime",
+      "codex_version": "0.153.4",
+      "source_commit": "3d2ee51ca2d5db578f328aa75e20aa22c0197c9a",
+      "anchors": [
+        {
+          "path": "codex-rs/core/src/agent/role.rs",
+          "contains": "struct AgentRoleOverrides",
+          "not_contains": "model_provider"
+        },
+        {
+          "path": "codex-rs/core/src/agent/role_tests.rs",
+          "contains": "assert_eq!(config.model_provider_id, parent.model_provider_id);"
+        },
+        {
+          "path": "codex-rs/core/src/agent/role_tests.rs",
+          "contains": "assert_eq!(config.model_providers, parent.model_providers);"
+        },
+        {
+          "path": "codex-rs/core/src/agent/control/spawn.rs",
+          "contains": "apply_role_to_config(&mut config, Some(&role_name))"
+        }
+      ]
+    }
+  ],
+  "utopia_source": {
+    "repository": "https://github.com/Utopia-V/mixagents",
+    "source_commit": "4117c7c40d0c1f0056860716af7478d7734694ee",
+    "package": "packages/codex-deepseek-subagent",
+    "anchors": [
+      {
+        "path": "packages/codex-deepseek-subagent/README.md",
+        "contains": "Codex `0.149.0` 起"
+      },
+      {
+        "path": "packages/codex-deepseek-subagent/README.md",
+        "contains": "当前版本使用 [`mixagents-broker`]"
+      },
+      {
+        "path": "packages/codex-deepseek-subagent/agents/v4-flash-worker.toml",
+        "contains": "model_provider = \"deepseek\""
+      }
+    ],
+    "legacy_native_route_supported_from_0_149": false,
+    "replacement_backend": "independent Codex App Server worker through MixAgents Broker"
+  },
+  "verdict": {
+    "assignment_transport_orthogonal": true,
+    "legacy_role_provider_override_qualified": false,
+    "broker_satisfies_native_agentpath_lifecycle_contract": false,
+    "p7_deepseek_regression": "blocked-upstream",
+    "phase1_complete": false,
+    "direct_write_qualified": false,
+    "phase2_state": "closed",
+    "phase3_state": "closed",
+    "blocker": "Codex 0.149.0 and later preserve the parent provider when applying child roles. The retained Utopia standalone agent still declares a DeepSeek provider but is documented as legacy, while its Broker replacement owns a separate App Server lifecycle and therefore cannot satisfy this project's native AgentPath/wait/callback/cancel requirement."
+  }
+}
